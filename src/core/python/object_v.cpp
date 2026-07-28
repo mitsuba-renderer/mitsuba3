@@ -158,7 +158,7 @@ MI_PY_EXPORT(Object) {
                  "name"_a, "value"_a, "flags"_a,
                  "Register a value with the traversal callback.\n\n"
                  ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.")
+                 "   Use :py:meth:`~misuka.TraversalCallback.put` instead.")
             // Deprecated put_object - forwards to put()
             .def("put_object",
                  [] (nb::handle self, std::string_view name, Object *obj, uint32_t flags) {
@@ -172,6 +172,6 @@ MI_PY_EXPORT(Object) {
                  "name"_a, "obj"_a, "flags"_a,
                  "Register an object with the traversal callback.\n\n"
                  ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.");
+                 "   Use :py:meth:`~misuka.TraversalCallback.put` instead.");
     }
 }

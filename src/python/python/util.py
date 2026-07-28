@@ -12,14 +12,14 @@ class SceneParameters(Mapping):
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~mitsuba.SceneParameters.update()`, and
-    :py:meth:`~mitsuba.SceneParameters.keep()`.
+    specifically :py:meth:`~misuka.SceneParameters.update()`, and
+    :py:meth:`~misuka.SceneParameters.keep()`.
     """
 
     def __init__(self, properties=None, hierarchy=None):
         """
         Private constructor (use
-        :py:func:`mitsuba.traverse()` instead)
+        :py:func:`misuka.traverse()` instead)
         """
         self.properties = properties if properties is not None else {}
         self.hierarchy  = hierarchy  if hierarchy  is not None else {}
@@ -150,14 +150,14 @@ class SceneParameters(Mapping):
     def set_dirty(self, key: str):
         """
         Marks a specific parameter and its parent objects as dirty. A subsequent call
-        to :py:meth:`~mitsuba.SceneParameters.update()` will refresh their internal
+        to :py:meth:`~misuka.SceneParameters.update()` will refresh their internal
         state.
 
         This method should rarely be called explicitly. The
-        :py:class:`~mitsuba.SceneParameters` will detect most operations on
+        :py:class:`~misuka.SceneParameters` will detect most operations on
         its values and automatically flag them as dirty. A common exception to
         the detection mechanism is the :py:meth:`~drjit.scatter` operation which
-        needs an explicit call to :py:meth:`~mitsuba.SceneParameters.set_dirty()`.
+        needs an explicit call to :py:meth:`~misuka.SceneParameters.set_dirty()`.
         """
         value, _, node, flags = self.properties[key]
 
@@ -272,7 +272,7 @@ def traverse(node: mi.Object) -> SceneParameters:
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-    See also :py:class:`mitsuba.SceneParameters`.
+    See also :py:class:`misuka.SceneParameters`.
     """
 
     class SceneTraversal(mi.TraversalCallback):
@@ -705,7 +705,7 @@ def cornell_box():
 def variant_context(*args) -> None:
     '''
     Temporarily override the active variant. Arguments are interpreted as
-    they are in :func:`mitsuba.set_variant`.
+    they are in :func:`misuka.set_variant`.
     '''
 
     old_variant = mi.variant()

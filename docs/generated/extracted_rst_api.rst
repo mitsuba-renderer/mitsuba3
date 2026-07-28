@@ -1,10 +1,10 @@
-.. py:class:: mitsuba.AdjointIntegrator
+.. py:class:: misuka.AdjointIntegrator
 
-    Base class: :py:obj:`mitsuba.Integrator`
+    Base class: misuka.Integrator
 
-    .. py:method:: mitsuba.AdjointIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+    .. py:method:: misuka.AdjointIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
@@ -13,7 +13,7 @@
         Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -25,15 +25,15 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.AdjointIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
+    .. py:method:: misuka.AdjointIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -45,21 +45,21 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.AdjointIntegrator.sample(self, scene, sensor, sampler, block, sample_scale)
+    .. py:method:: misuka.AdjointIntegrator.sample(self, scene, sensor, sampler, block, sample_scale)
 
         Sample the incident importance and splat the product of importance and
         radiance to the film.
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             The underlying scene
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             A sensor from which rays should be sampled
 
-        Parameter ``sampler`` (:py:obj:`mitsuba.Sampler`):
+        Parameter ``sampler`` (misuka.Sampler):
             A source of (pseudo-/quasi-) random numbers
 
-        Parameter ``block`` (:py:obj:`mitsuba.ImageBlock`):
+        Parameter ``block`` (misuka.ImageBlock):
             An image block that will be updated during the sampling process
 
         Parameter ``sample_scale`` (float):
@@ -69,7 +69,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.AffineTransform3d
+.. py:class:: misuka.AffineTransform3d
 
     Unified homogeneous coordinate transformation
 
@@ -101,11 +101,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3d`) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform3d) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3d`, /) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform3d, /) -> None``
         
         Construct from an projective transformation
         
@@ -123,27 +123,27 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarAffineTransform3d, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.AffineTransform3d.assign(self, arg)
+    .. py:method:: misuka.AffineTransform3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform3d`, /):
+        Parameter ``arg`` (misuka.AffineTransform3d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3d.extract()
+    .. py:method:: misuka.AffineTransform3d.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
         Returns → mitsuba::Transform<mitsuba::Point<drjit::DiffArray<(JitBackend)2, double>, 2ul>, true>:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3d.has_scale()
+    .. py:method:: misuka.AffineTransform3d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -152,42 +152,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3d.inverse()
+    .. py:method:: misuka.AffineTransform3d.inverse()
 
-        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+        Returns → misuka.AffineTransform3d:
             *no description available*
 
-    .. py:property:: mitsuba.AffineTransform3d.inverse_transpose
+    .. py:property:: misuka.AffineTransform3d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
-    .. py:property:: mitsuba.AffineTransform3d.matrix
+    .. py:property:: misuka.AffineTransform3d.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
-    .. py:method:: mitsuba.AffineTransform3d.transform_affine(self, p)
+    .. py:method:: misuka.AffineTransform3d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
+        Parameter ``p`` (misuka.Point2d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2d`:
+        Returns → misuka.Point2d:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3d.translation()
+    .. py:method:: misuka.AffineTransform3d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector2d`:
+        Returns → misuka.Vector2d:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3d.update()
+    .. py:method:: misuka.AffineTransform3d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+        Returns → misuka.AffineTransform3d:
             *no description available*
 
-.. py:class:: mitsuba.AffineTransform3f
+.. py:class:: misuka.AffineTransform3f
 
     Unified homogeneous coordinate transformation
 
@@ -219,11 +219,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3f`) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform3f) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3f`, /) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform3f, /) -> None``
         
         Construct from an projective transformation
         
@@ -241,27 +241,27 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarAffineTransform3f, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.AffineTransform3f.assign(self, arg)
+    .. py:method:: misuka.AffineTransform3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform3f`, /):
+        Parameter ``arg`` (misuka.AffineTransform3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3f.extract()
+    .. py:method:: misuka.AffineTransform3f.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
         Returns → mitsuba::Transform<mitsuba::Point<drjit::DiffArray<(JitBackend)2, float>, 2ul>, true>:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3f.has_scale()
+    .. py:method:: misuka.AffineTransform3f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -270,42 +270,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3f.inverse()
+    .. py:method:: misuka.AffineTransform3f.inverse()
 
-        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+        Returns → misuka.AffineTransform3f:
             *no description available*
 
-    .. py:property:: mitsuba.AffineTransform3f.inverse_transpose
+    .. py:property:: misuka.AffineTransform3f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f
 
-    .. py:property:: mitsuba.AffineTransform3f.matrix
+    .. py:property:: misuka.AffineTransform3f.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f
 
-    .. py:method:: mitsuba.AffineTransform3f.transform_affine(self, p)
+    .. py:method:: misuka.AffineTransform3f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``p`` (misuka.Point2f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3f.translation()
+    .. py:method:: misuka.AffineTransform3f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform3f.update()
+    .. py:method:: misuka.AffineTransform3f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+        Returns → misuka.AffineTransform3f:
             *no description available*
 
-.. py:class:: mitsuba.AffineTransform4d
+.. py:class:: misuka.AffineTransform4d
 
     Unified homogeneous coordinate transformation
 
@@ -337,11 +337,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4d`) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform4d) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4d`, /) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform4d, /) -> None``
         
         Construct from an projective transformation
         
@@ -359,27 +359,27 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarAffineTransform4d, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.AffineTransform4d.assign(self, arg)
+    .. py:method:: misuka.AffineTransform4d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform4d`, /):
+        Parameter ``arg`` (misuka.AffineTransform4d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4d.extract()
+    .. py:method:: misuka.AffineTransform4d.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.AffineTransform3d`:
+        Returns → misuka.AffineTransform3d:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4d.has_scale()
+    .. py:method:: misuka.AffineTransform4d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -388,42 +388,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4d.inverse()
+    .. py:method:: misuka.AffineTransform4d.inverse()
 
-        Returns → :py:obj:`mitsuba.AffineTransform4d`:
+        Returns → misuka.AffineTransform4d:
             *no description available*
 
-    .. py:property:: mitsuba.AffineTransform4d.inverse_transpose
+    .. py:property:: misuka.AffineTransform4d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
-    .. py:property:: mitsuba.AffineTransform4d.matrix
+    .. py:property:: misuka.AffineTransform4d.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
-    .. py:method:: mitsuba.AffineTransform4d.transform_affine(self, p)
+    .. py:method:: misuka.AffineTransform4d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
+        Parameter ``p`` (misuka.Point3d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3d`:
+        Returns → misuka.Point3d:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4d.translation()
+    .. py:method:: misuka.AffineTransform4d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector3d`:
+        Returns → misuka.Vector3d:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4d.update()
+    .. py:method:: misuka.AffineTransform4d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.AffineTransform4d`:
+        Returns → misuka.AffineTransform4d:
             *no description available*
 
-.. py:class:: mitsuba.AffineTransform4f
+.. py:class:: misuka.AffineTransform4f
 
     Unified homogeneous coordinate transformation
 
@@ -455,11 +455,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4f`) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform4f) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4f`, /) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform4f, /) -> None``
         
         Construct from an projective transformation
         
@@ -477,27 +477,27 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarAffineTransform4f, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.AffineTransform4f.assign(self, arg)
+    .. py:method:: misuka.AffineTransform4f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.AffineTransform4f`, /):
+        Parameter ``arg`` (misuka.AffineTransform4f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4f.extract()
+    .. py:method:: misuka.AffineTransform4f.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.AffineTransform3f`:
+        Returns → misuka.AffineTransform3f:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4f.has_scale()
+    .. py:method:: misuka.AffineTransform4f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -506,44 +506,44 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4f.inverse()
+    .. py:method:: misuka.AffineTransform4f.inverse()
 
-        Returns → :py:obj:`mitsuba.AffineTransform4f`:
+        Returns → misuka.AffineTransform4f:
             *no description available*
 
-    .. py:property:: mitsuba.AffineTransform4f.inverse_transpose
+    .. py:property:: misuka.AffineTransform4f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f
 
-    .. py:property:: mitsuba.AffineTransform4f.matrix
+    .. py:property:: misuka.AffineTransform4f.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f
 
-    .. py:method:: mitsuba.AffineTransform4f.transform_affine(self, p)
+    .. py:method:: misuka.AffineTransform4f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``p`` (misuka.Point3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4f.translation()
+    .. py:method:: misuka.AffineTransform4f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.AffineTransform4f.update()
+    .. py:method:: misuka.AffineTransform4f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.AffineTransform4f`:
+        Returns → misuka.AffineTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.Appender
+.. py:class:: misuka.Appender
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     This class defines an abstract destination for logging-relevant
     information
@@ -551,11 +551,11 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.Appender.append(self, level, text)
+    .. py:method:: misuka.Appender.append(self, level, text)
 
         Append a line of text with the given log level
 
-        Parameter ``level`` (:py:obj:`mitsuba.LogLevel`):
+        Parameter ``level`` (misuka.LogLevel):
             *no description available*
 
         Parameter ``text`` (str):
@@ -564,7 +564,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Appender.log_progress(self, progress, name, formatted, eta, ptr=None)
+    .. py:method:: misuka.Appender.log_progress(self, progress, name, formatted, eta, ptr=None)
 
         Process a progress message
 
@@ -580,14 +580,14 @@
         Parameter ``eta`` (str):
             Estimated time until 100% is reached.
 
-        Parameter ``ptr`` (typing_extensions.CapsuleType | None):
+        Parameter ``ptr`` (types.CapsuleType | None):
             Custom pointer payload. This is used to express the context of a
             progress message.
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ArgParser
+.. py:class:: misuka.ArgParser
 
     Minimal command line argument parser
 
@@ -612,11 +612,11 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.ArgParser.add(self, prefix, extra=False)
+    .. py:method:: misuka.ArgParser.add(self, prefix, extra=False)
 
         Overloaded function.
 
-        1. ``add(self, prefix: str, extra: bool = False) -> :py:obj:`mitsuba.ArgParser.Arg```
+        1. ``add(self, prefix: str, extra: bool = False) -> misuka.ArgParser.Arg``
 
         Register a new argument with the given list of prefixes
 
@@ -626,7 +626,7 @@
         Parameter ``extra`` (bool):
             Indicates whether the argument accepts an extra argument value
 
-        2. ``add(self, prefixes: collections.abc.Sequence[str], extra: bool = False) -> :py:obj:`mitsuba.ArgParser.Arg```
+        2. ``add(self, prefixes: collections.abc.Sequence[str], extra: bool = False) -> misuka.ArgParser.Arg``
 
         Register a new argument with the given prefix
 
@@ -636,15 +636,15 @@
         Parameter ``extra`` (bool):
             Indicates whether the argument accepts an extra argument value
 
-        Returns → :py:obj:`mitsuba.ArgParser.Arg`:
+        Returns → misuka.ArgParser.Arg:
             *no description available*
 
-    .. py:method:: mitsuba.ArgParser.executable_name()
+    .. py:method:: misuka.ArgParser.executable_name()
 
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.ArgParser.parse(self, arg)
+    .. py:method:: misuka.ArgParser.parse(self, arg)
 
         Parse the given set of command line arguments
 
@@ -654,29 +654,129 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ArrayXb
+.. py:class:: misuka.Array0b
 
-.. py:class:: mitsuba.ArrayXf
+.. py:class:: misuka.Array0f
 
-.. py:class:: mitsuba.ArrayXf16
+.. py:class:: misuka.Array0f16
 
-.. py:class:: mitsuba.ArrayXf64
+.. py:class:: misuka.Array0f64
 
-.. py:class:: mitsuba.ArrayXi
+.. py:class:: misuka.Array0i
 
-.. py:class:: mitsuba.ArrayXi64
+.. py:class:: misuka.Array0i64
 
-.. py:class:: mitsuba.ArrayXi8
+.. py:class:: misuka.Array0i8
 
-.. py:class:: mitsuba.ArrayXu
+.. py:class:: misuka.Array0u
 
-.. py:class:: mitsuba.ArrayXu64
+.. py:class:: misuka.Array0u64
 
-.. py:class:: mitsuba.ArrayXu8
+.. py:class:: misuka.Array0u8
 
-.. py:class:: mitsuba.BSDF
+.. py:class:: misuka.Array1b
 
-    Base class: :py:obj:`mitsuba.Object`
+.. py:class:: misuka.Array1f
+
+.. py:class:: misuka.Array1f16
+
+.. py:class:: misuka.Array1f64
+
+.. py:class:: misuka.Array1i
+
+.. py:class:: misuka.Array1i64
+
+.. py:class:: misuka.Array1i8
+
+.. py:class:: misuka.Array1u
+
+.. py:class:: misuka.Array1u64
+
+.. py:class:: misuka.Array1u8
+
+.. py:class:: misuka.Array2b
+
+.. py:class:: misuka.Array2f
+
+.. py:class:: misuka.Array2f16
+
+.. py:class:: misuka.Array2f64
+
+.. py:class:: misuka.Array2i
+
+.. py:class:: misuka.Array2i64
+
+.. py:class:: misuka.Array2i8
+
+.. py:class:: misuka.Array2u
+
+.. py:class:: misuka.Array2u64
+
+.. py:class:: misuka.Array2u8
+
+.. py:class:: misuka.Array3b
+
+.. py:class:: misuka.Array3f
+
+.. py:class:: misuka.Array3f16
+
+.. py:class:: misuka.Array3f64
+
+.. py:class:: misuka.Array3i
+
+.. py:class:: misuka.Array3i64
+
+.. py:class:: misuka.Array3i8
+
+.. py:class:: misuka.Array3u
+
+.. py:class:: misuka.Array3u64
+
+.. py:class:: misuka.Array3u8
+
+.. py:class:: misuka.Array4b
+
+.. py:class:: misuka.Array4f
+
+.. py:class:: misuka.Array4f16
+
+.. py:class:: misuka.Array4f64
+
+.. py:class:: misuka.Array4i
+
+.. py:class:: misuka.Array4i64
+
+.. py:class:: misuka.Array4i8
+
+.. py:class:: misuka.Array4u
+
+.. py:class:: misuka.Array4u64
+
+.. py:class:: misuka.Array4u8
+
+.. py:class:: misuka.ArrayXb
+
+.. py:class:: misuka.ArrayXf
+
+.. py:class:: misuka.ArrayXf16
+
+.. py:class:: misuka.ArrayXf64
+
+.. py:class:: misuka.ArrayXi
+
+.. py:class:: misuka.ArrayXi64
+
+.. py:class:: misuka.ArrayXi8
+
+.. py:class:: misuka.ArrayXu
+
+.. py:class:: misuka.ArrayXu64
+
+.. py:class:: misuka.ArrayXu8
+
+.. py:class:: misuka.BSDF
+
+    Base class: misuka.Object
 
     Bidirectional Scattering Distribution Function (BSDF) interface
 
@@ -700,18 +800,18 @@
     outgoing direction in local coordinates.
 
     See also:
-        :py:obj:`mitsuba.BSDFContext`
+        :py:obj:`misuka.BSDFContext`
 
     See also:
-        :py:obj:`mitsuba.BSDFSample3f`
+        :py:obj:`misuka.BSDFSample3f`
 
     .. py:method:: __init__(self, props)
 
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+        Parameter ``props`` (misuka.Properties):
             *no description available*
 
 
-    .. py:method:: mitsuba.BSDF.component_count(self, active=True)
+    .. py:method:: misuka.BSDF.component_count(self, active=True)
 
         Number of components this BSDF is comprised of.
 
@@ -721,7 +821,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.eval(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDF.eval(self, ctx, si, wo, active=True)
 
         Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo) and
         multiply by the cosine foreshortening term.
@@ -735,25 +835,25 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.eval_attribute(self, name, si, active=True)
+    .. py:method:: misuka.BSDF.eval_attribute(self, name, si, active=True)
 
         Evaluate a specific BSDF attribute at the given surface interaction.
 
@@ -764,16 +864,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.BSDF.eval_attribute_1(self, name, si, active=True)
+    .. py:method:: misuka.BSDF.eval_attribute_1(self, name, si, active=True)
 
         Monochromatic evaluation of a BSDF attribute at the given surface
         interaction
@@ -785,7 +885,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -794,7 +894,7 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.BSDF.eval_attribute_3(self, name, si, active=True)
+    .. py:method:: misuka.BSDF.eval_attribute_3(self, name, si, active=True)
 
         Trichromatic evaluation of a BSDF attribute at the given surface
         interaction
@@ -806,16 +906,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.BSDF.eval_diffuse_reflectance(self, si, active=True)
+    .. py:method:: misuka.BSDF.eval_diffuse_reflectance(self, si, active=True)
 
         Evaluate the diffuse reflectance
 
@@ -825,17 +925,17 @@
         evaluating the BSDF for a normal outgoing direction and returning this
         value multiplied by pi. This is the default behaviour of this method.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.eval_null_transmission(self, si, active=True)
+    .. py:method:: misuka.BSDF.eval_null_transmission(self, si, active=True)
 
         Evaluate un-scattered transmission component of the BSDF
 
@@ -843,7 +943,7 @@
         (BSDFFlags::Null) of the BSDF for light arriving from direction ``w``.
         The default implementation returns zero.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
@@ -851,10 +951,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.eval_pdf(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDF.eval_pdf(self, ctx, si, wo, active=True)
 
         Jointly evaluate the BSDF f(wi, wo) and the probability per unit solid
         angle of sampling the given direction. The result from the evaluated
@@ -876,25 +976,25 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.eval_pdf_sample(self, ctx, si, wo, sample1, sample2, active=True)
+    .. py:method:: misuka.BSDF.eval_pdf_sample(self, ctx, si, wo, sample1, sample2, active=True)
 
         Jointly evaluate the BSDF f(wi, wo) and the probability per unit solid
         angle of sampling the given direction. The result from the evaluated
@@ -916,31 +1016,31 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``sample1`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float, :py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float, misuka.BSDFSample3f, misuka.Color3f]:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.flags(self, index, active=True)
+    .. py:method:: misuka.BSDF.flags(self, index, active=True)
 
         Overloaded function.
 
@@ -961,7 +1061,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.has_attribute(self, name, active=True)
+    .. py:method:: misuka.BSDF.has_attribute(self, name, active=True)
 
         Returns whether this BSDF contains the specified attribute.
 
@@ -974,22 +1074,22 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:property:: mitsuba.BSDF.m_components
+    .. py:property:: misuka.BSDF.m_components
 
         Flags for each component of this BSDF.
 
-    .. py:property:: mitsuba.BSDF.m_flags
+    .. py:property:: misuka.BSDF.m_flags
 
         Combined flags for all components of this BSDF.
 
-    .. py:method:: mitsuba.BSDF.needs_differentials()
+    .. py:method:: misuka.BSDF.needs_differentials()
 
         Does the implementation require access to texture-space differentials?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.pdf(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDF.pdf(self, ctx, si, wo, active=True)
 
         Compute the probability per unit solid angle of sampling a given
         direction
@@ -1004,16 +1104,16 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -1022,7 +1122,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BSDF.sample(self, ctx, si, sample1, sample2, active=True)
+    .. py:method:: misuka.BSDF.sample(self, ctx, si, sample1, sample2, active=True)
 
         Importance sample the BSDF model
 
@@ -1041,11 +1141,11 @@
         multiplies by the cosine foreshortening factor with respect to the
         sampled direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to sample, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
@@ -1054,14 +1154,14 @@
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the BSDF lobe in multi-lobe models.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.BSDFSample3f, misuka.Color3f]:
             A pair (bs, value) consisting of
 
         bs: Sampling record, indicating the sampled direction, PDF values and
@@ -1071,7 +1171,7 @@
         cosine foreshortening factor when a non-delta component is sampled). A
         zero spectrum indicates that sampling failed.
 
-.. py:class:: mitsuba.BSDFContext
+.. py:class:: misuka.BSDFContext
 
     Context data structure for BSDF evaluation and sampling
 
@@ -1088,30 +1188,30 @@
 
         Overloaded function.
         
-        1. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode` = TransportMode.Radiance) -> None``
+        1. ``__init__(self, mode: misuka.TransportMode = TransportMode.Radiance) -> None``
         
         //! @}
         
-        2. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode`, type_mask: int, component: int) -> None``
+        2. ``__init__(self, mode: misuka.TransportMode, type_mask: int, component: int) -> None``
         
         
-        3. ``__init__(self, mode: :py:obj:`mitsuba.TransportMode`, type_mask: int, component: int | None = None) -> None``
+        3. ``__init__(self, mode: misuka.TransportMode, type_mask: int, component: int | None = None) -> None``
 
-        Parameter ``mode`` (:py:obj:`mitsuba.TransportMode`):
+        Parameter ``mode`` (misuka.TransportMode):
             *no description available*
 
         
-    .. py:property:: mitsuba.BSDFContext.component
+    .. py:property:: misuka.BSDFContext.component
 
         Integer value of requested BSDF component index to be
         sampled/evaluated.
 
-    .. py:method:: mitsuba.BSDFContext.is_enabled(self, type, component=0)
+    .. py:method:: misuka.BSDFContext.is_enabled(self, type, component=0)
 
         Checks whether a given BSDF component type and index are enabled in
         this context.
 
-        Parameter ``type`` (:py:obj:`mitsuba.BSDFFlags`):
+        Parameter ``type`` (misuka.BSDFFlags):
             *no description available*
 
         Parameter ``component`` (int):
@@ -1120,11 +1220,11 @@
         Returns → bool:
             *no description available*
 
-    .. py:property:: mitsuba.BSDFContext.mode
+    .. py:property:: misuka.BSDFContext.mode
 
         Transported mode (radiance or importance)
 
-    .. py:method:: mitsuba.BSDFContext.reverse()
+    .. py:method:: misuka.BSDFContext.reverse()
 
         Reverse the direction of light transport in the record
 
@@ -1134,11 +1234,11 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.BSDFContext.type_mask
+    .. py:property:: misuka.BSDFContext.type_mask
 
         (self) -> int
 
-.. py:class:: mitsuba.BSDFFlags
+.. py:class:: misuka.BSDFFlags
 
     This list of flags is used to classify the different types of lobes
     that are implemented in a BSDF instance.
@@ -1232,9 +1332,9 @@
 
         Any kind of scattering
 
-.. py:class:: mitsuba.BSDFPtr
+.. py:class:: misuka.BSDFPtr
 
-    .. py:method:: mitsuba.BSDFPtr.eval(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDFPtr.eval(self, ctx, si, wo, active=True)
 
         Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo) and
         multiply by the cosine foreshortening term.
@@ -1248,25 +1348,25 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.eval_attribute(self, name, si, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_attribute(self, name, si, active=True)
 
         Evaluate a specific BSDF attribute at the given surface interaction.
 
@@ -1277,16 +1377,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.BSDFPtr.eval_attribute_1(self, name, si, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_attribute_1(self, name, si, active=True)
 
         Monochromatic evaluation of a BSDF attribute at the given surface
         interaction
@@ -1298,7 +1398,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -1307,7 +1407,7 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.BSDFPtr.eval_attribute_3(self, name, si, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_attribute_3(self, name, si, active=True)
 
         Trichromatic evaluation of a BSDF attribute at the given surface
         interaction
@@ -1319,16 +1419,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.BSDFPtr.eval_diffuse_reflectance(self, si, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_diffuse_reflectance(self, si, active=True)
 
         Evaluate the diffuse reflectance
 
@@ -1338,17 +1438,17 @@
         evaluating the BSDF for a normal outgoing direction and returning this
         value multiplied by pi. This is the default behaviour of this method.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.eval_null_transmission(self, si, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_null_transmission(self, si, active=True)
 
         Evaluate un-scattered transmission component of the BSDF
 
@@ -1356,7 +1456,7 @@
         (BSDFFlags::Null) of the BSDF for light arriving from direction ``w``.
         The default implementation returns zero.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
@@ -1364,10 +1464,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.eval_pdf(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_pdf(self, ctx, si, wo, active=True)
 
         Jointly evaluate the BSDF f(wi, wo) and the probability per unit solid
         angle of sampling the given direction. The result from the evaluated
@@ -1389,25 +1489,25 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.eval_pdf_sample(self, ctx, si, wo, sample1, sample2, active=True)
+    .. py:method:: misuka.BSDFPtr.eval_pdf_sample(self, ctx, si, wo, sample1, sample2, active=True)
 
         Jointly evaluate the BSDF f(wi, wo) and the probability per unit solid
         angle of sampling the given direction. The result from the evaluated
@@ -1429,38 +1529,38 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``sample1`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float, :py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float, misuka.BSDFSample3f, misuka.Color3f]:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.flags()
+    .. py:method:: misuka.BSDFPtr.flags()
 
         Flags for all components combined.
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.has_attribute(self, name, active=True)
+    .. py:method:: misuka.BSDFPtr.has_attribute(self, name, active=True)
 
         Returns whether this BSDF contains the specified attribute.
 
@@ -1473,14 +1573,14 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.needs_differentials()
+    .. py:method:: misuka.BSDFPtr.needs_differentials()
 
         Does the implementation require access to texture-space differentials?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.pdf(self, ctx, si, wo, active=True)
+    .. py:method:: misuka.BSDFPtr.pdf(self, ctx, si, wo, active=True)
 
         Compute the probability per unit solid angle of sampling a given
         direction
@@ -1495,16 +1595,16 @@
         Note that the incident direction does not need to be explicitly
         specified. It is obtained from the field ``si.wi``.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to evaluate, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             The outgoing direction
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -1513,7 +1613,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BSDFPtr.sample(self, ctx, si, sample1, sample2, active=True)
+    .. py:method:: misuka.BSDFPtr.sample(self, ctx, si, sample1, sample2, active=True)
 
         Importance sample the BSDF model
 
@@ -1532,11 +1632,11 @@
         multiplies by the cosine foreshortening factor with respect to the
         sampled direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.BSDFContext`):
+        Parameter ``ctx`` (misuka.BSDFContext):
             A context data structure describing which lobes to sample, and
             whether radiance or importance are being transported.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             A surface interaction data structure describing the underlying
             surface position. The incident direction is obtained from the
             field ``si.wi``.
@@ -1545,14 +1645,14 @@
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the BSDF lobe in multi-lobe models.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.BSDFSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.BSDFSample3f, misuka.Color3f]:
             A pair (bs, value) consisting of
 
         bs: Sampling record, indicating the sampled direction, PDF values and
@@ -1562,7 +1662,7 @@
         cosine foreshortening factor when a non-delta component is sampled). A
         zero spectrum indicates that sampling failed.
 
-.. py:class:: mitsuba.BSDFSample3f
+.. py:class:: misuka.BSDFSample3f
 
     Data structure holding the result of BSDF sampling operations.
 
@@ -1573,7 +1673,7 @@
         1. ``__init__(self) -> None``
         
         
-        2. ``__init__(self, wo: :py:obj:`mitsuba.Vector3f`) -> None``
+        2. ``__init__(self, wo: misuka.Vector3f) -> None``
         
         Given a surface interaction and an incident/exitant direction pair
         (wi, wo), create a query record to evaluate the BSDF or its sampling
@@ -1587,42 +1687,42 @@
             normalized direction vector that points *away* from the scattering
             event.
         
-        3. ``__init__(self, bs: :py:obj:`mitsuba.BSDFSample3f`) -> None``
+        3. ``__init__(self, bs: misuka.BSDFSample3f) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.BSDFSample3f.assign(self, arg)
+    .. py:method:: misuka.BSDFSample3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.BSDFSample3f`, /):
+        Parameter ``arg`` (misuka.BSDFSample3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.BSDFSample3f.eta
+    .. py:property:: misuka.BSDFSample3f.eta
 
         Relative index of refraction in the sampled direction
 
-    .. py:property:: mitsuba.BSDFSample3f.pdf
+    .. py:property:: misuka.BSDFSample3f.pdf
 
         Probability density at the sample
 
-    .. py:property:: mitsuba.BSDFSample3f.sampled_component
+    .. py:property:: misuka.BSDFSample3f.sampled_component
 
         Stores the component index that was sampled by BSDF::sample()
 
-    .. py:property:: mitsuba.BSDFSample3f.sampled_type
+    .. py:property:: misuka.BSDFSample3f.sampled_type
 
         Stores the component type that was sampled by BSDF::sample()
 
-    .. py:property:: mitsuba.BSDFSample3f.wo
+    .. py:property:: misuka.BSDFSample3f.wo
 
         Normalized outgoing direction in local coordinates
 
-.. py:class:: mitsuba.Bitmap
+.. py:class:: misuka.Bitmap
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     General-purpose bitmap class with read and write support for several
     common file formats.
@@ -1638,21 +1738,21 @@
 
         Overloaded function.
         
-        1. ``__init__(self, pixel_format: :py:obj:`mitsuba.Bitmap.PixelFormat`, component_format: :py:obj:`mitsuba._struct_jit.Type`, size: :py:obj:`mitsuba.ScalarVector2u`, channel_count: int = 0, channel_names: collections.abc.Sequence[str] = []) -> None``
+        1. ``__init__(self, pixel_format: misuka.Bitmap.PixelFormat, component_format: misuka._struct_jit.Type, size: misuka.ScalarVector2u, channel_count: int = 0, channel_names: collections.abc.Sequence[str] = []) -> None``
         
         Create a bitmap of the specified type and allocate the necessary
         amount of memory
         
-        Parameter ``pixel_format`` (:py:obj:`mitsuba.Bitmap.PixelFormat`):
+        Parameter ``pixel_format`` (misuka.Bitmap.PixelFormat):
             Specifies the pixel format (e.g. RGBA or Luminance-only)
         
-        Parameter ``component_format`` (:py:obj:`mitsuba._struct_jit.Type`):
+        Parameter ``component_format`` (misuka._struct_jit.Type):
             Specifies how the per-pixel components are encoded (e.g. unsigned
             8 bit integers or 32-bit floating point values). The component
             format struct_type_v<Float> will be translated to the
             corresponding compile-time precision type (Float32 or Float64).
         
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
+        Parameter ``size`` (misuka.ScalarVector2u):
             Specifies the horizontal and vertical bitmap size in pixels
         
         Parameter ``channel_count`` (int):
@@ -1667,13 +1767,13 @@
             External pointer to the image data. If set to ``nullptr``, the
             implementation will allocate memory itself.
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Bitmap`) -> None``
+        2. ``__init__(self, arg: misuka.Bitmap) -> None``
         
         
-        3. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto) -> None``
+        3. ``__init__(self, path: misuka.filesystem.path, format: misuka.Bitmap.FileFormat = FileFormat.Auto) -> None``
         
         
-        4. ``__init__(self, stream: :py:obj:`mitsuba.Stream`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto) -> None``
+        4. ``__init__(self, stream: misuka.Stream, format: misuka.Bitmap.FileFormat = FileFormat.Auto) -> None``
         
         
         5. ``__init__(self, array: ndarray[order='C', device='cpu'], pixel_format: object | None = None, channel_names: collections.abc.Sequence[str] = []) -> None``
@@ -1685,7 +1785,7 @@
         Initialize a Bitmap from any array that implements the buffer or DLPack protocol.
 
         
-    .. py:class:: mitsuba.Bitmap.AlphaTransform
+    .. py:class:: misuka.Bitmap.AlphaTransform
 
         Type of alpha transformation
 
@@ -1703,7 +1803,7 @@
 
             Unpremultiply alpha channel
 
-    .. py:class:: mitsuba.Bitmap.FileFormat
+    .. py:class:: misuka.Bitmap.FileFormat
 
         Supported image file formats
 
@@ -1749,7 +1849,7 @@
 
             Automatically detect the file format  Note: this flag only applies when loading a file. In this case, the source stream must support the ``seek()`` operation.
 
-    .. py:class:: mitsuba.Bitmap.PixelFormat
+    .. py:class:: misuka.Bitmap.PixelFormat
 
         This enumeration lists all pixel format types supported by the Bitmap
         class. This both determines the number of channels, and how they
@@ -1789,11 +1889,11 @@
 
             Arbitrary multi-channel bitmap without a fixed interpretation
 
-    .. py:method:: mitsuba.Bitmap.accumulate(self, bitmap, source_offset, target_offset, size)
+    .. py:method:: misuka.Bitmap.accumulate(self, bitmap, source_offset, target_offset, size)
 
         Overloaded function.
 
-        1. ``accumulate(self, bitmap: :py:obj:`mitsuba.Bitmap`, source_offset: :py:obj:`mitsuba.ScalarPoint2i`, target_offset: :py:obj:`mitsuba.ScalarPoint2i`, size: :py:obj:`mitsuba.ScalarVector2i`) -> None``
+        1. ``accumulate(self, bitmap: misuka.Bitmap, source_offset: misuka.ScalarPoint2i, target_offset: misuka.ScalarPoint2i, size: misuka.ScalarVector2i) -> None``
 
         Accumulate the contents of another bitmap into the region with the
         specified offset
@@ -1805,7 +1905,7 @@
             This function throws an exception when the bitmaps use different
             component formats or channels.
 
-        2. ``accumulate(self, bitmap: :py:obj:`mitsuba.Bitmap`, target_offset: :py:obj:`mitsuba.ScalarPoint2i`) -> None``
+        2. ``accumulate(self, bitmap: misuka.Bitmap, target_offset: misuka.ScalarPoint2i) -> None``
 
         Accumulate the contents of another bitmap into the region with the
         specified offset
@@ -1819,7 +1919,7 @@
             This function throws an exception when the bitmaps use different
             component formats or channels.
 
-        3. ``accumulate(self, bitmap: :py:obj:`mitsuba.Bitmap`) -> None``
+        3. ``accumulate(self, bitmap: misuka.Bitmap) -> None``
 
         Accumulate the contents of another bitmap into the region with the
         specified offset
@@ -1833,61 +1933,61 @@
             This function throws an exception when the bitmaps use different
             component formats or channels.
 
-        Parameter ``bitmap`` (:py:obj:`mitsuba.Bitmap`):
+        Parameter ``bitmap`` (misuka.Bitmap):
             *no description available*
 
-        Parameter ``source_offset`` (:py:obj:`mitsuba.ScalarPoint2i`):
+        Parameter ``source_offset`` (misuka.ScalarPoint2i):
             *no description available*
 
-        Parameter ``target_offset`` (:py:obj:`mitsuba.ScalarPoint2i`):
+        Parameter ``target_offset`` (misuka.ScalarPoint2i):
             *no description available*
 
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2i`):
+        Parameter ``size`` (misuka.ScalarVector2i):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.buffer_size()
+    .. py:method:: misuka.Bitmap.buffer_size()
 
         Return the bitmap size in bytes (excluding metadata)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.bytes_per_pixel()
+    .. py:method:: misuka.Bitmap.bytes_per_pixel()
 
         Return the number bytes of storage used per pixel
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.channel_count()
+    .. py:method:: misuka.Bitmap.channel_count()
 
         Return the number of channels used by this bitmap
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.clear()
+    .. py:method:: misuka.Bitmap.clear()
 
         Clear the bitmap to zero
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.component_format()
+    .. py:method:: misuka.Bitmap.component_format()
 
         Return the component format of this bitmap
 
-        Returns → :py:obj:`mitsuba._struct_jit.Type`:
+        Returns → misuka._struct_jit.Type:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.convert(self, pixel_format=None, component_format=None, srgb_gamma=None, alpha_transform=AlphaTransform.Empty)
+    .. py:method:: misuka.Bitmap.convert(self, pixel_format=None, component_format=None, srgb_gamma=None, alpha_transform=AlphaTransform.Empty)
 
         Overloaded function.
 
-        1. ``convert(self, pixel_format: object | None = None, component_format: object | None = None, srgb_gamma: object | None = None, alpha_transform: :py:obj:`mitsuba.Bitmap.AlphaTransform` = AlphaTransform.Empty) -> :py:obj:`mitsuba.Bitmap```
+        1. ``convert(self, pixel_format: object | None = None, component_format: object | None = None, srgb_gamma: object | None = None, alpha_transform: misuka.Bitmap.AlphaTransform = AlphaTransform.Empty) -> misuka.Bitmap``
 
         Convert the bitmap into another pixel and/or component format
 
@@ -1931,7 +2031,7 @@
         srgb_gamma Specifies whether a sRGB gamma ramp should be applied to
         the output values.
 
-        2. ``convert(self, target: :py:obj:`mitsuba.Bitmap`) -> None``
+        2. ``convert(self, target: misuka.Bitmap) -> None``
 
         Parameter ``pixel_format`` (object | None):
             *no description available*
@@ -1942,59 +2042,59 @@
         Parameter ``srgb_gamma`` (object | None):
             *no description available*
 
-        Parameter ``alpha_transform`` (:py:obj:`mitsuba.Bitmap.AlphaTransform`):
+        Parameter ``alpha_transform`` (misuka.Bitmap.AlphaTransform):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Bitmap`:
+        Returns → misuka.Bitmap:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.has_alpha()
+    .. py:method:: misuka.Bitmap.has_alpha()
 
         Return whether this image has an alpha channel
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.height()
+    .. py:method:: misuka.Bitmap.height()
 
         Return the bitmap's height in pixels
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.metadata()
+    .. py:method:: misuka.Bitmap.metadata()
 
         Return a Properties object containing the image metadata
 
-        Returns → :py:obj:`mitsuba.scalar_rgb.Properties`:
+        Returns → misuka.scalar_rgb.Properties:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.pixel_count()
+    .. py:method:: misuka.Bitmap.pixel_count()
 
         Return the total number of pixels
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.pixel_format()
+    .. py:method:: misuka.Bitmap.pixel_format()
 
         Return the pixel format of this bitmap
 
-        Returns → :py:obj:`mitsuba.Bitmap.PixelFormat`:
+        Returns → misuka.Bitmap.PixelFormat:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.premultiplied_alpha()
+    .. py:method:: misuka.Bitmap.premultiplied_alpha()
 
         Return whether the bitmap uses premultiplied alpha
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.resample(self, target, rfilter=None, bc=(FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp=(-inf, inf), temp=None)
+    .. py:method:: misuka.Bitmap.resample(self, target, rfilter=None, bc=(FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp=(-inf, inf), temp=None)
 
         Overloaded function.
 
-        1. ``resample(self, target: :py:obj:`mitsuba.Bitmap`, rfilter: :py:obj:`mitsuba.BitmapReconstructionFilter` | None = None, bc: tuple[:py:obj:`mitsuba.FilterBoundaryCondition`, :py:obj:`mitsuba.FilterBoundaryCondition`] = (FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp: tuple[float, float] = (-inf, inf), temp: :py:obj:`mitsuba.Bitmap` | None = None) -> None``
+        1. ``resample(self, target: misuka.Bitmap, rfilter: misuka.BitmapReconstructionFilter | None = None, bc: tuple[misuka.FilterBoundaryCondition, misuka.FilterBoundaryCondition] = (FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp: tuple[float, float] = (-inf, inf), temp: misuka.Bitmap | None = None) -> None``
 
         Up- or down-sample this image to a different resolution
 
@@ -2010,10 +2110,10 @@
         resolution ``Vector2u(target->width(), this->height())`` to avoid
         intermediate memory allocations.
 
-        Parameter ``target`` (:py:obj:`mitsuba.Bitmap`):
+        Parameter ``target`` (misuka.Bitmap):
             Pre-allocated bitmap of the desired target resolution
 
-        Parameter ``rfilter`` (:py:obj:`mitsuba.BitmapReconstructionFilter` | None):
+        Parameter ``rfilter`` (misuka.BitmapReconstructionFilter | None):
             A separable image reconstruction filter (default: 2-lobe Lanczos
             filter)
 
@@ -2024,10 +2124,10 @@
             Filtered image pixels will be clamped to the following range.
             Default: -infinity..infinity (i.e. no clamping is used)
 
-        Parameter ``temp`` (:py:obj:`mitsuba.Bitmap` | None):
+        Parameter ``temp`` (misuka.Bitmap | None):
             Optional: image for intermediate computations
 
-        2. ``resample(self, res: :py:obj:`mitsuba.ScalarVector2u`, rfilter: :py:obj:`mitsuba.BitmapReconstructionFilter` | None = None, bc: tuple[:py:obj:`mitsuba.FilterBoundaryCondition`, :py:obj:`mitsuba.FilterBoundaryCondition`] = (FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp: tuple[float, float] = (-inf, inf)) -> :py:obj:`mitsuba.Bitmap```
+        2. ``resample(self, res: misuka.ScalarVector2u, rfilter: misuka.BitmapReconstructionFilter | None = None, bc: tuple[misuka.FilterBoundaryCondition, misuka.FilterBoundaryCondition] = (FilterBoundaryCondition.Clamp, FilterBoundaryCondition.Clamp), clamp: tuple[float, float] = (-inf, inf)) -> misuka.Bitmap``
 
         Up- or down-sample this image to a different resolution
 
@@ -2046,7 +2146,7 @@
         Parameter ``res``:
             Desired output resolution
 
-        Parameter ``rfilter`` (:py:obj:`mitsuba.BitmapReconstructionFilter` | None):
+        Parameter ``rfilter`` (misuka.BitmapReconstructionFilter | None):
             A separable image reconstruction filter (default: 2-lobe Lanczos
             filter)
 
@@ -2057,13 +2157,13 @@
             Filtered image pixels will be clamped to the following range.
             Default: -infinity..infinity (i.e. no clamping is used)
 
-        Parameter ``bc`` (tuple[:py:obj:`mitsuba.FilterBoundaryCondition`, :py:obj:`mitsuba.FilterBoundaryCondition`]):
+        Parameter ``bc`` (tuple[misuka.FilterBoundaryCondition, misuka.FilterBoundaryCondition]):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.set_premultiplied_alpha(self, arg)
+    .. py:method:: misuka.Bitmap.set_premultiplied_alpha(self, arg)
 
         Specify whether the bitmap uses premultiplied alpha
 
@@ -2073,7 +2173,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.set_srgb_gamma(self, arg)
+    .. py:method:: misuka.Bitmap.set_srgb_gamma(self, arg)
 
         Specify whether the bitmap uses an sRGB gamma encoding
 
@@ -2083,63 +2183,63 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.size()
+    .. py:method:: misuka.Bitmap.size()
 
         Return the bitmap dimensions in pixels
 
-        Returns → :py:obj:`mitsuba.ScalarVector2u`:
+        Returns → misuka.ScalarVector2u:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.split()
+    .. py:method:: misuka.Bitmap.split()
 
         Split an multi-channel image buffer (e.g. from an OpenEXR image with
         lots of AOVs) into its constituent layers
 
-        Returns → list[tuple[str, :py:obj:`mitsuba.Bitmap`]]:
+        Returns → list[tuple[str, misuka.Bitmap]]:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.srgb_gamma()
+    .. py:method:: misuka.Bitmap.srgb_gamma()
 
         Return whether the bitmap uses an sRGB gamma encoding
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.struct_()
+    .. py:method:: misuka.Bitmap.struct_()
 
         Return a ``Struct`` instance describing the contents of the bitmap
         (const version)
 
-        Returns → :py:obj:`mitsuba._struct_jit.Struct`:
+        Returns → misuka._struct_jit.Struct:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.vflip()
+    .. py:method:: misuka.Bitmap.vflip()
 
         Vertically flip the bitmap
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.width()
+    .. py:method:: misuka.Bitmap.width()
 
         Return the bitmap's width in pixels
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.write(self, stream, format=FileFormat.Auto, quality=-1)
+    .. py:method:: misuka.Bitmap.write(self, stream, format=FileFormat.Auto, quality=-1)
 
         Overloaded function.
 
-        1. ``write(self, stream: :py:obj:`mitsuba.Stream`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto, quality: int = -1) -> None``
+        1. ``write(self, stream: misuka.Stream, format: misuka.Bitmap.FileFormat = FileFormat.Auto, quality: int = -1) -> None``
 
         Write an encoded form of the bitmap to a stream using the specified
         file format
 
-        Parameter ``stream`` (:py:obj:`mitsuba.Stream`):
+        Parameter ``stream`` (misuka.Stream):
             Target stream that will receive the encoded output
 
-        Parameter ``format`` (:py:obj:`mitsuba.Bitmap.FileFormat`):
+        Parameter ``format`` (misuka.Bitmap.FileFormat):
             Target file format (OpenEXR, PNG, etc.) Detected from the filename
             by default.
 
@@ -2160,7 +2260,7 @@
         (-1) causes the implementation to switch to the lossless PIZ
         compressor.
 
-        2. ``write(self, path: :py:obj:`mitsuba.filesystem.path`, format: :py:obj:`mitsuba.Bitmap.FileFormat` = FileFormat.Auto, quality: int = -1) -> None``
+        2. ``write(self, path: misuka.filesystem.path, format: misuka.Bitmap.FileFormat = FileFormat.Auto, quality: int = -1) -> None``
 
         Write an encoded form of the bitmap to a file using the specified file
         format
@@ -2168,7 +2268,7 @@
         Parameter ``path``:
             Target file path on disk
 
-        Parameter ``format`` (:py:obj:`mitsuba.Bitmap.FileFormat`):
+        Parameter ``format`` (misuka.Bitmap.FileFormat):
             Target file format (FileFormat::OpenEXR, FileFormat::PNG, etc.)
             Detected from the filename by default.
 
@@ -2192,15 +2292,15 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Bitmap.write_async(self, path, format=FileFormat.Auto, quality=-1)
+    .. py:method:: misuka.Bitmap.write_async(self, path, format=FileFormat.Auto, quality=-1)
 
         Equivalent to write(), but executes asynchronously on a different
         thread
 
-        Parameter ``path`` (:py:obj:`mitsuba.filesystem.path`):
+        Parameter ``path`` (misuka.filesystem.path):
             *no description available*
 
-        Parameter ``format`` (:py:obj:`mitsuba.Bitmap.FileFormat`):
+        Parameter ``format`` (misuka.Bitmap.FileFormat):
             *no description available*
 
         Parameter ``quality`` (int):
@@ -2209,9 +2309,9 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.BitmapReconstructionFilter
+.. py:class:: misuka.BitmapReconstructionFilter
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Generic interface to separable image reconstruction filters
 
@@ -2224,14 +2324,14 @@
     discrete representation, whose resolution given by
     MI_FILTER_RESOLUTION.
 
-    .. py:method:: mitsuba.BitmapReconstructionFilter.border_size()
+    .. py:method:: misuka.BitmapReconstructionFilter.border_size()
 
         Return the block border size required when rendering with this filter
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.BitmapReconstructionFilter.eval(self, x, active=True)
+    .. py:method:: misuka.BitmapReconstructionFilter.eval(self, x, active=True)
 
         Evaluate the filter function
 
@@ -2244,7 +2344,7 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.BitmapReconstructionFilter.eval_discretized(self, x, active=True)
+    .. py:method:: misuka.BitmapReconstructionFilter.eval_discretized(self, x, active=True)
 
         Evaluate a discretized version of the filter (generally faster than
         'eval')
@@ -2258,23 +2358,23 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.BitmapReconstructionFilter.is_box_filter()
+    .. py:method:: misuka.BitmapReconstructionFilter.is_box_filter()
 
         Check whether this is a box filter?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.BitmapReconstructionFilter.radius()
+    .. py:method:: misuka.BitmapReconstructionFilter.radius()
 
         Return the filter's width
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.Bool
+.. py:class:: misuka.Bool
 
-.. py:class:: mitsuba.BoundingBox2f
+.. py:class:: misuka.BoundingBox2f
 
     Generic n-dimensional bounding box data structure
 
@@ -2306,37 +2406,37 @@
         Initializes the components of the minimum and maximum position to
         :math:`\infty` and :math:`-\infty`, respectively.
         
-        2. ``__init__(self, p: :py:obj:`mitsuba.Point2f`) -> None``
+        2. ``__init__(self, p: misuka.Point2f) -> None``
         
         Create a collapsed bounding box from a single point
         
-        3. ``__init__(self, min: :py:obj:`mitsuba.Point2f`, max: :py:obj:`mitsuba.Point2f`) -> None``
+        3. ``__init__(self, min: misuka.Point2f, max: misuka.Point2f) -> None``
         
         Create a bounding box from two positions
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.BoundingBox2f`) -> None``
+        4. ``__init__(self, arg: misuka.BoundingBox2f) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.BoundingBox2f.center()
+    .. py:method:: misuka.BoundingBox2f.center()
 
         Return the center point
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.clip(self, arg)
+    .. py:method:: misuka.BoundingBox2f.clip(self, arg)
 
         Clip this bounding box to another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.BoundingBox2f`, /):
+        Parameter ``arg`` (misuka.BoundingBox2f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.collapsed()
+    .. py:method:: misuka.BoundingBox2f.collapsed()
 
         Check whether this bounding box has collapsed to a point, line, or
         plane
@@ -2344,15 +2444,15 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.contains(self, p, strict=False)
+    .. py:method:: misuka.BoundingBox2f.contains(self, p, strict=False)
 
         Overloaded function.
 
-        1. ``contains(self, p: :py:obj:`mitsuba.Point2f`, strict: bool = False) -> drjit.llvm.ad.Bool``
+        1. ``contains(self, p: misuka.Point2f, strict: bool = False) -> drjit.llvm.ad.Bool``
 
         Check whether a point lies *on* or *inside* the bounding box
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``p`` (misuka.Point2f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -2363,7 +2463,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        2. ``contains(self, bbox: :py:obj:`mitsuba.BoundingBox2f`, strict: bool = False) -> drjit.llvm.ad.Bool``
+        2. ``contains(self, bbox: misuka.BoundingBox2f, strict: bool = False) -> drjit.llvm.ad.Bool``
 
         Check whether a specified bounding box lies *on* or *within* the
         current bounding box
@@ -2387,84 +2487,84 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.corner(self, arg)
+    .. py:method:: misuka.BoundingBox2f.corner(self, arg)
 
         Return the position of a bounding box corner
 
         Parameter ``arg`` (int, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.distance(self, arg)
+    .. py:method:: misuka.BoundingBox2f.distance(self, arg)
 
         Overloaded function.
 
-        1. ``distance(self, arg: :py:obj:`mitsuba.Point2f`, /) -> drjit.llvm.ad.Float``
+        1. ``distance(self, arg: misuka.Point2f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and the point ``p``.
 
-        2. ``distance(self, arg: :py:obj:`mitsuba.BoundingBox2f`, /) -> drjit.llvm.ad.Float``
+        2. ``distance(self, arg: misuka.BoundingBox2f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point2f`, /):
+        Parameter ``arg`` (misuka.Point2f, /):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.expand(self, arg)
+    .. py:method:: misuka.BoundingBox2f.expand(self, arg)
 
         Overloaded function.
 
-        1. ``expand(self, arg: :py:obj:`mitsuba.Point2f`, /) -> None``
+        1. ``expand(self, arg: misuka.Point2f, /) -> None``
 
         Expand the bounding box to contain another point
 
-        2. ``expand(self, arg: :py:obj:`mitsuba.BoundingBox2f`, /) -> None``
+        2. ``expand(self, arg: misuka.BoundingBox2f, /) -> None``
 
         Expand the bounding box to contain another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point2f`, /):
+        Parameter ``arg`` (misuka.Point2f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.extents()
+    .. py:method:: misuka.BoundingBox2f.extents()
 
         Calculate the bounding box extents
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             ``max - min``
 
-    .. py:method:: mitsuba.BoundingBox2f.major_axis()
+    .. py:method:: misuka.BoundingBox2f.major_axis()
 
         Return the dimension index with the index associated side length
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:property:: mitsuba.BoundingBox2f.max
+    .. py:property:: misuka.BoundingBox2f.max
 
-        (self) -> :py:obj:`mitsuba.Point2f`
+        (self) -> misuka.Point2f
 
-    .. py:property:: mitsuba.BoundingBox2f.min
+    .. py:property:: misuka.BoundingBox2f.min
 
-        (self) -> :py:obj:`mitsuba.Point2f`
+        (self) -> misuka.Point2f
 
-    .. py:method:: mitsuba.BoundingBox2f.minor_axis()
+    .. py:method:: misuka.BoundingBox2f.minor_axis()
 
         Return the dimension index with the shortest associated side length
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.overlaps(self, bbox, strict=False)
+    .. py:method:: misuka.BoundingBox2f.overlaps(self, bbox, strict=False)
 
         Check two axis-aligned bounding boxes for possible overlap.
 
@@ -2476,7 +2576,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        Parameter ``bbox`` (:py:obj:`mitsuba.BoundingBox2f`):
+        Parameter ``bbox`` (misuka.BoundingBox2f):
             *no description available*
 
         Parameter ``strict`` (bool):
@@ -2485,7 +2585,7 @@
         Returns → drjit.llvm.ad.Bool:
             ``True`` If overlap was detected.
 
-    .. py:method:: mitsuba.BoundingBox2f.reset()
+    .. py:method:: misuka.BoundingBox2f.reset()
 
         Mark the bounding box as invalid.
 
@@ -2495,34 +2595,34 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.squared_distance(self, arg)
+    .. py:method:: misuka.BoundingBox2f.squared_distance(self, arg)
 
         Overloaded function.
 
-        1. ``squared_distance(self, arg: :py:obj:`mitsuba.Point2f`, /) -> drjit.llvm.ad.Float``
+        1. ``squared_distance(self, arg: misuka.Point2f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and the point ``p``.
 
-        2. ``squared_distance(self, arg: :py:obj:`mitsuba.BoundingBox2f`, /) -> drjit.llvm.ad.Float``
+        2. ``squared_distance(self, arg: misuka.BoundingBox2f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point2f`, /):
+        Parameter ``arg`` (misuka.Point2f, /):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.surface_area()
+    .. py:method:: misuka.BoundingBox2f.surface_area()
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.valid()
+    .. py:method:: misuka.BoundingBox2f.valid()
 
         Check whether this is a valid bounding box
 
@@ -2538,14 +2638,14 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox2f.volume()
+    .. py:method:: misuka.BoundingBox2f.volume()
 
         Calculate the n-dimensional volume of the bounding box
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-.. py:class:: mitsuba.BoundingBox3f
+.. py:class:: misuka.BoundingBox3f
 
     Generic n-dimensional bounding box data structure
 
@@ -2577,44 +2677,44 @@
         Initializes the components of the minimum and maximum position to
         :math:`\infty` and :math:`-\infty`, respectively.
         
-        2. ``__init__(self, p: :py:obj:`mitsuba.Point3f`) -> None``
+        2. ``__init__(self, p: misuka.Point3f) -> None``
         
         Create a collapsed bounding box from a single point
         
-        3. ``__init__(self, min: :py:obj:`mitsuba.Point3f`, max: :py:obj:`mitsuba.Point3f`) -> None``
+        3. ``__init__(self, min: misuka.Point3f, max: misuka.Point3f) -> None``
         
         Create a bounding box from two positions
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.BoundingBox3f`) -> None``
+        4. ``__init__(self, arg: misuka.BoundingBox3f) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.BoundingBox3f.bounding_sphere()
+    .. py:method:: misuka.BoundingBox3f.bounding_sphere()
 
         Create a bounding sphere, which contains the axis-aligned box
 
-        Returns → :py:obj:`mitsuba.BoundingSphere3f`:
+        Returns → misuka.BoundingSphere3f:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.center()
+    .. py:method:: misuka.BoundingBox3f.center()
 
         Return the center point
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.clip(self, arg)
+    .. py:method:: misuka.BoundingBox3f.clip(self, arg)
 
         Clip this bounding box to another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.BoundingBox3f`, /):
+        Parameter ``arg`` (misuka.BoundingBox3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.collapsed()
+    .. py:method:: misuka.BoundingBox3f.collapsed()
 
         Check whether this bounding box has collapsed to a point, line, or
         plane
@@ -2622,15 +2722,15 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.contains(self, p, strict=False)
+    .. py:method:: misuka.BoundingBox3f.contains(self, p, strict=False)
 
         Overloaded function.
 
-        1. ``contains(self, p: :py:obj:`mitsuba.Point3f`, strict: bool = False) -> drjit.llvm.ad.Bool``
+        1. ``contains(self, p: misuka.Point3f, strict: bool = False) -> drjit.llvm.ad.Bool``
 
         Check whether a point lies *on* or *inside* the bounding box
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``p`` (misuka.Point3f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -2641,7 +2741,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        2. ``contains(self, bbox: :py:obj:`mitsuba.BoundingBox3f`, strict: bool = False) -> drjit.llvm.ad.Bool``
+        2. ``contains(self, bbox: misuka.BoundingBox3f, strict: bool = False) -> drjit.llvm.ad.Bool``
 
         Check whether a specified bounding box lies *on* or *within* the
         current bounding box
@@ -2665,84 +2765,84 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.corner(self, arg)
+    .. py:method:: misuka.BoundingBox3f.corner(self, arg)
 
         Return the position of a bounding box corner
 
         Parameter ``arg`` (int, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.distance(self, arg)
+    .. py:method:: misuka.BoundingBox3f.distance(self, arg)
 
         Overloaded function.
 
-        1. ``distance(self, arg: :py:obj:`mitsuba.Point3f`, /) -> drjit.llvm.ad.Float``
+        1. ``distance(self, arg: misuka.Point3f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and the point ``p``.
 
-        2. ``distance(self, arg: :py:obj:`mitsuba.BoundingBox3f`, /) -> drjit.llvm.ad.Float``
+        2. ``distance(self, arg: misuka.BoundingBox3f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point3f`, /):
+        Parameter ``arg`` (misuka.Point3f, /):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.expand(self, arg)
+    .. py:method:: misuka.BoundingBox3f.expand(self, arg)
 
         Overloaded function.
 
-        1. ``expand(self, arg: :py:obj:`mitsuba.Point3f`, /) -> None``
+        1. ``expand(self, arg: misuka.Point3f, /) -> None``
 
         Expand the bounding box to contain another point
 
-        2. ``expand(self, arg: :py:obj:`mitsuba.BoundingBox3f`, /) -> None``
+        2. ``expand(self, arg: misuka.BoundingBox3f, /) -> None``
 
         Expand the bounding box to contain another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point3f`, /):
+        Parameter ``arg`` (misuka.Point3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.extents()
+    .. py:method:: misuka.BoundingBox3f.extents()
 
         Calculate the bounding box extents
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             ``max - min``
 
-    .. py:method:: mitsuba.BoundingBox3f.major_axis()
+    .. py:method:: misuka.BoundingBox3f.major_axis()
 
         Return the dimension index with the index associated side length
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:property:: mitsuba.BoundingBox3f.max
+    .. py:property:: misuka.BoundingBox3f.max
 
-        (self) -> :py:obj:`mitsuba.Point3f`
+        (self) -> misuka.Point3f
 
-    .. py:property:: mitsuba.BoundingBox3f.min
+    .. py:property:: misuka.BoundingBox3f.min
 
-        (self) -> :py:obj:`mitsuba.Point3f`
+        (self) -> misuka.Point3f
 
-    .. py:method:: mitsuba.BoundingBox3f.minor_axis()
+    .. py:method:: misuka.BoundingBox3f.minor_axis()
 
         Return the dimension index with the shortest associated side length
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.overlaps(self, bbox, strict=False)
+    .. py:method:: misuka.BoundingBox3f.overlaps(self, bbox, strict=False)
 
         Check two axis-aligned bounding boxes for possible overlap.
 
@@ -2754,7 +2854,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        Parameter ``bbox`` (:py:obj:`mitsuba.BoundingBox3f`):
+        Parameter ``bbox`` (misuka.BoundingBox3f):
             *no description available*
 
         Parameter ``strict`` (bool):
@@ -2763,20 +2863,20 @@
         Returns → drjit.llvm.ad.Bool:
             ``True`` If overlap was detected.
 
-    .. py:method:: mitsuba.BoundingBox3f.ray_intersect(self, ray)
+    .. py:method:: misuka.BoundingBox3f.ray_intersect(self, ray)
 
         Check if a ray intersects a bounding box
 
         Note that this function ignores the ``maxt`` value associated with the
         ray.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.reset()
+    .. py:method:: misuka.BoundingBox3f.reset()
 
         Mark the bounding box as invalid.
 
@@ -2786,34 +2886,34 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.squared_distance(self, arg)
+    .. py:method:: misuka.BoundingBox3f.squared_distance(self, arg)
 
         Overloaded function.
 
-        1. ``squared_distance(self, arg: :py:obj:`mitsuba.Point3f`, /) -> drjit.llvm.ad.Float``
+        1. ``squared_distance(self, arg: misuka.Point3f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and the point ``p``.
 
-        2. ``squared_distance(self, arg: :py:obj:`mitsuba.BoundingBox3f`, /) -> drjit.llvm.ad.Float``
+        2. ``squared_distance(self, arg: misuka.BoundingBox3f, /) -> drjit.llvm.ad.Float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point3f`, /):
+        Parameter ``arg`` (misuka.Point3f, /):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.surface_area()
+    .. py:method:: misuka.BoundingBox3f.surface_area()
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.valid()
+    .. py:method:: misuka.BoundingBox3f.valid()
 
         Check whether this is a valid bounding box
 
@@ -2829,14 +2929,14 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingBox3f.volume()
+    .. py:method:: misuka.BoundingBox3f.volume()
 
         Calculate the n-dimensional volume of the bounding box
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-.. py:class:: mitsuba.BoundingSphere3f
+.. py:class:: misuka.BoundingSphere3f
 
     Generic n-dimensional bounding sphere data structure
 
@@ -2848,23 +2948,23 @@
         
         Construct bounding sphere(s) at the origin having radius zero
         
-        2. ``__init__(self, arg0: :py:obj:`mitsuba.Point3f`, arg1: drjit.llvm.ad.Float, /) -> None``
+        2. ``__init__(self, arg0: misuka.Point3f, arg1: drjit.llvm.ad.Float, /) -> None``
         
         Create bounding sphere(s) from given center point(s) with given
         size(s)
         
-        3. ``__init__(self, arg: :py:obj:`mitsuba.BoundingSphere3f`) -> None``
+        3. ``__init__(self, arg: misuka.BoundingSphere3f) -> None``
 
         
-    .. py:property:: mitsuba.BoundingSphere3f.center
+    .. py:property:: misuka.BoundingSphere3f.center
 
-        (self) -> :py:obj:`mitsuba.Point3f`
+        (self) -> misuka.Point3f
 
-    .. py:method:: mitsuba.BoundingSphere3f.contains(self, p, strict=False)
+    .. py:method:: misuka.BoundingSphere3f.contains(self, p, strict=False)
 
         Check whether a point lies *on* or *inside* the bounding sphere
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``p`` (misuka.Point3f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -2881,54 +2981,54 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingSphere3f.empty()
+    .. py:method:: misuka.BoundingSphere3f.empty()
 
         Return whether this bounding sphere has a radius of zero or less.
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.BoundingSphere3f.expand(self, arg)
+    .. py:method:: misuka.BoundingSphere3f.expand(self, arg)
 
         Expand the bounding sphere radius to contain another point
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Point3f`, /):
+        Parameter ``arg`` (misuka.Point3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.BoundingSphere3f.radius
+    .. py:property:: misuka.BoundingSphere3f.radius
 
         (self) -> drjit.llvm.ad.Float
 
-    .. py:method:: mitsuba.BoundingSphere3f.ray_intersect(self, ray)
+    .. py:method:: misuka.BoundingSphere3f.ray_intersect(self, ray)
 
         Check if a ray intersects a bounding box
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Color0d
+.. py:class:: misuka.Color0d
 
-.. py:class:: mitsuba.Color0f
+.. py:class:: misuka.Color0f
 
-.. py:class:: mitsuba.Color1d
+.. py:class:: misuka.Color1d
 
-.. py:class:: mitsuba.Color1f
+.. py:class:: misuka.Color1f
 
-.. py:class:: mitsuba.Color3d
+.. py:class:: misuka.Color3d
 
-.. py:class:: mitsuba.Color3f
+.. py:class:: misuka.Color3f
 
-.. py:class:: mitsuba.Complex2f
+.. py:class:: misuka.Complex2f
 
-.. py:class:: mitsuba.Complex2f64
+.. py:class:: misuka.Complex2f64
 
-.. py:class:: mitsuba.ConditionalIrregular1D
+.. py:class:: misuka.ConditionalIrregular1D
 
 
     .. py:method:: ``__init__()
@@ -2992,18 +3092,18 @@
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalIrregular1D.cdf_array
+    .. py:property:: misuka.ConditionalIrregular1D.cdf_array
 
         Return the CDF.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.empty()
+    .. py:method:: misuka.ConditionalIrregular1D.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1D.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
         position ``pos``, conditioned on ``cond``.
@@ -3023,7 +3123,7 @@
         Returns → drjit.llvm.ad.Float:
             The value of the PDF at position ``pos``, conditioned on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1D.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
         ``pos``, conditioned on ``cond``.
@@ -3044,7 +3144,7 @@
             The value of the normalized PDF at position ``pos``, conditioned
             on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.integral(self, cond)
+    .. py:method:: misuka.ConditionalIrregular1D.integral(self, cond)
 
         Return the integral of the distribution conditioned on ``cond``.
 
@@ -3054,30 +3154,30 @@
         Returns → drjit.llvm.ad.Float:
             The integral of the distribution.
 
-    .. py:property:: mitsuba.ConditionalIrregular1D.integral_array
+    .. py:property:: misuka.ConditionalIrregular1D.integral_array
 
         Return the integral array.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.max()
+    .. py:method:: misuka.ConditionalIrregular1D.max()
 
         Return the maximum value of the distribution
 
         Returns → float:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalIrregular1D.nodes
+    .. py:property:: misuka.ConditionalIrregular1D.nodes
 
         Return the nodes of the underlying discretization.
 
-    .. py:property:: mitsuba.ConditionalIrregular1D.nodes_cond
+    .. py:property:: misuka.ConditionalIrregular1D.nodes_cond
 
         Return the conditional nodes of the underlying discretization.
 
-    .. py:property:: mitsuba.ConditionalIrregular1D.pdf
+    .. py:property:: misuka.ConditionalIrregular1D.pdf
 
         Return the underlying tensor storing the distribution values.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1D.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
         ``cond``.
@@ -3096,7 +3196,7 @@
             second element the value of the normalized PDF at that position
             conditioned on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1D.update()
+    .. py:method:: misuka.ConditionalIrregular1D.update()
 
         Update the internal state.
 
@@ -3105,7 +3205,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ConditionalIrregular1DSpectrum
+.. py:class:: misuka.ConditionalIrregular1DSpectrum
 
 
     .. py:method:: ``__init__()
@@ -3169,18 +3269,18 @@
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.cdf_array
+    .. py:property:: misuka.ConditionalIrregular1DSpectrum.cdf_array
 
         Return the CDF.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.empty()
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
         position ``pos``, conditioned on ``cond``.
@@ -3188,19 +3288,19 @@
         Parameter ``pos``:
             Position where the PDF is evaluated.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Array of values where the conditionals are evaluated.
 
-        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``x`` (misuka.Color3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The value of the PDF at position ``pos``, conditioned on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
         ``pos``, conditioned on ``cond``.
@@ -3208,72 +3308,72 @@
         Parameter ``pos``:
             Position where the PDF is evaluated.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Array of values where the conditionals are evaluated.
 
-        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``x`` (misuka.Color3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The value of the normalized PDF at position ``pos``, conditioned
             on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.integral(self, cond)
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.integral(self, cond)
 
         Return the integral of the distribution conditioned on ``cond``.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Conditionals that define the distribution.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The integral of the distribution.
 
-    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.integral_array
+    .. py:property:: misuka.ConditionalIrregular1DSpectrum.integral_array
 
         Return the integral array.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.max()
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.max()
 
         Return the maximum value of the distribution
 
         Returns → float:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes
+    .. py:property:: misuka.ConditionalIrregular1DSpectrum.nodes
 
         Return the nodes of the underlying discretization.
 
-    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.nodes_cond
+    .. py:property:: misuka.ConditionalIrregular1DSpectrum.nodes_cond
 
         Return the conditional nodes of the underlying discretization.
 
-    .. py:property:: mitsuba.ConditionalIrregular1DSpectrum.pdf
+    .. py:property:: misuka.ConditionalIrregular1DSpectrum.pdf
 
         Return the underlying tensor storing the distribution values.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.sample_pdf(self, u, cond, active=True)
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
         ``cond``.
 
-        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``u`` (misuka.Color3f):
             Uniform sample.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f]:
             A pair where the first element is the sampled position and the
             second element the value of the normalized PDF at that position
             conditioned on ``cond``.
 
-    .. py:method:: mitsuba.ConditionalIrregular1DSpectrum.update()
+    .. py:method:: misuka.ConditionalIrregular1DSpectrum.update()
 
         Update the internal state.
 
@@ -3282,7 +3382,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ConditionalRegular1D
+.. py:class:: misuka.ConditionalRegular1D
 
 
     .. py:method:: ``__init__()
@@ -3316,10 +3416,10 @@
         Parameter ``pdf`` (drjit.llvm.ad.Float):
             Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
 
-        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``range`` (misuka.ScalarVector2f):
             Range where the leading dimension N is defined.
 
-        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+        Parameter ``range_cond`` (collections.abc.Sequence[misuka.ScalarVector2f]):
             Array of ranges where the dimensional conditionals are defined.
 
         Parameter ``size_cond`` (collections.abc.Sequence[int]):
@@ -3336,27 +3436,27 @@
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
             N].
 
-        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``range`` (misuka.ScalarVector2f):
             Range where the leading dimension N is defined.
 
-        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+        Parameter ``range_cond`` (collections.abc.Sequence[misuka.ScalarVector2f]):
             Array of ranges where the dimensional conditionals are defined.
 
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1D.cdf_array
+    .. py:property:: misuka.ConditionalRegular1D.cdf_array
 
         Return the cdf array of the distribution
 
-    .. py:method:: mitsuba.ConditionalRegular1D.empty()
+    .. py:method:: misuka.ConditionalRegular1D.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1D.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
         position ``x``, conditioned on ``cond``.
@@ -3373,7 +3473,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1D.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
         ``x``, conditioned on ``cond``.
@@ -3390,7 +3490,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1D.integral(self, cond)
+    .. py:method:: misuka.ConditionalRegular1D.integral(self, cond)
 
         Return the integral of the distribution conditioned on ``cond``
 
@@ -3400,30 +3500,30 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1D.integral_array
+    .. py:property:: misuka.ConditionalRegular1D.integral_array
 
         Return the integral array of the distribution
 
-    .. py:method:: mitsuba.ConditionalRegular1D.max()
+    .. py:method:: misuka.ConditionalRegular1D.max()
 
         Return the maximum value of the distribution
 
         Returns → float:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1D.pdf
+    .. py:property:: misuka.ConditionalRegular1D.pdf
 
         Return the underlying tensor storing the distribution values
 
-    .. py:property:: mitsuba.ConditionalRegular1D.range
+    .. py:property:: misuka.ConditionalRegular1D.range
 
         Return the range where the distribution is defined
 
-    .. py:property:: mitsuba.ConditionalRegular1D.range_cond
+    .. py:property:: misuka.ConditionalRegular1D.range_cond
 
         Return the conditional range where the distribution is defined
 
-    .. py:method:: mitsuba.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1D.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
         ``cond``.
@@ -3440,7 +3540,7 @@
         Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1D.update()
+    .. py:method:: misuka.ConditionalRegular1D.update()
 
         Update the internal state. Must be invoked when changing the
         distribution.
@@ -3448,7 +3548,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ConditionalRegular1DSpectrum
+.. py:class:: misuka.ConditionalRegular1DSpectrum
 
 
     .. py:method:: ``__init__()
@@ -3482,10 +3582,10 @@
         Parameter ``pdf`` (drjit.llvm.ad.Float):
             Flattened array of shape [D1, D2, ..., Dn, N] containing the PDFs.
 
-        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``range`` (misuka.ScalarVector2f):
             Range where the leading dimension N is defined.
 
-        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+        Parameter ``range_cond`` (collections.abc.Sequence[misuka.ScalarVector2f]):
             Array of ranges where the dimensional conditionals are defined.
 
         Parameter ``size_cond`` (collections.abc.Sequence[int]):
@@ -3502,111 +3602,111 @@
             Tensor containing the values of the PDF of shape [D1, D2, ..., Dn,
             N].
 
-        Parameter ``range`` (:py:obj:`mitsuba.ScalarVector2f`):
+        Parameter ``range`` (misuka.ScalarVector2f):
             Range where the leading dimension N is defined.
 
-        Parameter ``range_cond`` (collections.abc.Sequence[:py:obj:`mitsuba.ScalarVector2f`]):
+        Parameter ``range_cond`` (collections.abc.Sequence[misuka.ScalarVector2f]):
             Array of ranges where the dimensional conditionals are defined.
 
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.cdf_array
+    .. py:property:: misuka.ConditionalRegular1DSpectrum.cdf_array
 
         Return the cdf array of the distribution
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.empty()
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.eval_pdf(self, x, cond, active=True)
 
         Evaluate the unnormalized probability density function (PDF) at
         position ``x``, conditioned on ``cond``.
 
-        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``x`` (misuka.Color3f):
             Position where the PDF is evaluated.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.eval_pdf_normalized(self, x, cond, active=True)
 
         Evaluate the normalized probability density function (PDF) at position
         ``x``, conditioned on ``cond``.
 
-        Parameter ``x`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``x`` (misuka.Color3f):
             Position where the PDF is evaluated.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Conditionals where the PDF is evaluated.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.integral(self, cond)
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.integral(self, cond)
 
         Return the integral of the distribution conditioned on ``cond``
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.integral_array
+    .. py:property:: misuka.ConditionalRegular1DSpectrum.integral_array
 
         Return the integral array of the distribution
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.max()
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.max()
 
         Return the maximum value of the distribution
 
         Returns → float:
             *no description available*
 
-    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.pdf
+    .. py:property:: misuka.ConditionalRegular1DSpectrum.pdf
 
         Return the underlying tensor storing the distribution values
 
-    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range
+    .. py:property:: misuka.ConditionalRegular1DSpectrum.range
 
         Return the range where the distribution is defined
 
-    .. py:property:: mitsuba.ConditionalRegular1DSpectrum.range_cond
+    .. py:property:: misuka.ConditionalRegular1DSpectrum.range_cond
 
         Return the conditional range where the distribution is defined
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.sample_pdf(self, u, cond, active=True)
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.sample_pdf(self, u, cond, active=True)
 
         Sample the distribution given a uniform sample ``u``, conditioned on
         ``cond``.
 
-        Parameter ``u`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``u`` (misuka.Color3f):
             Uniform sample.
 
-        Parameter ``cond`` (collections.abc.Sequence[:py:obj:`mitsuba.Color3f`]):
+        Parameter ``cond`` (collections.abc.Sequence[misuka.Color3f]):
             Conditionals where the PDF is sampled.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f]:
             *no description available*
 
-    .. py:method:: mitsuba.ConditionalRegular1DSpectrum.update()
+    .. py:method:: misuka.ConditionalRegular1DSpectrum.update()
 
         Update the internal state. Must be invoked when changing the
         distribution.
@@ -3614,7 +3714,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ContinuousDistribution
+.. py:class:: misuka.ContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of a regularly
     sampled linear interpolant
@@ -3646,28 +3746,28 @@
         initialization. The associated scale factor can be retrieved using the
         function normalization().
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.ContinuousDistribution`) -> None``
+        2. ``__init__(self, arg: misuka.ContinuousDistribution) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, range: :py:obj:`mitsuba.ScalarVector2f`, pdf: drjit.llvm.ad.Float) -> None``
+        3. ``__init__(self, range: misuka.ScalarVector2f, pdf: drjit.llvm.ad.Float) -> None``
         
         Initialize from a given density function on the interval ``range``
 
         
-    .. py:property:: mitsuba.ContinuousDistribution.cdf
+    .. py:property:: misuka.ContinuousDistribution.cdf
 
         Return the unnormalized discrete cumulative distribution function over
         intervals
 
-    .. py:method:: mitsuba.ContinuousDistribution.empty()
+    .. py:method:: misuka.ContinuousDistribution.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.eval_cdf(self, x, active=True)
+    .. py:method:: misuka.ContinuousDistribution.eval_cdf(self, x, active=True)
 
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
@@ -3681,7 +3781,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.eval_cdf_normalized(self, x, active=True)
+    .. py:method:: misuka.ContinuousDistribution.eval_cdf_normalized(self, x, active=True)
 
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
@@ -3695,7 +3795,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.eval_pdf(self, x, active=True)
+    .. py:method:: misuka.ContinuousDistribution.eval_pdf(self, x, active=True)
 
         Evaluate the unnormalized probability mass function (PDF) at position
         ``x``
@@ -3709,7 +3809,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.eval_pdf_normalized(self, x, active=True)
+    .. py:method:: misuka.ContinuousDistribution.eval_pdf_normalized(self, x, active=True)
 
         Evaluate the normalized probability mass function (PDF) at position
         ``x``
@@ -3723,41 +3823,41 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.integral()
+    .. py:method:: misuka.ContinuousDistribution.integral()
 
         Return the original integral of PDF entries before normalization
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.interval_resolution()
+    .. py:method:: misuka.ContinuousDistribution.interval_resolution()
 
         Return the minimum resolution of the discretization
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.max()
+    .. py:method:: misuka.ContinuousDistribution.max()
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.normalization()
+    .. py:method:: misuka.ContinuousDistribution.normalization()
 
         Return the normalization factor (i.e. the inverse of sum())
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:property:: mitsuba.ContinuousDistribution.pdf
+    .. py:property:: misuka.ContinuousDistribution.pdf
 
         Return the unnormalized discretized probability density function
 
-    .. py:property:: mitsuba.ContinuousDistribution.range
+    .. py:property:: misuka.ContinuousDistribution.range
 
         Return the range of the distribution
 
-    .. py:method:: mitsuba.ContinuousDistribution.sample(self, value, active=True)
+    .. py:method:: misuka.ContinuousDistribution.sample(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -3773,7 +3873,7 @@
         Returns → drjit.llvm.ad.Float:
             The sampled position.
 
-    .. py:method:: mitsuba.ContinuousDistribution.sample_pdf(self, value, active=True)
+    .. py:method:: misuka.ContinuousDistribution.sample_pdf(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -3792,31 +3892,31 @@
         1. the sampled position. 2. the normalized probability density of the
         sample.
 
-    .. py:method:: mitsuba.ContinuousDistribution.size()
+    .. py:method:: misuka.ContinuousDistribution.size()
 
         Return the number of discretizations
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ContinuousDistribution.update()
+    .. py:method:: misuka.ContinuousDistribution.update()
 
         Update the internal state. Must be invoked when changing the pdf.
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.CppADIntegrator
+.. py:class:: misuka.CppADIntegrator
 
-    Base class: :py:obj:`mitsuba.SamplingIntegrator`
+    Base class: misuka.SamplingIntegrator
 
-.. py:data:: mitsuba.DEBUG
+.. py:data:: misuka.DEBUG
     :type: bool
     :value: False
 
-.. py:class:: mitsuba.DefaultFormatter
+.. py:class:: misuka.DefaultFormatter
 
-    Base class: :py:obj:`mitsuba.Formatter`
+    Base class: misuka.Formatter
 
     The default formatter used to turn log messages into a human-readable
     form
@@ -3824,7 +3924,7 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.DefaultFormatter.has_class()
+    .. py:method:: misuka.DefaultFormatter.has_class()
 
         See also:
             set_has_class
@@ -3832,7 +3932,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.has_date()
+    .. py:method:: misuka.DefaultFormatter.has_date()
 
         See also:
             set_has_date
@@ -3840,7 +3940,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.has_log_level()
+    .. py:method:: misuka.DefaultFormatter.has_log_level()
 
         See also:
             set_has_log_level
@@ -3848,7 +3948,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.has_thread()
+    .. py:method:: misuka.DefaultFormatter.has_thread()
 
         See also:
             set_has_thread
@@ -3856,7 +3956,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.set_has_class(self, arg)
+    .. py:method:: misuka.DefaultFormatter.set_has_class(self, arg)
 
         Should class information be included? The default is yes.
 
@@ -3866,7 +3966,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.set_has_date(self, arg)
+    .. py:method:: misuka.DefaultFormatter.set_has_date(self, arg)
 
         Should date information be included? The default is yes.
 
@@ -3876,7 +3976,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.set_has_log_level(self, arg)
+    .. py:method:: misuka.DefaultFormatter.set_has_log_level(self, arg)
 
         Should log level information be included? The default is yes.
 
@@ -3886,7 +3986,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.DefaultFormatter.set_has_thread(self, arg)
+    .. py:method:: misuka.DefaultFormatter.set_has_thread(self, arg)
 
         Should thread information be included? The default is yes.
 
@@ -3896,9 +3996,9 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.DirectionSample3f
+.. py:class:: misuka.DirectionSample3f
 
-    Base class: :py:obj:`mitsuba.PositionSample3f`
+    Base class: misuka.PositionSample3f
 
     Overloaded function.
 
@@ -3906,19 +4006,19 @@
 
     Construct an uninitialized direct sample
 
-    2. ``__init__(self, other: :py:obj:`mitsuba.PositionSample3f`) -> None``
+    2. ``__init__(self, other: misuka.PositionSample3f) -> None``
 
     Construct from a position sample
 
-    3. ``__init__(self, other: :py:obj:`mitsuba.DirectionSample3f`) -> None``
+    3. ``__init__(self, other: misuka.DirectionSample3f) -> None``
 
     Copy constructor
 
-    4. ``__init__(self, p: :py:obj:`mitsuba.Point3f`, n: :py:obj:`mitsuba.Normal3f`, uv: :py:obj:`mitsuba.Point2f`, time: drjit.llvm.ad.Float, pdf: drjit.llvm.ad.Float, delta: drjit.llvm.ad.Bool, d: :py:obj:`mitsuba.Vector3f`, dist: drjit.llvm.ad.Float, emitter: :py:obj:`mitsuba.EmitterPtr`) -> None``
+    4. ``__init__(self, p: misuka.Point3f, n: misuka.Normal3f, uv: misuka.Point2f, time: drjit.llvm.ad.Float, pdf: drjit.llvm.ad.Float, delta: drjit.llvm.ad.Bool, d: misuka.Vector3f, dist: drjit.llvm.ad.Float, emitter: misuka.EmitterPtr) -> None``
 
     Element-by-element constructor
 
-    5. ``__init__(self, scene: :py:obj:`mitsuba.Scene` | None, si: :py:obj:`mitsuba.SurfaceInteraction3f`, ref: :py:obj:`mitsuba.Interaction3f`) -> None``
+    5. ``__init__(self, scene: misuka.Scene | None, si: misuka.SurfaceInteraction3f, ref: misuka.Interaction3f) -> None``
 
     Create a position sampling record from a surface intersection
 
@@ -3926,23 +4026,23 @@
     surface after hitting it using standard ray tracing. This happens for
     instance in path tracing with multiple importance sampling.
 
-    .. py:method:: mitsuba.DirectionSample3f.assign(self, arg)
+    .. py:method:: misuka.DirectionSample3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.DirectionSample3f`, /):
+        Parameter ``arg`` (misuka.DirectionSample3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.DirectionSample3f.d
+    .. py:property:: misuka.DirectionSample3f.d
 
         Unit direction from the reference point to the target shape
 
-    .. py:property:: mitsuba.DirectionSample3f.dist
+    .. py:property:: misuka.DirectionSample3f.dist
 
         Distance from the reference point to the target shape
 
-    .. py:property:: mitsuba.DirectionSample3f.emitter
+    .. py:property:: misuka.DirectionSample3f.emitter
 
         Optional: pointer to an associated object
 
@@ -3951,7 +4051,7 @@
         position lies. In that case, the ``object`` attribute stores a pointer
         to this object.
 
-.. py:class:: mitsuba.DiscontinuityFlags
+.. py:class:: misuka.DiscontinuityFlags
 
     This list of flags is used to control the behavior of discontinuity
     related routines.
@@ -3986,7 +4086,7 @@
 
         All types of discontinuities
 
-.. py:class:: mitsuba.DiscreteDistribution
+.. py:class:: misuka.DiscreteDistribution
 
     Discrete 1D probability distribution
 
@@ -4012,7 +4112,7 @@
         normalized during initialization. The associated scale factor can be
         retrieved using the function normalization().
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.DiscreteDistribution`) -> None``
+        2. ``__init__(self, arg: misuka.DiscreteDistribution) -> None``
         
         Copy constructor
         
@@ -4021,18 +4121,18 @@
         Initialize from a given probability mass function
 
         
-    .. py:property:: mitsuba.DiscreteDistribution.cdf
+    .. py:property:: misuka.DiscreteDistribution.cdf
 
         Return the unnormalized cumulative distribution function
 
-    .. py:method:: mitsuba.DiscreteDistribution.empty()
+    .. py:method:: misuka.DiscreteDistribution.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.eval_cdf(self, index, active=True)
+    .. py:method:: misuka.DiscreteDistribution.eval_cdf(self, index, active=True)
 
         Evaluate the unnormalized cumulative distribution function (CDF) at
         index ``index``
@@ -4046,7 +4146,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.eval_cdf_normalized(self, index, active=True)
+    .. py:method:: misuka.DiscreteDistribution.eval_cdf_normalized(self, index, active=True)
 
         Evaluate the normalized cumulative distribution function (CDF) at
         index ``index``
@@ -4060,7 +4160,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.eval_pmf(self, index, active=True)
+    .. py:method:: misuka.DiscreteDistribution.eval_pmf(self, index, active=True)
 
         Evaluate the unnormalized probability mass function (PMF) at index
         ``index``
@@ -4074,7 +4174,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.eval_pmf_normalized(self, index, active=True)
+    .. py:method:: misuka.DiscreteDistribution.eval_pmf_normalized(self, index, active=True)
 
         Evaluate the normalized probability mass function (PMF) at index
         ``index``
@@ -4088,18 +4188,18 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.normalization()
+    .. py:method:: misuka.DiscreteDistribution.normalization()
 
         Return the normalization factor (i.e. the inverse of sum())
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:property:: mitsuba.DiscreteDistribution.pmf
+    .. py:property:: misuka.DiscreteDistribution.pmf
 
         Return the unnormalized probability mass function
 
-    .. py:method:: mitsuba.DiscreteDistribution.sample(self, value, active=True)
+    .. py:method:: misuka.DiscreteDistribution.sample(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -4115,7 +4215,7 @@
         Returns → drjit.llvm.ad.UInt:
             The discrete index associated with the sample
 
-    .. py:method:: mitsuba.DiscreteDistribution.sample_pmf(self, value, active=True)
+    .. py:method:: misuka.DiscreteDistribution.sample_pmf(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -4131,7 +4231,7 @@
         1. the discrete index associated with the sample, and 2. the
         normalized probability value of the sample.
 
-    .. py:method:: mitsuba.DiscreteDistribution.sample_reuse(self, value, active=True)
+    .. py:method:: misuka.DiscreteDistribution.sample_reuse(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -4150,7 +4250,7 @@
         1. the discrete index associated with the sample, and 2. the re-scaled
         sample value.
 
-    .. py:method:: mitsuba.DiscreteDistribution.sample_reuse_pmf(self, value, active=True)
+    .. py:method:: misuka.DiscreteDistribution.sample_reuse_pmf(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution.
 
@@ -4169,32 +4269,32 @@
         1. the discrete index associated with the sample 2. the re-scaled
         sample value 3. the normalized probability value of the sample
 
-    .. py:method:: mitsuba.DiscreteDistribution.size()
+    .. py:method:: misuka.DiscreteDistribution.size()
 
         Return the number of entries
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.sum()
+    .. py:method:: misuka.DiscreteDistribution.sum()
 
         Return the original sum of PMF entries before normalization
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution.update()
+    .. py:method:: misuka.DiscreteDistribution.update()
 
         Update the internal state. Must be invoked when changing the pmf.
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.DiscreteDistribution2D
+.. py:class:: misuka.DiscreteDistribution2D
 
-    .. py:method:: mitsuba.DiscreteDistribution2D.eval(self, pos, active=True)
+    .. py:method:: misuka.DiscreteDistribution2D.eval(self, pos, active=True)
 
-        Parameter ``pos`` (:py:obj:`mitsuba.Point2u`):
+        Parameter ``pos`` (misuka.Point2u):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4203,9 +4303,9 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution2D.pdf(self, pos, active=True)
+    .. py:method:: misuka.DiscreteDistribution2D.pdf(self, pos, active=True)
 
-        Parameter ``pos`` (:py:obj:`mitsuba.Point2u`):
+        Parameter ``pos`` (misuka.Point2u):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4214,20 +4314,20 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.DiscreteDistribution2D.sample(self, sample, active=True)
+    .. py:method:: misuka.DiscreteDistribution2D.sample(self, sample, active=True)
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2u`, drjit.llvm.ad.Float, :py:obj:`mitsuba.Point2f`]:
+        Returns → tuple[misuka.Point2u, drjit.llvm.ad.Float, misuka.Point2f]:
             *no description available*
 
-.. py:class:: mitsuba.DummyStream
+.. py:class:: misuka.DummyStream
 
-    Base class: :py:obj:`mitsuba.Stream`
+    Base class: misuka.Stream
 
     Stream implementation that never writes to disk, but keeps track of
     the size of the content being written. It can be used, for example, to
@@ -4237,11 +4337,11 @@
     .. py:method:: __init__()
 
 
-.. py:class:: mitsuba.Emitter
+.. py:class:: misuka.Emitter
 
-    Base class: :py:obj:`mitsuba.Endpoint`
+    Base class: misuka.Endpoint
 
-    .. py:method:: mitsuba.Emitter.flags(self, active=True)
+    .. py:method:: misuka.Emitter.flags(self, active=True)
 
         Flags for all components combined.
 
@@ -4251,33 +4351,33 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Emitter.is_environment()
+    .. py:method:: misuka.Emitter.is_environment()
 
         Is this an environment map light emitter?
 
         Returns → bool:
             *no description available*
 
-    .. py:property:: mitsuba.Emitter.m_flags
+    .. py:property:: misuka.Emitter.m_flags
 
         Combined flags for all properties of this emitter.
 
-    .. py:property:: mitsuba.Emitter.m_needs_sample_2
+    .. py:property:: misuka.Emitter.m_needs_sample_2
 
         (self) -> bool
 
-    .. py:property:: mitsuba.Emitter.m_needs_sample_3
+    .. py:property:: misuka.Emitter.m_needs_sample_3
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Emitter.sampling_weight()
+    .. py:method:: misuka.Emitter.sampling_weight()
 
         The emitter's sampling weight.
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.EmitterFlags
+.. py:class:: misuka.EmitterFlags
 
     This list of flags is used to classify the different types of
     emitters.
@@ -4312,9 +4412,9 @@
 
         Delta function in either position or direction
 
-.. py:class:: mitsuba.EmitterPtr
+.. py:class:: misuka.EmitterPtr
 
-    .. py:method:: mitsuba.EmitterPtr.eval(self, si, active=True)
+    .. py:method:: misuka.EmitterPtr.eval(self, si, active=True)
 
         Given a ray-surface intersection, return the emitted radiance or
         importance traveling along the reverse direction
@@ -4325,17 +4425,17 @@
         The default implementation throws an exception, which states that the
         method is not implemented.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The emitted radiance or importance
 
-    .. py:method:: mitsuba.EmitterPtr.eval_direction(self, it, ds, active=True)
+    .. py:method:: misuka.EmitterPtr.eval_direction(self, it, ds, active=True)
 
         Re-evaluate the incident direct radiance/importance of the
         sample_direction() method.
@@ -4359,48 +4459,48 @@
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The incident direct radiance/importance associated with the
             sample.
 
-    .. py:method:: mitsuba.EmitterPtr.flags()
+    .. py:method:: misuka.EmitterPtr.flags()
 
         Flags for all components combined.
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.get_medium()
+    .. py:method:: misuka.EmitterPtr.get_medium()
 
         Return a pointer to the medium that surrounds the emitter
 
-        Returns → :py:obj:`mitsuba.MediumPtr`:
+        Returns → misuka.MediumPtr:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.get_shape()
+    .. py:method:: misuka.EmitterPtr.get_shape()
 
         Return the shape to which the emitter is currently attached
 
-        Returns → :py:obj:`mitsuba.ShapePtr`:
+        Returns → misuka.ShapePtr:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.is_environment()
+    .. py:method:: misuka.EmitterPtr.is_environment()
 
         Is this an environment map light emitter?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.pdf_direction(self, it, ds, active=True)
+    .. py:method:: misuka.EmitterPtr.pdf_direction(self, it, ds, active=True)
 
         Evaluate the probability density of the *direct* sampling method
         implemented by the sample_direction() method.
@@ -4409,10 +4509,10 @@
         emission/sensitivity profile contains a Dirac delta term (e.g. point
         or directional emitters/sensors).
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direct sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4421,7 +4521,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.EmitterPtr.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.EmitterPtr.pdf_position(self, ps, active=True)
 
         Evaluate the probability density of the position sampling method
         implemented by sample_position().
@@ -4429,7 +4529,7 @@
         In simple cases, this will be the reciprocal of the endpoint's surface
         area.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             The sampled position record.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4438,7 +4538,7 @@
         Returns → drjit.llvm.ad.Float:
             The corresponding sampling density.
 
-    .. py:method:: mitsuba.EmitterPtr.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.EmitterPtr.sample_direction(self, it, sample, active=True)
 
         Given a reference point in the scene, sample a direction from the
         reference point towards the endpoint (ideally proportional to the
@@ -4461,20 +4561,20 @@
         Parameter ``ref``:
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.DirectionSample3f, misuka.Color3f]:
             A DirectionSample instance describing the generated sample along
             with a spectral importance weight.
 
-    .. py:method:: mitsuba.EmitterPtr.sample_position(self, time, sample, active=True)
+    .. py:method:: misuka.EmitterPtr.sample_position(self, time, sample, active=True)
 
         Importance sample the spatial component of the emission or importance
         profile of the endpoint.
@@ -4484,17 +4584,17 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position to be sampled.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.PositionSample3f, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
-    .. py:method:: mitsuba.EmitterPtr.sample_ray(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.EmitterPtr.sample_ray(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray proportional to the endpoint's
         sensitivity/emission profile.
@@ -4514,14 +4614,14 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument corresponds to the sample position
             in fractional pixel coordinates relative to the crop window of the
             underlying film. This argument is ignored if ``needs_sample_2() ==
             false``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument determines the position on the
             aperture of the sensor. This argument is ignored if
@@ -4530,12 +4630,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f]:
             The sampled ray and (potentially spectrally varying) importance
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
-    .. py:method:: mitsuba.EmitterPtr.sample_wavelengths(self, si, sample, active=True)
+    .. py:method:: misuka.EmitterPtr.sample_wavelengths(self, si, sample, active=True)
 
         Importance sample a set of wavelengths according to the endpoint's
         sensitivity/emission spectrum.
@@ -4555,7 +4655,7 @@
 
         This function should not be called in RGB or monochromatic modes.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             In the case of a spatially-varying spectral sensitivity/emission
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
@@ -4566,23 +4666,23 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             The set of sampled wavelengths and (potentially spectrally
             varying) importance weights. The latter account for the difference
             between the profile and the actual used sampling density function.
             In the case of emitters, the weight will include the emitted
             radiance.
 
-    .. py:method:: mitsuba.EmitterPtr.sampling_weight()
+    .. py:method:: misuka.EmitterPtr.sampling_weight()
 
         The emitter's sampling weight.
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-.. py:class:: mitsuba.Endpoint
+.. py:class:: misuka.Endpoint
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Abstract interface subsuming emitters and sensors in Mitsuba.
 
@@ -4600,10 +4700,10 @@
     sample the emission/response profile, and to compute probability
     densities associated with the provided sampling techniques.
 
-    In addition to :py:meth:`mitsuba.Endpoint.sample_ray`, which generates
+    In addition to :py:meth:`misuka.Endpoint.sample_ray`, which generates
     a sample from the profile, subclasses also provide a specialized
     *direction sampling* method in
-    :py:meth:`mitsuba.Endpoint.sample_direction`. This is a generalization
+    :py:meth:`misuka.Endpoint.sample_direction`. This is a generalization
     of direct illumination techniques to both emitters *and* sensors. A
     direction sampling method is given an arbitrary reference position in
     the scene and samples a direction from the reference point towards the
@@ -4628,14 +4728,14 @@
     variants of Mitsuba can recognize these redundancies and remove them
     retroactively.
 
-    .. py:method:: mitsuba.Endpoint.bbox()
+    .. py:method:: misuka.Endpoint.bbox()
 
         Return an axis-aligned box bounding the spatial extents of the emitter
 
-        Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
+        Returns → misuka.ScalarBoundingBox3f:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.eval(self, si, active=True)
+    .. py:method:: misuka.Endpoint.eval(self, si, active=True)
 
         Given a ray-surface intersection, return the emitted radiance or
         importance traveling along the reverse direction
@@ -4646,17 +4746,17 @@
         The default implementation throws an exception, which states that the
         method is not implemented.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The emitted radiance or importance
 
-    .. py:method:: mitsuba.Endpoint.eval_direction(self, it, ds, active=True)
+    .. py:method:: misuka.Endpoint.eval_direction(self, it, ds, active=True)
 
         Re-evaluate the incident direct radiance/importance of the
         sample_direction() method.
@@ -4680,34 +4780,34 @@
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The incident direct radiance/importance associated with the
             sample.
 
-    .. py:method:: mitsuba.Endpoint.get_medium()
+    .. py:method:: misuka.Endpoint.get_medium()
 
         Return a pointer to the medium that surrounds the emitter
 
-        Returns → :py:obj:`mitsuba.Medium`:
+        Returns → misuka.Medium:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.get_shape()
+    .. py:method:: misuka.Endpoint.get_shape()
 
         Return the shape to which the emitter is currently attached
 
-        Returns → :py:obj:`mitsuba.Shape`:
+        Returns → misuka.Shape:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.needs_sample_2()
+    .. py:method:: misuka.Endpoint.needs_sample_2()
 
         Does the method sample_ray() require a uniformly distributed 2D sample
         for the ``sample2`` parameter?
@@ -4715,7 +4815,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.needs_sample_3()
+    .. py:method:: misuka.Endpoint.needs_sample_3()
 
         Does the method sample_ray() require a uniformly distributed 2D sample
         for the ``sample3`` parameter?
@@ -4723,7 +4823,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.pdf_direction(self, it, ds, active=True)
+    .. py:method:: misuka.Endpoint.pdf_direction(self, it, ds, active=True)
 
         Evaluate the probability density of the *direct* sampling method
         implemented by the sample_direction() method.
@@ -4732,10 +4832,10 @@
         emission/sensitivity profile contains a Dirac delta term (e.g. point
         or directional emitters/sensors).
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direct sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4744,7 +4844,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.Endpoint.pdf_position(self, ps, active=True)
 
         Evaluate the probability density of the position sampling method
         implemented by sample_position().
@@ -4752,7 +4852,7 @@
         In simple cases, this will be the reciprocal of the endpoint's surface
         area.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             The sampled position record.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -4761,7 +4861,7 @@
         Returns → drjit.llvm.ad.Float:
             The corresponding sampling density.
 
-    .. py:method:: mitsuba.Endpoint.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.Endpoint.sample_direction(self, it, sample, active=True)
 
         Given a reference point in the scene, sample a direction from the
         reference point towards the endpoint (ideally proportional to the
@@ -4784,20 +4884,20 @@
         Parameter ``ref``:
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.DirectionSample3f, misuka.Color3f]:
             A DirectionSample instance describing the generated sample along
             with a spectral importance weight.
 
-    .. py:method:: mitsuba.Endpoint.sample_position(self, ref, ds, active=True)
+    .. py:method:: misuka.Endpoint.sample_position(self, ref, ds, active=True)
 
         Importance sample the spatial component of the emission or importance
         profile of the endpoint.
@@ -4813,17 +4913,17 @@
         Parameter ``ref`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``ds`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``ds`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.PositionSample3f, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
-    .. py:method:: mitsuba.Endpoint.sample_ray(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.Endpoint.sample_ray(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray proportional to the endpoint's
         sensitivity/emission profile.
@@ -4843,14 +4943,14 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument corresponds to the sample position
             in fractional pixel coordinates relative to the crop window of the
             underlying film. This argument is ignored if ``needs_sample_2() ==
             false``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument determines the position on the
             aperture of the sensor. This argument is ignored if
@@ -4859,12 +4959,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f]:
             The sampled ray and (potentially spectrally varying) importance
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
-    .. py:method:: mitsuba.Endpoint.sample_wavelengths(self, si, sample, active=True)
+    .. py:method:: misuka.Endpoint.sample_wavelengths(self, si, sample, active=True)
 
         Importance sample a set of wavelengths according to the endpoint's
         sensitivity/emission spectrum.
@@ -4884,7 +4984,7 @@
 
         This function should not be called in RGB or monochromatic modes.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             In the case of a spatially-varying spectral sensitivity/emission
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
@@ -4895,24 +4995,24 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             The set of sampled wavelengths and (potentially spectrally
             varying) importance weights. The latter account for the difference
             between the profile and the actual used sampling density function.
             In the case of emitters, the weight will include the emitted
             radiance.
 
-    .. py:method:: mitsuba.Endpoint.set_medium(self, medium)
+    .. py:method:: misuka.Endpoint.set_medium(self, medium)
 
         Set the medium that surrounds the emitter.
 
-        Parameter ``medium`` (:py:obj:`mitsuba.Medium`):
+        Parameter ``medium`` (misuka.Medium):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.set_scene(self, scene)
+    .. py:method:: misuka.Endpoint.set_scene(self, scene)
 
         Inform the emitter about the properties of the scene
 
@@ -4920,32 +5020,123 @@
         must be informed about the scene dimensions to operate correctly. This
         function is invoked by the Scene constructor.
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.set_shape(self, shape)
+    .. py:method:: misuka.Endpoint.set_shape(self, shape)
 
         Set the shape associated with this endpoint.
 
-        Parameter ``shape`` (:py:obj:`mitsuba.Shape`):
+        Parameter ``shape`` (misuka.Shape):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Endpoint.world_transform()
+    .. py:method:: misuka.Endpoint.world_transform()
 
         Return the local space to world space transformation
 
-        Returns → :py:obj:`mitsuba.AffineTransform4f`:
+        Returns → misuka.AffineTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.FileResolver
+.. py:class:: misuka.Event
 
-    Base class: :py:obj:`mitsuba.Object`
+    Event object for synchronization and timing
+
+    This class provides an API for inserting events into the command stream.
+    This enables relative time measurements, and to wait for the completion
+    of prior events.
+
+    .. note::
+
+       The Metal backend only supports the synchronization functionality
+       (:py:func:`record`, :py:func:`query`, :py:func:`wait`). It does *not*
+       support timing: :py:func:`elapsed_time` always raises, and the
+       ``enable_timing`` flag is ignored.
+
+    .. py:method:: __init__(self, enable_timing=True)
+
+        Create a new Event
+        
+        Args:
+            enable_timing (bool): If True, the event can be used for timing measurements.
+                                  If False, timing queries will raise an error.
+                                  Default: True. This flag has no effect on the Metal
+                                  backend, which does not support timing.
+
+        Parameter ``enable_timing`` (bool):
+            *no description available*
+
+        
+    .. py:method:: misuka.Event.elapsed_time(self, end_event)
+
+        Calculate elapsed time between this event and another
+
+        Args:
+            end_event (Event): The end event for timing measurement
+
+        Parameter ``end_event`` (drjit.llvm.Event):
+            *no description available*
+
+        Returns → float:
+            float: Elapsed time in milliseconds between this event and ``end_event``
+
+        .. note::
+
+           This function raises an exception on the Metal backend, which does not
+           support event timing.
+
+        Raises:
+            RuntimeError: If either event doesn't have timing enabled, if events
+                          are from different contexts/backends, or if the events
+                          belong to the Metal backend (which does not support timing)
+
+    .. py:property:: misuka.Event.handle
+
+        Get the raw backend-specific event handle as a 64-bit integer
+
+        For CUDA backend, returns the CUevent handle.
+        For LLVM backend, returns the Task* pointer.
+        For Metal backend, returns the ``id<MTLSharedEvent>`` handle.
+
+        This is useful for debugging and advanced interoperability.
+
+        Returns:
+            int: The raw event handle as an integer
+
+    .. py:method:: misuka.Event.query()
+
+        Check if the event has completed without blocking
+
+        Returns → bool:
+            bool: True if all work preceding the event has completed, False otherwise
+
+    .. py:method:: misuka.Event.record()
+
+        Record the event in the current stream
+
+        Marks a point in the computation stream. The event will be considered
+        complete when all previously enqueued work has finished.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Event.wait()
+
+        Wait for the event to complete
+
+        Blocks the current thread until all work preceding the event has completed.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.FileResolver
+
+    Base class: misuka.Object
 
     Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -4961,52 +5152,52 @@
         
         Initialize a new file resolver with the current working directory
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.FileResolver`) -> None``
+        2. ``__init__(self, arg: misuka.FileResolver) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.FileResolver.append(self, arg)
+    .. py:method:: misuka.FileResolver.append(self, arg)
 
         Append an entry to the end of the list of search paths
 
-        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+        Parameter ``arg`` (misuka.filesystem.path, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.FileResolver.clear()
+    .. py:method:: misuka.FileResolver.clear()
 
         Clear the list of search paths
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.FileResolver.prepend(self, arg)
+    .. py:method:: misuka.FileResolver.prepend(self, arg)
 
         Prepend an entry at the beginning of the list of search paths
 
-        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+        Parameter ``arg`` (misuka.filesystem.path, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.FileResolver.resolve(self, arg)
+    .. py:method:: misuka.FileResolver.resolve(self, arg)
 
         Walk through the list of search paths and try to resolve the input
         path
 
-        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+        Parameter ``arg`` (misuka.filesystem.path, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-.. py:class:: mitsuba.FileStream
+.. py:class:: misuka.FileStream
 
-    Base class: :py:obj:`mitsuba.Stream`
+    Base class: misuka.Stream
 
     Simple Stream implementation backed-up by a file.
 
@@ -5023,23 +5214,23 @@
         Throws if trying to open a non-existing file in with write disabled.
         Throws an exception if the file cannot be opened / created.
 
-        Parameter ``p`` (:py:obj:`mitsuba.filesystem.path`):
+        Parameter ``p`` (misuka.filesystem.path):
             *no description available*
 
-        Parameter ``mode`` (:py:obj:`mitsuba.FileStream.EMode`):
+        Parameter ``mode`` (misuka.FileStream.EMode):
             *no description available*
 
         
-    .. py:method:: mitsuba.FileStream.path()
+    .. py:method:: misuka.FileStream.path()
 
         Return the path descriptor associated with this FileStream
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-.. py:class:: mitsuba.Film
+.. py:class:: misuka.Film
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Abstract film base class - used to store samples generated by
     Integrator implementations.
@@ -5050,35 +5241,35 @@
 
     .. py:method:: __init__(self, props)
 
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+        Parameter ``props`` (misuka.Properties):
             *no description available*
 
 
-    .. py:method:: mitsuba.Film.base_channels_count()
+    .. py:method:: misuka.Film.base_channels_count()
 
         Return the number of channels for the developed image (excluding AOVs)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Film.bitmap(self, raw=False)
+    .. py:method:: misuka.Film.bitmap(self, raw=False)
 
         Return a bitmap object storing the developed contents of the film
 
         Parameter ``raw`` (bool):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Bitmap`:
+        Returns → misuka.Bitmap:
             *no description available*
 
-    .. py:method:: mitsuba.Film.clear()
+    .. py:method:: misuka.Film.clear()
 
         Clear the film contents to zero.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Film.create_block(self, size=[0, 0], normalize=False, borders=False)
+    .. py:method:: misuka.Film.create_block(self, size=[0, 0], normalize=False, borders=False)
 
         Return an ImageBlock instance, whose internal representation is
         compatible with that of the film.
@@ -5086,7 +5277,7 @@
         Image blocks created using this method can later be merged into the
         film using put_block().
 
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
+        Parameter ``size`` (misuka.ScalarVector2u):
             Desired size of the returned image block.
 
         Parameter ``normalize`` (bool):
@@ -5101,24 +5292,24 @@
         Parameter ``borders`` (bool):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ImageBlock`:
+        Returns → misuka.ImageBlock:
             *no description available*
 
-    .. py:method:: mitsuba.Film.crop_offset()
+    .. py:method:: misuka.Film.crop_offset()
 
         Return the offset of the crop window
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2u`:
+        Returns → misuka.ScalarPoint2u:
             *no description available*
 
-    .. py:method:: mitsuba.Film.crop_size()
+    .. py:method:: misuka.Film.crop_size()
 
         Return the size of the crop window
 
-        Returns → :py:obj:`mitsuba.ScalarVector2u`:
+        Returns → misuka.ScalarVector2u:
             *no description available*
 
-    .. py:method:: mitsuba.Film.develop(self, raw=False)
+    .. py:method:: misuka.Film.develop(self, raw=False)
 
         Return a image buffer object storing the developed image
 
@@ -5128,18 +5319,18 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.Film.flags()
+    .. py:method:: misuka.Film.flags()
 
         Flags for all properties combined.
 
         Returns → int:
             *no description available*
 
-    .. py:property:: mitsuba.Film.m_flags
+    .. py:property:: misuka.Film.m_flags
 
         Combined flags for all properties of this film.
 
-    .. py:method:: mitsuba.Film.prepare(self, aovs)
+    .. py:method:: misuka.Film.prepare(self, aovs)
 
         Configure the film for rendering a specified set of extra channels
         (AOVs). Returns the total number of channels that the film will store
@@ -5150,7 +5341,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Film.prepare_sample(self, spec, wavelengths, nChannels, weight=1.0, alpha=1.0, active=True)
+    .. py:method:: misuka.Film.prepare_sample(self, spec, wavelengths, nChannels, weight=1.0, alpha=1.0, active=True)
 
         Prepare spectrum samples to be in the format expected by the film
 
@@ -5164,10 +5355,10 @@
         transforming the sample format generated by the integrators to the one
         that the Film will store inside the ImageBlock.
 
-        Parameter ``spec`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``spec`` (misuka.Color3f):
             Sample value associated with the specified wavelengths
 
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+        Parameter ``wavelengths`` (misuka.Color0f):
             Sample wavelengths in nanometers
 
         Parameter ``aovs``:
@@ -5190,25 +5381,25 @@
         Returns → list[drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Film.put_block(self, block)
+    .. py:method:: misuka.Film.put_block(self, block)
 
         Merge an image block into the film. This methods should be thread-
         safe.
 
-        Parameter ``block`` (:py:obj:`mitsuba.ImageBlock`):
+        Parameter ``block`` (misuka.ImageBlock):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Film.rfilter()
+    .. py:method:: misuka.Film.rfilter()
 
         Return the image reconstruction filter (const version)
 
-        Returns → :py:obj:`mitsuba.ReconstructionFilter`:
+        Returns → misuka.ReconstructionFilter:
             *no description available*
 
-    .. py:method:: mitsuba.Film.sample_border()
+    .. py:method:: misuka.Film.sample_border()
 
         Should regions slightly outside the image plane be sampled to improve
         the quality of the reconstruction at the edges? This only makes sense
@@ -5217,39 +5408,39 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Film.schedule_storage()
+    .. py:method:: misuka.Film.schedule_storage()
 
         dr::schedule() variables that represent the internal film storage
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Film.sensor_response_function()
+    .. py:method:: misuka.Film.sensor_response_function()
 
         Returns the specific Sensor Response Function (SRF) used by the film
 
-        Returns → :py:obj:`mitsuba.Texture`:
+        Returns → misuka.Texture:
             *no description available*
 
-    .. py:method:: mitsuba.Film.size()
+    .. py:method:: misuka.Film.size()
 
         Ignoring the crop window, return the resolution of the underlying
         sensor
 
-        Returns → :py:obj:`mitsuba.ScalarVector2u`:
+        Returns → misuka.ScalarVector2u:
             *no description available*
 
-    .. py:method:: mitsuba.Film.write(self, path)
+    .. py:method:: misuka.Film.write(self, path)
 
         Write the developed contents of the film to a file on disk
 
-        Parameter ``path`` (:py:obj:`mitsuba.filesystem.path`):
+        Parameter ``path`` (misuka.filesystem.path):
             *no description available*
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.FilmFlags
+.. py:class:: misuka.FilmFlags
 
     This list of flags is used to classify the different types of films.
 
@@ -5271,7 +5462,7 @@
 
         The film provides a customized prepare_sample() routine that implements a special treatment of the samples before storing them in the Image Block.
 
-.. py:class:: mitsuba.FilterBoundaryCondition
+.. py:class:: misuka.FilterBoundaryCondition
 
     When resampling data to a different resolution using
     Resampler::resample(), this enumeration specifies how lookups
@@ -5302,15 +5493,15 @@
 
         Assume that the input function is equal to one outside of the defined domain
 
-.. py:class:: mitsuba.Float
+.. py:class:: misuka.Float
 
-.. py:class:: mitsuba.Float16
+.. py:class:: misuka.Float16
 
-.. py:class:: mitsuba.Float64
+.. py:class:: misuka.Float64
 
-.. py:class:: mitsuba.Formatter
+.. py:class:: misuka.Formatter
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Abstract interface for converting log information into a human-
     readable format
@@ -5318,11 +5509,11 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.Formatter.format(self, level, cname, fname, line, msg)
+    .. py:method:: misuka.Formatter.format(self, level, cname, fname, line, msg)
 
         Turn a log message into a human-readable format
 
-        Parameter ``level`` (:py:obj:`mitsuba.LogLevel`):
+        Parameter ``level`` (misuka.LogLevel):
             The importance of the debug message
 
         Parameter ``cname`` (str | None):
@@ -5340,7 +5531,7 @@
         Returns → str:
             *no description available*
 
-.. py:class:: mitsuba.Frame3f
+.. py:class:: misuka.Frame3f
 
     Stores a three-dimensional orthonormal coordinate frame
 
@@ -5357,57 +5548,57 @@
         
         Construct a new coordinate frame from a single vector
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Frame3f`) -> None``
+        2. ``__init__(self, arg: misuka.Frame3f) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, arg0: :py:obj:`mitsuba.Vector3f`, arg1: :py:obj:`mitsuba.Vector3f`, arg2: :py:obj:`mitsuba.Vector3f`, /) -> None``
+        3. ``__init__(self, arg0: misuka.Vector3f, arg1: misuka.Vector3f, arg2: misuka.Vector3f, /) -> None``
         
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.Vector3f`, /) -> None``
+        4. ``__init__(self, arg: misuka.Vector3f, /) -> None``
 
         
-    .. py:method:: mitsuba.Frame3f.assign(self, arg)
+    .. py:method:: misuka.Frame3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Frame3f`, /):
+        Parameter ``arg`` (misuka.Frame3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Frame3f.n
+    .. py:property:: misuka.Frame3f.n
 
-        (self) -> :py:obj:`mitsuba.Normal3f`
+        (self) -> misuka.Normal3f
 
-    .. py:property:: mitsuba.Frame3f.s
+    .. py:property:: misuka.Frame3f.s
 
-        (self) -> :py:obj:`mitsuba.Vector3f`
+        (self) -> misuka.Vector3f
 
-    .. py:property:: mitsuba.Frame3f.t
+    .. py:property:: misuka.Frame3f.t
 
-        (self) -> :py:obj:`mitsuba.Vector3f`
+        (self) -> misuka.Vector3f
 
-    .. py:method:: mitsuba.Frame3f.to_local(self, v)
+    .. py:method:: misuka.Frame3f.to_local(self, v)
 
         Convert from world coordinates to local coordinates
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.Frame3f.to_world(self, v)
+    .. py:method:: misuka.Frame3f.to_world(self, v)
 
         Convert from local coordinates to world coordinates
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-.. py:class:: mitsuba.Hierarchical2D0
+.. py:class:: misuka.Hierarchical2D0
 
     Implements a hierarchical sample warping scheme for 2D distributions
     with linear interpolation and an optional dependence on additional
@@ -5474,7 +5665,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.Hierarchical2D0.eval(self, pos, param=[], active=True)
+    .. py:method:: misuka.Hierarchical2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -5491,7 +5682,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D0.invert(self, sample, param=[], active=True)
+    .. py:method:: misuka.Hierarchical2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -5504,10 +5695,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D0.sample(self, sample, param=[], active=True)
+    .. py:method:: misuka.Hierarchical2D0.sample(self, sample, param=[], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -5523,10 +5714,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Hierarchical2D1
+.. py:class:: misuka.Hierarchical2D1
 
     Implements a hierarchical sample warping scheme for 2D distributions
     with linear interpolation and an optional dependence on additional
@@ -5593,7 +5784,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.Hierarchical2D1.eval(self, pos, param=[0], active=True)
+    .. py:method:: misuka.Hierarchical2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -5610,7 +5801,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D1.invert(self, sample, param=[0], active=True)
+    .. py:method:: misuka.Hierarchical2D1.invert(self, sample, param=[0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -5623,10 +5814,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D1.sample(self, sample, param=[0], active=True)
+    .. py:method:: misuka.Hierarchical2D1.sample(self, sample, param=[0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -5642,10 +5833,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Hierarchical2D2
+.. py:class:: misuka.Hierarchical2D2
 
     Implements a hierarchical sample warping scheme for 2D distributions
     with linear interpolation and an optional dependence on additional
@@ -5712,7 +5903,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.Hierarchical2D2.eval(self, pos, param=[0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -5729,7 +5920,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D2.invert(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D2.invert(self, sample, param=[0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -5742,10 +5933,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D2.sample(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D2.sample(self, sample, param=[0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -5761,10 +5952,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Hierarchical2D3
+.. py:class:: misuka.Hierarchical2D3
 
     Implements a hierarchical sample warping scheme for 2D distributions
     with linear interpolation and an optional dependence on additional
@@ -5831,7 +6022,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.Hierarchical2D3.eval(self, pos, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -5848,7 +6039,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D3.invert(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -5861,10 +6052,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Hierarchical2D3.sample(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.Hierarchical2D3.sample(self, sample, param=[0, 0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -5880,91 +6071,91 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.ImageBlock
+.. py:class:: misuka.ImageBlock
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.ImageBlock.border_size()
+    .. py:method:: misuka.ImageBlock.border_size()
 
         Return the border region used by the reconstruction filter
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.channel_count()
+    .. py:method:: misuka.ImageBlock.channel_count()
 
         Return the number of channels stored by the image block
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.clear()
+    .. py:method:: misuka.ImageBlock.clear()
 
         Clear the image block contents to zero.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.coalesce()
+    .. py:method:: misuka.ImageBlock.coalesce()
 
         Try to coalesce reads/writes in JIT modes?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.has_border()
+    .. py:method:: misuka.ImageBlock.has_border()
 
         Does the image block have a border region?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.height()
+    .. py:method:: misuka.ImageBlock.height()
 
         Return the bitmap's height in pixels
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.normalize()
+    .. py:method:: misuka.ImageBlock.normalize()
 
         Re-normalize filter weights in put() and read()
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.offset()
+    .. py:method:: misuka.ImageBlock.offset()
 
         Return the current block offset
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2i`:
+        Returns → misuka.ScalarPoint2i:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.put(self, pos, wavelengths, value, alpha=1.0, weight=1, active=True)
+    .. py:method:: misuka.ImageBlock.put(self, pos, wavelengths, value, alpha=1.0, weight=1, active=True)
 
         Overloaded function.
 
-        1. ``put(self, pos: :py:obj:`mitsuba.Point2f`, wavelengths: :py:obj:`mitsuba.Color0f`, value: :py:obj:`mitsuba.Color3f`, alpha: drjit.llvm.ad.Float = 1.0, weight: drjit.llvm.ad.Float = 1, active: drjit.llvm.ad.Bool = True) -> None``
+        1. ``put(self, pos: misuka.Point2f, wavelengths: misuka.Color0f, value: misuka.Color3f, alpha: drjit.llvm.ad.Float = 1.0, weight: drjit.llvm.ad.Float = 1, active: drjit.llvm.ad.Bool = True) -> None``
 
         Accumulate a single sample or a wavefront of samples into the image
         block.
 
-        Parameter ``pos`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``pos`` (misuka.Point2f):
             Denotes the sample position in fractional pixel coordinates
 
         Parameter ``values``:
             Points to an array of length channel_count(), which specifies the
             sample value for each channel.
 
-        2. ``put(self, pos: :py:obj:`mitsuba.Point2f`, values: collections.abc.Sequence[drjit.llvm.ad.Float], active: drjit.llvm.ad.Bool = True) -> None``
+        2. ``put(self, pos: misuka.Point2f, values: collections.abc.Sequence[drjit.llvm.ad.Float], active: drjit.llvm.ad.Bool = True) -> None``
 
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+        Parameter ``wavelengths`` (misuka.Color0f):
             *no description available*
 
-        Parameter ``value`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``value`` (misuka.Color3f):
             *no description available*
 
         Parameter ``alpha`` (drjit.llvm.ad.Float):
@@ -5979,19 +6170,19 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.put_block(self, block)
+    .. py:method:: misuka.ImageBlock.put_block(self, block)
 
         Accumulate another image block into this one
 
-        Parameter ``block`` (:py:obj:`mitsuba.ImageBlock`):
+        Parameter ``block`` (misuka.ImageBlock):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.read(self, pos, active=True)
+    .. py:method:: misuka.ImageBlock.read(self, pos, active=True)
 
-        Parameter ``pos`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``pos`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -6000,14 +6191,14 @@
         Returns → list[drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.rfilter()
+    .. py:method:: misuka.ImageBlock.rfilter()
 
         Return the image reconstruction filter underlying the ImageBlock
 
-        Returns → :py:obj:`mitsuba.ReconstructionFilter`:
+        Returns → misuka.ReconstructionFilter:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_coalesce(self, arg)
+    .. py:method:: misuka.ImageBlock.set_coalesce(self, arg)
 
         Try to coalesce reads/writes in JIT modes?
 
@@ -6017,7 +6208,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_normalize(self, arg)
+    .. py:method:: misuka.ImageBlock.set_normalize(self, arg)
 
         Re-normalize filter weights in put() and read()
 
@@ -6027,7 +6218,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_offset(self, offset)
+    .. py:method:: misuka.ImageBlock.set_offset(self, offset)
 
         Set the current block offset.
 
@@ -6035,23 +6226,23 @@
         image (e.g. a Film) to the top-left corner of this ImageBlock
         instance.
 
-        Parameter ``offset`` (:py:obj:`mitsuba.ScalarPoint2i`):
+        Parameter ``offset`` (misuka.ScalarPoint2i):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_size(self, size)
+    .. py:method:: misuka.ImageBlock.set_size(self, size)
 
         Set the block size. This potentially destroys the block's content.
 
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
+        Parameter ``size`` (misuka.ScalarVector2u):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_warn_invalid(self, value)
+    .. py:method:: misuka.ImageBlock.set_warn_invalid(self, value)
 
         Warn when writing invalid (NaN, +/- infinity) sample values?
 
@@ -6061,7 +6252,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.set_warn_negative(self, value)
+    .. py:method:: misuka.ImageBlock.set_warn_negative(self, value)
 
         Warn when writing negative sample values?
 
@@ -6071,52 +6262,52 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.size()
+    .. py:method:: misuka.ImageBlock.size()
 
         Return the current block size
 
-        Returns → :py:obj:`mitsuba.ScalarVector2u`:
+        Returns → misuka.ScalarVector2u:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.tensor()
+    .. py:method:: misuka.ImageBlock.tensor()
 
         Return the underlying image tensor
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.warn_invalid()
+    .. py:method:: misuka.ImageBlock.warn_invalid()
 
         Warn when writing invalid (NaN, +/- infinity) sample values?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.warn_negative()
+    .. py:method:: misuka.ImageBlock.warn_negative()
 
         Warn when writing negative sample values?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ImageBlock.width()
+    .. py:method:: misuka.ImageBlock.width()
 
         Return the bitmap's width in pixels
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.Int
+.. py:class:: misuka.Int
 
-.. py:class:: mitsuba.Int64
+.. py:class:: misuka.Int64
 
-.. py:class:: mitsuba.Int8
+.. py:class:: misuka.Int8
 
-.. py:class:: mitsuba.Integrator
+.. py:class:: misuka.Integrator
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Integrator.aov_names()
+    .. py:method:: misuka.Integrator.aov_names()
 
         For integrators that return one or more arbitrary output variables
         (AOVs), this function specifies a list of associated channel names.
@@ -6125,18 +6316,18 @@
         Returns → list[str]:
             *no description available*
 
-    .. py:method:: mitsuba.Integrator.cancel()
+    .. py:method:: misuka.Integrator.cancel()
 
         Cancel a running render job (e.g. after receiving Ctrl-C)
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Integrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
+    .. py:method:: misuka.Integrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: misuka.Scene, sensor: misuka.Sensor, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -6170,7 +6361,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: misuka.Scene, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -6178,16 +6369,16 @@
         overload. It accepts a sensor *index* instead and renders the scene
         using sensor 0 by default.
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.Integrator.should_stop()
+    .. py:method:: misuka.Integrator.should_stop()
 
         Indicates whether cancel() or a timeout have occurred. Should be
         checked regularly in the integrator's main loop so that timeouts are
@@ -6199,7 +6390,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
+    .. py:method:: misuka.Integrator.skip_area_emitters(self, arg0, arg1, arg2, arg3)
 
         Traces a ray in the scene and returns the first intersection that is
         not an area emitter.
@@ -6224,10 +6415,10 @@
             should be set to ``True`` for any lane where the current depth is
             0 (for ``hide_emitters``). (Default: True)
 
-        Parameter ``arg0`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``arg0`` (misuka.Scene):
             *no description available*
 
-        Parameter ``arg1`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``arg1`` (misuka.Ray3f):
             *no description available*
 
         Parameter ``arg2`` (bool):
@@ -6236,11 +6427,11 @@
         Parameter ``arg3`` (drjit.llvm.ad.Bool, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             The first intersection that is not an area emitter anlong the
             ``ray``.
 
-.. py:class:: mitsuba.Interaction3f
+.. py:class:: misuka.Interaction3f
 
 
     .. py:method:: ``__init__()
@@ -6254,7 +6445,7 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``arg`` (misuka.Interaction3f):
             *no description available*
 
         Returns → None``:
@@ -6270,74 +6461,74 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+        Parameter ``wavelengths`` (misuka.Color0f):
             *no description available*
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``p`` (misuka.Point3f):
             *no description available*
 
-        Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+        Parameter ``n`` (misuka.Normal3f):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Interaction3f.assign(self, arg)
+    .. py:method:: misuka.Interaction3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Interaction3f`, /):
+        Parameter ``arg`` (misuka.Interaction3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Interaction3f.is_valid()
+    .. py:method:: misuka.Interaction3f.is_valid()
 
         Is the current interaction valid?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:property:: mitsuba.Interaction3f.n
+    .. py:property:: misuka.Interaction3f.n
 
         Geometric normal (only valid for ``SurfaceInteraction``)
 
-    .. py:property:: mitsuba.Interaction3f.p
+    .. py:property:: misuka.Interaction3f.p
 
         Position of the interaction in world coordinates
 
-    .. py:method:: mitsuba.Interaction3f.spawn_ray(self, d)
+    .. py:method:: misuka.Interaction3f.spawn_ray(self, d)
 
         Spawn a semi-infinite ray towards the given direction
 
-        Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``d`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Ray3f`:
+        Returns → misuka.Ray3f:
             *no description available*
 
-    .. py:method:: mitsuba.Interaction3f.spawn_ray_to(self, t)
+    .. py:method:: misuka.Interaction3f.spawn_ray_to(self, t)
 
         Spawn a finite ray towards the given position
 
-        Parameter ``t`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``t`` (misuka.Point3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Ray3f`:
+        Returns → misuka.Ray3f:
             *no description available*
 
-    .. py:property:: mitsuba.Interaction3f.t
+    .. py:property:: misuka.Interaction3f.t
 
         Distance traveled along the ray
 
-    .. py:property:: mitsuba.Interaction3f.time
+    .. py:property:: misuka.Interaction3f.time
 
         Time value associated with the interaction
 
-    .. py:property:: mitsuba.Interaction3f.wavelengths
+    .. py:property:: misuka.Interaction3f.wavelengths
 
         Wavelengths associated with the ray that produced this interaction
 
-    .. py:method:: mitsuba.Interaction3f.zero_(self, size=1)
+    .. py:method:: misuka.Interaction3f.zero_(self, size=1)
 
         Overloaded function.
 
@@ -6357,7 +6548,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.IrregularContinuousDistribution
+.. py:class:: misuka.IrregularContinuousDistribution
 
     Continuous 1D probability distribution defined in terms of an
     *irregularly* sampled linear interpolant
@@ -6389,7 +6580,7 @@
         initialization. The associated scale factor can be retrieved using the
         function normalization().
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.IrregularContinuousDistribution`) -> None``
+        2. ``__init__(self, arg: misuka.IrregularContinuousDistribution) -> None``
         
         Copy constructor
         
@@ -6399,18 +6590,18 @@
         ``nodes``
 
         
-    .. py:property:: mitsuba.IrregularContinuousDistribution.cdf
+    .. py:property:: misuka.IrregularContinuousDistribution.cdf
 
         Return the nodes of the underlying discretization
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.empty()
+    .. py:method:: misuka.IrregularContinuousDistribution.empty()
 
         Is the distribution object empty/uninitialized?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.eval_cdf(self, x, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.eval_cdf(self, x, active=True)
 
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
@@ -6424,7 +6615,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.eval_cdf_normalized(self, x, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.eval_cdf_normalized(self, x, active=True)
 
         Evaluate the unnormalized cumulative distribution function (CDF) at
         position ``p``
@@ -6438,7 +6629,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.eval_pdf(self, x, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.eval_pdf(self, x, active=True)
 
         Evaluate the unnormalized probability mass function (PDF) at position
         ``x``
@@ -6452,7 +6643,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.eval_pdf_normalized(self, x, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.eval_pdf_normalized(self, x, active=True)
 
         Evaluate the normalized probability mass function (PDF) at position
         ``x``
@@ -6466,45 +6657,45 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.integral()
+    .. py:method:: misuka.IrregularContinuousDistribution.integral()
 
         Return the original integral of PDF entries before normalization
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.interval_resolution()
+    .. py:method:: misuka.IrregularContinuousDistribution.interval_resolution()
 
         Return the minimum resolution of the discretization
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.max()
+    .. py:method:: misuka.IrregularContinuousDistribution.max()
 
         Returns → float:
             *no description available*
 
-    .. py:property:: mitsuba.IrregularContinuousDistribution.nodes
+    .. py:property:: misuka.IrregularContinuousDistribution.nodes
 
         Return the nodes of the underlying discretization
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.normalization()
+    .. py:method:: misuka.IrregularContinuousDistribution.normalization()
 
         Return the normalization factor (i.e. the inverse of sum())
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:property:: mitsuba.IrregularContinuousDistribution.pdf
+    .. py:property:: misuka.IrregularContinuousDistribution.pdf
 
         Return the nodes of the underlying discretization
 
-    .. py:property:: mitsuba.IrregularContinuousDistribution.range
+    .. py:property:: misuka.IrregularContinuousDistribution.range
 
         Return the range of the distribution
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.sample(self, value, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.sample(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -6520,7 +6711,7 @@
         Returns → drjit.llvm.ad.Float:
             The sampled position.
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.sample_pdf(self, value, active=True)
+    .. py:method:: misuka.IrregularContinuousDistribution.sample_pdf(self, value, active=True)
 
         Transform a uniformly distributed sample to the stored distribution
 
@@ -6539,14 +6730,14 @@
         1. the sampled position. 2. the normalized probability density of the
         sample.
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.size()
+    .. py:method:: misuka.IrregularContinuousDistribution.size()
 
         Return the number of discretizations
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.IrregularContinuousDistribution.update()
+    .. py:method:: misuka.IrregularContinuousDistribution.update()
 
         Update the internal state. Must be invoked when changing the pdf or
         range.
@@ -6554,9 +6745,9 @@
         Returns → None:
             *no description available*
 
-.. py:function:: mitsuba.Log(level, msg)
+.. py:function:: misuka.Log(level, msg)
 
-    Parameter ``level`` (:py:obj:`mitsuba.LogLevel`):
+    Parameter ``level`` (misuka.LogLevel):
         *no description available*
 
     Parameter ``msg`` (str):
@@ -6565,7 +6756,7 @@
     Returns → None:
         *no description available*
 
-.. py:class:: mitsuba.LogLevel
+.. py:class:: misuka.LogLevel
 
     Available Log message types
 
@@ -6591,9 +6782,9 @@
 
         Warning message
 
-.. py:class:: mitsuba.Logger
+.. py:class:: misuka.Logger
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Responsible for processing log messages
 
@@ -6605,66 +6796,66 @@
 
         Construct a new logger with the given minimum log level
 
-        Parameter ``arg`` (:py:obj:`mitsuba.LogLevel`, /):
+        Parameter ``arg`` (misuka.LogLevel, /):
             *no description available*
 
         
-    .. py:method:: mitsuba.Logger.add_appender(self, arg)
+    .. py:method:: misuka.Logger.add_appender(self, arg)
 
         Add an appender to this logger
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Appender`, /):
+        Parameter ``arg`` (misuka.Appender, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.appender(self, arg)
+    .. py:method:: misuka.Logger.appender(self, arg)
 
         Return one of the appenders
 
         Parameter ``arg`` (int, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Appender`:
+        Returns → misuka.Appender:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.appender_count()
+    .. py:method:: misuka.Logger.appender_count()
 
         Return the number of registered appenders
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.clear_appenders()
+    .. py:method:: misuka.Logger.clear_appenders()
 
         Remove all appenders from this logger
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.error_level()
+    .. py:method:: misuka.Logger.error_level()
 
         Return the current error level
 
-        Returns → :py:obj:`mitsuba.LogLevel`:
+        Returns → misuka.LogLevel:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.formatter()
+    .. py:method:: misuka.Logger.formatter()
 
         Return the logger's formatter implementation
 
-        Returns → :py:obj:`mitsuba.Formatter`:
+        Returns → misuka.Formatter:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.log_level()
+    .. py:method:: misuka.Logger.log_level()
 
         Return the current log level
 
-        Returns → :py:obj:`mitsuba.LogLevel`:
+        Returns → misuka.LogLevel:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.log_progress(self, progress, name, formatted, eta, ptr=None)
+    .. py:method:: misuka.Logger.log_progress(self, progress, name, formatted, eta, ptr=None)
 
         Process a progress message
 
@@ -6680,14 +6871,14 @@
         Parameter ``eta`` (str):
             Estimated time until 100% is reached.
 
-        Parameter ``ptr`` (typing_extensions.CapsuleType | None):
+        Parameter ``ptr`` (types.CapsuleType | None):
             Custom pointer payload. This is used to express the context of a
             progress message.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.read_log()
+    .. py:method:: misuka.Logger.read_log()
 
         Return the contents of the log file as a string
 
@@ -6696,17 +6887,17 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.remove_appender(self, arg)
+    .. py:method:: misuka.Logger.remove_appender(self, arg)
 
         Remove an appender from this logger
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Appender`, /):
+        Parameter ``arg`` (misuka.Appender, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.set_error_level(self, arg)
+    .. py:method:: misuka.Logger.set_error_level(self, arg)
 
         Set the error log level (this level and anything above will throw
         exceptions).
@@ -6715,89 +6906,89 @@
         errors. But *level* must always be less than Error, i.e. it isn't
         possible to cause errors not to throw an exception.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.LogLevel`, /):
+        Parameter ``arg`` (misuka.LogLevel, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.set_formatter(self, arg)
+    .. py:method:: misuka.Logger.set_formatter(self, arg)
 
         Set the logger's formatter implementation
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Formatter`, /):
+        Parameter ``arg`` (misuka.Formatter, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Logger.set_log_level(self, arg)
+    .. py:method:: misuka.Logger.set_log_level(self, arg)
 
         Set the log level (everything below will be ignored)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.LogLevel`, /):
+        Parameter ``arg`` (misuka.LogLevel, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-.. py:data:: mitsuba.MI_AUTHORS
+.. py:data:: misuka.MI_AUTHORS
     :type: str
-    :value: Realistic Graphics Lab, EPFL
+    :value: The misuka maintainers
 
-.. py:data:: mitsuba.MI_CIE_D65_NORMALIZATION
+.. py:data:: misuka.MI_CIE_D65_NORMALIZATION
     :type: float
     :value: 0.010101273599490354
 
-.. py:data:: mitsuba.MI_CIE_MAX
+.. py:data:: misuka.MI_CIE_MAX
     :type: float
     :value: 830.0
 
-.. py:data:: mitsuba.MI_CIE_MIN
+.. py:data:: misuka.MI_CIE_MIN
     :type: float
     :value: 360.0
 
-.. py:data:: mitsuba.MI_CIE_Y_NORMALIZATION
+.. py:data:: misuka.MI_CIE_Y_NORMALIZATION
     :type: float
     :value: 0.009367658735689113
 
-.. py:data:: mitsuba.MI_ENABLE_CUDA
+.. py:data:: misuka.MI_ENABLE_CUDA
     :type: bool
     :value: True
 
-.. py:data:: mitsuba.MI_ENABLE_EMBREE
+.. py:data:: misuka.MI_ENABLE_EMBREE
     :type: bool
     :value: True
 
-.. py:data:: mitsuba.MI_ENABLE_METAL
+.. py:data:: misuka.MI_ENABLE_METAL
     :type: bool
     :value: False
 
-.. py:data:: mitsuba.MI_FILTER_RESOLUTION
+.. py:data:: misuka.MI_FILTER_RESOLUTION
     :type: int
     :value: 31
 
-.. py:data:: mitsuba.MI_VERSION
+.. py:data:: misuka.MI_VERSION
     :type: str
-    :value: 3.9.0
+    :value: 0.1.0
 
-.. py:data:: mitsuba.MI_VERSION_MAJOR
-    :type: int
-    :value: 3
-
-.. py:data:: mitsuba.MI_VERSION_MINOR
-    :type: int
-    :value: 9
-
-.. py:data:: mitsuba.MI_VERSION_PATCH
+.. py:data:: misuka.MI_VERSION_MAJOR
     :type: int
     :value: 0
 
-.. py:data:: mitsuba.MI_YEAR
+.. py:data:: misuka.MI_VERSION_MINOR
+    :type: int
+    :value: 1
+
+.. py:data:: misuka.MI_VERSION_PATCH
+    :type: int
+    :value: 0
+
+.. py:data:: misuka.MI_YEAR
     :type: str
-    :value: 2024
+    :value: 2026
 
-.. py:class:: mitsuba.MarginalContinuous2D0
+.. py:class:: misuka.MarginalContinuous2D0
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -6870,7 +7061,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
+    .. py:method:: misuka.MarginalContinuous2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -6887,7 +7078,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D0.invert(self, sample, param=[], active=True)
+    .. py:method:: misuka.MarginalContinuous2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -6900,10 +7091,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D0.sample(self, sample, param=[], active=True)
+    .. py:method:: misuka.MarginalContinuous2D0.sample(self, sample, param=[], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -6919,10 +7110,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalContinuous2D1
+.. py:class:: misuka.MarginalContinuous2D1
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -6995,7 +7186,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalContinuous2D1.eval(self, pos, param=[0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7012,7 +7203,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D1.invert(self, sample, param=[0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D1.invert(self, sample, param=[0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7025,10 +7216,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D1.sample(self, sample, param=[0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D1.sample(self, sample, param=[0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7044,10 +7235,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalContinuous2D2
+.. py:class:: misuka.MarginalContinuous2D2
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7120,7 +7311,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalContinuous2D2.eval(self, pos, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7137,7 +7328,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D2.invert(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D2.invert(self, sample, param=[0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7150,10 +7341,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D2.sample(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D2.sample(self, sample, param=[0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7169,10 +7360,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalContinuous2D3
+.. py:class:: misuka.MarginalContinuous2D3
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7245,7 +7436,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalContinuous2D3.eval(self, pos, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7262,7 +7453,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D3.invert(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7275,10 +7466,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalContinuous2D3.sample(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalContinuous2D3.sample(self, sample, param=[0, 0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7294,10 +7485,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalDiscrete2D0
+.. py:class:: misuka.MarginalDiscrete2D0
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7370,7 +7561,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D0.eval(self, pos, param=[], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7387,7 +7578,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D0.invert(self, sample, param=[], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D0.invert(self, sample, param=[], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7400,10 +7591,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D0.sample(self, sample, param=[], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D0.sample(self, sample, param=[], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7419,10 +7610,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalDiscrete2D1
+.. py:class:: misuka.MarginalDiscrete2D1
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7495,7 +7686,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalDiscrete2D1.eval(self, pos, param=[0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D1.eval(self, pos, param=[0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7512,7 +7703,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D1.invert(self, sample, param=[0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D1.invert(self, sample, param=[0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7525,10 +7716,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D1.sample(self, sample, param=[0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D1.sample(self, sample, param=[0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7544,10 +7735,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalDiscrete2D2
+.. py:class:: misuka.MarginalDiscrete2D2
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7620,7 +7811,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalDiscrete2D2.eval(self, pos, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D2.eval(self, pos, param=[0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7637,7 +7828,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D2.invert(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D2.invert(self, sample, param=[0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7650,10 +7841,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D2.sample(self, sample, param=[0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D2.sample(self, sample, param=[0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7669,10 +7860,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.MarginalDiscrete2D3
+.. py:class:: misuka.MarginalDiscrete2D3
 
     Implements a marginal sample warping scheme for 2D distributions with
     linear interpolation and an optional dependence on additional
@@ -7745,7 +7936,7 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MarginalDiscrete2D3.eval(self, pos, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D3.eval(self, pos, param=[0, 0, 0], active=True)
 
         Evaluate the density at position ``pos``. The distribution is
         parameterized by ``param`` if applicable.
@@ -7762,7 +7953,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D3.invert(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D3.invert(self, sample, param=[0, 0, 0], active=True)
 
         Inverse of the mapping implemented in ``sample()``
 
@@ -7775,10 +7966,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MarginalDiscrete2D3.sample(self, sample, param=[0, 0, 0], active=True)
+    .. py:method:: misuka.MarginalDiscrete2D3.sample(self, sample, param=[0, 0, 0], active=True)
 
         Given a uniformly distributed 2D sample, draw a sample from the
         distribution (parameterized by ``param`` if applicable)
@@ -7794,102 +7985,102 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.Matrix2f
+.. py:class:: misuka.Matrix2f
 
-.. py:class:: mitsuba.Matrix2f16
+.. py:class:: misuka.Matrix2f16
 
-.. py:class:: mitsuba.Matrix2f64
+.. py:class:: misuka.Matrix2f64
 
-.. py:class:: mitsuba.Matrix3f
+.. py:class:: misuka.Matrix3f
 
-.. py:class:: mitsuba.Matrix3f16
+.. py:class:: misuka.Matrix3f16
 
-.. py:class:: mitsuba.Matrix3f64
+.. py:class:: misuka.Matrix3f64
 
-.. py:class:: mitsuba.Matrix4f
+.. py:class:: misuka.Matrix4f
 
-.. py:class:: mitsuba.Matrix4f16
+.. py:class:: misuka.Matrix4f16
 
-.. py:class:: mitsuba.Matrix4f64
+.. py:class:: misuka.Matrix4f64
 
-.. py:class:: mitsuba.Medium
+.. py:class:: misuka.Medium
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Medium.get_majorant(self, mi, active=True)
+    .. py:method:: misuka.Medium.get_majorant(self, mi, active=True)
 
         Returns the medium's majorant used for delta tracking
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.get_scattering_coefficients(self, mi, active=True)
+    .. py:method:: misuka.Medium.get_scattering_coefficients(self, mi, active=True)
 
         Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
         at a given MediumInteraction mi
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f, misuka.Color3f]:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.has_spectral_extinction()
+    .. py:method:: misuka.Medium.has_spectral_extinction()
 
         Returns whether this medium has a spectrally varying extinction
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.intersect_aabb(self, ray)
+    .. py:method:: misuka.Medium.intersect_aabb(self, ray)
 
         Intersects a ray with the medium's bounding box
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.is_homogeneous()
+    .. py:method:: misuka.Medium.is_homogeneous()
 
         Returns whether this medium is homogeneous
 
         Returns → bool:
             *no description available*
 
-    .. py:property:: mitsuba.Medium.m_has_spectral_extinction
+    .. py:property:: misuka.Medium.m_has_spectral_extinction
 
         (self) -> bool
 
-    .. py:property:: mitsuba.Medium.m_is_homogeneous
+    .. py:property:: misuka.Medium.m_is_homogeneous
 
         (self) -> bool
 
-    .. py:property:: mitsuba.Medium.m_sample_emitters
+    .. py:property:: misuka.Medium.m_sample_emitters
 
         (self) -> bool
 
-    .. py:method:: mitsuba.Medium.phase_function()
+    .. py:method:: misuka.Medium.phase_function()
 
         Return the phase function of this medium
 
-        Returns → :py:obj:`mitsuba.PhaseFunction`:
+        Returns → misuka.PhaseFunction:
             *no description available*
 
-    .. py:method:: mitsuba.Medium.sample_interaction(self, ray, sample, channel, active)
+    .. py:method:: misuka.Medium.sample_interaction(self, ray, sample, channel, active)
 
         Sample a free-flight distance in the medium.
 
@@ -7898,7 +8089,7 @@
         decide whether the MediumInteraction corresponds to a real or null
         scattering event.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             Ray, along which a distance should be sampled
 
         Parameter ``sample`` (drjit.llvm.ad.Float):
@@ -7911,12 +8102,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.MediumInteraction3f`:
+        Returns → misuka.MediumInteraction3f:
             This method returns a MediumInteraction. The MediumInteraction
             will always be valid, except if the ray missed the Medium's
             bounding box.
 
-    .. py:method:: mitsuba.Medium.transmittance_eval_pdf(self, mi, si, active)
+    .. py:method:: misuka.Medium.transmittance_eval_pdf(self, mi, si, active)
 
         Compute the transmittance and PDF
 
@@ -7929,28 +8120,28 @@
         the fact that the free-flight distance sampling distribution can
         depend on the wavelength.
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f]:
             This method returns a pair of (Transmittance, PDF).
 
-    .. py:method:: mitsuba.Medium.use_emitter_sampling()
+    .. py:method:: misuka.Medium.use_emitter_sampling()
 
         Returns whether this specific medium instance uses emitter sampling
 
         Returns → bool:
             *no description available*
 
-.. py:class:: mitsuba.MediumInteraction3f
+.. py:class:: misuka.MediumInteraction3f
 
-    Base class: :py:obj:`mitsuba.Interaction3f`
+    Base class: misuka.Interaction3f
 
     Overloaded function.
 
@@ -7958,133 +8149,133 @@
 
     //! @}
 
-    2. ``__init__(self, arg: :py:obj:`mitsuba.MediumInteraction3f`) -> None``
+    2. ``__init__(self, arg: misuka.MediumInteraction3f) -> None``
 
     Copy constructor
 
-    .. py:method:: mitsuba.MediumInteraction3f.assign(self, arg)
+    .. py:method:: misuka.MediumInteraction3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.MediumInteraction3f`, /):
+        Parameter ``arg`` (misuka.MediumInteraction3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.MediumInteraction3f.combined_extinction
+    .. py:property:: misuka.MediumInteraction3f.combined_extinction
 
-        (self) -> :py:obj:`mitsuba.Color3f`
+        (self) -> misuka.Color3f
 
-    .. py:property:: mitsuba.MediumInteraction3f.medium
+    .. py:property:: misuka.MediumInteraction3f.medium
 
         Pointer to the associated medium
 
-    .. py:property:: mitsuba.MediumInteraction3f.mint
+    .. py:property:: misuka.MediumInteraction3f.mint
 
         mint used when sampling the given distance ``t``
 
-    .. py:property:: mitsuba.MediumInteraction3f.sh_frame
+    .. py:property:: misuka.MediumInteraction3f.sh_frame
 
         Shading frame
 
-    .. py:property:: mitsuba.MediumInteraction3f.sigma_n
+    .. py:property:: misuka.MediumInteraction3f.sigma_n
 
-        (self) -> :py:obj:`mitsuba.Color3f`
+        (self) -> misuka.Color3f
 
-    .. py:property:: mitsuba.MediumInteraction3f.sigma_s
+    .. py:property:: misuka.MediumInteraction3f.sigma_s
 
-        (self) -> :py:obj:`mitsuba.Color3f`
+        (self) -> misuka.Color3f
 
-    .. py:property:: mitsuba.MediumInteraction3f.sigma_t
+    .. py:property:: misuka.MediumInteraction3f.sigma_t
 
-        (self) -> :py:obj:`mitsuba.Color3f`
+        (self) -> misuka.Color3f
 
-    .. py:method:: mitsuba.MediumInteraction3f.to_local(self, v)
+    .. py:method:: misuka.MediumInteraction3f.to_local(self, v)
 
         Convert a world-space vector into local shading coordinates (defined
         by ``wi``)
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.MediumInteraction3f.to_world(self, v)
+    .. py:method:: misuka.MediumInteraction3f.to_world(self, v)
 
         Convert a local shading-space (defined by ``wi``) vector into world
         space
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:property:: mitsuba.MediumInteraction3f.wi
+    .. py:property:: misuka.MediumInteraction3f.wi
 
         Incident direction in world frame
 
-.. py:class:: mitsuba.MediumPtr
+.. py:class:: misuka.MediumPtr
 
-    .. py:method:: mitsuba.MediumPtr.get_majorant(self, mi, active=True)
+    .. py:method:: misuka.MediumPtr.get_majorant(self, mi, active=True)
 
         Returns the medium's majorant used for delta tracking
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.get_scattering_coefficients(self, mi, active=True)
+    .. py:method:: misuka.MediumPtr.get_scattering_coefficients(self, mi, active=True)
 
         Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
         at a given MediumInteraction mi
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f, misuka.Color3f]:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.has_spectral_extinction()
+    .. py:method:: misuka.MediumPtr.has_spectral_extinction()
 
         Returns whether this medium has a spectrally varying extinction
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.intersect_aabb(self, ray)
+    .. py:method:: misuka.MediumPtr.intersect_aabb(self, ray)
 
         Intersects a ray with the medium's bounding box
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.is_homogeneous()
+    .. py:method:: misuka.MediumPtr.is_homogeneous()
 
         Returns whether this medium is homogeneous
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.phase_function()
+    .. py:method:: misuka.MediumPtr.phase_function()
 
         Return the phase function of this medium
 
-        Returns → :py:obj:`mitsuba.PhaseFunctionPtr`:
+        Returns → misuka.PhaseFunctionPtr:
             *no description available*
 
-    .. py:method:: mitsuba.MediumPtr.sample_interaction(self, ray, sample, channel, active)
+    .. py:method:: misuka.MediumPtr.sample_interaction(self, ray, sample, channel, active)
 
         Sample a free-flight distance in the medium.
 
@@ -8093,7 +8284,7 @@
         decide whether the MediumInteraction corresponds to a real or null
         scattering event.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             Ray, along which a distance should be sampled
 
         Parameter ``sample`` (drjit.llvm.ad.Float):
@@ -8106,12 +8297,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.MediumInteraction3f`:
+        Returns → misuka.MediumInteraction3f:
             This method returns a MediumInteraction. The MediumInteraction
             will always be valid, except if the ray missed the Medium's
             bounding box.
 
-    .. py:method:: mitsuba.MediumPtr.transmittance_eval_pdf(self, mi, si, active)
+    .. py:method:: misuka.MediumPtr.transmittance_eval_pdf(self, mi, si, active)
 
         Compute the transmittance and PDF
 
@@ -8124,28 +8315,28 @@
         the fact that the free-flight distance sampling distribution can
         depend on the wavelength.
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             *no description available*
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Color3f]:
             This method returns a pair of (Transmittance, PDF).
 
-    .. py:method:: mitsuba.MediumPtr.use_emitter_sampling()
+    .. py:method:: misuka.MediumPtr.use_emitter_sampling()
 
         Returns whether this specific medium instance uses emitter sampling
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-.. py:class:: mitsuba.MemoryMappedFile
+.. py:class:: misuka.MemoryMappedFile
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Basic cross-platform abstraction for memory mapped files
 
@@ -8158,45 +8349,45 @@
 
         Overloaded function.
         
-        1. ``__init__(self, filename: :py:obj:`mitsuba.filesystem.path`, size: int) -> None``
+        1. ``__init__(self, filename: misuka.filesystem.path, size: int) -> None``
         
         Create a new memory-mapped file of the specified size
         
-        2. ``__init__(self, filename: :py:obj:`mitsuba.filesystem.path`, write: bool = False) -> None``
+        2. ``__init__(self, filename: misuka.filesystem.path, write: bool = False) -> None``
         
         Map the specified file into memory
         
-        3. ``__init__(self, filename: :py:obj:`mitsuba.filesystem.path`, array: ndarray[device='cpu']) -> None``
+        3. ``__init__(self, filename: misuka.filesystem.path, array: ndarray[device='cpu']) -> None``
 
-        Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
+        Parameter ``filename`` (misuka.filesystem.path):
             *no description available*
 
         Parameter ``size`` (int):
             *no description available*
 
         
-    .. py:method:: mitsuba.MemoryMappedFile.can_write()
+    .. py:method:: misuka.MemoryMappedFile.can_write()
 
         Return whether the mapped memory region can be modified
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryMappedFile.data()
+    .. py:method:: misuka.MemoryMappedFile.data()
 
         Return a pointer to the file contents in memory
 
-        Returns → typing_extensions.CapsuleType:
+        Returns → types.CapsuleType:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryMappedFile.filename()
+    .. py:method:: misuka.MemoryMappedFile.filename()
 
         Return the associated filename
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryMappedFile.resize(self, arg)
+    .. py:method:: misuka.MemoryMappedFile.resize(self, arg)
 
         Resize the memory-mapped file
 
@@ -8209,16 +8400,16 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryMappedFile.size()
+    .. py:method:: misuka.MemoryMappedFile.size()
 
         Return the size of the mapped region
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.MemoryStream
+.. py:class:: misuka.MemoryStream
 
-    Base class: :py:obj:`mitsuba.Stream`
+    Base class: misuka.Stream
 
     Simple memory buffer-based stream with automatic memory management. It
     always has read & write capabilities.
@@ -8237,30 +8428,30 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.MemoryStream.capacity()
+    .. py:method:: misuka.MemoryStream.capacity()
 
         Return the current capacity of the underlying memory buffer
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryStream.owns_buffer()
+    .. py:method:: misuka.MemoryStream.owns_buffer()
 
         Return whether or not the memory stream owns the underlying buffer
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.MemoryStream.raw_buffer()
+    .. py:method:: misuka.MemoryStream.raw_buffer()
 
         Returns → bytes:
             *no description available*
 
-.. py:class:: mitsuba.Mesh
+.. py:class:: misuka.Mesh
 
-    Base class: :py:obj:`mitsuba.Shape`
+    Base class: misuka.Shape
 
-    __init__(self, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.Properties` = Properties[
+    __init__(self, name: str, vertex_count: int, face_count: int, props: misuka.Properties = Properties[
       plugin_name = "",
       id = "",
       elements = {
@@ -8270,10 +8461,10 @@
 
     Overloaded function.
 
-    1. ``__init__(self, props: :py:obj:`mitsuba.Properties`) -> None``
+    1. ``__init__(self, props: misuka.Properties) -> None``
 
 
-    2. ``__init__(self, name: str, vertex_count: int, face_count: int, props: :py:obj:`mitsuba.Properties` = Properties[
+    2. ``__init__(self, name: str, vertex_count: int, face_count: int, props: misuka.Properties = Properties[
       plugin_name = "",
       id = "",
       elements = {
@@ -8287,7 +8478,7 @@
     mechanism. When initializing these buffers through another method, an
     explicit call to initialize must be made once all buffers are filled.
 
-    .. py:method:: mitsuba.Mesh.add_attribute(self, name, size, buffer)
+    .. py:method:: misuka.Mesh.add_attribute(self, name, size, buffer)
 
         Add an attribute buffer with the given ``name`` and ``dim``
 
@@ -8303,7 +8494,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.attribute_buffer(self, name)
+    .. py:method:: misuka.Mesh.attribute_buffer(self, name)
 
         Return the mesh attribute associated with ``name``
 
@@ -8313,12 +8504,12 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.build_directed_edges()
+    .. py:method:: misuka.Mesh.build_directed_edges()
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.edge_indices(self, tri_index, edge_index, active=True)
+    .. py:method:: misuka.Mesh.edge_indices(self, tri_index, edge_index, active=True)
 
         Returns the vertex indices associated with edge ``edge_index`` (0..2)
         of triangle ``tri_index``.
@@ -8332,17 +8523,17 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector2u`:
+        Returns → misuka.Vector2u:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.face_count()
+    .. py:method:: misuka.Mesh.face_count()
 
         Return the total number of faces
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.face_indices(self, index, active=True)
+    .. py:method:: misuka.Mesh.face_indices(self, index, active=True)
 
         Returns the vertex indices associated with triangle ``index``
 
@@ -8352,10 +8543,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector3u`:
+        Returns → misuka.Vector3u:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.face_normal(self, index, active=True)
+    .. py:method:: misuka.Mesh.face_normal(self, index, active=True)
 
         Returns the normal direction of the face with index ``index``
 
@@ -8365,43 +8556,43 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.faces_buffer()
+    .. py:method:: misuka.Mesh.faces_buffer()
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.has_face_normals()
+    .. py:method:: misuka.Mesh.has_face_normals()
 
         Does this mesh use face normals?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.has_mesh_attributes()
+    .. py:method:: misuka.Mesh.has_mesh_attributes()
 
         Does this mesh have additional mesh attributes?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.has_vertex_normals()
+    .. py:method:: misuka.Mesh.has_vertex_normals()
 
         Does this mesh have per-vertex normals?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.has_vertex_texcoords()
+    .. py:method:: misuka.Mesh.has_vertex_texcoords()
 
         Does this mesh have per-vertex texture coordinates?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.initialize()
+    .. py:method:: misuka.Mesh.initialize()
 
         Must be called once at the end of the construction of a Mesh
 
@@ -8412,17 +8603,17 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.merge(self, other)
+    .. py:method:: misuka.Mesh.merge(self, other)
 
         Merge two meshes into one
 
-        Parameter ``other`` (:py:obj:`mitsuba.Mesh`):
+        Parameter ``other`` (misuka.Mesh):
             *no description available*
 
         Returns → ref<mitsuba::Mesh<drjit::DiffArray<(JitBackend)2, float>, mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul> > >:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.opposite_dedge(self, index, active=True)
+    .. py:method:: misuka.Mesh.opposite_dedge(self, index, active=True)
 
         Returns the opposite edge index associated with directed edge
         ``index``
@@ -8440,31 +8631,31 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.ray_intersect_triangle(self, index, ray, active=True)
+    .. py:method:: misuka.Mesh.ray_intersect_triangle(self, index, ray, active=True)
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.recompute_bbox()
+    .. py:method:: misuka.Mesh.recompute_bbox()
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.recompute_vertex_normals()
+    .. py:method:: misuka.Mesh.recompute_vertex_normals()
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.remove_attribute(self, name)
+    .. py:method:: misuka.Mesh.remove_attribute(self, name)
 
         Remove an attribute with the given ``name``.
 
@@ -8478,14 +8669,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_count()
+    .. py:method:: misuka.Mesh.vertex_count()
 
         Return the total number of vertices
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_normal(self, index, active=True)
+    .. py:method:: misuka.Mesh.vertex_normal(self, index, active=True)
 
         Returns the normal direction of the vertex with index ``index``
 
@@ -8495,15 +8686,15 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Normal3f`:
+        Returns → misuka.Normal3f:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_normals_buffer()
+    .. py:method:: misuka.Mesh.vertex_normals_buffer()
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_position(self, index, active=True)
+    .. py:method:: misuka.Mesh.vertex_position(self, index, active=True)
 
         Returns the world-space position of the vertex with index ``index``
 
@@ -8513,15 +8704,15 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_positions_buffer()
+    .. py:method:: misuka.Mesh.vertex_positions_buffer()
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_texcoord(self, index, active=True)
+    .. py:method:: misuka.Mesh.vertex_texcoord(self, index, active=True)
 
         Returns the UV texture coordinates of the vertex with index ``index``
 
@@ -8531,15 +8722,15 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.vertex_texcoords_buffer()
+    .. py:method:: misuka.Mesh.vertex_texcoords_buffer()
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Mesh.write_ply(self, filename)
+    .. py:method:: misuka.Mesh.write_ply(self, filename)
 
         Overloaded function.
 
@@ -8550,7 +8741,7 @@
         Parameter ``filename`` (str):
             Target file path on disk
 
-        2. ``write_ply(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+        2. ``write_ply(self, stream: misuka.Stream) -> None``
 
         Write the mesh encoded in binary PLY format to a stream
 
@@ -8560,9 +8751,9 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.MeshPtr
+.. py:class:: misuka.MeshPtr
 
-    .. py:method:: mitsuba.MeshPtr.edge_indices(self, tri_index, edge_index, active=True)
+    .. py:method:: misuka.MeshPtr.edge_indices(self, tri_index, edge_index, active=True)
 
         Returns the vertex indices associated with edge ``edge_index`` (0..2)
         of triangle ``tri_index``.
@@ -8576,17 +8767,17 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector2u`:
+        Returns → misuka.Vector2u:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.face_count()
+    .. py:method:: misuka.MeshPtr.face_count()
 
         Return the total number of faces
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.face_indices(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.face_indices(self, index, active=True)
 
         Returns the vertex indices associated with triangle ``index``
 
@@ -8596,10 +8787,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector3u`:
+        Returns → misuka.Vector3u:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.face_normal(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.face_normal(self, index, active=True)
 
         Returns the normal direction of the face with index ``index``
 
@@ -8609,45 +8800,45 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.has_face_normals()
+    .. py:method:: misuka.MeshPtr.has_face_normals()
 
         Does this mesh use face normals?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.has_flipped_normals()
+    .. py:method:: misuka.MeshPtr.has_flipped_normals()
 
         Does this shape have flipped normals?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.has_mesh_attributes()
+    .. py:method:: misuka.MeshPtr.has_mesh_attributes()
 
         Does this mesh have additional mesh attributes?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.has_vertex_normals()
+    .. py:method:: misuka.MeshPtr.has_vertex_normals()
 
         Does this mesh have per-vertex normals?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.has_vertex_texcoords()
+    .. py:method:: misuka.MeshPtr.has_vertex_texcoords()
 
         Does this mesh have per-vertex texture coordinates?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.opposite_dedge(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.opposite_dedge(self, index, active=True)
 
         Returns the opposite edge index associated with directed edge
         ``index``
@@ -8665,28 +8856,28 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.ray_intersect_triangle(self, index, ray, active=True)
+    .. py:method:: misuka.MeshPtr.ray_intersect_triangle(self, index, ray, active=True)
 
         Parameter ``index`` (drjit.llvm.ad.UInt):
             *no description available*
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.vertex_count()
+    .. py:method:: misuka.MeshPtr.vertex_count()
 
         Return the total number of vertices
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.vertex_normal(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.vertex_normal(self, index, active=True)
 
         Returns the normal direction of the vertex with index ``index``
 
@@ -8696,10 +8887,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Normal3f`:
+        Returns → misuka.Normal3f:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.vertex_position(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.vertex_position(self, index, active=True)
 
         Returns the world-space position of the vertex with index ``index``
 
@@ -8709,10 +8900,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.MeshPtr.vertex_texcoord(self, index, active=True)
+    .. py:method:: misuka.MeshPtr.vertex_texcoord(self, index, active=True)
 
         Returns the UV texture coordinates of the vertex with index ``index``
 
@@ -8722,123 +8913,123 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-.. py:class:: mitsuba.MicrofacetDistribution
+.. py:class:: misuka.MicrofacetDistribution
 
-    .. py:method:: mitsuba.MicrofacetDistribution.G(self, wi, wo, m)
+    .. py:method:: misuka.MicrofacetDistribution.G(self, wi, wo, m)
 
         Smith's separable shadowing-masking approximation
 
-        Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wi`` (misuka.Vector3f):
             *no description available*
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             *no description available*
 
-        Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``m`` (misuka.Vector3f):
             *no description available*
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.alpha()
+    .. py:method:: misuka.MicrofacetDistribution.alpha()
 
         Return the roughness (isotropic case)
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.alpha_u()
+    .. py:method:: misuka.MicrofacetDistribution.alpha_u()
 
         Return the roughness along the tangent direction
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.alpha_v()
+    .. py:method:: misuka.MicrofacetDistribution.alpha_v()
 
         Return the roughness along the bitangent direction
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.eval(self, m)
+    .. py:method:: misuka.MicrofacetDistribution.eval(self, m)
 
         Evaluate the microfacet distribution function
 
-        Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``m`` (misuka.Vector3f):
             The microfacet normal
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.is_anisotropic()
+    .. py:method:: misuka.MicrofacetDistribution.is_anisotropic()
 
         Is this an anisotropic microfacet distribution?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.is_isotropic()
+    .. py:method:: misuka.MicrofacetDistribution.is_isotropic()
 
         Is this an isotropic microfacet distribution?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.pdf(self, wi, m)
+    .. py:method:: misuka.MicrofacetDistribution.pdf(self, wi, m)
 
         Returns the density function associated with the sample() function.
 
-        Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wi`` (misuka.Vector3f):
             The incident direction (only relevant if visible normal sampling
             is used)
 
-        Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``m`` (misuka.Vector3f):
             The microfacet normal
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.sample(self, wi, sample)
+    .. py:method:: misuka.MicrofacetDistribution.sample(self, wi, sample)
 
         Draw a sample from the microfacet normal distribution and return the
         associated probability density
 
-        Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wi`` (misuka.Vector3f):
             The incident direction. Only used if visible normal sampling is
             enabled.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D sample
 
-        Returns → tuple[:py:obj:`mitsuba.Normal3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Normal3f, drjit.llvm.ad.Float]:
             A tuple consisting of the sampled microfacet normal and the
             associated solid angle density
 
-    .. py:method:: mitsuba.MicrofacetDistribution.sample_visible()
+    .. py:method:: misuka.MicrofacetDistribution.sample_visible()
 
         Return whether or not only visible normals are sampled?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.sample_visible_11(self, cos_theta_i, sample)
+    .. py:method:: misuka.MicrofacetDistribution.sample_visible_11(self, cos_theta_i, sample)
 
         Visible normal sampling code for the alpha=1 case
 
         Parameter ``cos_theta_i`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.scale_alpha(self, value)
+    .. py:method:: misuka.MicrofacetDistribution.scale_alpha(self, value)
 
         Scale the roughness values by some constant
 
@@ -8848,27 +9039,27 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.smith_g1(self, v, m)
+    .. py:method:: misuka.MicrofacetDistribution.smith_g1(self, v, m)
 
         Smith's shadowing-masking function for a single direction
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             An arbitrary direction
 
-        Parameter ``m`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``m`` (misuka.Vector3f):
             The microfacet normal
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.MicrofacetDistribution.type()
+    .. py:method:: misuka.MicrofacetDistribution.type()
 
         Return the distribution type
 
-        Returns → :py:obj:`mitsuba.MicrofacetType`:
+        Returns → misuka.MicrofacetType:
             *no description available*
 
-.. py:class:: mitsuba.MicrofacetType
+.. py:class:: misuka.MicrofacetType
 
     Supported normal distribution functions
 
@@ -8882,15 +9073,15 @@
 
         GGX: Long-tailed distribution for very rough surfaces (aka. Trowbridge-Reitz distr.)
 
-.. py:class:: mitsuba.MonteCarloIntegrator
+.. py:class:: misuka.MonteCarloIntegrator
 
-    Base class: :py:obj:`mitsuba.SamplingIntegrator`
+    Base class: misuka.SamplingIntegrator
 
-.. py:class:: mitsuba.Normal3d
+.. py:class:: misuka.Normal3d
 
-.. py:class:: mitsuba.Normal3f
+.. py:class:: misuka.Normal3f
 
-.. py:class:: mitsuba.Object
+.. py:class:: misuka.Object
 
     Object base class with builtin reference counting
 
@@ -8922,17 +9113,17 @@
         
         Import default constructors
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.Object`) -> None``
+        2. ``__init__(self, arg: misuka.Object) -> None``
 
         
-    .. py:method:: mitsuba.Object.class_name()
+    .. py:method:: misuka.Object.class_name()
 
         Return the C++ class name of this object (e.g. "SmoothDiffuse")
 
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Object.expand()
+    .. py:method:: misuka.Object.expand()
 
         Expand the object into a list of sub-objects and return them
 
@@ -8945,14 +9136,14 @@
         Returns → list:
             *no description available*
 
-    .. py:method:: mitsuba.Object.id()
+    .. py:method:: misuka.Object.id()
 
         Return an identifier of the current instance (or empty if none)
 
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Object.parameters_changed(self, keys=[])
+    .. py:method:: misuka.Object.parameters_changed(self, keys=[])
 
         Update internal state after applying changes to parameters
 
@@ -8977,11 +9168,11 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Object.ptr
+    .. py:property:: misuka.Object.ptr
 
         (self) -> int
 
-    .. py:method:: mitsuba.Object.set_id(self, id)
+    .. py:method:: misuka.Object.set_id(self, id)
 
         Set the identifier of the current instance (no-op if not supported)
 
@@ -8991,7 +9182,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Object.traverse(self, cb)
+    .. py:method:: misuka.Object.traverse(self, cb)
 
         Traverse the attributes and object graph of this instance
 
@@ -9005,20 +9196,20 @@
         See also:
             TraversalCallback
 
-        Parameter ``cb`` (:py:obj:`mitsuba.TraversalCallback`):
+        Parameter ``cb`` (misuka.TraversalCallback):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Object.variant_name()
+    .. py:method:: misuka.Object.variant_name()
 
         Return the instance variant (empty if this is not a variant object)
 
         Returns → str:
             *no description available*
 
-.. py:class:: mitsuba.ObjectType
+.. py:class:: misuka.ObjectType
 
     Available scene object types
 
@@ -9087,9 +9278,9 @@
 
         A filter used to reconstruct/resample images
 
-.. py:class:: mitsuba.OptixDenoiser
+.. py:class:: misuka.OptixDenoiser
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Constructs an OptiX denoiser
 
@@ -9116,7 +9307,7 @@
     Returns:
         A callable object which will apply the OptiX denoiser.
 
-    .. py:method:: mitsuba.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
+    .. py:method:: misuka.OptixDenoiser.__call__(self, noisy, albedo, normals, to_sensor=None, flow, previous_denoised)
 
         Overloaded function.
 
@@ -9164,7 +9355,7 @@
         Returns → drjit.llvm.ad.TensorXf:
             The denoised input.
 
-        2. ``__call__(self, noisy: :py:obj:`mitsuba.Bitmap`, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> :py:obj:`mitsuba.Bitmap```
+        2. ``__call__(self, noisy: misuka.Bitmap, albedo_ch: str = '', normals_ch: str = '', to_sensor: object | None = None, flow_ch: str = '', previous_denoised_ch: str = '', noisy_ch: str = '<root>') -> misuka.Bitmap``
 
         Apply denoiser on inputs which are Bitmap objects.
 
@@ -9216,7 +9407,7 @@
         Returns → drjit.llvm.ad.TensorXf:
             The denoised input.
 
-.. py:class:: mitsuba.PCG32
+.. py:class:: misuka.PCG32
 
     Implementation of PCG32, a member of the PCG family of random number
     generators proposed by Melissa O'Neill.
@@ -9326,11 +9517,11 @@
             *no description available*
 
         
-    .. py:property:: mitsuba.PCG32.inc
+    .. py:property:: misuka.PCG32.inc
 
         Sequence increment of the PCG32 PRNG (an unsigned 64-bit integer or integer array). Please see the original paper for details on this field.
 
-    .. py:method:: mitsuba.PCG32.next_float(self, dtype, mask=True)
+    .. py:method:: misuka.PCG32.next_float(self, dtype, mask=True)
 
         Generate a uniformly distributed precision floating point number on the
         interval :math:`[0, 1)`.
@@ -9351,7 +9542,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float16()
+    .. py:method:: misuka.PCG32.next_float16()
 
         Overloaded function.
 
@@ -9368,7 +9559,7 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float16_normal()
+    .. py:method:: misuka.PCG32.next_float16_normal()
 
         Overloaded function.
 
@@ -9384,7 +9575,7 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float32()
+    .. py:method:: misuka.PCG32.next_float32()
 
         Overloaded function.
 
@@ -9401,7 +9592,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float32_normal()
+    .. py:method:: misuka.PCG32.next_float32_normal()
 
         Overloaded function.
 
@@ -9417,7 +9608,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float64()
+    .. py:method:: misuka.PCG32.next_float64()
 
         Overloaded function.
 
@@ -9434,7 +9625,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float64_normal()
+    .. py:method:: misuka.PCG32.next_float64_normal()
 
         Overloaded function.
 
@@ -9450,7 +9641,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_float_normal(self, dtype, mask=True)
+    .. py:method:: misuka.PCG32.next_float_normal(self, dtype, mask=True)
 
         Generate a (standard) normally distributed precision floating point number.
 
@@ -9469,7 +9660,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_uint32()
+    .. py:method:: misuka.PCG32.next_uint32()
 
         Overloaded function.
 
@@ -9485,7 +9676,7 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_uint32_bounded(self, bound, mask=Bool(True))
+    .. py:method:: misuka.PCG32.next_uint32_bounded(self, bound, mask=Bool(True))
 
         Generate a uniformly distributed 32-bit integer number on the
         interval :math:`[0, \texttt{bound})`.
@@ -9502,7 +9693,7 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_uint64()
+    .. py:method:: misuka.PCG32.next_uint64()
 
         Overloaded function.
 
@@ -9520,7 +9711,7 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.next_uint64_bounded(self, bound, mask=Bool(True))
+    .. py:method:: misuka.PCG32.next_uint64_bounded(self, bound, mask=Bool(True))
 
         Generate a uniformly distributed 64-bit integer number on the
         interval :math:`[0, \texttt{bound})`.
@@ -9537,7 +9728,7 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float(self, dtype, mask=True)
+    .. py:method:: misuka.PCG32.prev_float(self, dtype, mask=True)
 
         Generate the previous uniformly distributed precision floating point number
         on the half-open interval :math:`[0, 1)` by stepping the PCG32 state backwards.
@@ -9558,7 +9749,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float16()
+    .. py:method:: misuka.PCG32.prev_float16()
 
         Overloaded function.
 
@@ -9575,7 +9766,7 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float16_normal()
+    .. py:method:: misuka.PCG32.prev_float16_normal()
 
         Overloaded function.
 
@@ -9592,7 +9783,7 @@
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float32()
+    .. py:method:: misuka.PCG32.prev_float32()
 
         Overloaded function.
 
@@ -9609,7 +9800,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float32_normal()
+    .. py:method:: misuka.PCG32.prev_float32_normal()
 
         Overloaded function.
 
@@ -9626,7 +9817,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float64()
+    .. py:method:: misuka.PCG32.prev_float64()
 
         Overloaded function.
 
@@ -9643,7 +9834,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float64_normal()
+    .. py:method:: misuka.PCG32.prev_float64_normal()
 
         Overloaded function.
 
@@ -9660,7 +9851,7 @@
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_float_normal(self, dtype, mask=True)
+    .. py:method:: misuka.PCG32.prev_float_normal(self, dtype, mask=True)
 
         Generate the previous (standard) normally distributed precision floating point number
         by stepping the PCG32 state backwards.
@@ -9680,7 +9871,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_uint32()
+    .. py:method:: misuka.PCG32.prev_uint32()
 
         Overloaded function.
 
@@ -9697,7 +9888,7 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.prev_uint64()
+    .. py:method:: misuka.PCG32.prev_uint64()
 
         Overloaded function.
 
@@ -9716,7 +9907,7 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.PCG32.seed(self, initstate=UInt64(0x853c49e6748fea9b), initseq=UInt64(0xda3e39cb94b95bdb))
+    .. py:method:: misuka.PCG32.seed(self, initstate=UInt64(0x853c49e6748fea9b), initseq=UInt64(0xda3e39cb94b95bdb))
 
         Seed the random number generator with the given initial state and sequence ID.
 
@@ -9733,11 +9924,11 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.PCG32.state
+    .. py:property:: misuka.PCG32.state
 
         Sequence state of the PCG32 PRNG (an unsigned 64-bit integer or integer array). Please see the original paper for details on this field.
 
-.. py:class:: mitsuba.ParamFlags
+.. py:class:: misuka.ParamFlags
 
     This list of flags is used to classify the different types of
     parameters exposed by the plugins.
@@ -9764,11 +9955,11 @@
 
         This parameter is read-only
 
-.. py:class:: mitsuba.PhaseFunction
+.. py:class:: misuka.PhaseFunction
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.PhaseFunction.component_count(self, active=True)
+    .. py:method:: misuka.PhaseFunction.component_count(self, active=True)
 
         Number of components this phase function is comprised of.
 
@@ -9778,33 +9969,33 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunction.eval_pdf(self, ctx, mi, wo, active=True)
+    .. py:method:: misuka.PhaseFunction.eval_pdf(self, ctx, mi, wo, active=True)
 
         Evaluates the phase function model value and PDF
 
         The function returns the value (which often equals the PDF) of the
         phase function in the query direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
+        Parameter ``ctx`` (misuka.PhaseFunctionContext):
             A phase function sampling context, contains information about the
             transport mode
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             An outgoing direction to evaluate.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float]:
             The value and the sampling PDF of the phase function in direction
             wo
 
-    .. py:method:: mitsuba.PhaseFunction.flags(self, index, active=True)
+    .. py:method:: misuka.PhaseFunction.flags(self, index, active=True)
 
         Overloaded function.
 
@@ -9825,18 +10016,18 @@
         Returns → int:
             *no description available*
 
-    .. py:property:: mitsuba.PhaseFunction.m_flags
+    .. py:property:: misuka.PhaseFunction.m_flags
 
         Type of phase function (e.g. anisotropic)
 
-    .. py:method:: mitsuba.PhaseFunction.max_projected_area()
+    .. py:method:: misuka.PhaseFunction.max_projected_area()
 
         Return the maximum projected area of the microflake distribution
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunction.projected_area(self, mi, active=True)
+    .. py:method:: misuka.PhaseFunction.projected_area(self, mi, active=True)
 
         Returns the microflake projected area
 
@@ -9844,7 +10035,7 @@
         defining the phase function. For non-microflake phase functions, e.g.
         isotropic or Henyey-Greenstein, this should return a value of 1.
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
@@ -9855,17 +10046,17 @@
         Returns → drjit.llvm.ad.Float:
             The projected area in direction ``mi.wi`` at position ``mi.p``
 
-    .. py:method:: mitsuba.PhaseFunction.sample(self, ctx, mi, sample1, sample2, active=True)
+    .. py:method:: misuka.PhaseFunction.sample(self, ctx, mi, sample1, sample2, active=True)
 
         Importance sample the phase function model
 
         The function returns a sampled direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
+        Parameter ``ctx`` (misuka.PhaseFunctionContext):
             A phase function sampling context, contains information about the
             transport mode
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
@@ -9874,29 +10065,29 @@
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the phase function component in multi-component models.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Vector3f, misuka.Color3f, drjit.llvm.ad.Float]:
             A sampled direction wo and its corresponding weight and PDF
 
-.. py:class:: mitsuba.PhaseFunctionContext
+.. py:class:: misuka.PhaseFunctionContext
 
     //! @}
 
-    .. py:property:: mitsuba.PhaseFunctionContext.component
+    .. py:property:: misuka.PhaseFunctionContext.component
 
         (self) -> int
 
-    .. py:property:: mitsuba.PhaseFunctionContext.mode
+    .. py:property:: misuka.PhaseFunctionContext.mode
 
         Transported mode (radiance or importance)
 
-    .. py:method:: mitsuba.PhaseFunctionContext.reverse()
+    .. py:method:: misuka.PhaseFunctionContext.reverse()
 
         Reverse the direction of light transport in the record
 
@@ -9906,15 +10097,15 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.PhaseFunctionContext.sampler
+    .. py:property:: misuka.PhaseFunctionContext.sampler
 
         Sampler object
 
-    .. py:property:: mitsuba.PhaseFunctionContext.type_mask
+    .. py:property:: misuka.PhaseFunctionContext.type_mask
 
         (self) -> int
 
-.. py:class:: mitsuba.PhaseFunctionFlags
+.. py:class:: misuka.PhaseFunctionFlags
 
     This enumeration is used to classify phase functions into different
     types, i.e. into isotropic, anisotropic and microflake phase
@@ -9941,9 +10132,9 @@
 
         
 
-.. py:class:: mitsuba.PhaseFunctionPtr
+.. py:class:: misuka.PhaseFunctionPtr
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.component_count(self, active=True)
+    .. py:method:: misuka.PhaseFunctionPtr.component_count(self, active=True)
 
         Number of components this phase function is comprised of.
 
@@ -9953,33 +10144,33 @@
         Returns → drjit.llvm.ad.UInt64:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.eval_pdf(self, ctx, mi, wo, active=True)
+    .. py:method:: misuka.PhaseFunctionPtr.eval_pdf(self, ctx, mi, wo, active=True)
 
         Evaluates the phase function model value and PDF
 
         The function returns the value (which often equals the PDF) of the
         phase function in the query direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
+        Parameter ``ctx`` (misuka.PhaseFunctionContext):
             A phase function sampling context, contains information about the
             transport mode
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
 
-        Parameter ``wo`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo`` (misuka.Vector3f):
             An outgoing direction to evaluate.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Float]:
             The value and the sampling PDF of the phase function in direction
             wo
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.flags(self, active=True)
+    .. py:method:: misuka.PhaseFunctionPtr.flags(self, active=True)
 
         Flags for this phase function.
 
@@ -9989,14 +10180,14 @@
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.max_projected_area()
+    .. py:method:: misuka.PhaseFunctionPtr.max_projected_area()
 
         Return the maximum projected area of the microflake distribution
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.projected_area(self, mi, active=True)
+    .. py:method:: misuka.PhaseFunctionPtr.projected_area(self, mi, active=True)
 
         Returns the microflake projected area
 
@@ -10004,7 +10195,7 @@
         defining the phase function. For non-microflake phase functions, e.g.
         isotropic or Henyey-Greenstein, this should return a value of 1.
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
@@ -10015,17 +10206,17 @@
         Returns → drjit.llvm.ad.Float:
             The projected area in direction ``mi.wi`` at position ``mi.p``
 
-    .. py:method:: mitsuba.PhaseFunctionPtr.sample(self, ctx, mi, sample1, sample2, active=True)
+    .. py:method:: misuka.PhaseFunctionPtr.sample(self, ctx, mi, sample1, sample2, active=True)
 
         Importance sample the phase function model
 
         The function returns a sampled direction.
 
-        Parameter ``ctx`` (:py:obj:`mitsuba.PhaseFunctionContext`):
+        Parameter ``ctx`` (misuka.PhaseFunctionContext):
             A phase function sampling context, contains information about the
             transport mode
 
-        Parameter ``mi`` (:py:obj:`mitsuba.MediumInteraction3f`):
+        Parameter ``mi`` (misuka.MediumInteraction3f):
             A medium interaction data structure describing the underlying
             medium position. The incident direction is obtained from the field
             ``mi.wi``.
@@ -10034,17 +10225,267 @@
             A uniformly distributed sample on :math:`[0,1]`. It is used to
             select the phase function component in multi-component models.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on :math:`[0,1]^2`. It is used to
             generate the sampled direction.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Vector3f, misuka.Color3f, drjit.llvm.ad.Float]:
             A sampled direction wo and its corresponding weight and PDF
 
-.. py:class:: mitsuba.PluginManager
+.. py:class:: misuka.Philox4x32
+
+    Philox4x32 counter-based PRNG
+
+    This class implements the Philox 4x32 counter-based pseudo-random number
+    generator based on the paper `Parallel Random Numbers: As Easy as 1, 2, 3
+    <https://www.thesalmons.org/john/random123/papers/random123sc11.pdf>`__ by
+    Salmon et al. [2011]. It uses strength-reduced cryptographic
+    primitives to realize a complex transition function that turns a seed and
+    set of counter values onto 4 pseudorandom outputs. Incrementing any of the
+    counters or choosing a different seed produces statistically independent
+    samples.
+
+    The implementation here uses a reduced number of bits (32) for the
+    arithmetic and sets the default number of rounds to 7. However, even with
+    these simplifications it passes the `Test01
+    <https://en.wikipedia.org/wiki/TestU01>`__ stringent ``BigCrush`` tests (a
+    battery of statistical tests for non-uniformity and correlations). Please
+    see the paper `Random number generators for massively parallel simulations
+    on GPU <https://arxiv.org/abs/1204.6193>`__ by Manssen et al. [2012] for
+    details.
+
+    Functions like :py:func:`next_uint32x4()` or :py:func:`next_float32x4()`
+    advance the PRNG state by incrementing the counter ``ctr[3]``.
+
+    Key properties include:
+
+    * Counter-based design: generation from counter + key
+
+    * 192-bit bit state: 4x32-bit counters, 64-bit key
+
+    * Trivial jump-ahead capability through counter manipulation
+
+    The :py:class:`Philox4x32` class is implemented as a :ref:`PyTree <pytrees>`,
+    making it compatible with symbolic function calls, loops, etc.
+
+    .. note::
+
+       :py:class:`Philox4x32` naturally produces 4 samples at a time, which may
+       be awkward for applications that need individual random values.
+
+    .. note::
+
+       For a comparison of use cases between :py:class:`Philox4x32` and
+       :py:class:`PCG32`, see the :py:class:`PCG32` class documentation. In
+       brief: use :py:class:`PCG32` for sequential generation with lowest cost
+       per sample; use :py:class:`Philox4x32` for parallel generation where
+       independent streams are critical.
+
+    .. note::
+
+       Please watch out for the following pitfall when using the Philox4x32 class in
+       long-running Dr.Jit calculations (e.g., steps of a gradient-based optimizer).
+       Consuming random variates (e.g., through :py:func:`next_float_4x32`) changes
+       the internal RNG counter value. If this state is never explicitly evaluated,
+       the computation graph describing this cahnge keeps growing
+       causing kernel compilation of increasingly large programs
+       to eventually become a bottleneck.
+       The :py:func:`drjit.rng <rng>` API avoids this pitfall by eagerly
+       evaluating the RNG counter when needed.
+
+       In cases where a sampler is repeatedly used in a symbolic loop, it is
+       more efficient to use the PCG32 PRNG with its lower per-sample cost. You
+       can seed this method once and reuse the random number generator
+       throughout the loop.
+
+    .. py:method:: __init__(self, seed, counter_0, counter_1=0, counter_2=0, iterations=7)
+
+        Overloaded function.
+        
+        1. ``__init__(self, seed: drjit.llvm.ad.UInt64, counter_0: drjit.llvm.ad.UInt, counter_1: drjit.llvm.ad.UInt = 0, counter_2: drjit.llvm.ad.UInt = 0, iterations: int = 7) -> None``
+        
+        Initialize a Philox4x32 random number generator.
+        
+        The function takes a ``seed`` and three of four ``counter`` component.
+        The last component is zero-initialized and incremented by calls to the
+        ``sample_*`` methods.
+        
+        Args:
+            seed: The 64-bit seed value used as the key for the mapping
+            ctr_0: The first 32-bit counter value (least significant)
+            ctr_1: The second 32-bit counter value (default: 0)
+            ctr_2: The third 32-bit counter value (default: 0)
+            iterations: Number of rounds to apply (default: 7, range: 4-10)
+        
+        For parallel stream generation, simply use different counter values - each
+        combination of counter values produces an independent random stream.
+        
+        2. ``__init__(self, arg: drjit.llvm.ad.Philox4x32) -> None``
+        
+        Copy constructor
+
+        Parameter ``seed`` (drjit.llvm.ad.UInt64):
+            *no description available*
+
+        Parameter ``counter_0`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``counter_1`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``counter_2`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``iterations`` (int):
+            *no description available*
+
+        
+    .. py:property:: misuka.Philox4x32.counter
+
+        (self) -> drjit.llvm.ad.Array4u
+
+    .. py:property:: misuka.Philox4x32.iterations
+
+        (self) -> int
+
+    .. py:method:: misuka.Philox4x32.next_float16x4(self, mask=True)
+
+        Generate 4 random half-precision floats in :math:`[0, 1)`.
+
+        Generates 4 random 32-bit unsigned integers and converts them to half
+        precision floats that are uniformly distributed on the half-open interval
+        :math:`[0, 1)`.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array4f16:
+            Array of 4 random floats on the half-open interval :math:`[0, 1)`
+
+    .. py:method:: misuka.Philox4x32.next_float16x4_normal(self, mask=True)
+
+        Generate 4 normally distributed single-precision floats
+
+        Advances the internal counter and applies the Philox mapping to produce 4
+        single precision floats following a standard normal distribution.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array4f16:
+            Array of 4 random floats from a standard normal distribution
+
+    .. py:method:: misuka.Philox4x32.next_float32x4(self, mask=True)
+
+        Generate 4 random single-precision floats in :math:`[0, 1)`.
+
+        Generates 4 random 32-bit unsigned integers and converts them to single
+        precision floats that are uniformly distributed on the half-open interval
+        :math:`[0, 1)`.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array4f:
+            Array of 4 random floats on the half-open interval :math:`[0, 1)`
+
+    .. py:method:: misuka.Philox4x32.next_float32x4_normal(self, mask=True)
+
+        Generate 4 normally distributed single-precision floats
+
+        Advances the internal counter and applies the Philox mapping to produce 4
+        single precision floats following a standard normal distribution.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array4f:
+            Array of 4 random floats from a standard normal distribution
+
+    .. py:method:: misuka.Philox4x32.next_float64x2(self, mask=True)
+
+        Generate 2 random double-precision floats in :math:`[0, 1)`.
+
+        Generates 2 random 64-bit unsigned integers and converts them to
+        floats uniformly distributed on the half-open interval :math:`[0, 1)`.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array2f64:
+            Array of 2 random floats on the half-open interval :math:`[0, 1)`
+
+    .. py:method:: misuka.Philox4x32.next_float64x2_normal(self, mask=True)
+
+        Generate 2 normally distributed double-precision floats
+
+        Advances the internal counter and applies the Philox mapping to
+        produce 2 double precision floats following a standard normal distribution.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array2f64:
+            Array of 2 random floats from a standard normal distribution
+
+    .. py:method:: misuka.Philox4x32.next_uint32x4(self, mask=True)
+
+        Generate 4 random 32-bit unsigned integers.
+
+        Advances the internal counter and applies the Philox mapping to
+        produce 4 independent 32-bit random values.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array4u:
+            Array of 4 random 32-bit unsigned integers
+
+    .. py:method:: misuka.Philox4x32.next_uint64x2(self, mask=True)
+
+        Generate 2 random 64-bit unsigned integers.
+
+        Advances the internal counter and applies the Philox mapping to
+        produce 4 independent 64-bit random values.
+
+        Args:
+            mask: Optional mask to control which lanes are updated
+
+        Parameter ``mask`` (drjit.llvm.ad.Bool):
+            *no description available*
+
+        Returns → drjit.llvm.ad.Array2u64:
+            Array of 2 random 64-bit unsigned integers
+
+    .. py:property:: misuka.Philox4x32.seed
+
+        (self) -> drjit.llvm.ad.Array2u
+
+.. py:class:: misuka.PluginManager
 
     Plugin manager
 
@@ -10055,7 +10496,7 @@
     When used from Python, it is also possible to register external
     plugins so that they can be instantiated analogously.
 
-    .. py:method:: mitsuba.PluginManager.create_object(self, props)
+    .. py:method:: misuka.PluginManager.create_object(self, props)
 
         Create a plugin object with the provided information
 
@@ -10063,7 +10504,7 @@
         already present), creates an instance, verifies its type, and finally
         returns the newly created object instance.
 
-        Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+        Parameter ``props`` (misuka.Properties):
             A Properties instance containing all information required to find
             and construct the plugin.
 
@@ -10078,57 +10519,57 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.PluginManager.plugin_type(self, name)
+    .. py:method:: misuka.PluginManager.plugin_type(self, name)
 
         Get the ObjectType of a plugin by name
 
         Parameter ``name`` (str):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ObjectType`:
+        Returns → misuka.ObjectType:
             *no description available*
 
-.. py:class:: mitsuba.Point0d
+.. py:class:: misuka.Point0d
 
-.. py:class:: mitsuba.Point0f
+.. py:class:: misuka.Point0f
 
-.. py:class:: mitsuba.Point0i
+.. py:class:: misuka.Point0i
 
-.. py:class:: mitsuba.Point0u
+.. py:class:: misuka.Point0u
 
-.. py:class:: mitsuba.Point1d
+.. py:class:: misuka.Point1d
 
-.. py:class:: mitsuba.Point1f
+.. py:class:: misuka.Point1f
 
-.. py:class:: mitsuba.Point1i
+.. py:class:: misuka.Point1i
 
-.. py:class:: mitsuba.Point1u
+.. py:class:: misuka.Point1u
 
-.. py:class:: mitsuba.Point2d
+.. py:class:: misuka.Point2d
 
-.. py:class:: mitsuba.Point2f
+.. py:class:: misuka.Point2f
 
-.. py:class:: mitsuba.Point2i
+.. py:class:: misuka.Point2i
 
-.. py:class:: mitsuba.Point2u
+.. py:class:: misuka.Point2u
 
-.. py:class:: mitsuba.Point3d
+.. py:class:: misuka.Point3d
 
-.. py:class:: mitsuba.Point3f
+.. py:class:: misuka.Point3f
 
-.. py:class:: mitsuba.Point3i
+.. py:class:: misuka.Point3i
 
-.. py:class:: mitsuba.Point3u
+.. py:class:: misuka.Point3u
 
-.. py:class:: mitsuba.Point4d
+.. py:class:: misuka.Point4d
 
-.. py:class:: mitsuba.Point4f
+.. py:class:: misuka.Point4f
 
-.. py:class:: mitsuba.Point4i
+.. py:class:: misuka.Point4i
 
-.. py:class:: mitsuba.Point4u
+.. py:class:: misuka.Point4u
 
-.. py:class:: mitsuba.PositionSample3f
+.. py:class:: misuka.PositionSample3f
 
 
     .. py:method:: ``__init__()
@@ -10142,7 +10583,7 @@
 
         Copy constructor
 
-        Parameter ``other`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``other`` (misuka.PositionSample3f):
             *no description available*
 
         Returns → None``:
@@ -10156,42 +10597,42 @@
         surface after hitting it using standard ray tracing. This happens for
         instance in path tracing with multiple importance sampling.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.PositionSample3f.assign(self, arg)
+    .. py:method:: misuka.PositionSample3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.PositionSample3f`, /):
+        Parameter ``arg`` (misuka.PositionSample3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.PositionSample3f.delta
+    .. py:property:: misuka.PositionSample3f.delta
 
         Set if the sample was drawn from a degenerate (Dirac delta)
         distribution
 
-    .. py:property:: mitsuba.PositionSample3f.n
+    .. py:property:: misuka.PositionSample3f.n
 
         Sampled surface normal (if applicable)
 
-    .. py:property:: mitsuba.PositionSample3f.p
+    .. py:property:: misuka.PositionSample3f.p
 
         Sampled position
 
-    .. py:property:: mitsuba.PositionSample3f.pdf
+    .. py:property:: misuka.PositionSample3f.pdf
 
         Probability density at the sample
 
-    .. py:property:: mitsuba.PositionSample3f.time
+    .. py:property:: misuka.PositionSample3f.time
 
         Associated time value
 
-    .. py:property:: mitsuba.PositionSample3f.uv
+    .. py:property:: misuka.PositionSample3f.uv
 
         Optional: 2D sample position associated with the record
 
@@ -10200,7 +10641,7 @@
         triangle mesh or a position on the aperture of a sensor. When
         applicable, such positions are stored in the ``uv`` attribute.
 
-.. py:class:: mitsuba.PreliminaryIntersection3f
+.. py:class:: misuka.PreliminaryIntersection3f
 
 
     .. py:method:: ``__init__()
@@ -10214,26 +10655,26 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.PreliminaryIntersection3f`):
+        Parameter ``arg`` (misuka.PreliminaryIntersection3f):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.assign(self, arg)
+    .. py:method:: misuka.PreliminaryIntersection3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.PreliminaryIntersection3f`, /):
+        Parameter ``arg`` (misuka.PreliminaryIntersection3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.compute_surface_interaction(self, ray, ray_flags=14, active=True)
+    .. py:method:: misuka.PreliminaryIntersection3f.compute_surface_interaction(self, ray, ray_flags=14, active=True)
 
         Compute and return detailed information related to a surface
         interaction
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             Ray associated with the ray intersection
 
         Parameter ``ray_flags`` (int):
@@ -10242,45 +10683,45 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A data structure containing the detailed information
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.instance
+    .. py:property:: misuka.PreliminaryIntersection3f.instance
 
         Stores a pointer to the parent instance (if applicable)
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.is_valid()
+    .. py:method:: misuka.PreliminaryIntersection3f.is_valid()
 
         Is the current interaction valid?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.prim_index
+    .. py:property:: misuka.PreliminaryIntersection3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.prim_uv
+    .. py:property:: misuka.PreliminaryIntersection3f.prim_uv
 
         2D coordinates on the primitive surface parameterization
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.shape
+    .. py:property:: misuka.PreliminaryIntersection3f.shape
 
         Pointer to the associated shape
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.shape_index
+    .. py:property:: misuka.PreliminaryIntersection3f.shape_index
 
         Shape index, e.g. the shape ID in shapegroup (if applicable)
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.t
+    .. py:property:: misuka.PreliminaryIntersection3f.t
 
         Distance traveled along the ray. Invalid lanes are set to infinity.
 
-    .. py:property:: mitsuba.PreliminaryIntersection3f.valid
+    .. py:property:: misuka.PreliminaryIntersection3f.valid
 
         Valid hit mask
 
-    .. py:method:: mitsuba.PreliminaryIntersection3f.zero_(self, arg)
+    .. py:method:: misuka.PreliminaryIntersection3f.zero_(self, arg)
 
         This callback method is invoked by dr::zeros<>, and takes care of
         fields that deviate from the standard zero-initialization convention.
@@ -10293,37 +10734,37 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ProjectiveCamera
+.. py:class:: misuka.ProjectiveCamera
 
-    Base class: :py:obj:`mitsuba.Sensor`
+    Base class: misuka.Sensor
 
-    .. py:method:: mitsuba.ProjectiveCamera.far_clip()
+    .. py:method:: misuka.ProjectiveCamera.far_clip()
 
         Return the far clip plane distance
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveCamera.focus_distance()
+    .. py:method:: misuka.ProjectiveCamera.focus_distance()
 
         Return the distance to the focal plane
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveCamera.near_clip()
+    .. py:method:: misuka.ProjectiveCamera.near_clip()
 
         Return the near clip plane distance
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveCamera.projection_transform()
+    .. py:method:: misuka.ProjectiveCamera.projection_transform()
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+        Returns → misuka.ProjectiveTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.ProjectiveTransform3d
+.. py:class:: misuka.ProjectiveTransform3d
 
     Unified homogeneous coordinate transformation
 
@@ -10355,11 +10796,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3d`, /) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform3d, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3d`) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform3d) -> None``
         
         Construct from an projective transformation
         
@@ -10377,20 +10818,20 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarProjectiveTransform3d, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.ProjectiveTransform3d.assign(self, arg)
+    .. py:method:: misuka.ProjectiveTransform3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform3d`, /):
+        Parameter ``arg`` (misuka.ProjectiveTransform3d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3d.has_scale()
+    .. py:method:: misuka.ProjectiveTransform3d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10399,42 +10840,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3d.inverse()
+    .. py:method:: misuka.ProjectiveTransform3d.inverse()
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform3d`:
+        Returns → misuka.ProjectiveTransform3d:
             *no description available*
 
-    .. py:property:: mitsuba.ProjectiveTransform3d.inverse_transpose
+    .. py:property:: misuka.ProjectiveTransform3d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
-    .. py:property:: mitsuba.ProjectiveTransform3d.matrix
+    .. py:property:: misuka.ProjectiveTransform3d.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f64
 
-    .. py:method:: mitsuba.ProjectiveTransform3d.transform_affine(self, p)
+    .. py:method:: misuka.ProjectiveTransform3d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2d`):
+        Parameter ``p`` (misuka.Point2d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2d`:
+        Returns → misuka.Point2d:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3d.translation()
+    .. py:method:: misuka.ProjectiveTransform3d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector2d`:
+        Returns → misuka.Vector2d:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3d.update()
+    .. py:method:: misuka.ProjectiveTransform3d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform3d`:
+        Returns → misuka.ProjectiveTransform3d:
             *no description available*
 
-.. py:class:: mitsuba.ProjectiveTransform3f
+.. py:class:: misuka.ProjectiveTransform3f
 
     Unified homogeneous coordinate transformation
 
@@ -10466,11 +10907,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform3f`, /) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform3f, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform3f`) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform3f) -> None``
         
         Construct from an projective transformation
         
@@ -10488,20 +10929,20 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarProjectiveTransform3f, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.ProjectiveTransform3f.assign(self, arg)
+    .. py:method:: misuka.ProjectiveTransform3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform3f`, /):
+        Parameter ``arg`` (misuka.ProjectiveTransform3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3f.has_scale()
+    .. py:method:: misuka.ProjectiveTransform3f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10510,42 +10951,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3f.inverse()
+    .. py:method:: misuka.ProjectiveTransform3f.inverse()
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform3f`:
+        Returns → misuka.ProjectiveTransform3f:
             *no description available*
 
-    .. py:property:: mitsuba.ProjectiveTransform3f.inverse_transpose
+    .. py:property:: misuka.ProjectiveTransform3f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix3f
 
-    .. py:property:: mitsuba.ProjectiveTransform3f.matrix
+    .. py:property:: misuka.ProjectiveTransform3f.matrix
 
         (self) -> drjit.llvm.ad.Matrix3f
 
-    .. py:method:: mitsuba.ProjectiveTransform3f.transform_affine(self, p)
+    .. py:method:: misuka.ProjectiveTransform3f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``p`` (misuka.Point2f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3f.translation()
+    .. py:method:: misuka.ProjectiveTransform3f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform3f.update()
+    .. py:method:: misuka.ProjectiveTransform3f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform3f`:
+        Returns → misuka.ProjectiveTransform3f:
             *no description available*
 
-.. py:class:: mitsuba.ProjectiveTransform4d
+.. py:class:: misuka.ProjectiveTransform4d
 
     Unified homogeneous coordinate transformation
 
@@ -10577,11 +11018,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4d`, /) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform4d, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4d`) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform4d) -> None``
         
         Construct from an projective transformation
         
@@ -10599,20 +11040,20 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarProjectiveTransform4d, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.ProjectiveTransform4d.assign(self, arg)
+    .. py:method:: misuka.ProjectiveTransform4d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform4d`, /):
+        Parameter ``arg`` (misuka.ProjectiveTransform4d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4d.has_scale()
+    .. py:method:: misuka.ProjectiveTransform4d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10621,42 +11062,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4d.inverse()
+    .. py:method:: misuka.ProjectiveTransform4d.inverse()
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform4d`:
+        Returns → misuka.ProjectiveTransform4d:
             *no description available*
 
-    .. py:property:: mitsuba.ProjectiveTransform4d.inverse_transpose
+    .. py:property:: misuka.ProjectiveTransform4d.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
-    .. py:property:: mitsuba.ProjectiveTransform4d.matrix
+    .. py:property:: misuka.ProjectiveTransform4d.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f64
 
-    .. py:method:: mitsuba.ProjectiveTransform4d.transform_affine(self, p)
+    .. py:method:: misuka.ProjectiveTransform4d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3d`):
+        Parameter ``p`` (misuka.Point3d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3d`:
+        Returns → misuka.Point3d:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4d.translation()
+    .. py:method:: misuka.ProjectiveTransform4d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector3d`:
+        Returns → misuka.Vector3d:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4d.update()
+    .. py:method:: misuka.ProjectiveTransform4d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform4d`:
+        Returns → misuka.ProjectiveTransform4d:
             *no description available*
 
-.. py:class:: mitsuba.ProjectiveTransform4f
+.. py:class:: misuka.ProjectiveTransform4f
 
     Unified homogeneous coordinate transformation
 
@@ -10688,11 +11129,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.AffineTransform4f`, /) -> None``
+        4. ``__init__(self, arg: misuka.AffineTransform4f, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ProjectiveTransform4f`) -> None``
+        5. ``__init__(self, arg: misuka.ProjectiveTransform4f) -> None``
         
         Construct from an projective transformation
         
@@ -10710,20 +11151,20 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
         
         
-        10. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`, /) -> None``
+        10. ``__init__(self, arg: misuka.ScalarProjectiveTransform4f, /) -> None``
         
         Broadcast constructor
 
         
-    .. py:method:: mitsuba.ProjectiveTransform4f.assign(self, arg)
+    .. py:method:: misuka.ProjectiveTransform4f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ProjectiveTransform4f`, /):
+        Parameter ``arg`` (misuka.ProjectiveTransform4f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4f.has_scale()
+    .. py:method:: misuka.ProjectiveTransform4f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -10732,42 +11173,42 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4f.inverse()
+    .. py:method:: misuka.ProjectiveTransform4f.inverse()
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+        Returns → misuka.ProjectiveTransform4f:
             *no description available*
 
-    .. py:property:: mitsuba.ProjectiveTransform4f.inverse_transpose
+    .. py:property:: misuka.ProjectiveTransform4f.inverse_transpose
 
         (self) -> drjit.llvm.ad.Matrix4f
 
-    .. py:property:: mitsuba.ProjectiveTransform4f.matrix
+    .. py:property:: misuka.ProjectiveTransform4f.matrix
 
         (self) -> drjit.llvm.ad.Matrix4f
 
-    .. py:method:: mitsuba.ProjectiveTransform4f.transform_affine(self, p)
+    .. py:method:: misuka.ProjectiveTransform4f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``p`` (misuka.Point3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4f.translation()
+    .. py:method:: misuka.ProjectiveTransform4f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.ProjectiveTransform4f.update()
+    .. py:method:: misuka.ProjectiveTransform4f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+        Returns → misuka.ProjectiveTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.Properties
+.. py:class:: misuka.Properties
 
 
     .. py:method:: ``__init__()
@@ -10791,13 +11232,13 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`):
+        Parameter ``arg`` (misuka.Properties):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:class:: mitsuba.Properties.Type
+    .. py:class:: misuka.Properties.Type
 
         Valid values are as follows:
 
@@ -10849,7 +11290,7 @@
 
             Generic type wrapper for arbitrary data exchange between plugins
 
-    .. py:method:: mitsuba.Properties.as_string(self, key)
+    .. py:method:: misuka.Properties.as_string(self, key)
 
         Return one of the parameters (converting it to a string if necessary)
 
@@ -10859,7 +11300,7 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.get(self, key, def_value=None)
+    .. py:method:: misuka.Properties.get(self, key, def_value=None)
 
         Retrieve a scalar parameter by name
 
@@ -10897,7 +11338,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.get_emissive_texture(self, name)
+    .. py:method:: misuka.Properties.get_emissive_texture(self, name)
 
         Overloaded function.
 
@@ -10915,7 +11356,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.get_texture(self, name)
+    .. py:method:: misuka.Properties.get_texture(self, name)
 
         Overloaded function.
 
@@ -10933,7 +11374,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.get_unbounded_texture(self, name)
+    .. py:method:: misuka.Properties.get_unbounded_texture(self, name)
 
         Overloaded function.
 
@@ -10951,7 +11392,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.has_property(self, key)
+    .. py:method:: misuka.Properties.has_property(self, key)
 
         Deprecated: use 'key in props' instead
 
@@ -10961,7 +11402,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.id()
+    .. py:method:: misuka.Properties.id()
 
         Returns a unique identifier associated with this instance (or an empty
         string)
@@ -10971,21 +11412,21 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.items()
+    .. py:method:: misuka.Properties.items()
 
         Return a list of (key, value) tuples
 
         Returns → list:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.keys()
+    .. py:method:: misuka.Properties.keys()
 
         Return a list of property names
 
         Returns → list:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.mark_queried(self, key, value=True)
+    .. py:method:: misuka.Properties.mark_queried(self, key, value=True)
 
         Manually mark a certain property as queried
 
@@ -11001,51 +11442,51 @@
         Returns → bool:
             ``True`` upon success
 
-    .. py:method:: mitsuba.Properties.merge(self, arg)
+    .. py:method:: misuka.Properties.merge(self, arg)
 
         Merge another properties record into the current one.
 
         Existing properties will be overwritten with the values from ``props``
         if they have the same name.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.objects(self, mark_queried=True)
+    .. py:method:: misuka.Properties.objects(self, mark_queried=True)
 
         Return all object properties
 
         Parameter ``mark_queried`` (bool):
             *no description available*
 
-        Returns → list[tuple[str, :py:obj:`mitsuba.Object`]]:
+        Returns → list[tuple[str, misuka.Object]]:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.plugin_name()
+    .. py:method:: misuka.Properties.plugin_name()
 
         Get the plugin name
 
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.property_names()
+    .. py:method:: misuka.Properties.property_names()
 
         Deprecated: use 'props.keys()' instead
 
         Returns → list[str]:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.references()
+    .. py:method:: misuka.Properties.references()
 
         Return all reference properties
 
         Returns → list[tuple[str, str]]:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.remove_property(self, key)
+    .. py:method:: misuka.Properties.remove_property(self, key)
 
         Deprecated: use 'del props[key]' instead
 
@@ -11055,7 +11496,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.set_id(self, arg)
+    .. py:method:: misuka.Properties.set_id(self, arg)
 
         Set the unique identifier associated with this instance
 
@@ -11065,7 +11506,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.set_plugin_name(self, arg)
+    .. py:method:: misuka.Properties.set_plugin_name(self, arg)
 
         Set the plugin name
 
@@ -11075,7 +11516,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.type(self, arg)
+    .. py:method:: misuka.Properties.type(self, arg)
 
         Returns the type of an existing property.
 
@@ -11084,17 +11525,17 @@
         Parameter ``arg`` (str, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Properties.Type`:
+        Returns → misuka.Properties.Type:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.unqueried()
+    .. py:method:: misuka.Properties.unqueried()
 
         Return the list of unqueried attributed
 
         Returns → list[str]:
             *no description available*
 
-    .. py:method:: mitsuba.Properties.was_queried(self, arg)
+    .. py:method:: misuka.Properties.was_queried(self, arg)
 
         Check if a certain property was queried
 
@@ -11108,15 +11549,15 @@
         Returns → bool:
             *no description available*
 
-.. py:class:: mitsuba.Quaternion4f
+.. py:class:: misuka.Quaternion4f
 
-.. py:class:: mitsuba.Quaternion4f16
+.. py:class:: misuka.Quaternion4f16
 
-.. py:class:: mitsuba.Quaternion4f64
+.. py:class:: misuka.Quaternion4f64
 
-.. py:class:: mitsuba.RadicalInverse
+.. py:class:: misuka.RadicalInverse
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Efficient implementation of a radical inverse function with prime
     bases including scrambled versions.
@@ -11133,7 +11574,7 @@
             *no description available*
 
 
-    .. py:method:: mitsuba.RadicalInverse.base(self, arg)
+    .. py:method:: misuka.RadicalInverse.base(self, arg)
 
         Returns the n-th prime base used by the sequence
 
@@ -11146,7 +11587,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.RadicalInverse.bases()
+    .. py:method:: misuka.RadicalInverse.bases()
 
         Return the number of prime bases for which precomputed tables are
         available
@@ -11154,7 +11595,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.RadicalInverse.eval(self, base_index, index)
+    .. py:method:: misuka.RadicalInverse.eval(self, base_index, index)
 
         Calculate the value of the radical inverse function
 
@@ -11176,7 +11617,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.RadicalInverse.inverse_permutation(self, arg)
+    .. py:method:: misuka.RadicalInverse.inverse_permutation(self, arg)
 
         Return the inverse permutation corresponding to the given prime number
         basis
@@ -11187,7 +11628,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.RadicalInverse.permutation(self, arg)
+    .. py:method:: misuka.RadicalInverse.permutation(self, arg)
 
         Return the permutation corresponding to the given prime number basis
 
@@ -11197,14 +11638,14 @@
         Returns → numpy.ndarray[dtype=uint16]:
             *no description available*
 
-    .. py:method:: mitsuba.RadicalInverse.scramble()
+    .. py:method:: misuka.RadicalInverse.scramble()
 
         Return the original scramble value
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.Ray2d
+.. py:class:: misuka.Ray2d
 
     Simple n-dimensional ray segment data structure
 
@@ -11220,62 +11661,62 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`) -> None``
+        2. ``__init__(self, other: misuka.Ray2d) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.Point2d, d: misuka.Vector2d, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: misuka.Color0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point2d`, d: :py:obj:`mitsuba.Vector2d`, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        4. ``__init__(self, o: misuka.Point2d, d: misuka.Vector2d, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: misuka.Color0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.Ray2d`, maxt: drjit.llvm.ad.Float64) -> None``
+        5. ``__init__(self, other: misuka.Ray2d, maxt: drjit.llvm.ad.Float64) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.Ray2d.__call__(self, t)
+    .. py:method:: misuka.Ray2d.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2d`:
+        Returns → misuka.Point2d:
             *no description available*
 
-    .. py:method:: mitsuba.Ray2d.assign(self, arg)
+    .. py:method:: misuka.Ray2d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Ray2d`, /):
+        Parameter ``arg`` (misuka.Ray2d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Ray2d.d
+    .. py:property:: misuka.Ray2d.d
 
         Ray direction
 
-    .. py:property:: mitsuba.Ray2d.maxt
+    .. py:property:: misuka.Ray2d.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.Ray2d.o
+    .. py:property:: misuka.Ray2d.o
 
         Ray origin
 
-    .. py:property:: mitsuba.Ray2d.time
+    .. py:property:: misuka.Ray2d.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.Ray2d.wavelengths
+    .. py:property:: misuka.Ray2d.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.Ray2f
+.. py:class:: misuka.Ray2f
 
     Simple n-dimensional ray segment data structure
 
@@ -11291,62 +11732,62 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.Ray2f`) -> None``
+        2. ``__init__(self, other: misuka.Ray2f) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point2f`, d: :py:obj:`mitsuba.Vector2f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.Point2f, d: misuka.Vector2f, time: drjit.llvm.ad.Float = 0.0, wavelengths: misuka.Color0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point2f`, d: :py:obj:`mitsuba.Vector2f`, maxt: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        4. ``__init__(self, o: misuka.Point2f, d: misuka.Vector2f, maxt: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: misuka.Color0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.Ray2f`, maxt: drjit.llvm.ad.Float) -> None``
+        5. ``__init__(self, other: misuka.Ray2f, maxt: drjit.llvm.ad.Float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.Ray2f.__call__(self, t)
+    .. py:method:: misuka.Ray2f.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.Ray2f.assign(self, arg)
+    .. py:method:: misuka.Ray2f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Ray2f`, /):
+        Parameter ``arg`` (misuka.Ray2f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Ray2f.d
+    .. py:property:: misuka.Ray2f.d
 
         Ray direction
 
-    .. py:property:: mitsuba.Ray2f.maxt
+    .. py:property:: misuka.Ray2f.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.Ray2f.o
+    .. py:property:: misuka.Ray2f.o
 
         Ray origin
 
-    .. py:property:: mitsuba.Ray2f.time
+    .. py:property:: misuka.Ray2f.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.Ray2f.wavelengths
+    .. py:property:: misuka.Ray2f.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.Ray3d
+.. py:class:: misuka.Ray3d
 
     Simple n-dimensional ray segment data structure
 
@@ -11362,62 +11803,62 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.Ray3d`) -> None``
+        2. ``__init__(self, other: misuka.Ray3d) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.Point3d, d: misuka.Vector3d, time: drjit.llvm.ad.Float64 = 0.0, wavelengths: misuka.Color0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point3d`, d: :py:obj:`mitsuba.Vector3d`, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        4. ``__init__(self, o: misuka.Point3d, d: misuka.Vector3d, maxt: drjit.llvm.ad.Float64, time: drjit.llvm.ad.Float64, wavelengths: misuka.Color0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.Ray3d`, maxt: drjit.llvm.ad.Float64) -> None``
+        5. ``__init__(self, other: misuka.Ray3d, maxt: drjit.llvm.ad.Float64) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.Ray3d.__call__(self, t)
+    .. py:method:: misuka.Ray3d.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (drjit.llvm.ad.Float64):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3d`:
+        Returns → misuka.Point3d:
             *no description available*
 
-    .. py:method:: mitsuba.Ray3d.assign(self, arg)
+    .. py:method:: misuka.Ray3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Ray3d`, /):
+        Parameter ``arg`` (misuka.Ray3d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Ray3d.d
+    .. py:property:: misuka.Ray3d.d
 
         Ray direction
 
-    .. py:property:: mitsuba.Ray3d.maxt
+    .. py:property:: misuka.Ray3d.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.Ray3d.o
+    .. py:property:: misuka.Ray3d.o
 
         Ray origin
 
-    .. py:property:: mitsuba.Ray3d.time
+    .. py:property:: misuka.Ray3d.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.Ray3d.wavelengths
+    .. py:property:: misuka.Ray3d.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.Ray3f
+.. py:class:: misuka.Ray3f
 
     Simple n-dimensional ray segment data structure
 
@@ -11433,64 +11874,64 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.Ray3f`) -> None``
+        2. ``__init__(self, other: misuka.Ray3f) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.Point3f, d: misuka.Vector3f, time: drjit.llvm.ad.Float = 0.0, wavelengths: misuka.Color0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, maxt: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+        4. ``__init__(self, o: misuka.Point3f, d: misuka.Vector3f, maxt: drjit.llvm.ad.Float, time: drjit.llvm.ad.Float, wavelengths: misuka.Color0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.Ray3f`, maxt: drjit.llvm.ad.Float) -> None``
+        5. ``__init__(self, other: misuka.Ray3f, maxt: drjit.llvm.ad.Float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.Ray3f.__call__(self, t)
+    .. py:method:: misuka.Ray3f.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (drjit.llvm.ad.Float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             *no description available*
 
-    .. py:method:: mitsuba.Ray3f.assign(self, arg)
+    .. py:method:: misuka.Ray3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Ray3f`, /):
+        Parameter ``arg`` (misuka.Ray3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Ray3f.d
+    .. py:property:: misuka.Ray3f.d
 
         Ray direction
 
-    .. py:property:: mitsuba.Ray3f.maxt
+    .. py:property:: misuka.Ray3f.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.Ray3f.o
+    .. py:property:: misuka.Ray3f.o
 
         Ray origin
 
-    .. py:property:: mitsuba.Ray3f.time
+    .. py:property:: misuka.Ray3f.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.Ray3f.wavelengths
+    .. py:property:: misuka.Ray3f.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.RayDifferential3f
+.. py:class:: misuka.RayDifferential3f
 
-    Base class: :py:obj:`mitsuba.Ray3f`
+    Base class: misuka.Ray3f
 
     Ray differential -- enhances the basic ray class with offset rays for
     two adjacent pixels on the view plane
@@ -11499,53 +11940,53 @@
 
         Overloaded function.
         
-        1. ``__init__(self, arg: :py:obj:`mitsuba.Ray3f`, /) -> None``
+        1. ``__init__(self, arg: misuka.Ray3f, /) -> None``
         
         
         2. ``__init__(self) -> None``
         
         Create an uninitialized ray
         
-        3. ``__init__(self, ray: :py:obj:`mitsuba.Ray3f`) -> None``
+        3. ``__init__(self, ray: misuka.Ray3f) -> None``
         
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.Point3f`, d: :py:obj:`mitsuba.Vector3f`, time: drjit.llvm.ad.Float = 0.0, wavelengths: :py:obj:`mitsuba.Color0f` = []) -> None``
+        4. ``__init__(self, o: misuka.Point3f, d: misuka.Vector3f, time: drjit.llvm.ad.Float = 0.0, wavelengths: misuka.Color0f = []) -> None``
         
         Initialize without differentials.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Ray3f`, /):
+        Parameter ``arg`` (misuka.Ray3f, /):
             *no description available*
 
         
-    .. py:method:: mitsuba.RayDifferential3f.assign(self, arg)
+    .. py:method:: misuka.RayDifferential3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.RayDifferential3f`, /):
+        Parameter ``arg`` (misuka.RayDifferential3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.RayDifferential3f.d_x
+    .. py:property:: misuka.RayDifferential3f.d_x
 
-        (self) -> :py:obj:`mitsuba.Vector3f`
+        (self) -> misuka.Vector3f
 
-    .. py:property:: mitsuba.RayDifferential3f.d_y
+    .. py:property:: misuka.RayDifferential3f.d_y
 
-        (self) -> :py:obj:`mitsuba.Vector3f`
+        (self) -> misuka.Vector3f
 
-    .. py:property:: mitsuba.RayDifferential3f.has_differentials
+    .. py:property:: misuka.RayDifferential3f.has_differentials
 
         (self) -> bool
 
-    .. py:property:: mitsuba.RayDifferential3f.o_x
+    .. py:property:: misuka.RayDifferential3f.o_x
 
-        (self) -> :py:obj:`mitsuba.Point3f`
+        (self) -> misuka.Point3f
 
-    .. py:property:: mitsuba.RayDifferential3f.o_y
+    .. py:property:: misuka.RayDifferential3f.o_y
 
-        (self) -> :py:obj:`mitsuba.Point3f`
+        (self) -> misuka.Point3f
 
-    .. py:method:: mitsuba.RayDifferential3f.scale_differential(self, amount)
+    .. py:method:: misuka.RayDifferential3f.scale_differential(self, amount)
 
         Parameter ``amount`` (drjit.llvm.ad.Float):
             *no description available*
@@ -11553,7 +11994,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.RayFlags
+.. py:class:: misuka.RayFlags
 
     This list of flags is used to determine which members of
     SurfaceInteraction should be computed when calling
@@ -11608,9 +12049,9 @@
 
         Compute all fields of the surface interaction ignoring shape's motion
 
-.. py:class:: mitsuba.ReconstructionFilter
+.. py:class:: misuka.ReconstructionFilter
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Generic interface to separable image reconstruction filters
 
@@ -11623,14 +12064,14 @@
     discrete representation, whose resolution given by
     MI_FILTER_RESOLUTION.
 
-    .. py:method:: mitsuba.ReconstructionFilter.border_size()
+    .. py:method:: misuka.ReconstructionFilter.border_size()
 
         Return the block border size required when rendering with this filter
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ReconstructionFilter.eval(self, x, active=True)
+    .. py:method:: misuka.ReconstructionFilter.eval(self, x, active=True)
 
         Evaluate the filter function
 
@@ -11643,7 +12084,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ReconstructionFilter.eval_discretized(self, x, active=True)
+    .. py:method:: misuka.ReconstructionFilter.eval_discretized(self, x, active=True)
 
         Evaluate a discretized version of the filter (generally faster than
         'eval')
@@ -11657,21 +12098,21 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ReconstructionFilter.is_box_filter()
+    .. py:method:: misuka.ReconstructionFilter.is_box_filter()
 
         Check whether this is a box filter?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ReconstructionFilter.radius()
+    .. py:method:: misuka.ReconstructionFilter.radius()
 
         Return the filter's width
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.Resampler
+.. py:class:: misuka.Resampler
 
     Utility class for efficiently resampling discrete datasets to
     different resolutions
@@ -11696,19 +12137,19 @@
         Parameter ``target_res`` (int):
             Desired target resolution
 
-        Parameter ``rfilter`` (:py:obj:`mitsuba.BitmapReconstructionFilter`):
+        Parameter ``rfilter`` (misuka.BitmapReconstructionFilter):
             *no description available*
 
         
-    .. py:method:: mitsuba.Resampler.boundary_condition()
+    .. py:method:: misuka.Resampler.boundary_condition()
 
         Return the boundary condition that should be used when looking up
         samples outside of the defined input domain
 
-        Returns → :py:obj:`mitsuba.FilterBoundaryCondition`:
+        Returns → misuka.FilterBoundaryCondition:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.clamp()
+    .. py:method:: misuka.Resampler.clamp()
 
         Returns the range to which resampled values will be clamped
 
@@ -11717,7 +12158,7 @@
         Returns → tuple[float, float]:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.resample(self, source, source_stride, target, target_stride, channels)
+    .. py:method:: misuka.Resampler.resample(self, source, source_stride, target, target_stride, channels)
 
         Resample a multi-channel array and clamp the results to a specified
         valid range
@@ -11742,20 +12183,20 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.set_boundary_condition(self, arg)
+    .. py:method:: misuka.Resampler.set_boundary_condition(self, arg)
 
         Set the boundary condition that should be used when looking up samples
         outside of the defined input domain
 
         The default is FilterBoundaryCondition::Clamp
 
-        Parameter ``arg`` (:py:obj:`mitsuba.FilterBoundaryCondition`, /):
+        Parameter ``arg`` (misuka.FilterBoundaryCondition, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.set_clamp(self, arg)
+    .. py:method:: misuka.Resampler.set_clamp(self, arg)
 
         If specified, resampled values will be clamped to the given range
 
@@ -11765,28 +12206,28 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.source_resolution()
+    .. py:method:: misuka.Resampler.source_resolution()
 
         Return the reconstruction filter's source resolution
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.taps()
+    .. py:method:: misuka.Resampler.taps()
 
         Return the number of taps used by the reconstruction filter
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Resampler.target_resolution()
+    .. py:method:: misuka.Resampler.target_resolution()
 
         Return the reconstruction filter's target resolution
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.SGGXPhaseFunctionParams
+.. py:class:: misuka.SGGXPhaseFunctionParams
 
 
     .. py:method:: ``__init__(self, arg0, arg1)
@@ -11808,7 +12249,7 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
+        Parameter ``arg`` (misuka.SGGXPhaseFunctionParams):
             *no description available*
 
         Returns → None``:
@@ -11822,27 +12263,27 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.SGGXPhaseFunctionParams.assign(self, arg)
+    .. py:method:: misuka.SGGXPhaseFunctionParams.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`, /):
+        Parameter ``arg`` (misuka.SGGXPhaseFunctionParams, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.SGGXPhaseFunctionParams.diag
+    .. py:property:: misuka.SGGXPhaseFunctionParams.diag
 
         (self) -> drjit.llvm.ad.Array3f
 
-    .. py:property:: mitsuba.SGGXPhaseFunctionParams.off_diag
+    .. py:property:: misuka.SGGXPhaseFunctionParams.off_diag
 
         (self) -> drjit.llvm.ad.Array3f
 
-.. py:class:: mitsuba.Sampler
+.. py:class:: misuka.Sampler
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Sampler.advance()
+    .. py:method:: misuka.Sampler.advance()
 
         Advance to the next sample.
 
@@ -11852,7 +12293,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.clone()
+    .. py:method:: misuka.Sampler.clone()
 
         Create a clone of this sampler.
 
@@ -11864,10 +12305,10 @@
 
         May throw an exception if not supported.
 
-        Returns → :py:obj:`mitsuba.Sampler`:
+        Returns → misuka.Sampler:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.fork()
+    .. py:method:: misuka.Sampler.fork()
 
         Create a fork of this sampler.
 
@@ -11876,10 +12317,10 @@
 
         May throw an exception if not supported.
 
-        Returns → :py:obj:`mitsuba.Sampler`:
+        Returns → misuka.Sampler:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.next_1d(self, active=True)
+    .. py:method:: misuka.Sampler.next_1d(self, active=True)
 
         Retrieve the next component value from the current sample
 
@@ -11889,31 +12330,31 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.next_2d(self, active=True)
+    .. py:method:: misuka.Sampler.next_2d(self, active=True)
 
         Retrieve the next two component values from the current sample
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point2f`:
+        Returns → misuka.Point2f:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.sample_count()
+    .. py:method:: misuka.Sampler.sample_count()
 
         Return the number of samples per pixel
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.schedule_state()
+    .. py:method:: misuka.Sampler.schedule_state()
 
         dr::schedule() variables that represent the internal sampler state
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.seed(self, seed, wavefront_size=4294967295)
+    .. py:method:: misuka.Sampler.seed(self, seed, wavefront_size=4294967295)
 
         Deterministically seed the underlying RNG, if applicable.
 
@@ -11930,7 +12371,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.set_sample_count(self, spp)
+    .. py:method:: misuka.Sampler.set_sample_count(self, spp)
 
         Set the number of samples per pixel
 
@@ -11940,7 +12381,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.set_samples_per_wavefront(self, samples_per_wavefront)
+    .. py:method:: misuka.Sampler.set_samples_per_wavefront(self, samples_per_wavefront)
 
         Set the number of samples per pixel per pass in wavefront modes
         (default is 1)
@@ -11951,24 +12392,24 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Sampler.wavefront_size()
+    .. py:method:: misuka.Sampler.wavefront_size()
 
         Return the size of the wavefront (or 0, if not seeded)
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.SamplingIntegrator
+.. py:class:: misuka.SamplingIntegrator
 
-    Base class: :py:obj:`mitsuba.Integrator`
+    Base class: misuka.Integrator
 
-    .. py:property:: mitsuba.SamplingIntegrator.hide_emitters
+    .. py:property:: misuka.SamplingIntegrator.hide_emitters
 
         (self) -> bool
 
-    .. py:method:: mitsuba.SamplingIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+    .. py:method:: misuka.SamplingIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
@@ -11977,7 +12418,7 @@
         Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -11989,15 +12430,15 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SamplingIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
+    .. py:method:: misuka.SamplingIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -12009,21 +12450,21 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.SamplingIntegrator.sample(self, scene, sampler, ray, medium=None, active=True)
+    .. py:method:: misuka.SamplingIntegrator.sample(self, scene, sampler, ray, medium=None, active=True)
 
         Sample the incident radiance along a ray.
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             The underlying scene in which the radiance function should be
             sampled
 
-        Parameter ``sampler`` (:py:obj:`mitsuba.Sampler`):
+        Parameter ``sampler`` (misuka.Sampler):
             A source of (pseudo-/quasi-) random numbers
 
-        Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
+        Parameter ``ray`` (misuka.RayDifferential3f):
             A ray, optionally with differentials
 
-        Parameter ``medium`` (:py:obj:`mitsuba.Medium` | None):
+        Parameter ``medium`` (misuka.Medium | None):
             If the ray is inside a medium, this parameter holds a pointer to
             that medium
 
@@ -12037,7 +12478,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             A mask that indicates which SIMD lanes are active
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, drjit.llvm.ad.Bool, list[drjit.llvm.ad.Float]]:
+        Returns → tuple[misuka.Color3f, drjit.llvm.ad.Bool, list[drjit.llvm.ad.Float]]:
             A pair containing a spectrum and a mask specifying whether a
             surface or medium interaction was sampled. False mask entries
             indicate that the ray "escaped" the scene, in which case the
@@ -12054,7 +12495,7 @@
             (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
 
 
-.. py:class:: mitsuba.ScalarAffineTransform3d
+.. py:class:: misuka.ScalarAffineTransform3d
 
     Unified homogeneous coordinate transformation
 
@@ -12086,11 +12527,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform3d) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`, /) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform3d, /) -> None``
         
         Construct from an projective transformation
         
@@ -12108,22 +12549,22 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarAffineTransform3d.assign(self, arg)
+    .. py:method:: misuka.ScalarAffineTransform3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform3d`, /):
+        Parameter ``arg`` (misuka.ScalarAffineTransform3d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.extract()
+    .. py:method:: misuka.ScalarAffineTransform3d.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.Transform`:
+        Returns → misuka.Transform:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.has_scale()
+    .. py:method:: misuka.ScalarAffineTransform3d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -12132,42 +12573,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.inverse()
+    .. py:method:: misuka.ScalarAffineTransform3d.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+        Returns → misuka.ScalarAffineTransform3d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarAffineTransform3d.inverse_transpose
+    .. py:property:: misuka.ScalarAffineTransform3d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:property:: mitsuba.ScalarAffineTransform3d.matrix
+    .. py:property:: misuka.ScalarAffineTransform3d.matrix
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.transform_affine(self, p)
+    .. py:method:: misuka.ScalarAffineTransform3d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2d`):
+        Parameter ``p`` (misuka.ScalarPoint2d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+        Returns → misuka.ScalarPoint2d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.translation()
+    .. py:method:: misuka.ScalarAffineTransform3d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector2d`:
+        Returns → misuka.ScalarVector2d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3d.update()
+    .. py:method:: misuka.ScalarAffineTransform3d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+        Returns → misuka.ScalarAffineTransform3d:
             *no description available*
 
-.. py:class:: mitsuba.ScalarAffineTransform3f
+.. py:class:: misuka.ScalarAffineTransform3f
 
     Unified homogeneous coordinate transformation
 
@@ -12199,11 +12640,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform3f) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`, /) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform3f, /) -> None``
         
         Construct from an projective transformation
         
@@ -12221,22 +12662,22 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarAffineTransform3f.assign(self, arg)
+    .. py:method:: misuka.ScalarAffineTransform3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform3f`, /):
+        Parameter ``arg`` (misuka.ScalarAffineTransform3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.extract()
+    .. py:method:: misuka.ScalarAffineTransform3f.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.Transform`:
+        Returns → misuka.Transform:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.has_scale()
+    .. py:method:: misuka.ScalarAffineTransform3f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -12245,42 +12686,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.inverse()
+    .. py:method:: misuka.ScalarAffineTransform3f.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+        Returns → misuka.ScalarAffineTransform3f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarAffineTransform3f.inverse_transpose
+    .. py:property:: misuka.ScalarAffineTransform3f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:property:: mitsuba.ScalarAffineTransform3f.matrix
+    .. py:property:: misuka.ScalarAffineTransform3f.matrix
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.transform_affine(self, p)
+    .. py:method:: misuka.ScalarAffineTransform3f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2f`):
+        Parameter ``p`` (misuka.ScalarPoint2f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+        Returns → misuka.ScalarPoint2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.translation()
+    .. py:method:: misuka.ScalarAffineTransform3f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector2f`:
+        Returns → misuka.ScalarVector2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform3f.update()
+    .. py:method:: misuka.ScalarAffineTransform3f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+        Returns → misuka.ScalarAffineTransform3f:
             *no description available*
 
-.. py:class:: mitsuba.ScalarAffineTransform4d
+.. py:class:: misuka.ScalarAffineTransform4d
 
     Unified homogeneous coordinate transformation
 
@@ -12312,11 +12753,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform4d) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`, /) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform4d, /) -> None``
         
         Construct from an projective transformation
         
@@ -12334,22 +12775,22 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarAffineTransform4d.assign(self, arg)
+    .. py:method:: misuka.ScalarAffineTransform4d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform4d`, /):
+        Parameter ``arg`` (misuka.ScalarAffineTransform4d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.extract()
+    .. py:method:: misuka.ScalarAffineTransform4d.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3d`:
+        Returns → misuka.ScalarAffineTransform3d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.has_scale()
+    .. py:method:: misuka.ScalarAffineTransform4d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -12358,42 +12799,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.inverse()
+    .. py:method:: misuka.ScalarAffineTransform4d.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform4d`:
+        Returns → misuka.ScalarAffineTransform4d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarAffineTransform4d.inverse_transpose
+    .. py:property:: misuka.ScalarAffineTransform4d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:property:: mitsuba.ScalarAffineTransform4d.matrix
+    .. py:property:: misuka.ScalarAffineTransform4d.matrix
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.transform_affine(self, p)
+    .. py:method:: misuka.ScalarAffineTransform4d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3d`):
+        Parameter ``p`` (misuka.ScalarPoint3d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+        Returns → misuka.ScalarPoint3d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.translation()
+    .. py:method:: misuka.ScalarAffineTransform4d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector3d`:
+        Returns → misuka.ScalarVector3d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4d.update()
+    .. py:method:: misuka.ScalarAffineTransform4d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform4d`:
+        Returns → misuka.ScalarAffineTransform4d:
             *no description available*
 
-.. py:class:: mitsuba.ScalarAffineTransform4f
+.. py:class:: misuka.ScalarAffineTransform4f
 
     Unified homogeneous coordinate transformation
 
@@ -12425,11 +12866,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform4f) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`, /) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform4f, /) -> None``
         
         Construct from an projective transformation
         
@@ -12447,22 +12888,22 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarAffineTransform4f.assign(self, arg)
+    .. py:method:: misuka.ScalarAffineTransform4f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarAffineTransform4f`, /):
+        Parameter ``arg`` (misuka.ScalarAffineTransform4f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.extract()
+    .. py:method:: misuka.ScalarAffineTransform4f.extract()
 
         Extract a lower-dimensional submatrix (only for affine transforms)
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform3f`:
+        Returns → misuka.ScalarAffineTransform3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.has_scale()
+    .. py:method:: misuka.ScalarAffineTransform4f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -12471,42 +12912,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.inverse()
+    .. py:method:: misuka.ScalarAffineTransform4f.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform4f`:
+        Returns → misuka.ScalarAffineTransform4f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarAffineTransform4f.inverse_transpose
+    .. py:property:: misuka.ScalarAffineTransform4f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:property:: mitsuba.ScalarAffineTransform4f.matrix
+    .. py:property:: misuka.ScalarAffineTransform4f.matrix
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.transform_affine(self, p)
+    .. py:method:: misuka.ScalarAffineTransform4f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
+        Parameter ``p`` (misuka.ScalarPoint3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+        Returns → misuka.ScalarPoint3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.translation()
+    .. py:method:: misuka.ScalarAffineTransform4f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector3f`:
+        Returns → misuka.ScalarVector3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarAffineTransform4f.update()
+    .. py:method:: misuka.ScalarAffineTransform4f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarAffineTransform4f`:
+        Returns → misuka.ScalarAffineTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.ScalarBoundingBox2f
+.. py:class:: misuka.ScalarBoundingBox2f
 
     Generic n-dimensional bounding box data structure
 
@@ -12538,37 +12979,37 @@
         Initializes the components of the minimum and maximum position to
         :math:`\infty` and :math:`-\infty`, respectively.
         
-        2. ``__init__(self, p: :py:obj:`mitsuba.ScalarPoint2f`) -> None``
+        2. ``__init__(self, p: misuka.ScalarPoint2f) -> None``
         
         Create a collapsed bounding box from a single point
         
-        3. ``__init__(self, min: :py:obj:`mitsuba.ScalarPoint2f`, max: :py:obj:`mitsuba.ScalarPoint2f`) -> None``
+        3. ``__init__(self, min: misuka.ScalarPoint2f, max: misuka.ScalarPoint2f) -> None``
         
         Create a bounding box from two positions
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarBoundingBox2f`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarBoundingBox2f) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.ScalarBoundingBox2f.center()
+    .. py:method:: misuka.ScalarBoundingBox2f.center()
 
         Return the center point
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+        Returns → misuka.ScalarPoint2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.clip(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox2f.clip(self, arg)
 
         Clip this bounding box to another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarBoundingBox2f`, /):
+        Parameter ``arg`` (misuka.ScalarBoundingBox2f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.collapsed()
+    .. py:method:: misuka.ScalarBoundingBox2f.collapsed()
 
         Check whether this bounding box has collapsed to a point, line, or
         plane
@@ -12576,15 +13017,15 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.contains(self, p, strict=False)
+    .. py:method:: misuka.ScalarBoundingBox2f.contains(self, p, strict=False)
 
         Overloaded function.
 
-        1. ``contains(self, p: :py:obj:`mitsuba.ScalarPoint2f`, strict: bool = False) -> bool``
+        1. ``contains(self, p: misuka.ScalarPoint2f, strict: bool = False) -> bool``
 
         Check whether a point lies *on* or *inside* the bounding box
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2f`):
+        Parameter ``p`` (misuka.ScalarPoint2f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -12595,7 +13036,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        2. ``contains(self, bbox: :py:obj:`mitsuba.ScalarBoundingBox2f`, strict: bool = False) -> bool``
+        2. ``contains(self, bbox: misuka.ScalarBoundingBox2f, strict: bool = False) -> bool``
 
         Check whether a specified bounding box lies *on* or *within* the
         current bounding box
@@ -12619,84 +13060,84 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.corner(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox2f.corner(self, arg)
 
         Return the position of a bounding box corner
 
         Parameter ``arg`` (int, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+        Returns → misuka.ScalarPoint2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.distance(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox2f.distance(self, arg)
 
         Overloaded function.
 
-        1. ``distance(self, arg: :py:obj:`mitsuba.ScalarPoint2f`, /) -> float``
+        1. ``distance(self, arg: misuka.ScalarPoint2f, /) -> float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and the point ``p``.
 
-        2. ``distance(self, arg: :py:obj:`mitsuba.ScalarBoundingBox2f`, /) -> float``
+        2. ``distance(self, arg: misuka.ScalarBoundingBox2f, /) -> float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint2f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint2f, /):
             *no description available*
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.expand(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox2f.expand(self, arg)
 
         Overloaded function.
 
-        1. ``expand(self, arg: :py:obj:`mitsuba.ScalarPoint2f`, /) -> None``
+        1. ``expand(self, arg: misuka.ScalarPoint2f, /) -> None``
 
         Expand the bounding box to contain another point
 
-        2. ``expand(self, arg: :py:obj:`mitsuba.ScalarBoundingBox2f`, /) -> None``
+        2. ``expand(self, arg: misuka.ScalarBoundingBox2f, /) -> None``
 
         Expand the bounding box to contain another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint2f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint2f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.extents()
+    .. py:method:: misuka.ScalarBoundingBox2f.extents()
 
         Calculate the bounding box extents
 
-        Returns → :py:obj:`mitsuba.ScalarVector2f`:
+        Returns → misuka.ScalarVector2f:
             ``max - min``
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.major_axis()
+    .. py:method:: misuka.ScalarBoundingBox2f.major_axis()
 
         Return the dimension index with the index associated side length
 
         Returns → int:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarBoundingBox2f.max
+    .. py:property:: misuka.ScalarBoundingBox2f.max
 
-        (self) -> :py:obj:`mitsuba.ScalarPoint2f`
+        (self) -> misuka.ScalarPoint2f
 
-    .. py:property:: mitsuba.ScalarBoundingBox2f.min
+    .. py:property:: misuka.ScalarBoundingBox2f.min
 
-        (self) -> :py:obj:`mitsuba.ScalarPoint2f`
+        (self) -> misuka.ScalarPoint2f
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.minor_axis()
+    .. py:method:: misuka.ScalarBoundingBox2f.minor_axis()
 
         Return the dimension index with the shortest associated side length
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.overlaps(self, bbox, strict=False)
+    .. py:method:: misuka.ScalarBoundingBox2f.overlaps(self, bbox, strict=False)
 
         Check two axis-aligned bounding boxes for possible overlap.
 
@@ -12708,7 +13149,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        Parameter ``bbox`` (:py:obj:`mitsuba.ScalarBoundingBox2f`):
+        Parameter ``bbox`` (misuka.ScalarBoundingBox2f):
             *no description available*
 
         Parameter ``strict`` (bool):
@@ -12717,7 +13158,7 @@
         Returns → bool:
             ``True`` If overlap was detected.
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.reset()
+    .. py:method:: misuka.ScalarBoundingBox2f.reset()
 
         Mark the bounding box as invalid.
 
@@ -12727,34 +13168,34 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.squared_distance(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox2f.squared_distance(self, arg)
 
         Overloaded function.
 
-        1. ``squared_distance(self, arg: :py:obj:`mitsuba.ScalarPoint2f`, /) -> float``
+        1. ``squared_distance(self, arg: misuka.ScalarPoint2f, /) -> float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and the point ``p``.
 
-        2. ``squared_distance(self, arg: :py:obj:`mitsuba.ScalarBoundingBox2f`, /) -> float``
+        2. ``squared_distance(self, arg: misuka.ScalarBoundingBox2f, /) -> float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint2f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint2f, /):
             *no description available*
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.surface_area()
+    .. py:method:: misuka.ScalarBoundingBox2f.surface_area()
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.valid()
+    .. py:method:: misuka.ScalarBoundingBox2f.valid()
 
         Check whether this is a valid bounding box
 
@@ -12770,14 +13211,14 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox2f.volume()
+    .. py:method:: misuka.ScalarBoundingBox2f.volume()
 
         Calculate the n-dimensional volume of the bounding box
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.ScalarBoundingBox3f
+.. py:class:: misuka.ScalarBoundingBox3f
 
     Generic n-dimensional bounding box data structure
 
@@ -12809,44 +13250,44 @@
         Initializes the components of the minimum and maximum position to
         :math:`\infty` and :math:`-\infty`, respectively.
         
-        2. ``__init__(self, p: :py:obj:`mitsuba.ScalarPoint3f`) -> None``
+        2. ``__init__(self, p: misuka.ScalarPoint3f) -> None``
         
         Create a collapsed bounding box from a single point
         
-        3. ``__init__(self, min: :py:obj:`mitsuba.ScalarPoint3f`, max: :py:obj:`mitsuba.ScalarPoint3f`) -> None``
+        3. ``__init__(self, min: misuka.ScalarPoint3f, max: misuka.ScalarPoint3f) -> None``
         
         Create a bounding box from two positions
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarBoundingBox3f`) -> None``
+        4. ``__init__(self, arg: misuka.ScalarBoundingBox3f) -> None``
         
         Copy constructor
 
         
-    .. py:method:: mitsuba.ScalarBoundingBox3f.bounding_sphere()
+    .. py:method:: misuka.ScalarBoundingBox3f.bounding_sphere()
 
         Create a bounding sphere, which contains the axis-aligned box
 
-        Returns → :py:obj:`mitsuba.ScalarBoundingSphere3f`:
+        Returns → misuka.ScalarBoundingSphere3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.center()
+    .. py:method:: misuka.ScalarBoundingBox3f.center()
 
         Return the center point
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+        Returns → misuka.ScalarPoint3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.clip(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox3f.clip(self, arg)
 
         Clip this bounding box to another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarBoundingBox3f`, /):
+        Parameter ``arg`` (misuka.ScalarBoundingBox3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.collapsed()
+    .. py:method:: misuka.ScalarBoundingBox3f.collapsed()
 
         Check whether this bounding box has collapsed to a point, line, or
         plane
@@ -12854,15 +13295,15 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.contains(self, p, strict=False)
+    .. py:method:: misuka.ScalarBoundingBox3f.contains(self, p, strict=False)
 
         Overloaded function.
 
-        1. ``contains(self, p: :py:obj:`mitsuba.ScalarPoint3f`, strict: bool = False) -> bool``
+        1. ``contains(self, p: misuka.ScalarPoint3f, strict: bool = False) -> bool``
 
         Check whether a point lies *on* or *inside* the bounding box
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
+        Parameter ``p`` (misuka.ScalarPoint3f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -12873,7 +13314,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        2. ``contains(self, bbox: :py:obj:`mitsuba.ScalarBoundingBox3f`, strict: bool = False) -> bool``
+        2. ``contains(self, bbox: misuka.ScalarBoundingBox3f, strict: bool = False) -> bool``
 
         Check whether a specified bounding box lies *on* or *within* the
         current bounding box
@@ -12897,84 +13338,84 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.corner(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox3f.corner(self, arg)
 
         Return the position of a bounding box corner
 
         Parameter ``arg`` (int, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+        Returns → misuka.ScalarPoint3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.distance(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox3f.distance(self, arg)
 
         Overloaded function.
 
-        1. ``distance(self, arg: :py:obj:`mitsuba.ScalarPoint3f`, /) -> float``
+        1. ``distance(self, arg: misuka.ScalarPoint3f, /) -> float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and the point ``p``.
 
-        2. ``distance(self, arg: :py:obj:`mitsuba.ScalarBoundingBox3f`, /) -> float``
+        2. ``distance(self, arg: misuka.ScalarBoundingBox3f, /) -> float``
 
         Calculate the shortest distance between the axis-aligned bounding box
         and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint3f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint3f, /):
             *no description available*
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.expand(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox3f.expand(self, arg)
 
         Overloaded function.
 
-        1. ``expand(self, arg: :py:obj:`mitsuba.ScalarPoint3f`, /) -> None``
+        1. ``expand(self, arg: misuka.ScalarPoint3f, /) -> None``
 
         Expand the bounding box to contain another point
 
-        2. ``expand(self, arg: :py:obj:`mitsuba.ScalarBoundingBox3f`, /) -> None``
+        2. ``expand(self, arg: misuka.ScalarBoundingBox3f, /) -> None``
 
         Expand the bounding box to contain another bounding box
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint3f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.extents()
+    .. py:method:: misuka.ScalarBoundingBox3f.extents()
 
         Calculate the bounding box extents
 
-        Returns → :py:obj:`mitsuba.ScalarVector3f`:
+        Returns → misuka.ScalarVector3f:
             ``max - min``
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.major_axis()
+    .. py:method:: misuka.ScalarBoundingBox3f.major_axis()
 
         Return the dimension index with the index associated side length
 
         Returns → int:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarBoundingBox3f.max
+    .. py:property:: misuka.ScalarBoundingBox3f.max
 
-        (self) -> :py:obj:`mitsuba.ScalarPoint3f`
+        (self) -> misuka.ScalarPoint3f
 
-    .. py:property:: mitsuba.ScalarBoundingBox3f.min
+    .. py:property:: misuka.ScalarBoundingBox3f.min
 
-        (self) -> :py:obj:`mitsuba.ScalarPoint3f`
+        (self) -> misuka.ScalarPoint3f
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.minor_axis()
+    .. py:method:: misuka.ScalarBoundingBox3f.minor_axis()
 
         Return the dimension index with the shortest associated side length
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.overlaps(self, bbox, strict=False)
+    .. py:method:: misuka.ScalarBoundingBox3f.overlaps(self, bbox, strict=False)
 
         Check two axis-aligned bounding boxes for possible overlap.
 
@@ -12986,7 +13427,7 @@
             In the Python bindings, the 'Strict' argument is a normal function
             parameter with default value ``False``.
 
-        Parameter ``bbox`` (:py:obj:`mitsuba.ScalarBoundingBox3f`):
+        Parameter ``bbox`` (misuka.ScalarBoundingBox3f):
             *no description available*
 
         Parameter ``strict`` (bool):
@@ -12995,20 +13436,20 @@
         Returns → bool:
             ``True`` If overlap was detected.
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.ray_intersect(self, ray)
+    .. py:method:: misuka.ScalarBoundingBox3f.ray_intersect(self, ray)
 
         Check if a ray intersects a bounding box
 
         Note that this function ignores the ``maxt`` value associated with the
         ray.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.reset()
+    .. py:method:: misuka.ScalarBoundingBox3f.reset()
 
         Mark the bounding box as invalid.
 
@@ -13018,34 +13459,34 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.squared_distance(self, arg)
+    .. py:method:: misuka.ScalarBoundingBox3f.squared_distance(self, arg)
 
         Overloaded function.
 
-        1. ``squared_distance(self, arg: :py:obj:`mitsuba.ScalarPoint3f`, /) -> float``
+        1. ``squared_distance(self, arg: misuka.ScalarPoint3f, /) -> float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and the point ``p``.
 
-        2. ``squared_distance(self, arg: :py:obj:`mitsuba.ScalarBoundingBox3f`, /) -> float``
+        2. ``squared_distance(self, arg: misuka.ScalarBoundingBox3f, /) -> float``
 
         Calculate the shortest squared distance between the axis-aligned
         bounding box and ``bbox``.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint3f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint3f, /):
             *no description available*
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.surface_area()
+    .. py:method:: misuka.ScalarBoundingBox3f.surface_area()
 
         Calculate the 2-dimensional surface area of a 3D bounding box
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.valid()
+    .. py:method:: misuka.ScalarBoundingBox3f.valid()
 
         Check whether this is a valid bounding box
 
@@ -13061,14 +13502,14 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingBox3f.volume()
+    .. py:method:: misuka.ScalarBoundingBox3f.volume()
 
         Calculate the n-dimensional volume of the bounding box
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.ScalarBoundingSphere3f
+.. py:class:: misuka.ScalarBoundingSphere3f
 
     Generic n-dimensional bounding sphere data structure
 
@@ -13080,23 +13521,23 @@
         
         Construct bounding sphere(s) at the origin having radius zero
         
-        2. ``__init__(self, arg0: :py:obj:`mitsuba.ScalarPoint3f`, arg1: float, /) -> None``
+        2. ``__init__(self, arg0: misuka.ScalarPoint3f, arg1: float, /) -> None``
         
         Create bounding sphere(s) from given center point(s) with given
         size(s)
         
-        3. ``__init__(self, arg: :py:obj:`mitsuba.ScalarBoundingSphere3f`) -> None``
+        3. ``__init__(self, arg: misuka.ScalarBoundingSphere3f) -> None``
 
         
-    .. py:property:: mitsuba.ScalarBoundingSphere3f.center
+    .. py:property:: misuka.ScalarBoundingSphere3f.center
 
-        (self) -> :py:obj:`mitsuba.ScalarPoint3f`
+        (self) -> misuka.ScalarPoint3f
 
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.contains(self, p, strict=False)
+    .. py:method:: misuka.ScalarBoundingSphere3f.contains(self, p, strict=False)
 
         Check whether a point lies *on* or *inside* the bounding sphere
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
+        Parameter ``p`` (misuka.ScalarPoint3f):
             The point to be tested
 
         Template parameter ``Strict``:
@@ -13113,94 +13554,94 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.empty()
+    .. py:method:: misuka.ScalarBoundingSphere3f.empty()
 
         Return whether this bounding sphere has a radius of zero or less.
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.expand(self, arg)
+    .. py:method:: misuka.ScalarBoundingSphere3f.expand(self, arg)
 
         Expand the bounding sphere radius to contain another point
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarPoint3f`, /):
+        Parameter ``arg`` (misuka.ScalarPoint3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarBoundingSphere3f.radius
+    .. py:property:: misuka.ScalarBoundingSphere3f.radius
 
         (self) -> float
 
-    .. py:method:: mitsuba.ScalarBoundingSphere3f.ray_intersect(self, ray)
+    .. py:method:: misuka.ScalarBoundingSphere3f.ray_intersect(self, ray)
 
         Check if a ray intersects a bounding box
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             *no description available*
 
         Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
             *no description available*
 
-.. py:class:: mitsuba.ScalarColor0d
+.. py:class:: misuka.ScalarColor0d
 
-.. py:class:: mitsuba.ScalarColor0f
+.. py:class:: misuka.ScalarColor0f
 
-.. py:class:: mitsuba.ScalarColor1d
+.. py:class:: misuka.ScalarColor1d
 
-.. py:class:: mitsuba.ScalarColor1f
+.. py:class:: misuka.ScalarColor1f
 
-.. py:class:: mitsuba.ScalarColor3d
+.. py:class:: misuka.ScalarColor3d
 
-.. py:class:: mitsuba.ScalarColor3f
+.. py:class:: misuka.ScalarColor3f
 
-.. py:class:: mitsuba.ScalarNormal3d
+.. py:class:: misuka.ScalarNormal3d
 
-.. py:class:: mitsuba.ScalarNormal3f
+.. py:class:: misuka.ScalarNormal3f
 
-.. py:class:: mitsuba.ScalarPoint0d
+.. py:class:: misuka.ScalarPoint0d
 
-.. py:class:: mitsuba.ScalarPoint0f
+.. py:class:: misuka.ScalarPoint0f
 
-.. py:class:: mitsuba.ScalarPoint0i
+.. py:class:: misuka.ScalarPoint0i
 
-.. py:class:: mitsuba.ScalarPoint0u
+.. py:class:: misuka.ScalarPoint0u
 
-.. py:class:: mitsuba.ScalarPoint1d
+.. py:class:: misuka.ScalarPoint1d
 
-.. py:class:: mitsuba.ScalarPoint1f
+.. py:class:: misuka.ScalarPoint1f
 
-.. py:class:: mitsuba.ScalarPoint1i
+.. py:class:: misuka.ScalarPoint1i
 
-.. py:class:: mitsuba.ScalarPoint1u
+.. py:class:: misuka.ScalarPoint1u
 
-.. py:class:: mitsuba.ScalarPoint2d
+.. py:class:: misuka.ScalarPoint2d
 
-.. py:class:: mitsuba.ScalarPoint2f
+.. py:class:: misuka.ScalarPoint2f
 
-.. py:class:: mitsuba.ScalarPoint2i
+.. py:class:: misuka.ScalarPoint2i
 
-.. py:class:: mitsuba.ScalarPoint2u
+.. py:class:: misuka.ScalarPoint2u
 
-.. py:class:: mitsuba.ScalarPoint3d
+.. py:class:: misuka.ScalarPoint3d
 
-.. py:class:: mitsuba.ScalarPoint3f
+.. py:class:: misuka.ScalarPoint3f
 
-.. py:class:: mitsuba.ScalarPoint3i
+.. py:class:: misuka.ScalarPoint3i
 
-.. py:class:: mitsuba.ScalarPoint3u
+.. py:class:: misuka.ScalarPoint3u
 
-.. py:class:: mitsuba.ScalarPoint4d
+.. py:class:: misuka.ScalarPoint4d
 
-.. py:class:: mitsuba.ScalarPoint4f
+.. py:class:: misuka.ScalarPoint4f
 
-.. py:class:: mitsuba.ScalarPoint4i
+.. py:class:: misuka.ScalarPoint4i
 
-.. py:class:: mitsuba.ScalarPoint4u
+.. py:class:: misuka.ScalarPoint4u
 
-.. py:class:: mitsuba.ScalarProjectiveTransform3d
+.. py:class:: misuka.ScalarProjectiveTransform3d
 
     Unified homogeneous coordinate transformation
 
@@ -13232,11 +13673,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3d`, /) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform3d, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3d`) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform3d) -> None``
         
         Construct from an projective transformation
         
@@ -13254,15 +13695,15 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.assign(self, arg)
+    .. py:method:: misuka.ScalarProjectiveTransform3d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform3d`, /):
+        Parameter ``arg`` (misuka.ScalarProjectiveTransform3d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.has_scale()
+    .. py:method:: misuka.ScalarProjectiveTransform3d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -13271,42 +13712,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.inverse()
+    .. py:method:: misuka.ScalarProjectiveTransform3d.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3d`:
+        Returns → misuka.ScalarProjectiveTransform3d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform3d.inverse_transpose
+    .. py:property:: misuka.ScalarProjectiveTransform3d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform3d.matrix
+    .. py:property:: misuka.ScalarProjectiveTransform3d.matrix
 
         (self) -> drjit.scalar.Matrix3f64
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.transform_affine(self, p)
+    .. py:method:: misuka.ScalarProjectiveTransform3d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2d`):
+        Parameter ``p`` (misuka.ScalarPoint2d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+        Returns → misuka.ScalarPoint2d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.translation()
+    .. py:method:: misuka.ScalarProjectiveTransform3d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector2d`:
+        Returns → misuka.ScalarVector2d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3d.update()
+    .. py:method:: misuka.ScalarProjectiveTransform3d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3d`:
+        Returns → misuka.ScalarProjectiveTransform3d:
             *no description available*
 
-.. py:class:: mitsuba.ScalarProjectiveTransform3f
+.. py:class:: misuka.ScalarProjectiveTransform3f
 
     Unified homogeneous coordinate transformation
 
@@ -13338,11 +13779,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform3f`, /) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform3f, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform3f`) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform3f) -> None``
         
         Construct from an projective transformation
         
@@ -13360,15 +13801,15 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.assign(self, arg)
+    .. py:method:: misuka.ScalarProjectiveTransform3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform3f`, /):
+        Parameter ``arg`` (misuka.ScalarProjectiveTransform3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.has_scale()
+    .. py:method:: misuka.ScalarProjectiveTransform3f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -13377,42 +13818,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.inverse()
+    .. py:method:: misuka.ScalarProjectiveTransform3f.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3f`:
+        Returns → misuka.ScalarProjectiveTransform3f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform3f.inverse_transpose
+    .. py:property:: misuka.ScalarProjectiveTransform3f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform3f.matrix
+    .. py:property:: misuka.ScalarProjectiveTransform3f.matrix
 
         (self) -> drjit.scalar.Matrix3f
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.transform_affine(self, p)
+    .. py:method:: misuka.ScalarProjectiveTransform3f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint2f`):
+        Parameter ``p`` (misuka.ScalarPoint2f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+        Returns → misuka.ScalarPoint2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.translation()
+    .. py:method:: misuka.ScalarProjectiveTransform3f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector2f`:
+        Returns → misuka.ScalarVector2f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform3f.update()
+    .. py:method:: misuka.ScalarProjectiveTransform3f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform3f`:
+        Returns → misuka.ScalarProjectiveTransform3f:
             *no description available*
 
-.. py:class:: mitsuba.ScalarProjectiveTransform4d
+.. py:class:: misuka.ScalarProjectiveTransform4d
 
     Unified homogeneous coordinate transformation
 
@@ -13444,11 +13885,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4d`, /) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform4d, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4d`) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform4d) -> None``
         
         Construct from an projective transformation
         
@@ -13466,15 +13907,15 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.assign(self, arg)
+    .. py:method:: misuka.ScalarProjectiveTransform4d.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform4d`, /):
+        Parameter ``arg`` (misuka.ScalarProjectiveTransform4d, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.has_scale()
+    .. py:method:: misuka.ScalarProjectiveTransform4d.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -13483,42 +13924,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.inverse()
+    .. py:method:: misuka.ScalarProjectiveTransform4d.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4d`:
+        Returns → misuka.ScalarProjectiveTransform4d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform4d.inverse_transpose
+    .. py:property:: misuka.ScalarProjectiveTransform4d.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform4d.matrix
+    .. py:property:: misuka.ScalarProjectiveTransform4d.matrix
 
         (self) -> drjit.scalar.Matrix4f64
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.transform_affine(self, p)
+    .. py:method:: misuka.ScalarProjectiveTransform4d.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3d`):
+        Parameter ``p`` (misuka.ScalarPoint3d):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+        Returns → misuka.ScalarPoint3d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.translation()
+    .. py:method:: misuka.ScalarProjectiveTransform4d.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector3d`:
+        Returns → misuka.ScalarVector3d:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4d.update()
+    .. py:method:: misuka.ScalarProjectiveTransform4d.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4d`:
+        Returns → misuka.ScalarProjectiveTransform4d:
             *no description available*
 
-.. py:class:: mitsuba.ScalarProjectiveTransform4f
+.. py:class:: misuka.ScalarProjectiveTransform4f
 
     Unified homogeneous coordinate transformation
 
@@ -13550,11 +13991,11 @@
         
         Construct from a matrix and its inverse transpose
         
-        4. ``__init__(self, arg: :py:obj:`mitsuba.ScalarAffineTransform4f`, /) -> None``
+        4. ``__init__(self, arg: misuka.ScalarAffineTransform4f, /) -> None``
         
         Construct from an affine transformation
         
-        5. ``__init__(self, arg: :py:obj:`mitsuba.ScalarProjectiveTransform4f`) -> None``
+        5. ``__init__(self, arg: misuka.ScalarProjectiveTransform4f) -> None``
         
         Construct from an projective transformation
         
@@ -13572,15 +14013,15 @@
         9. ``__init__(self, arg: collections.abc.Sequence, /) -> None``
 
         
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.assign(self, arg)
+    .. py:method:: misuka.ScalarProjectiveTransform4f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.ScalarProjectiveTransform4f`, /):
+        Parameter ``arg`` (misuka.ScalarProjectiveTransform4f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.has_scale()
+    .. py:method:: misuka.ScalarProjectiveTransform4f.has_scale()
 
         Test for a scale component in each transform matrix by checking
         whether ``M . M^T == I`` (where ``M`` is the matrix in question and
@@ -13589,42 +14030,42 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.inverse()
+    .. py:method:: misuka.ScalarProjectiveTransform4f.inverse()
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
+        Returns → misuka.ScalarProjectiveTransform4f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform4f.inverse_transpose
+    .. py:property:: misuka.ScalarProjectiveTransform4f.inverse_transpose
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:property:: mitsuba.ScalarProjectiveTransform4f.matrix
+    .. py:property:: misuka.ScalarProjectiveTransform4f.matrix
 
         (self) -> drjit.scalar.Matrix4f
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.transform_affine(self, p)
+    .. py:method:: misuka.ScalarProjectiveTransform4f.transform_affine(self, p)
 
-        Parameter ``p`` (:py:obj:`mitsuba.ScalarPoint3f`):
+        Parameter ``p`` (misuka.ScalarPoint3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+        Returns → misuka.ScalarPoint3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.translation()
+    .. py:method:: misuka.ScalarProjectiveTransform4f.translation()
 
         Get the translation part of a matrix
 
-        Returns → :py:obj:`mitsuba.ScalarVector3f`:
+        Returns → misuka.ScalarVector3f:
             *no description available*
 
-    .. py:method:: mitsuba.ScalarProjectiveTransform4f.update()
+    .. py:method:: misuka.ScalarProjectiveTransform4f.update()
 
         Update the inverse transpose part following a modification to 'matrix'
 
-        Returns → :py:obj:`mitsuba.ScalarProjectiveTransform4f`:
+        Returns → misuka.ScalarProjectiveTransform4f:
             *no description available*
 
-.. py:class:: mitsuba.ScalarRay2d
+.. py:class:: misuka.ScalarRay2d
 
     Simple n-dimensional ray segment data structure
 
@@ -13640,54 +14081,54 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`) -> None``
+        2. ``__init__(self, other: misuka.ScalarRay2d) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.ScalarPoint2d, d: misuka.ScalarVector2d, time: float = 0.0, wavelengths: misuka.ScalarColor0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2d`, d: :py:obj:`mitsuba.ScalarVector2d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        4. ``__init__(self, o: misuka.ScalarPoint2d, d: misuka.ScalarVector2d, maxt: float, time: float, wavelengths: misuka.ScalarColor0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2d`, maxt: float) -> None``
+        5. ``__init__(self, other: misuka.ScalarRay2d, maxt: float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.ScalarRay2d.__call__(self, t)
+    .. py:method:: misuka.ScalarRay2d.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2d`:
+        Returns → misuka.ScalarPoint2d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarRay2d.d
+    .. py:property:: misuka.ScalarRay2d.d
 
         Ray direction
 
-    .. py:property:: mitsuba.ScalarRay2d.maxt
+    .. py:property:: misuka.ScalarRay2d.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.ScalarRay2d.o
+    .. py:property:: misuka.ScalarRay2d.o
 
         Ray origin
 
-    .. py:property:: mitsuba.ScalarRay2d.time
+    .. py:property:: misuka.ScalarRay2d.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.ScalarRay2d.wavelengths
+    .. py:property:: misuka.ScalarRay2d.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.ScalarRay2f
+.. py:class:: misuka.ScalarRay2f
 
     Simple n-dimensional ray segment data structure
 
@@ -13703,54 +14144,54 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`) -> None``
+        2. ``__init__(self, other: misuka.ScalarRay2f) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.ScalarPoint2f, d: misuka.ScalarVector2f, time: float = 0.0, wavelengths: misuka.ScalarColor0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint2f`, d: :py:obj:`mitsuba.ScalarVector2f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        4. ``__init__(self, o: misuka.ScalarPoint2f, d: misuka.ScalarVector2f, maxt: float, time: float, wavelengths: misuka.ScalarColor0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay2f`, maxt: float) -> None``
+        5. ``__init__(self, other: misuka.ScalarRay2f, maxt: float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.ScalarRay2f.__call__(self, t)
+    .. py:method:: misuka.ScalarRay2f.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint2f`:
+        Returns → misuka.ScalarPoint2f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarRay2f.d
+    .. py:property:: misuka.ScalarRay2f.d
 
         Ray direction
 
-    .. py:property:: mitsuba.ScalarRay2f.maxt
+    .. py:property:: misuka.ScalarRay2f.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.ScalarRay2f.o
+    .. py:property:: misuka.ScalarRay2f.o
 
         Ray origin
 
-    .. py:property:: mitsuba.ScalarRay2f.time
+    .. py:property:: misuka.ScalarRay2f.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.ScalarRay2f.wavelengths
+    .. py:property:: misuka.ScalarRay2f.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.ScalarRay3d
+.. py:class:: misuka.ScalarRay3d
 
     Simple n-dimensional ray segment data structure
 
@@ -13766,54 +14207,54 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`) -> None``
+        2. ``__init__(self, other: misuka.ScalarRay3d) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.ScalarPoint3d, d: misuka.ScalarVector3d, time: float = 0.0, wavelengths: misuka.ScalarColor0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3d`, d: :py:obj:`mitsuba.ScalarVector3d`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        4. ``__init__(self, o: misuka.ScalarPoint3d, d: misuka.ScalarVector3d, maxt: float, time: float, wavelengths: misuka.ScalarColor0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3d`, maxt: float) -> None``
+        5. ``__init__(self, other: misuka.ScalarRay3d, maxt: float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.ScalarRay3d.__call__(self, t)
+    .. py:method:: misuka.ScalarRay3d.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3d`:
+        Returns → misuka.ScalarPoint3d:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarRay3d.d
+    .. py:property:: misuka.ScalarRay3d.d
 
         Ray direction
 
-    .. py:property:: mitsuba.ScalarRay3d.maxt
+    .. py:property:: misuka.ScalarRay3d.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.ScalarRay3d.o
+    .. py:property:: misuka.ScalarRay3d.o
 
         Ray origin
 
-    .. py:property:: mitsuba.ScalarRay3d.time
+    .. py:property:: misuka.ScalarRay3d.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.ScalarRay3d.wavelengths
+    .. py:property:: misuka.ScalarRay3d.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.ScalarRay3f
+.. py:class:: misuka.ScalarRay3f
 
     Simple n-dimensional ray segment data structure
 
@@ -13829,126 +14270,126 @@
         
         Create an uninitialized ray
         
-        2. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`) -> None``
+        2. ``__init__(self, other: misuka.ScalarRay3f) -> None``
         
         Copy constructor
         
-        3. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, time: float = 0.0, wavelengths: :py:obj:`mitsuba.ScalarColor0f` | None = None) -> None``
+        3. ``__init__(self, o: misuka.ScalarPoint3f, d: misuka.ScalarVector3f, time: float = 0.0, wavelengths: misuka.ScalarColor0f | None = None) -> None``
         
         Construct a new ray (o, d) with time
         
-        4. ``__init__(self, o: :py:obj:`mitsuba.ScalarPoint3f`, d: :py:obj:`mitsuba.ScalarVector3f`, maxt: float, time: float, wavelengths: :py:obj:`mitsuba.ScalarColor0f`) -> None``
+        4. ``__init__(self, o: misuka.ScalarPoint3f, d: misuka.ScalarVector3f, maxt: float, time: float, wavelengths: misuka.ScalarColor0f) -> None``
         
         Construct a new ray (o, d) with bounds
         
-        5. ``__init__(self, other: :py:obj:`mitsuba.ScalarRay3f`, maxt: float) -> None``
+        5. ``__init__(self, other: misuka.ScalarRay3f, maxt: float) -> None``
         
         Copy a ray, but change the maxt value
 
         
-    .. py:method:: mitsuba.ScalarRay3f.__call__(self, t)
+    .. py:method:: misuka.ScalarRay3f.__call__(self, t)
 
         Return the position of a point along the ray
 
         Parameter ``t`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.ScalarPoint3f`:
+        Returns → misuka.ScalarPoint3f:
             *no description available*
 
-    .. py:property:: mitsuba.ScalarRay3f.d
+    .. py:property:: misuka.ScalarRay3f.d
 
         Ray direction
 
-    .. py:property:: mitsuba.ScalarRay3f.maxt
+    .. py:property:: misuka.ScalarRay3f.maxt
 
         Maximum position on the ray segment
 
-    .. py:property:: mitsuba.ScalarRay3f.o
+    .. py:property:: misuka.ScalarRay3f.o
 
         Ray origin
 
-    .. py:property:: mitsuba.ScalarRay3f.time
+    .. py:property:: misuka.ScalarRay3f.time
 
         Time value associated with this ray
 
-    .. py:property:: mitsuba.ScalarRay3f.wavelengths
+    .. py:property:: misuka.ScalarRay3f.wavelengths
 
         Wavelength associated with the ray
 
-.. py:class:: mitsuba.ScalarVector0d
+.. py:class:: misuka.ScalarVector0d
 
-.. py:class:: mitsuba.ScalarVector0f
+.. py:class:: misuka.ScalarVector0f
 
-.. py:class:: mitsuba.ScalarVector0i
+.. py:class:: misuka.ScalarVector0i
 
-.. py:class:: mitsuba.ScalarVector0u
+.. py:class:: misuka.ScalarVector0u
 
-.. py:class:: mitsuba.ScalarVector1d
+.. py:class:: misuka.ScalarVector1d
 
-.. py:class:: mitsuba.ScalarVector1f
+.. py:class:: misuka.ScalarVector1f
 
-.. py:class:: mitsuba.ScalarVector1i
+.. py:class:: misuka.ScalarVector1i
 
-.. py:class:: mitsuba.ScalarVector1u
+.. py:class:: misuka.ScalarVector1u
 
-.. py:class:: mitsuba.ScalarVector2d
+.. py:class:: misuka.ScalarVector2d
 
-.. py:class:: mitsuba.ScalarVector2f
+.. py:class:: misuka.ScalarVector2f
 
-.. py:class:: mitsuba.ScalarVector2i
+.. py:class:: misuka.ScalarVector2i
 
-.. py:class:: mitsuba.ScalarVector2u
+.. py:class:: misuka.ScalarVector2u
 
-.. py:class:: mitsuba.ScalarVector3d
+.. py:class:: misuka.ScalarVector3d
 
-.. py:class:: mitsuba.ScalarVector3f
+.. py:class:: misuka.ScalarVector3f
 
-.. py:class:: mitsuba.ScalarVector3i
+.. py:class:: misuka.ScalarVector3i
 
-.. py:class:: mitsuba.ScalarVector3u
+.. py:class:: misuka.ScalarVector3u
 
-.. py:class:: mitsuba.ScalarVector4d
+.. py:class:: misuka.ScalarVector4d
 
-.. py:class:: mitsuba.ScalarVector4f
+.. py:class:: misuka.ScalarVector4f
 
-.. py:class:: mitsuba.ScalarVector4i
+.. py:class:: misuka.ScalarVector4i
 
-.. py:class:: mitsuba.ScalarVector4u
+.. py:class:: misuka.ScalarVector4u
 
-.. py:class:: mitsuba.Scene
+.. py:class:: misuka.Scene
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Scene.bbox()
+    .. py:method:: misuka.Scene.bbox()
 
         Return a bounding box surrounding the scene
 
-        Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
+        Returns → misuka.ScalarBoundingBox3f:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.emitters()
+    .. py:method:: misuka.Scene.emitters()
 
         Return the list of emitters
 
-        Returns → list[:py:obj:`mitsuba.Emitter`]:
+        Returns → list[misuka.Emitter]:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.emitters_dr()
+    .. py:method:: misuka.Scene.emitters_dr()
 
         Return the list of emitters as a Dr.Jit array
 
-        Returns → :py:obj:`mitsuba.EmitterPtr`:
+        Returns → misuka.EmitterPtr:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.environment()
+    .. py:method:: misuka.Scene.environment()
 
         Return the environment emitter (if any)
 
-        Returns → :py:obj:`mitsuba.Emitter`:
+        Returns → misuka.Emitter:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.eval_emitter_direction(self, ref, ds, active=True)
+    .. py:method:: misuka.Scene.eval_emitter_direction(self, ref, ds, active=True)
 
         Re-evaluate the incident direct radiance of the
         sample_emitter_direction() method.
@@ -13968,44 +14409,44 @@
         yield a nonzero result in the case of emission profiles containing a
         Dirac delta term (e.g. point or directional lights).
 
-        Parameter ``ref`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``ref`` (misuka.Interaction3f):
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The incident radiance and discrete or solid angle density of the
             sample.
 
-    .. py:method:: mitsuba.Scene.integrator()
+    .. py:method:: misuka.Scene.integrator()
 
         Return the scene's integrator
 
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.invert_silhouette_sample(self, ss, active=True)
+    .. py:method:: misuka.Scene.invert_silhouette_sample(self, ss, active=True)
 
         Map a silhouette segment to a point in boundary sample space
 
         This method is the inverse of sample_silhouette(). The mapping from
         boundary sample space to boundary segments is bijective.
 
-        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample3f`):
+        Parameter ``ss`` (misuka.SilhouetteSample3f):
             The sampled boundary segment
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             The corresponding boundary sample space point
 
-    .. py:method:: mitsuba.Scene.pdf_emitter(self, index, active=True)
+    .. py:method:: misuka.Scene.pdf_emitter(self, index, active=True)
 
         Evaluate the discrete probability of the sample_emitter() technique
         for the given a emitter index.
@@ -14019,7 +14460,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.pdf_emitter_direction(self, ref, ds, active=True)
+    .. py:method:: misuka.Scene.pdf_emitter_direction(self, ref, ds, active=True)
 
         Evaluate the PDF of direct illumination sampling
 
@@ -14029,11 +14470,11 @@
         emission profile contains a Dirac delta term (e.g. point or
         directional emitters/sensors).
 
-        Parameter ``ref`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``ref`` (misuka.Interaction3f):
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -14042,11 +14483,11 @@
         Returns → drjit.llvm.ad.Float:
             The solid angle density of the sample
 
-    .. py:method:: mitsuba.Scene.ray_intersect(self, ray, active=True)
+    .. py:method:: misuka.Scene.ray_intersect(self, ray, active=True)
 
         Overloaded function.
 
-        1. ``ray_intersect(self, ray: :py:obj:`mitsuba.Ray3f`, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.SurfaceInteraction3f```
+        1. ``ray_intersect(self, ray: misuka.Ray3f, active: drjit.llvm.ad.Bool = True) -> misuka.SurfaceInteraction3f``
 
         Intersect a ray with the shapes comprising the scene and return a
         detailed data structure describing the intersection, if one is found.
@@ -14063,18 +14504,18 @@
         overload with ``coherent=false``, ``ray_flags`` equal to
         RayFlags::All, and ``reorder=false``.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A detailed surface interaction record. Its ``is_valid()`` method
             should be queried to check if an intersection was actually found.
 
-        2. ``ray_intersect(self, ray: :py:obj:`mitsuba.Ray3f`, ray_flags: int, coherent: drjit.llvm.ad.Bool, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.SurfaceInteraction3f```
+        2. ``ray_intersect(self, ray: misuka.Ray3f, ray_flags: int, coherent: drjit.llvm.ad.Bool, active: drjit.llvm.ad.Bool = True) -> misuka.SurfaceInteraction3f``
 
         Intersect a ray with the shapes comprising the scene and return a
         detailed data structure describing the intersection, if one is found
@@ -14125,7 +14566,7 @@
         This method is a convenience wrapper of the generalized
         ``ray_intersect``() method below. It assumes that ``reorder=false``.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14139,11 +14580,11 @@
             rays), and when using ``llvm_*`` variants of the renderer along
             with Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A detailed surface interaction record. Its ``is_valid()`` method
             should be queried to check if an intersection was actually found.
 
-        3. ``ray_intersect(self, ray: :py:obj:`mitsuba.Ray3f`, ray_flags: int, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.SurfaceInteraction3f```
+        3. ``ray_intersect(self, ray: misuka.Ray3f, ray_flags: int, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> misuka.SurfaceInteraction3f``
 
         Intersect a ray with the shapes comprising the scene and return a
         detailed data structure describing the intersection, if one is found
@@ -14198,7 +14639,7 @@
         shuffling operation uses the result of the intersection (the shape ID)
         as a sorting key to group threads into coherent warps.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14232,15 +14673,15 @@
             scalar or LLVM variants, or if the ``reorder`` parameter is
             ``False``.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A detailed surface interaction record. Its ``is_valid()`` method
             should be queried to check if an intersection was actually found.
 
-    .. py:method:: mitsuba.Scene.ray_intersect_preliminary(self, ray, coherent=False, active=True)
+    .. py:method:: misuka.Scene.ray_intersect_preliminary(self, ray, coherent=False, active=True)
 
         Overloaded function.
 
-        1. ``ray_intersect_preliminary(self, ray: :py:obj:`mitsuba.Ray3f`, coherent: drjit.llvm.ad.Bool = False, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.PreliminaryIntersection3f```
+        1. ``ray_intersect_preliminary(self, ray: misuka.Ray3f, coherent: drjit.llvm.ad.Bool = False, active: drjit.llvm.ad.Bool = True) -> misuka.PreliminaryIntersection3f``
 
         Intersect a ray with the shapes comprising the scene and return
         preliminary information, if one is found
@@ -14282,7 +14723,7 @@
         used by the combination of ``llvm_*`` variants and the Embree ray
         intersector.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14295,12 +14736,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             A preliminary surface interaction record. Its ``is_valid()``
             method should be queried to check if an intersection was actually
             found.
 
-        2. ``ray_intersect_preliminary(self, ray: :py:obj:`mitsuba.Ray3f`, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> :py:obj:`mitsuba.PreliminaryIntersection3f```
+        2. ``ray_intersect_preliminary(self, ray: misuka.Ray3f, coherent: drjit.llvm.ad.Bool, reorder: bool = False, reorder_hint: drjit.llvm.ad.UInt = 0, reorder_hint_bits: int = 0, active: drjit.llvm.ad.Bool = True) -> misuka.PreliminaryIntersection3f``
 
         Intersect a ray with the shapes comprising the scene and return
         preliminary information, if one is found
@@ -14343,7 +14784,7 @@
         shuffling operation uses the result of the intersection (the shape ID)
         as a sorting key to group threads into coherent warps.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14373,16 +14814,16 @@
             scalar or LLVM variants, or if the ``reorder`` parameter is
             ``False``.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             A preliminary surface interaction record. Its ``is_valid()``
             method should be queried to check if an intersection was actually
             found.
 
-    .. py:method:: mitsuba.Scene.ray_test(self, ray, active=True)
+    .. py:method:: misuka.Scene.ray_test(self, ray, active=True)
 
         Overloaded function.
 
-        1. ``ray_test(self, ray: :py:obj:`mitsuba.Ray3f`, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Bool``
+        1. ``ray_test(self, ray: misuka.Ray3f, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Bool``
 
         Intersect a ray with the shapes comprising the scene and return a
         boolean specifying whether or not an intersection was found.
@@ -14401,7 +14842,7 @@
         traced. In other words, it simply invokes the general ``ray_test``()
         overload with ``coherent=false``.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14411,7 +14852,7 @@
         Returns → drjit.llvm.ad.Bool:
             ``True`` if an intersection was found
 
-        2. ``ray_test(self, ray: :py:obj:`mitsuba.Ray3f`, coherent: drjit.llvm.ad.Bool, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Bool``
+        2. ``ray_test(self, ray: misuka.Ray3f, coherent: drjit.llvm.ad.Bool, active: drjit.llvm.ad.Bool = True) -> drjit.llvm.ad.Bool``
 
         Intersect a ray with the shapes comprising the scene and return a
         boolean specifying whether or not an intersection was found.
@@ -14432,7 +14873,7 @@
         by the combination of ``llvm_*`` variants and the Embree ray tracing
         backend.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             A 3D ray including maximum extent (Ray::maxt) and time (Ray::time)
             information, which matters when the shapes are in motion
 
@@ -14445,7 +14886,7 @@
         Returns → drjit.llvm.ad.Bool:
             ``True`` if an intersection was found
 
-    .. py:method:: mitsuba.Scene.sample_emitter(self, sample, active=True)
+    .. py:method:: misuka.Scene.sample_emitter(self, sample, active=True)
 
         Sample one emitter in the scene and rescale the input sample for
         reuse.
@@ -14464,7 +14905,7 @@
             (equal to the inverse PDF), and the transformed random sample for
             reuse.
 
-    .. py:method:: mitsuba.Scene.sample_emitter_direction(self, ref, sample, test_visibility=True, active=True)
+    .. py:method:: misuka.Scene.sample_emitter_direction(self, ref, sample, test_visibility=True, active=True)
 
         Direct illumination sampling routine
 
@@ -14481,11 +14922,11 @@
         approximations are acceptable as long as these are reflected in the
         returned Monte Carlo sampling weight.
 
-        Parameter ``ref`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``ref`` (misuka.Interaction3f):
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D random variate
 
         Parameter ``test_visibility`` (bool):
@@ -14496,7 +14937,7 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.DirectionSample3f, misuka.Color3f]:
             A tuple ``(ds, spec)`` where
 
         * ``ds`` is a fully populated DirectionSample3f data structure, which
@@ -14508,7 +14949,7 @@
         the radiance incident from the emitter and the sample probability per
         unit solid angle.
 
-    .. py:method:: mitsuba.Scene.sample_emitter_ray(self, time, sample1, sample2, sample3, active)
+    .. py:method:: misuka.Scene.sample_emitter_ray(self, time, sample1, sample2, sample3, active)
 
         Sample a ray according to the emission profile of scene emitters
 
@@ -14528,16 +14969,16 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.EmitterPtr`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f, misuka.EmitterPtr]:
             A tuple ``(ray, weight, emitter, radiance)``, where
 
         * ``ray`` is the sampled ray (e.g. starting on the surface of an area
@@ -14548,7 +14989,7 @@
 
         * ``emitter`` is a pointer specifying the sampled emitter
 
-    .. py:method:: mitsuba.Scene.sample_silhouette(self, sample, flags, active=True)
+    .. py:method:: misuka.Scene.sample_silhouette(self, sample, flags, active=True)
 
         Map a point sample in boundary sample space to a silhouette segment
 
@@ -14556,7 +14997,7 @@
         shapes in the scene that are being differentiated and have non-zero
         sampling weight (see Shape::silhouette_sampling_weight).
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``sample`` (misuka.Point3f):
             The boundary space sample (a point in the unit cube).
 
         Parameter ``flags`` (int):
@@ -14570,24 +15011,24 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             Silhouette sample record.
 
-    .. py:method:: mitsuba.Scene.sensors()
+    .. py:method:: misuka.Scene.sensors()
 
         Return the list of sensors
 
         Returns → list:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.sensors_dr()
+    .. py:method:: misuka.Scene.sensors_dr()
 
         Return the list of sensors as a Dr.Jit array
 
-        Returns → :py:obj:`mitsuba.SensorPtr`:
+        Returns → misuka.SensorPtr:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.shape_types()
+    .. py:method:: misuka.Scene.shape_types()
 
         Returns a union of ShapeType flags denoting what is present in the
         ShapeGroup
@@ -14595,21 +15036,21 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.shapes()
+    .. py:method:: misuka.Scene.shapes()
 
         Return the list of shapes
 
         Returns → list:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.shapes_dr()
+    .. py:method:: misuka.Scene.shapes_dr()
 
         Return the list of shapes as a Dr.Jit array
 
-        Returns → :py:obj:`mitsuba.ShapePtr`:
+        Returns → misuka.ShapePtr:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.shapes_grad_enabled()
+    .. py:method:: misuka.Scene.shapes_grad_enabled()
 
         Specifies whether any of the scene's shape parameters have gradient
         tracking enabled
@@ -14617,60 +15058,60 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Scene.silhouette_shapes()
+    .. py:method:: misuka.Scene.silhouette_shapes()
 
         Return the list of shapes that can have their silhouette sampled
 
         Returns → list:
             *no description available*
 
-.. py:class:: mitsuba.SceneParameters
+.. py:class:: misuka.SceneParameters
 
     Dictionary-like object that references various parameters used in a Mitsuba
     scene graph. Parameters can be read and written using standard syntax
     (``parameter_map[key]``). The class exposes several non-standard functions,
-    specifically :py:meth:`~:py:obj:`mitsuba.SceneParameters.update`()`, and
-    :py:meth:`~:py:obj:`mitsuba.SceneParameters.keep`()`.
+    specifically :py:meth:`~misuka.SceneParameters.update()`, and
+    :py:meth:`~misuka.SceneParameters.keep()`.
 
     .. py:method:: __init__()
 
         Private constructor (use
-        :py:func:`mitsuba.traverse()` instead)
+        :py:func:`misuka.traverse()` instead)
 
         
-    .. py:method:: mitsuba.SceneParameters.items()
+    .. py:method:: misuka.SceneParameters.items()
 
         Returns → a set-like object providing a view on D's items:
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.keys()
+    .. py:method:: misuka.SceneParameters.keys()
 
         Returns → a set-like object providing a view on D's keys:
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.flags(key)
+    .. py:method:: misuka.SceneParameters.flags(key)
 
         Return parameter flags
 
         Parameter ``key`` (str):
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.set_dirty(key)
+    .. py:method:: misuka.SceneParameters.set_dirty(key)
 
         Marks a specific parameter and its parent objects as dirty. A subsequent call
-        to :py:meth:`~:py:obj:`mitsuba.SceneParameters.update`()` will refresh their internal
+        to :py:meth:`~misuka.SceneParameters.update()` will refresh their internal
         state.
 
         This method should rarely be called explicitly. The
-        :py:class:`~:py:obj:`mitsuba.SceneParameters`` will detect most operations on
+        :py:class:`~misuka.SceneParameters` will detect most operations on
         its values and automatically flag them as dirty. A common exception to
         the detection mechanism is the :py:meth:`~drjit.scatter` operation which
-        needs an explicit call to :py:meth:`~:py:obj:`mitsuba.SceneParameters.set_dirty`()`.
+        needs an explicit call to :py:meth:`~misuka.SceneParameters.set_dirty()`.
 
         Parameter ``key`` (str):
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.update(values=None)
+    .. py:method:: misuka.SceneParameters.update(values=None)
 
         This function should be called at the end of a sequence of writes
         to the dictionary. It automatically notifies all modified Mitsuba
@@ -14694,7 +15135,7 @@
         Returns → list[tuple[~typing.Any, set]]:
             *no description available*
 
-    .. py:method:: mitsuba.SceneParameters.keep(keys)
+    .. py:method:: misuka.SceneParameters.keep(keys)
 
         Reduce the size of the dictionary by only keeping elements,
         whose keys are defined by 'keys'.
@@ -14710,11 +15151,11 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Sensor
+.. py:class:: misuka.Sensor
 
-    Base class: :py:obj:`mitsuba.Endpoint`
+    Base class: misuka.Endpoint
 
-    .. py:method:: mitsuba.Sensor.eval(self, si, active=True)
+    .. py:method:: misuka.Sensor.eval(self, si, active=True)
 
         Given a ray-surface intersection, return the emitted radiance or
         importance traveling along the reverse direction
@@ -14725,17 +15166,17 @@
         The default implementation throws an exception, which states that the
         method is not implemented.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The emitted radiance or importance
 
-    .. py:method:: mitsuba.Sensor.eval_direction(self, it, ds, active=True)
+    .. py:method:: misuka.Sensor.eval_direction(self, it, ds, active=True)
 
         Re-evaluate the incident direct radiance/importance of the
         sample_direction() method.
@@ -14759,50 +15200,59 @@
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The incident direct radiance/importance associated with the
             sample.
 
-    .. py:method:: mitsuba.Sensor.film()
+    .. py:method:: misuka.Sensor.film()
 
         Return the Film instance associated with this sensor
 
-        Returns → :py:obj:`mitsuba.Film`:
+        Returns → misuka.Film:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.get_shape()
+    .. py:method:: misuka.Sensor.get_shape()
 
         Return the shape to which the emitter is currently attached
 
-        Returns → :py:obj:`mitsuba.Shape`:
+        Returns → misuka.Shape:
             *no description available*
 
-    .. py:property:: mitsuba.Sensor.m_film
+    .. py:method:: misuka.Sensor.kappa()
 
-        (self) -> :py:obj:`mitsuba.Film`
+        Return the kappa parameter of the sensor
 
-    .. py:property:: mitsuba.Sensor.m_needs_sample_2
+        This method will only be implemented in acoustic films.
+
+        Returns → drjit.llvm.ad.Float:
+            *no description available*
+
+    .. py:property:: misuka.Sensor.m_film
+
+        (self) -> misuka.Film
+
+    .. py:property:: misuka.Sensor.m_needs_sample_2
 
         (self) -> bool
 
-    .. py:property:: mitsuba.Sensor.m_needs_sample_3
+    .. py:property:: misuka.Sensor.m_needs_sample_3
 
         (self) -> bool
 
-    .. py:property:: mitsuba.Sensor.m_to_world
+    .. py:property:: misuka.Sensor.m_to_world
 
-        (self) -> :py:obj:`mitsuba.AffineTransform4f`
+        (self) -> misuka.AffineTransform4f
 
-    .. py:method:: mitsuba.Sensor.needs_aperture_sample()
+    .. py:method:: misuka.Sensor.needs_aperture_sample()
 
         Does the sampling technique require a sample for the aperture
         position?
@@ -14810,7 +15260,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.pdf_direction(self, it, ds, active=True)
+    .. py:method:: misuka.Sensor.pdf_direction(self, it, ds, active=True)
 
         Evaluate the probability density of the *direct* sampling method
         implemented by the sample_direction() method.
@@ -14819,10 +15269,10 @@
         emission/sensitivity profile contains a Dirac delta term (e.g. point
         or directional emitters/sensors).
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direct sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -14831,7 +15281,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.Sensor.pdf_position(self, ps, active=True)
 
         Evaluate the probability density of the position sampling method
         implemented by sample_position().
@@ -14839,7 +15289,7 @@
         In simple cases, this will be the reciprocal of the endpoint's surface
         area.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             The sampled position record.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -14848,7 +15298,7 @@
         Returns → drjit.llvm.ad.Float:
             The corresponding sampling density.
 
-    .. py:method:: mitsuba.Sensor.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.Sensor.sample_direction(self, it, sample, active=True)
 
         Given a reference point in the scene, sample a direction from the
         reference point towards the endpoint (ideally proportional to the
@@ -14871,20 +15321,20 @@
         Parameter ``ref``:
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.DirectionSample3f, misuka.Color3f]:
             A DirectionSample instance describing the generated sample along
             with a spectral importance weight.
 
-    .. py:method:: mitsuba.Sensor.sample_position(self, time, sample, active=True)
+    .. py:method:: misuka.Sensor.sample_position(self, time, sample, active=True)
 
         Importance sample the spatial component of the emission or importance
         profile of the endpoint.
@@ -14894,17 +15344,17 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position to be sampled.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.PositionSample3f, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
-    .. py:method:: mitsuba.Sensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.Sensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray proportional to the endpoint's
         sensitivity/emission profile.
@@ -14924,14 +15374,14 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument corresponds to the sample position
             in fractional pixel coordinates relative to the crop window of the
             underlying film. This argument is ignored if ``needs_sample_2() ==
             false``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument determines the position on the
             aperture of the sensor. This argument is ignored if
@@ -14940,12 +15390,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f]:
             The sampled ray and (potentially spectrally varying) importance
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
-    .. py:method:: mitsuba.Sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.Sensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray differential proportional to the sensor's
         sensitivity profile.
@@ -14968,12 +15418,12 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the sensitivity profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             This argument corresponds to the sample position in fractional
             pixel coordinates relative to the crop window of the underlying
             film.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. This
             argument determines the position on the aperture of the sensor.
             This argument is ignored if ``needs_sample_3() == false``.
@@ -14981,12 +15431,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.RayDifferential3f, misuka.Color3f]:
             The sampled ray differential and (potentially spectrally varying)
             importance weights. The latter account for the difference between
             the sensor profile and the actual used sampling density function.
 
-    .. py:method:: mitsuba.Sensor.sample_wavelengths(self, si, sample, active=True)
+    .. py:method:: misuka.Sensor.sample_wavelengths(self, si, sample, active=True)
 
         Importance sample a set of wavelengths according to the endpoint's
         sensitivity/emission spectrum.
@@ -15006,7 +15456,7 @@
 
         This function should not be called in RGB or monochromatic modes.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             In the case of a spatially-varying spectral sensitivity/emission
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
@@ -15017,14 +15467,14 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             The set of sampled wavelengths and (potentially spectrally
             varying) importance weights. The latter account for the difference
             between the profile and the actual used sampling density function.
             In the case of emitters, the weight will include the emitted
             radiance.
 
-    .. py:method:: mitsuba.Sensor.sampler()
+    .. py:method:: misuka.Sensor.sampler()
 
         Return the sensor's sample generator
 
@@ -15033,26 +15483,26 @@
         instance (see Scene::sampler()). Therefore, this sampler should never
         be used for anything except creating forks.
 
-        Returns → :py:obj:`mitsuba.Sampler`:
+        Returns → misuka.Sampler:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.shutter_open()
+    .. py:method:: misuka.Sensor.shutter_open()
 
         Return the time value of the shutter opening event
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.Sensor.shutter_open_time()
+    .. py:method:: misuka.Sensor.shutter_open_time()
 
         Return the length, for which the shutter remains open
 
         Returns → float:
             *no description available*
 
-.. py:class:: mitsuba.SensorPtr
+.. py:class:: misuka.SensorPtr
 
-    .. py:method:: mitsuba.SensorPtr.eval(self, si, active=True)
+    .. py:method:: misuka.SensorPtr.eval(self, si, active=True)
 
         Given a ray-surface intersection, return the emitted radiance or
         importance traveling along the reverse direction
@@ -15063,17 +15513,17 @@
         The default implementation throws an exception, which states that the
         method is not implemented.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An intersect record that specifies both the query position and
             direction (using the ``si.wi`` field)
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The emitted radiance or importance
 
-    .. py:method:: mitsuba.SensorPtr.eval_direction(self, it, ds, active=True)
+    .. py:method:: misuka.SensorPtr.eval_direction(self, it, ds, active=True)
 
         Re-evaluate the incident direct radiance/importance of the
         sample_direction() method.
@@ -15097,27 +15547,27 @@
             A 3D reference location within the scene, which may influence the
             sampling process.
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direction sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             The incident direct radiance/importance associated with the
             sample.
 
-    .. py:method:: mitsuba.SensorPtr.get_shape()
+    .. py:method:: misuka.SensorPtr.get_shape()
 
         Return the shape to which the emitter is currently attached
 
-        Returns → :py:obj:`mitsuba.ShapePtr`:
+        Returns → misuka.ShapePtr:
             *no description available*
 
-    .. py:method:: mitsuba.SensorPtr.pdf_direction(self, it, ds, active=True)
+    .. py:method:: misuka.SensorPtr.pdf_direction(self, it, ds, active=True)
 
         Evaluate the probability density of the *direct* sampling method
         implemented by the sample_direction() method.
@@ -15126,10 +15576,10 @@
         emission/sensitivity profile contains a Dirac delta term (e.g. point
         or directional emitters/sensors).
 
-        Parameter ``ds`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ds`` (misuka.DirectionSample3f):
             A direct sampling record, which specifies the query location.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15138,7 +15588,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.SensorPtr.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.SensorPtr.pdf_position(self, ps, active=True)
 
         Evaluate the probability density of the position sampling method
         implemented by sample_position().
@@ -15146,7 +15596,7 @@
         In simple cases, this will be the reciprocal of the endpoint's surface
         area.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             The sampled position record.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15155,7 +15605,7 @@
         Returns → drjit.llvm.ad.Float:
             The corresponding sampling density.
 
-    .. py:method:: mitsuba.SensorPtr.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.SensorPtr.sample_direction(self, it, sample, active=True)
 
         Given a reference point in the scene, sample a direction from the
         reference point towards the endpoint (ideally proportional to the
@@ -15178,20 +15628,20 @@
         Parameter ``ref``:
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.DirectionSample3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.DirectionSample3f, misuka.Color3f]:
             A DirectionSample instance describing the generated sample along
             with a spectral importance weight.
 
-    .. py:method:: mitsuba.SensorPtr.sample_position(self, time, sample, active=True)
+    .. py:method:: misuka.SensorPtr.sample_position(self, time, sample, active=True)
 
         Importance sample the spatial component of the emission or importance
         profile of the endpoint.
@@ -15201,17 +15651,17 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position to be sampled.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.PositionSample3f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.PositionSample3f, drjit.llvm.ad.Float]:
             A PositionSample instance describing the generated sample along
             with an importance weight.
 
-    .. py:method:: mitsuba.SensorPtr.sample_ray(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.SensorPtr.sample_ray(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray proportional to the endpoint's
         sensitivity/emission profile.
@@ -15231,14 +15681,14 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument corresponds to the sample position
             in fractional pixel coordinates relative to the crop window of the
             underlying film. This argument is ignored if ``needs_sample_2() ==
             false``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument determines the position on the
             aperture of the sensor. This argument is ignored if
@@ -15247,12 +15697,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f]:
             The sampled ray and (potentially spectrally varying) importance
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
-    .. py:method:: mitsuba.SensorPtr.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.SensorPtr.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray differential proportional to the sensor's
         sensitivity profile.
@@ -15275,12 +15725,12 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the sensitivity profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             This argument corresponds to the sample position in fractional
             pixel coordinates relative to the crop window of the underlying
             film.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. This
             argument determines the position on the aperture of the sensor.
             This argument is ignored if ``needs_sample_3() == false``.
@@ -15288,12 +15738,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.RayDifferential3f, misuka.Color3f]:
             The sampled ray differential and (potentially spectrally varying)
             importance weights. The latter account for the difference between
             the sensor profile and the actual used sampling density function.
 
-    .. py:method:: mitsuba.SensorPtr.sample_wavelengths(self, si, sample, active=True)
+    .. py:method:: misuka.SensorPtr.sample_wavelengths(self, si, sample, active=True)
 
         Importance sample a set of wavelengths according to the endpoint's
         sensitivity/emission spectrum.
@@ -15313,7 +15763,7 @@
 
         This function should not be called in RGB or monochromatic modes.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             In the case of a spatially-varying spectral sensitivity/emission
             profile, this parameter conditions sampling on a specific spatial
             position. The ``si.uv`` field must be specified in this case.
@@ -15324,18 +15774,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             The set of sampled wavelengths and (potentially spectrally
             varying) importance weights. The latter account for the difference
             between the profile and the actual used sampling density function.
             In the case of emitters, the weight will include the emitted
             radiance.
 
-.. py:class:: mitsuba.Shape
+.. py:class:: misuka.Shape
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Shape.add_texture_attribute(self, name, texture)
+    .. py:method:: misuka.Shape.add_texture_attribute(self, name, texture)
 
         Add a texture attribute with the given ``name``.
 
@@ -15347,23 +15797,23 @@
         Parameter ``name`` (str):
             Name of the attribute
 
-        Parameter ``texture`` (:py:obj:`mitsuba.Texture`):
+        Parameter ``texture`` (misuka.Texture):
             Texture to store. The dimensionality of the attribute is simply
             the channel count of the texture.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.bbox()
+    .. py:method:: misuka.Shape.bbox()
 
         Overloaded function.
 
-        1. ``bbox(self) -> :py:obj:`mitsuba.ScalarBoundingBox3f```
+        1. ``bbox(self) -> misuka.ScalarBoundingBox3f``
 
         Return an axis aligned box that bounds all shape primitives (including
         any transformations that may have been applied to them)
 
-        2. ``bbox(self, index: int) -> :py:obj:`mitsuba.ScalarBoundingBox3f```
+        2. ``bbox(self, index: int) -> misuka.ScalarBoundingBox3f``
 
         Return an axis aligned box that bounds a single shape primitive
         (including any transformations that may have been applied to it)
@@ -15371,7 +15821,7 @@
         Remark:
             The default implementation simply calls bbox()
 
-        3. ``bbox(self, index: int, clip: :py:obj:`mitsuba.ScalarBoundingBox3f`) -> :py:obj:`mitsuba.ScalarBoundingBox3f```
+        3. ``bbox(self, index: int, clip: misuka.ScalarBoundingBox3f) -> misuka.ScalarBoundingBox3f``
 
         Return an axis aligned box that bounds a single shape primitive after
         it has been clipped to another bounding box.
@@ -15380,17 +15830,17 @@
         default implementation just takes the bounding box returned by
         bbox(ScalarIndex index) and clips it to *clip*.
 
-        Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
+        Returns → misuka.ScalarBoundingBox3f:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.bsdf()
+    .. py:method:: misuka.Shape.bsdf()
 
         Return the shape's BSDF
 
-        Returns → :py:obj:`mitsuba.BSDF`:
+        Returns → misuka.BSDF:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
+    .. py:method:: misuka.Shape.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
 
         Compute and return detailed information related to a surface
         interaction
@@ -15406,10 +15856,10 @@
         the call to compute_surface_interaction(), and ``duv_dx``, and
         ``duv_dy`` are left uninitialized.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             Ray associated with the ray intersection
 
-        Parameter ``pi`` (:py:obj:`mitsuba.PreliminaryIntersection3f`):
+        Parameter ``pi`` (misuka.PreliminaryIntersection3f):
             Data structure carrying information about the ray intersection
 
         Parameter ``ray_flags`` (int):
@@ -15422,10 +15872,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A data structure containing the detailed information
 
-    .. py:method:: mitsuba.Shape.differential_motion(self, si, active=True)
+    .. py:method:: misuka.Shape.differential_motion(self, si, active=True)
 
         Return the attached (AD) point on the shape's surface
 
@@ -15443,7 +15893,7 @@
         which is computed by calling compute_surface_interaction with the
         RayFlags::FollowShape flag.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             The surface point for which the function will be evaluated.
 
         Not all fields of the object need to be filled. Only the `prim_index`,
@@ -15453,11 +15903,11 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             The same surface point as the input but attached (AD) to the
             shape's parameters.
 
-    .. py:method:: mitsuba.Shape.effective_primitive_count()
+    .. py:method:: misuka.Shape.effective_primitive_count()
 
         Return the number of primitives (triangles, hairs, ..) contributed to
         the scene by this shape
@@ -15468,14 +15918,14 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.emitter()
+    .. py:method:: misuka.Shape.emitter()
 
         Return the area emitter associated with this shape (if any)
 
-        Returns → :py:obj:`mitsuba.Emitter`:
+        Returns → misuka.Emitter:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.eval_attribute(self, name, si, active=True)
+    .. py:method:: misuka.Shape.eval_attribute(self, name, si, active=True)
 
         Evaluate a specific shape attribute at the given surface interaction.
 
@@ -15486,16 +15936,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.Shape.eval_attribute_1(self, name, si, active=True)
+    .. py:method:: misuka.Shape.eval_attribute_1(self, name, si, active=True)
 
         Monochromatic evaluation of a shape attribute at the given surface
         interaction
@@ -15507,7 +15957,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15516,7 +15966,7 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.Shape.eval_attribute_3(self, name, si, active=True)
+    .. py:method:: misuka.Shape.eval_attribute_3(self, name, si, active=True)
 
         Trichromatic evaluation of a shape attribute at the given surface
         interaction
@@ -15528,16 +15978,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             A trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.Shape.eval_attribute_x(self, name, si, active=True)
+    .. py:method:: misuka.Shape.eval_attribute_x(self, name, si, active=True)
 
         Evaluate a dynamically sized shape attribute at the given surface
         interaction.
@@ -15545,7 +15995,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15554,7 +16004,7 @@
         Returns → drjit.llvm.ad.ArrayXf:
             A dynamic array of attribute values
 
-    .. py:method:: mitsuba.Shape.eval_parameterization(self, uv, ray_flags=14, active=True)
+    .. py:method:: misuka.Shape.eval_parameterization(self, uv, ray_flags=14, active=True)
 
         Parameterize the mesh using UV values
 
@@ -15562,7 +16012,7 @@
         structure. Its behavior is only well-defined in regions where this
         mapping is bijective. The default implementation throws.
 
-        Parameter ``uv`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``uv`` (misuka.Point2f):
             *no description available*
 
         Parameter ``ray_flags`` (int):
@@ -15571,17 +16021,17 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.exterior_medium()
+    .. py:method:: misuka.Shape.exterior_medium()
 
         Return the medium that lies on the exterior of this shape
 
-        Returns → :py:obj:`mitsuba.Medium`:
+        Returns → misuka.Medium:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.has_attribute(self, name, active=True)
+    .. py:method:: misuka.Shape.has_attribute(self, name, active=True)
 
         Returns whether this shape contains the specified attribute.
 
@@ -15594,21 +16044,21 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.has_flipped_normals()
+    .. py:method:: misuka.Shape.has_flipped_normals()
 
         Does this shape have flipped normals?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.interior_medium()
+    .. py:method:: misuka.Shape.interior_medium()
 
         Return the medium that lies on the interior of this shape
 
-        Returns → :py:obj:`mitsuba.Medium`:
+        Returns → misuka.Medium:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.invert_silhouette_sample(self, ss, active=True)
+    .. py:method:: misuka.Shape.invert_silhouette_sample(self, ss, active=True)
 
         Map a silhouette segment to a point in boundary sample space
 
@@ -15618,51 +16068,51 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample3f`):
+        Parameter ``ss`` (misuka.SilhouetteSample3f):
             The sampled boundary segment
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             The corresponding boundary sample space point
 
-    .. py:method:: mitsuba.Shape.is_ellipsoids()
+    .. py:method:: misuka.Shape.is_ellipsoids()
 
         Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.is_emitter()
+    .. py:method:: misuka.Shape.is_emitter()
 
         Is this shape also an area emitter?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.is_medium_transition()
+    .. py:method:: misuka.Shape.is_medium_transition()
 
         Does the surface of this shape mark a medium transition?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.is_mesh()
+    .. py:method:: misuka.Shape.is_mesh()
 
         Is this shape a triangle mesh?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.is_sensor()
+    .. py:method:: misuka.Shape.is_sensor()
 
         Is this shape also an area sensor?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.parameters_grad_enabled()
+    .. py:method:: misuka.Shape.parameters_grad_enabled()
 
         Return whether any shape's parameters that introduce visibility
         discontinuities require gradients (default return false)
@@ -15670,14 +16120,14 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.pdf_direction(self, it, ps, active=True)
+    .. py:method:: misuka.Shape.pdf_direction(self, it, ps, active=True)
 
         Query the probability density of sample_direction()
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             A reference position somewhere within the scene.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ps`` (misuka.DirectionSample3f):
             A position record describing the sample in question
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15686,12 +16136,12 @@
         Returns → drjit.llvm.ad.Float:
             The probability density per unit solid angle
 
-    .. py:method:: mitsuba.Shape.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.Shape.pdf_position(self, ps, active=True)
 
         Query the probability density of sample_position() for a particular
         point on the surface.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             A position record describing the sample in question
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -15700,7 +16150,7 @@
         Returns → drjit.llvm.ad.Float:
             The probability density per unit area
 
-    .. py:method:: mitsuba.Shape.precompute_silhouette(self, viewpoint)
+    .. py:method:: misuka.Shape.precompute_silhouette(self, viewpoint)
 
         Precompute the visible silhouette of this shape for a given viewpoint.
 
@@ -15717,7 +16167,7 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``viewpoint`` (:py:obj:`mitsuba.ScalarPoint3f`):
+        Parameter ``viewpoint`` (misuka.ScalarPoint3f):
             The viewpoint which defines the silhouette of the shape
 
         Returns → tuple[drjit.llvm.ad.UInt, drjit.llvm.ad.Float]:
@@ -15725,7 +16175,7 @@
             silhouettes, and a list of the same length containing the
             (unnormalized) weights associated to each index.
 
-    .. py:method:: mitsuba.Shape.primitive_count()
+    .. py:method:: misuka.Shape.primitive_count()
 
         Returns the number of sub-primitives that make up this shape
 
@@ -15735,7 +16185,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
+    .. py:method:: misuka.Shape.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
 
         Projects a point on the surface of the shape to its silhouette as seen
         from a specified viewpoint.
@@ -15755,11 +16205,11 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``viewpoint`` (misuka.Point3f):
             The viewpoint which defines the silhouette to project the point
             to.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             The surface point which will be projected.
 
         Parameter ``flags`` (int):
@@ -15774,18 +16224,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             A boundary segment on the silhouette of the shape as seen from
             ``viewpoint``.
 
-    .. py:method:: mitsuba.Shape.ray_intersect(self, ray, ray_flags=14, active=True)
+    .. py:method:: misuka.Shape.ray_intersect(self, ray, ray_flags=14, active=True)
 
         Test for an intersection and return detailed information
 
         This operation combines the prior ray_intersect_preliminary() and
         compute_surface_interaction() operations.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``flags``:
@@ -15797,10 +16247,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
+    .. py:method:: misuka.Shape.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
 
         Fast ray intersection
 
@@ -15812,7 +16262,7 @@
         origin), detailed intersection information can later be obtained via
         the compute_surface_interaction() method.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``prim_index`` (int):
@@ -15824,10 +16274,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.ray_test(self, ray, active=True)
+    .. py:method:: misuka.Shape.ray_test(self, ray, active=True)
 
         Fast ray shadow test
 
@@ -15839,7 +16289,7 @@
         ray_intersect_preliminary(). When the shape actually contains a nested
         kd-tree, some optimizations are possible.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``prim_index``:
@@ -15851,7 +16301,7 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.remove_attribute(self, name)
+    .. py:method:: misuka.Shape.remove_attribute(self, name)
 
         Remove a texture texture with the given ``name``.
 
@@ -15863,7 +16313,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.Shape.sample_direction(self, it, sample, active=True)
 
         Sample a direction towards this shape with respect to solid angles
         measured at a reference position within the scene
@@ -15882,19 +16332,19 @@
         suboptimal sample placement and higher variance in Monte Carlo
         estimators using the samples.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.DirectionSample3f`:
+        Returns → misuka.DirectionSample3f:
             A DirectionSample instance describing the generated sample
 
-    .. py:method:: mitsuba.Shape.sample_position(self, time, sample, active=True)
+    .. py:method:: misuka.Shape.sample_position(self, time, sample, active=True)
 
         Sample a point on the surface of this shape
 
@@ -15906,16 +16356,16 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position sample
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PositionSample3f`:
+        Returns → misuka.PositionSample3f:
             A PositionSample instance describing the generated sample
 
-    .. py:method:: mitsuba.Shape.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
+    .. py:method:: misuka.Shape.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
 
         Samples a boundary segment on the shape's silhouette using precomputed
         information computed in precompute_silhouette.
@@ -15926,7 +16376,7 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``viewpoint`` (misuka.Point3f):
             The viewpoint that was used for the precomputed silhouette
             information
 
@@ -15939,18 +16389,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             A boundary segment on the silhouette of the shape as seen from
             ``viewpoint``.
 
-    .. py:method:: mitsuba.Shape.sample_silhouette(self, sample, flags, active=True)
+    .. py:method:: misuka.Shape.sample_silhouette(self, sample, flags, active=True)
 
         Map a point sample in boundary sample space to a silhouette segment
 
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``sample`` (misuka.Point3f):
             The boundary space sample (a point in the unit cube).
 
         Parameter ``flags`` (int):
@@ -15961,48 +16411,48 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             Silhouette sample record.
 
-    .. py:method:: mitsuba.Shape.sensor()
+    .. py:method:: misuka.Shape.sensor()
 
         Return the area sensor associated with this shape (if any)
 
-        Returns → :py:obj:`mitsuba.Sensor`:
+        Returns → misuka.Sensor:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.set_bsdf(self, bsdf)
+    .. py:method:: misuka.Shape.set_bsdf(self, bsdf)
 
         Set the shape's BSDF
 
-        Parameter ``bsdf`` (:py:obj:`mitsuba.BSDF`):
+        Parameter ``bsdf`` (misuka.BSDF):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.shape_type()
+    .. py:method:: misuka.Shape.shape_type()
 
         Returns the shape type ShapeType of this shape
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.silhouette_discontinuity_types()
+    .. py:method:: misuka.Shape.silhouette_discontinuity_types()
 
         //! @{ \name Silhouette sampling routines and other utilities
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.silhouette_sampling_weight()
+    .. py:method:: misuka.Shape.silhouette_sampling_weight()
 
         Return this shape's sampling weight w.r.t. all shapes in the scene
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.surface_area()
+    .. py:method:: misuka.Shape.surface_area()
 
         Return the shape's surface area.
 
@@ -16014,26 +16464,26 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Shape.texture_attribute(self, name)
+    .. py:method:: misuka.Shape.texture_attribute(self, name)
 
         Return the texture attribute associated with ``name``.
 
         Parameter ``name`` (str):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Texture`:
+        Returns → misuka.Texture:
             *no description available*
 
-.. py:class:: mitsuba.ShapePtr
+.. py:class:: misuka.ShapePtr
 
-    .. py:method:: mitsuba.ShapePtr.bsdf()
+    .. py:method:: misuka.ShapePtr.bsdf()
 
         Return the shape's BSDF
 
-        Returns → :py:obj:`mitsuba.BSDFPtr`:
+        Returns → misuka.BSDFPtr:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
+    .. py:method:: misuka.ShapePtr.compute_surface_interaction(self, ray, pi, ray_flags=14, active=True)
 
         Compute and return detailed information related to a surface
         interaction
@@ -16049,10 +16499,10 @@
         the call to compute_surface_interaction(), and ``duv_dx``, and
         ``duv_dy`` are left uninitialized.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             Ray associated with the ray intersection
 
-        Parameter ``pi`` (:py:obj:`mitsuba.PreliminaryIntersection3f`):
+        Parameter ``pi`` (misuka.PreliminaryIntersection3f):
             Data structure carrying information about the ray intersection
 
         Parameter ``ray_flags`` (int):
@@ -16065,10 +16515,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             A data structure containing the detailed information
 
-    .. py:method:: mitsuba.ShapePtr.differential_motion(self, si, active=True)
+    .. py:method:: misuka.ShapePtr.differential_motion(self, si, active=True)
 
         Return the attached (AD) point on the shape's surface
 
@@ -16086,7 +16536,7 @@
         which is computed by calling compute_surface_interaction with the
         RayFlags::FollowShape flag.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             The surface point for which the function will be evaluated.
 
         Not all fields of the object need to be filled. Only the `prim_index`,
@@ -16096,18 +16546,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             The same surface point as the input but attached (AD) to the
             shape's parameters.
 
-    .. py:method:: mitsuba.ShapePtr.emitter()
+    .. py:method:: misuka.ShapePtr.emitter()
 
         Return the area emitter associated with this shape (if any)
 
-        Returns → :py:obj:`mitsuba.EmitterPtr`:
+        Returns → misuka.EmitterPtr:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.eval_attribute(self, name, si, active=True)
+    .. py:method:: misuka.ShapePtr.eval_attribute(self, name, si, active=True)
 
         Evaluate a specific shape attribute at the given surface interaction.
 
@@ -16118,16 +16568,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.ShapePtr.eval_attribute_1(self, name, si, active=True)
+    .. py:method:: misuka.ShapePtr.eval_attribute_1(self, name, si, active=True)
 
         Monochromatic evaluation of a shape attribute at the given surface
         interaction
@@ -16139,7 +16589,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -16148,7 +16598,7 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.ShapePtr.eval_attribute_3(self, name, si, active=True)
+    .. py:method:: misuka.ShapePtr.eval_attribute_3(self, name, si, active=True)
 
         Trichromatic evaluation of a shape attribute at the given surface
         interaction
@@ -16160,16 +16610,16 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             A trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.ShapePtr.eval_attribute_x(self, name, si, active=True)
+    .. py:method:: misuka.ShapePtr.eval_attribute_x(self, name, si, active=True)
 
         Evaluate a dynamically sized shape attribute at the given surface
         interaction.
@@ -16177,7 +16627,7 @@
         Parameter ``name`` (str):
             Name of the attribute to evaluate
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             Surface interaction associated with the query
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -16186,7 +16636,7 @@
         Returns → drjit.llvm.ad.ArrayXf:
             A dynamic array of attribute values
 
-    .. py:method:: mitsuba.ShapePtr.eval_parameterization(self, uv, ray_flags=14, active=True)
+    .. py:method:: misuka.ShapePtr.eval_parameterization(self, uv, ray_flags=14, active=True)
 
         Parameterize the mesh using UV values
 
@@ -16194,7 +16644,7 @@
         structure. Its behavior is only well-defined in regions where this
         mapping is bijective. The default implementation throws.
 
-        Parameter ``uv`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``uv`` (misuka.Point2f):
             *no description available*
 
         Parameter ``ray_flags`` (int):
@@ -16203,17 +16653,17 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.exterior_medium()
+    .. py:method:: misuka.ShapePtr.exterior_medium()
 
         Return the medium that lies on the exterior of this shape
 
-        Returns → :py:obj:`mitsuba.MediumPtr`:
+        Returns → misuka.MediumPtr:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.has_attribute(self, name, active=True)
+    .. py:method:: misuka.ShapePtr.has_attribute(self, name, active=True)
 
         Returns whether this shape contains the specified attribute.
 
@@ -16226,21 +16676,21 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.has_flipped_normals()
+    .. py:method:: misuka.ShapePtr.has_flipped_normals()
 
         Does this shape have flipped normals?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.interior_medium()
+    .. py:method:: misuka.ShapePtr.interior_medium()
 
         Return the medium that lies on the interior of this shape
 
-        Returns → :py:obj:`mitsuba.MediumPtr`:
+        Returns → misuka.MediumPtr:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.invert_silhouette_sample(self, ss, active=True)
+    .. py:method:: misuka.ShapePtr.invert_silhouette_sample(self, ss, active=True)
 
         Map a silhouette segment to a point in boundary sample space
 
@@ -16250,58 +16700,58 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``ss`` (:py:obj:`mitsuba.SilhouetteSample3f`):
+        Parameter ``ss`` (misuka.SilhouetteSample3f):
             The sampled boundary segment
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Point3f`:
+        Returns → misuka.Point3f:
             The corresponding boundary sample space point
 
-    .. py:method:: mitsuba.ShapePtr.is_ellipsoids()
+    .. py:method:: misuka.ShapePtr.is_ellipsoids()
 
         Is this shape a ShapeType::Ellipsoids or ShapeType::EllipsoidsMesh
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.is_emitter()
+    .. py:method:: misuka.ShapePtr.is_emitter()
 
         Is this shape also an area emitter?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.is_medium_transition()
+    .. py:method:: misuka.ShapePtr.is_medium_transition()
 
         Does the surface of this shape mark a medium transition?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.is_mesh()
+    .. py:method:: misuka.ShapePtr.is_mesh()
 
         Is this shape a triangle mesh?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.is_sensor()
+    .. py:method:: misuka.ShapePtr.is_sensor()
 
         Is this shape also an area sensor?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.pdf_direction(self, it, ps, active=True)
+    .. py:method:: misuka.ShapePtr.pdf_direction(self, it, ps, active=True)
 
         Query the probability density of sample_direction()
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             A reference position somewhere within the scene.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.DirectionSample3f`):
+        Parameter ``ps`` (misuka.DirectionSample3f):
             A position record describing the sample in question
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -16310,12 +16760,12 @@
         Returns → drjit.llvm.ad.Float:
             The probability density per unit solid angle
 
-    .. py:method:: mitsuba.ShapePtr.pdf_position(self, ps, active=True)
+    .. py:method:: misuka.ShapePtr.pdf_position(self, ps, active=True)
 
         Query the probability density of sample_position() for a particular
         point on the surface.
 
-        Parameter ``ps`` (:py:obj:`mitsuba.PositionSample3f`):
+        Parameter ``ps`` (misuka.PositionSample3f):
             A position record describing the sample in question
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -16324,7 +16774,7 @@
         Returns → drjit.llvm.ad.Float:
             The probability density per unit area
 
-    .. py:method:: mitsuba.ShapePtr.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
+    .. py:method:: misuka.ShapePtr.primitive_silhouette_projection(self, viewpoint, si, flags, sample, active=True)
 
         Projects a point on the surface of the shape to its silhouette as seen
         from a specified viewpoint.
@@ -16344,11 +16794,11 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``viewpoint`` (misuka.Point3f):
             The viewpoint which defines the silhouette to project the point
             to.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             The surface point which will be projected.
 
         Parameter ``flags`` (int):
@@ -16363,18 +16813,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             A boundary segment on the silhouette of the shape as seen from
             ``viewpoint``.
 
-    .. py:method:: mitsuba.ShapePtr.ray_intersect(self, ray, ray_flags=14, active=True)
+    .. py:method:: misuka.ShapePtr.ray_intersect(self, ray, ray_flags=14, active=True)
 
         Test for an intersection and return detailed information
 
         This operation combines the prior ray_intersect_preliminary() and
         compute_surface_interaction() operations.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``flags``:
@@ -16386,10 +16836,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SurfaceInteraction3f`:
+        Returns → misuka.SurfaceInteraction3f:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
+    .. py:method:: misuka.ShapePtr.ray_intersect_preliminary(self, ray, prim_index=0, active=True)
 
         Fast ray intersection
 
@@ -16401,7 +16851,7 @@
         origin), detailed intersection information can later be obtained via
         the compute_surface_interaction() method.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``prim_index`` (int):
@@ -16413,10 +16863,10 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PreliminaryIntersection3f`:
+        Returns → misuka.PreliminaryIntersection3f:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.ray_test(self, ray, active=True)
+    .. py:method:: misuka.ShapePtr.ray_test(self, ray, active=True)
 
         Fast ray shadow test
 
@@ -16428,7 +16878,7 @@
         ray_intersect_preliminary(). When the shape actually contains a nested
         kd-tree, some optimizations are possible.
 
-        Parameter ``ray`` (:py:obj:`mitsuba.Ray3f`):
+        Parameter ``ray`` (misuka.Ray3f):
             The ray to be tested for an intersection
 
         Parameter ``prim_index``:
@@ -16440,7 +16890,7 @@
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.sample_direction(self, it, sample, active=True)
+    .. py:method:: misuka.ShapePtr.sample_direction(self, it, sample, active=True)
 
         Sample a direction towards this shape with respect to solid angles
         measured at a reference position within the scene
@@ -16459,19 +16909,19 @@
         suboptimal sample placement and higher variance in Monte Carlo
         estimators using the samples.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             A reference position somewhere within the scene.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.DirectionSample3f`:
+        Returns → misuka.DirectionSample3f:
             A DirectionSample instance describing the generated sample
 
-    .. py:method:: mitsuba.ShapePtr.sample_position(self, time, sample, active=True)
+    .. py:method:: misuka.ShapePtr.sample_position(self, time, sample, active=True)
 
         Sample a point on the surface of this shape
 
@@ -16483,16 +16933,16 @@
         Parameter ``time`` (drjit.llvm.ad.Float):
             The scene time associated with the position sample
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A uniformly distributed 2D point on the domain ``[0,1]^2``
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.PositionSample3f`:
+        Returns → misuka.PositionSample3f:
             A PositionSample instance describing the generated sample
 
-    .. py:method:: mitsuba.ShapePtr.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
+    .. py:method:: misuka.ShapePtr.sample_precomputed_silhouette(self, viewpoint, sample1, sample2, active=True)
 
         Samples a boundary segment on the shape's silhouette using precomputed
         information computed in precompute_silhouette.
@@ -16503,7 +16953,7 @@
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``viewpoint`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``viewpoint`` (misuka.Point3f):
             The viewpoint that was used for the precomputed silhouette
             information
 
@@ -16516,18 +16966,18 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             A boundary segment on the silhouette of the shape as seen from
             ``viewpoint``.
 
-    .. py:method:: mitsuba.ShapePtr.sample_silhouette(self, sample, flags, active=True)
+    .. py:method:: misuka.ShapePtr.sample_silhouette(self, sample, flags, active=True)
 
         Map a point sample in boundary sample space to a silhouette segment
 
         This method's behavior is undefined when used in non-JIT variants or
         when the shape is not being differentiated.
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+        Parameter ``sample`` (misuka.Point3f):
             The boundary space sample (a point in the unit cube).
 
         Parameter ``flags`` (int):
@@ -16538,38 +16988,38 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → misuka.SilhouetteSample3f:
             Silhouette sample record.
 
-    .. py:method:: mitsuba.ShapePtr.sensor()
+    .. py:method:: misuka.ShapePtr.sensor()
 
         Return the area sensor associated with this shape (if any)
 
-        Returns → :py:obj:`mitsuba.SensorPtr`:
+        Returns → misuka.SensorPtr:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.shape_type()
+    .. py:method:: misuka.ShapePtr.shape_type()
 
         Returns the shape type ShapeType of this shape
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.silhouette_discontinuity_types()
+    .. py:method:: misuka.ShapePtr.silhouette_discontinuity_types()
 
         //! @{ \name Silhouette sampling routines and other utilities
 
         Returns → drjit.llvm.ad.UInt:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.silhouette_sampling_weight()
+    .. py:method:: misuka.ShapePtr.silhouette_sampling_weight()
 
         Return this shape's sampling weight w.r.t. all shapes in the scene
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ShapePtr.surface_area()
+    .. py:method:: misuka.ShapePtr.surface_area()
 
         Return the shape's surface area.
 
@@ -16581,7 +17031,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-.. py:class:: mitsuba.ShapeType
+.. py:class:: misuka.ShapeType
 
     Shape type bit flags driving GPU intersection-function dispatch.
 
@@ -16631,9 +17081,9 @@
 
         Invalid for default initialization
 
-.. py:class:: mitsuba.SilhouetteSample3f
+.. py:class:: misuka.SilhouetteSample3f
 
-    Base class: :py:obj:`mitsuba.PositionSample3f`
+    Base class: misuka.PositionSample3f
 
     Overloaded function.
 
@@ -16641,55 +17091,55 @@
 
     Construct an uninitialized silhouette sample
 
-    2. ``__init__(self, other: :py:obj:`mitsuba.SilhouetteSample3f`) -> None``
+    2. ``__init__(self, other: misuka.SilhouetteSample3f) -> None``
 
     Copy constructor
 
-    .. py:method:: mitsuba.SilhouetteSample3f.assign(self, arg)
+    .. py:method:: misuka.SilhouetteSample3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.SilhouetteSample3f`, /):
+        Parameter ``arg`` (misuka.SilhouetteSample3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.SilhouetteSample3f.d
+    .. py:property:: misuka.SilhouetteSample3f.d
 
         Direction of the boundary segment sample
 
-    .. py:property:: mitsuba.SilhouetteSample3f.discontinuity_type
+    .. py:property:: misuka.SilhouetteSample3f.discontinuity_type
 
         Type of discontinuity (DiscontinuityFlags)
 
-    .. py:property:: mitsuba.SilhouetteSample3f.flags
+    .. py:property:: misuka.SilhouetteSample3f.flags
 
         The set of ``DiscontinuityFlags`` that were used to generate this
         sample
 
-    .. py:property:: mitsuba.SilhouetteSample3f.foreshortening
+    .. py:property:: misuka.SilhouetteSample3f.foreshortening
 
         Local-form boundary foreshortening term.
 
         It stores `sin_phi_B` for perimeter silhouettes or the normal
         curvature for interior silhouettes.
 
-    .. py:method:: mitsuba.SilhouetteSample3f.is_valid()
+    .. py:method:: misuka.SilhouetteSample3f.is_valid()
 
         Is the current boundary segment valid?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:property:: mitsuba.SilhouetteSample3f.offset
+    .. py:property:: misuka.SilhouetteSample3f.offset
 
         Offset along the boundary segment direction (`d`) to avoid self-
         intersections.
 
-    .. py:property:: mitsuba.SilhouetteSample3f.prim_index
+    .. py:property:: misuka.SilhouetteSample3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:property:: mitsuba.SilhouetteSample3f.projection_index
+    .. py:property:: misuka.SilhouetteSample3f.projection_index
 
         Projection index indicator
 
@@ -16702,19 +17152,19 @@
         the opposite edge p1->p2), index 1 stands for the edge p1->p2, and
         index 2 for p2->p0.
 
-    .. py:property:: mitsuba.SilhouetteSample3f.scene_index
+    .. py:property:: misuka.SilhouetteSample3f.scene_index
 
         Index of the shape in the scene (if applicable)
 
-    .. py:property:: mitsuba.SilhouetteSample3f.shape
+    .. py:property:: misuka.SilhouetteSample3f.shape
 
         Pointer to the associated shape
 
-    .. py:property:: mitsuba.SilhouetteSample3f.silhouette_d
+    .. py:property:: misuka.SilhouetteSample3f.silhouette_d
 
         Direction of the silhouette curve at the boundary point
 
-    .. py:method:: mitsuba.SilhouetteSample3f.spawn_ray(self, wavelengths=None)
+    .. py:method:: misuka.SilhouetteSample3f.spawn_ray(self, wavelengths=None)
 
         Spawn a ray on the silhouette point in the direction of d
 
@@ -16724,15 +17174,15 @@
         an intersection point at its origin due to numerical instabilities in
         the intersection routines.
 
-        Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f` | None):
+        Parameter ``wavelengths`` (misuka.Color0f | None):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Ray3f`:
+        Returns → misuka.Ray3f:
             *no description available*
 
-.. py:class:: mitsuba.Spiral
+.. py:class:: misuka.Spiral
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Generates a spiral of blocks to be rendered.
 
@@ -16745,10 +17195,10 @@
         Create a new spiral generator for the given size, offset into a larger
         frame, and block size
 
-        Parameter ``size`` (:py:obj:`mitsuba.ScalarVector2u`):
+        Parameter ``size`` (misuka.ScalarVector2u):
             *no description available*
 
-        Parameter ``offset`` (:py:obj:`mitsuba.ScalarVector2u`):
+        Parameter ``offset`` (misuka.ScalarVector2u):
             *no description available*
 
         Parameter ``block_size`` (int):
@@ -16758,30 +17208,30 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.Spiral.block_count()
+    .. py:method:: misuka.Spiral.block_count()
 
         Return the total number of blocks
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Spiral.max_block_size()
+    .. py:method:: misuka.Spiral.max_block_size()
 
         Return the maximum block size
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Spiral.next_block()
+    .. py:method:: misuka.Spiral.next_block()
 
         Return the offset, size, and unique identifier of the next block.
 
         A size of zero indicates that the spiral traversal is done.
 
-        Returns → tuple[:py:obj:`mitsuba.ScalarVector2i`, :py:obj:`mitsuba.ScalarVector2u`, int]:
+        Returns → tuple[misuka.ScalarVector2i, misuka.ScalarVector2u, int]:
             *no description available*
 
-    .. py:method:: mitsuba.Spiral.reset()
+    .. py:method:: misuka.Spiral.reset()
 
         Reset the spiral to its initial state. Does not affect the number of
         passes.
@@ -16789,9 +17239,9 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Stream
+.. py:class:: misuka.Stream
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Abstract seekable stream class
 
@@ -16806,7 +17256,7 @@
     See also:
         FileStream, MemoryStream, DummyStream
 
-    .. py:class:: mitsuba.Stream.EByteOrder
+    .. py:class:: misuka.Stream.EByteOrder
 
         Defines the byte order (endianness) to use in this Stream
 
@@ -16820,28 +17270,28 @@
 
             PowerPC, SPARC, Motorola 68K
 
-    .. py:method:: mitsuba.Stream.byte_order()
+    .. py:method:: misuka.Stream.byte_order()
 
         Returns the byte order of this stream.
 
-        Returns → :py:obj:`mitsuba.Stream.EByteOrder`:
+        Returns → misuka.Stream.EByteOrder:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.can_read()
+    .. py:method:: misuka.Stream.can_read()
 
         Can we read from the stream?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.can_write()
+    .. py:method:: misuka.Stream.can_write()
 
         Can we write to the stream?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.close()
+    .. py:method:: misuka.Stream.close()
 
         Closes the stream.
 
@@ -16853,14 +17303,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.flush()
+    .. py:method:: misuka.Stream.flush()
 
         Flushes the stream's buffers, if any
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read(self, arg)
+    .. py:method:: misuka.Stream.read(self, arg)
 
         Writes a specified amount of data into the stream. \note This does
         **not** handle endianness swapping.
@@ -16874,7 +17324,7 @@
         Returns → bytes:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_bool()
+    .. py:method:: misuka.Stream.read_bool()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16884,7 +17334,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_double()
+    .. py:method:: misuka.Stream.read_double()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16894,7 +17344,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_float()
+    .. py:method:: misuka.Stream.read_float()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16904,7 +17354,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_int16()
+    .. py:method:: misuka.Stream.read_int16()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16914,7 +17364,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_int32()
+    .. py:method:: misuka.Stream.read_int32()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16924,7 +17374,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_int64()
+    .. py:method:: misuka.Stream.read_int64()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16934,7 +17384,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_int8()
+    .. py:method:: misuka.Stream.read_int8()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16944,14 +17394,14 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_line()
+    .. py:method:: misuka.Stream.read_line()
 
         Convenience function for reading a line of text from an ASCII file
 
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_single()
+    .. py:method:: misuka.Stream.read_single()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16961,7 +17411,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_string()
+    .. py:method:: misuka.Stream.read_string()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16971,7 +17421,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_uint16()
+    .. py:method:: misuka.Stream.read_uint16()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16981,7 +17431,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_uint32()
+    .. py:method:: misuka.Stream.read_uint32()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -16991,7 +17441,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_uint64()
+    .. py:method:: misuka.Stream.read_uint64()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17001,7 +17451,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.read_uint8()
+    .. py:method:: misuka.Stream.read_uint8()
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17011,7 +17461,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.seek(self, arg)
+    .. py:method:: misuka.Stream.seek(self, arg)
 
         Seeks to a position inside the stream.
 
@@ -17025,7 +17475,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.set_byte_order(self, arg)
+    .. py:method:: misuka.Stream.set_byte_order(self, arg)
 
         Sets the byte order to use in this stream.
 
@@ -17036,20 +17486,20 @@
         some read and write operations on the system using a different
         endianness.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Stream.EByteOrder`, /):
+        Parameter ``arg`` (misuka.Stream.EByteOrder, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.size()
+    .. py:method:: misuka.Stream.size()
 
         Returns the size of the stream
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.skip(self, arg)
+    .. py:method:: misuka.Stream.skip(self, arg)
 
         Skip ahead by a given number of bytes
 
@@ -17059,14 +17509,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.tell()
+    .. py:method:: misuka.Stream.tell()
 
         Gets the current position inside the stream
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.truncate(self, arg)
+    .. py:method:: misuka.Stream.truncate(self, arg)
 
         Truncates the stream to a given size.
 
@@ -17079,7 +17529,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write(self, arg)
+    .. py:method:: misuka.Stream.write(self, arg)
 
         Writes a specified amount of data into the stream. \note This does
         **not** handle endianness swapping.
@@ -17093,7 +17543,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_bool(self, arg)
+    .. py:method:: misuka.Stream.write_bool(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17106,7 +17556,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_double(self, arg)
+    .. py:method:: misuka.Stream.write_double(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17119,7 +17569,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_float(self, arg)
+    .. py:method:: misuka.Stream.write_float(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17132,7 +17582,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_int16(self, arg)
+    .. py:method:: misuka.Stream.write_int16(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17145,7 +17595,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_int32(self, arg)
+    .. py:method:: misuka.Stream.write_int32(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17158,7 +17608,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_int64(self, arg)
+    .. py:method:: misuka.Stream.write_int64(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17171,7 +17621,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_int8(self, arg)
+    .. py:method:: misuka.Stream.write_int8(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17184,7 +17634,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_line(self, arg)
+    .. py:method:: misuka.Stream.write_line(self, arg)
 
         Convenience function for writing a line of text to an ASCII file
 
@@ -17194,7 +17644,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_single(self, arg)
+    .. py:method:: misuka.Stream.write_single(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17207,7 +17657,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_string(self, arg)
+    .. py:method:: misuka.Stream.write_string(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17220,7 +17670,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_uint16(self, arg)
+    .. py:method:: misuka.Stream.write_uint16(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17233,7 +17683,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_uint32(self, arg)
+    .. py:method:: misuka.Stream.write_uint32(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17246,7 +17696,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_uint64(self, arg)
+    .. py:method:: misuka.Stream.write_uint64(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17259,7 +17709,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Stream.write_uint8(self, arg)
+    .. py:method:: misuka.Stream.write_uint8(self, arg)
 
         Reads one object of type T from the stream at the current position by
         delegating to the appropriate ``serialization_helper``.
@@ -17272,9 +17722,9 @@
         Returns → object:
             *no description available*
 
-.. py:class:: mitsuba.StreamAppender
+.. py:class:: misuka.StreamAppender
 
-    Base class: :py:obj:`mitsuba.Appender`
+    Base class: misuka.Appender
 
     %Appender implementation, which writes to an arbitrary C++ output
     stream
@@ -17290,21 +17740,21 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.StreamAppender.logs_to_file()
+    .. py:method:: misuka.StreamAppender.logs_to_file()
 
         Does this appender log to a file
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.StreamAppender.read_log()
+    .. py:method:: misuka.StreamAppender.read_log()
 
         Return the contents of the log file as a string
 
         Returns → str:
             *no description available*
 
-.. py:class:: mitsuba.Struct
+.. py:class:: misuka.Struct
 
     Describes the in-memory layout of a record as an ordered list of
     named, typed Field entries.
@@ -17319,7 +17769,7 @@
 
         Overloaded function.
         
-        1. ``__init__(self, pack: bool = False, byte_order: :py:obj:`mitsuba._struct_jit.ByteOrder` = ByteOrder.Native) -> None``
+        1. ``__init__(self, pack: bool = False, byte_order: misuka._struct_jit.ByteOrder = ByteOrder.Native) -> None``
         
         Create an empty data structure
         
@@ -17327,7 +17777,7 @@
             If ``True``, fields will be tightly packed without adding
             alignment-related padding
         
-        Parameter ``byte_order`` (:py:obj:`mitsuba._struct_jit.ByteOrder`):
+        Parameter ``byte_order`` (misuka._struct_jit.ByteOrder):
             Enables overriding the byte order of the data structure. If
             needed, Struct-JIT will perform endianness conversion during
             conversions.
@@ -17335,10 +17785,10 @@
         2. ``__init__(self, dtype: object) -> None``
         
         
-        3. ``__init__(self, arg: :py:obj:`mitsuba._struct_jit.Struct`) -> None``
+        3. ``__init__(self, arg: misuka._struct_jit.Struct) -> None``
 
         
-    .. py:class:: mitsuba.Struct.ByteOrder
+    .. py:class:: misuka.Struct.ByteOrder
 
         Byte order of the fields in the ``Struct``
 
@@ -17356,7 +17806,7 @@
 
             
 
-    .. py:class:: mitsuba.Struct.Type
+    .. py:class:: misuka.Struct.Type
 
         List of field types supported by Struct-JIT
 
@@ -17410,22 +17860,22 @@
 
             
 
-    .. py:method:: mitsuba.Struct.align()
+    .. py:method:: misuka.Struct.align()
 
         Return the alignment (in bytes) of the data structure
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.append(self, name, type, flags=0, value=0.0)
+    .. py:method:: misuka.Struct.append(self, name, type, flags=0, value=0.0)
 
         Overloaded function.
 
-        1. ``append(self, name: str, type: :py:obj:`mitsuba._struct_jit.Type`, flags: int = 0, value: float = 0.0) -> :py:obj:`mitsuba._struct_jit.Struct```
+        1. ``append(self, name: str, type: misuka._struct_jit.Type, flags: int = 0, value: float = 0.0) -> misuka._struct_jit.Struct``
 
         Append a new field, while determining size and offset automatically
 
-        2. ``append(self, field: :py:obj:`mitsuba._struct_jit.Field`) -> :py:obj:`mitsuba._struct_jit.Struct```
+        2. ``append(self, field: misuka._struct_jit.Field) -> misuka._struct_jit.Struct``
 
         Append a new field to the ``Struct`` (all information must be
         provided)
@@ -17433,7 +17883,7 @@
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``type`` (:py:obj:`mitsuba._struct_jit.Type`):
+        Parameter ``type`` (misuka._struct_jit.Type):
             *no description available*
 
         Parameter ``flags`` (int):
@@ -17442,24 +17892,24 @@
         Parameter ``value`` (float):
             *no description available*
 
-        Returns → :py:obj:`mitsuba._struct_jit.Struct`:
+        Returns → misuka._struct_jit.Struct:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.byte_order()
+    .. py:method:: misuka.Struct.byte_order()
 
         Return the byte order of the ``Struct``
 
-        Returns → :py:obj:`mitsuba._struct_jit.ByteOrder`:
+        Returns → misuka._struct_jit.ByteOrder:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.dtype()
+    .. py:method:: misuka.Struct.dtype()
 
         Return an equivalent NumPy dtype
 
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.nbytes()
+    .. py:method:: misuka.Struct.nbytes()
 
         Return the total size (in bytes) of the data structure, including
         padding
@@ -17467,22 +17917,22 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.pack()
+    .. py:method:: misuka.Struct.pack()
 
         Are appended fields tightly packed (i.e. without alignment padding)?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.set_byte_order(self, arg)
+    .. py:method:: misuka.Struct.set_byte_order(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba._struct_jit.ByteOrder`, /):
+        Parameter ``arg`` (misuka._struct_jit.ByteOrder, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.set_pack(self, arg)
+    .. py:method:: misuka.Struct.set_pack(self, arg)
 
         Parameter ``arg`` (bool, /):
             *no description available*
@@ -17490,16 +17940,16 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Struct.validate()
+    .. py:method:: misuka.Struct.validate()
 
         Validate field flags, layout ordering, and shared backend limits
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.SurfaceInteraction3f
+.. py:class:: misuka.SurfaceInteraction3f
 
-    Base class: :py:obj:`mitsuba.Interaction3f`
+    Base class: misuka.Interaction3f
 
     Overloaded function.
 
@@ -17510,30 +17960,30 @@
     left uninitialized because we can't guarantee that the given
     PositionSample::object points to a Shape instance.
 
-    2. ``__init__(self, arg: :py:obj:`mitsuba.SurfaceInteraction3f`) -> None``
+    2. ``__init__(self, arg: misuka.SurfaceInteraction3f) -> None``
 
     Copy constructor
 
-    3. ``__init__(self, ps: :py:obj:`mitsuba.PositionSample3f`, wavelengths: :py:obj:`mitsuba.Color0f`) -> None``
+    3. ``__init__(self, ps: misuka.PositionSample3f, wavelengths: misuka.Color0f) -> None``
 
     Construct from a position sample. Unavailable fields such as `wi` and
     the partial derivatives are left uninitialized. The `shape` pointer is
     left uninitialized because we can't guarantee that the given
     PositionSample::object points to a Shape instance.
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.assign(self, arg)
+    .. py:method:: misuka.SurfaceInteraction3f.assign(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.SurfaceInteraction3f`, /):
+        Parameter ``arg`` (misuka.SurfaceInteraction3f, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.bsdf(self, ray)
+    .. py:method:: misuka.SurfaceInteraction3f.bsdf(self, ray)
 
         Overloaded function.
 
-        1. ``bsdf(self, ray: :py:obj:`mitsuba.RayDifferential3f`) -> :py:obj:`mitsuba.BSDFPtr```
+        1. ``bsdf(self, ray: misuka.RayDifferential3f) -> misuka.BSDFPtr``
 
         Returns the BSDF of the intersected shape.
 
@@ -17543,121 +17993,121 @@
 
         Implementation in 'bsdf.h'
 
-        2. ``bsdf(self) -> :py:obj:`mitsuba.BSDFPtr```
+        2. ``bsdf(self) -> misuka.BSDFPtr``
 
-        Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
+        Parameter ``ray`` (misuka.RayDifferential3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.BSDFPtr`:
+        Returns → misuka.BSDFPtr:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.compute_uv_partials(self, ray)
+    .. py:method:: misuka.SurfaceInteraction3f.compute_uv_partials(self, ray)
 
         Computes texture coordinate partials
 
-        Parameter ``ray`` (:py:obj:`mitsuba.RayDifferential3f`):
+        Parameter ``ray`` (misuka.RayDifferential3f):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.dn_du
+    .. py:property:: misuka.SurfaceInteraction3f.dn_du
 
         Normal partials wrt. the UV parameterization
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.dn_dv
+    .. py:property:: misuka.SurfaceInteraction3f.dn_dv
 
         Normal partials wrt. the UV parameterization
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.dp_du
+    .. py:property:: misuka.SurfaceInteraction3f.dp_du
 
         Position partials wrt. the UV parameterization
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.dp_dv
+    .. py:property:: misuka.SurfaceInteraction3f.dp_dv
 
         Position partials wrt. the UV parameterization
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.duv_dx
+    .. py:property:: misuka.SurfaceInteraction3f.duv_dx
 
         UV partials wrt. changes in screen-space
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.duv_dy
+    .. py:property:: misuka.SurfaceInteraction3f.duv_dy
 
         UV partials wrt. changes in screen-space
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.emitter(self, scene, active=True)
+    .. py:method:: misuka.SurfaceInteraction3f.emitter(self, scene, active=True)
 
         Return the emitter associated with the intersection (if any) \note
         Defined in scene.h
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.EmitterPtr`:
+        Returns → misuka.EmitterPtr:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.has_n_partials()
+    .. py:method:: misuka.SurfaceInteraction3f.has_n_partials()
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.has_uv_partials()
+    .. py:method:: misuka.SurfaceInteraction3f.has_uv_partials()
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.initialize_sh_frame()
+    .. py:method:: misuka.SurfaceInteraction3f.initialize_sh_frame()
 
         Initialize local shading frame using Gram-schmidt orthogonalization
 
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.instance
+    .. py:property:: misuka.SurfaceInteraction3f.instance
 
         Stores a pointer to the parent instance (if applicable)
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.is_medium_transition()
+    .. py:method:: misuka.SurfaceInteraction3f.is_medium_transition()
 
         Does the surface mark a transition between two media?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.is_sensor()
+    .. py:method:: misuka.SurfaceInteraction3f.is_sensor()
 
         Is the intersected shape also a sensor?
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.prim_index
+    .. py:property:: misuka.SurfaceInteraction3f.prim_index
 
         Primitive index, e.g. the triangle ID (if applicable)
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.sh_frame
+    .. py:property:: misuka.SurfaceInteraction3f.sh_frame
 
         Shading frame
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.shape
+    .. py:property:: misuka.SurfaceInteraction3f.shape
 
         Pointer to the associated shape
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.target_medium(self, d)
+    .. py:method:: misuka.SurfaceInteraction3f.target_medium(self, d)
 
         Overloaded function.
 
-        1. ``target_medium(self, d: :py:obj:`mitsuba.Vector3f`) -> :py:obj:`mitsuba.MediumPtr```
+        1. ``target_medium(self, d: misuka.Vector3f) -> misuka.MediumPtr``
 
         Determine the target medium
 
         When ``is_medium_transition()`` = ``True``, determine the medium that
         contains the ``ray(this->p, d)``
 
-        2. ``target_medium(self, cos_theta: drjit.llvm.ad.Float) -> :py:obj:`mitsuba.MediumPtr```
+        2. ``target_medium(self, cos_theta: drjit.llvm.ad.Float) -> misuka.MediumPtr``
 
         Determine the target medium based on the cosine of the angle between
         the geometric normal and a direction
@@ -17665,23 +18115,23 @@
         Returns the exterior medium when ``cos_theta > 0`` and the interior
         medium when ``cos_theta <= 0``.
 
-        Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``d`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.MediumPtr`:
+        Returns → misuka.MediumPtr:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.to_local(self, v)
+    .. py:method:: misuka.SurfaceInteraction3f.to_local(self, v)
 
         Convert a world-space vector into local shading coordinates
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.to_local_mueller(self, M_world, wi_world, wo_world)
+    .. py:method:: misuka.SurfaceInteraction3f.to_local_mueller(self, M_world, wi_world, wo_world)
 
         Converts a Mueller matrix defined in world space to a local frame
 
@@ -17700,30 +18150,30 @@
             Outgoing direction (along propagation direction of light), given
             in world-space coordinates.
 
-        Parameter ``M_world`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``M_world`` (misuka.Color3f):
             *no description available*
 
-        Parameter ``wi_world`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wi_world`` (misuka.Vector3f):
             *no description available*
 
-        Parameter ``wo_world`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo_world`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             Equivalent Mueller matrix that operates in local frame
             coordinates.
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.to_world(self, v)
+    .. py:method:: misuka.SurfaceInteraction3f.to_world(self, v)
 
         Convert a local shading-space vector into world space
 
-        Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``v`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.SurfaceInteraction3f.to_world_mueller(self, M_local, wi_local, wo_local)
+    .. py:method:: misuka.SurfaceInteraction3f.to_world_mueller(self, M_local, wi_local, wo_local)
 
         Converts a Mueller matrix defined in a local frame to world space
 
@@ -17734,35 +18184,35 @@
 
         This expands to a no-op in non-polarized modes.
 
-        Parameter ``M_local`` (:py:obj:`mitsuba.Color3f`):
+        Parameter ``M_local`` (misuka.Color3f):
             The Mueller matrix in local space, e.g. returned by a BSDF.
 
         Parameter ``in_forward_local``:
             Incident direction (along propagation direction of light), given
             in local frame coordinates.
 
-        Parameter ``wo_local`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wo_local`` (misuka.Vector3f):
             Outgoing direction (along propagation direction of light), given
             in local frame coordinates.
 
-        Parameter ``wi_local`` (:py:obj:`mitsuba.Vector3f`):
+        Parameter ``wi_local`` (misuka.Vector3f):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             Equivalent Mueller matrix that operates in world-space
             coordinates.
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.uv
+    .. py:property:: misuka.SurfaceInteraction3f.uv
 
         UV surface coordinates
 
-    .. py:property:: mitsuba.SurfaceInteraction3f.wi
+    .. py:property:: misuka.SurfaceInteraction3f.wi
 
         Incident direction in the local shading frame
 
-.. py:class:: mitsuba.TensorFile
+.. py:class:: misuka.TensorFile
 
-    Base class: :py:obj:`mitsuba.MemoryMappedFile`
+    Base class: misuka.MemoryMappedFile
 
     Simple exchange format for tensor data of arbitrary rank and size
 
@@ -17770,9 +18220,9 @@
     tensor data, usually exported from NumPy.
 
     The Python functions :python:func:`mi.tensor_io.write(filename,
-    tensor_1=.., tensor_2=.., ...) <:py:obj:`mitsuba.tensor_io.write`>` and
+    tensor_1=.., tensor_2=.., ...) <:py:obj:`misuka.tensor_io.write`>` and
     :py:func:`tensor_file = mi.tensor_io.read(filename)
-    <:py:obj:`mitsuba.tensor_io.read`>` can be used to create and modify these files
+    <:py:obj:`misuka.tensor_io.read`>` can be used to create and modify these files
     within Python.
 
     On the C++ end, use ``tensor_file.field("field_name").as<TensorXf>()``
@@ -17780,48 +18230,48 @@
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+        Parameter ``arg`` (misuka.filesystem.path, /):
             *no description available*
 
 
-.. py:class:: mitsuba.TensorXb
+.. py:class:: misuka.TensorXb
 
-.. py:class:: mitsuba.TensorXf
+.. py:class:: misuka.TensorXf
 
-.. py:class:: mitsuba.TensorXf16
+.. py:class:: misuka.TensorXf16
 
-.. py:class:: mitsuba.TensorXf64
+.. py:class:: misuka.TensorXf64
 
-.. py:class:: mitsuba.TensorXi
+.. py:class:: misuka.TensorXi
 
-.. py:class:: mitsuba.TensorXi64
+.. py:class:: misuka.TensorXi64
 
-.. py:class:: mitsuba.TensorXi8
+.. py:class:: misuka.TensorXi8
 
-.. py:class:: mitsuba.TensorXu
+.. py:class:: misuka.TensorXu
 
-.. py:class:: mitsuba.TensorXu64
+.. py:class:: misuka.TensorXu64
 
-.. py:class:: mitsuba.TensorXu8
+.. py:class:: misuka.TensorXu8
 
-.. py:class:: mitsuba.Texture
+.. py:class:: misuka.Texture
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
-    .. py:method:: mitsuba.Texture.eval(self, si, active=True)
+    .. py:method:: misuka.Texture.eval(self, si, active=True)
 
         Evaluate the texture at the given surface interaction
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.Texture.eval_1(self, si, active=True)
+    .. py:method:: misuka.Texture.eval_1(self, si, active=True)
 
         Monochromatic evaluation of the texture at the given surface
         interaction
@@ -17831,7 +18281,7 @@
         spectral upsampling). This is useful in parts of the renderer that
         encode scalar quantities using textures, e.g. a height field.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -17840,21 +18290,21 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.Texture.eval_1_grad(self, si, active=True)
+    .. py:method:: misuka.Texture.eval_1_grad(self, si, active=True)
 
         Monochromatic evaluation of the texture gradient at the given surface
         interaction
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             A (u,v) pair of intensity or reflectance value gradients
 
-    .. py:method:: mitsuba.Texture.eval_3(self, si, active=True)
+    .. py:method:: misuka.Texture.eval_3(self, si, active=True)
 
         Trichromatic evaluation of the texture at the given surface
         interaction
@@ -17865,23 +18315,23 @@
         of the renderer that encode 3D quantities using textures, e.g. a
         normal map.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.Texture.is_spatially_varying()
+    .. py:method:: misuka.Texture.is_spatially_varying()
 
         Does this texture evaluation depend on the UV coordinates
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.max()
+    .. py:method:: misuka.Texture.max()
 
         Return the maximum value of the spectrum
 
@@ -17894,7 +18344,7 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.mean()
+    .. py:method:: misuka.Texture.mean()
 
         Return the mean value of the spectrum over the support
         (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
@@ -17908,11 +18358,11 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.pdf_position(self, p, active=True)
+    .. py:method:: misuka.Texture.pdf_position(self, p, active=True)
 
         Returns the probability per unit area of sample_position()
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``p`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -17921,7 +18371,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.pdf_spectrum(self, si, active=True)
+    .. py:method:: misuka.Texture.pdf_spectrum(self, si, active=True)
 
         Evaluate the density function of the sample_spectrum() method as a
         probability per unit wavelength (in units of 1/nm).
@@ -17929,27 +18379,27 @@
         Not every implementation necessarily overrides this function. The
         default implementation throws an exception.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color0f`:
+        Returns → misuka.Color0f:
             A density value for each wavelength in ``si.wavelengths`` (hence
             the Wavelength type).
 
-    .. py:method:: mitsuba.Texture.resolution()
+    .. py:method:: misuka.Texture.resolution()
 
         Returns the resolution of the texture, assuming that it is based on a
         discrete representation.
 
         The default implementation returns ``(1, 1)``
 
-        Returns → :py:obj:`mitsuba.ScalarVector2i`:
+        Returns → misuka.ScalarVector2i:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.sample_position(self, sample, active=True)
+    .. py:method:: misuka.Texture.sample_position(self, sample, active=True)
 
         Importance sample a surface position proportional to the overall
         spectral reflectance or intensity of the texture
@@ -17961,18 +18411,18 @@
         implementation, and the default implementation simply return the input
         sample (i.e. uniform sampling is used).
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A 2D vector of uniform variates
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             1. A texture-space position in the range :math:`[0, 1]^2`
 
         2. The associated probability per unit area in UV space
 
-    .. py:method:: mitsuba.Texture.sample_spectrum(self, si, sample, active=True)
+    .. py:method:: misuka.Texture.sample_spectrum(self, si, sample, active=True)
 
         Importance sample a set of wavelengths proportional to the spectrum
         defined at the given surface position
@@ -17981,22 +18431,22 @@
         a no-op when compiling non-spectral variants of Mitsuba. The default
         implementation throws an exception.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+        Parameter ``sample`` (misuka.Color0f):
             A uniform variate for each desired wavelength.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             1. Set of sampled wavelengths specified in nanometers
 
         2. The Monte Carlo importance weight (Spectral power distribution
         value divided by the sampling density)
 
-    .. py:method:: mitsuba.Texture.spectral_resolution()
+    .. py:method:: misuka.Texture.spectral_resolution()
 
         Returns the resolution of the spectrum in nanometers (if discretized)
 
@@ -18006,16 +18456,16 @@
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture.wavelength_range()
+    .. py:method:: misuka.Texture.wavelength_range()
 
         Returns the range of wavelengths covered by the spectrum
 
         The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``
 
-        Returns → :py:obj:`mitsuba.ScalarVector2f`:
+        Returns → misuka.ScalarVector2f:
             *no description available*
 
-.. py:class:: mitsuba.Texture1f
+.. py:class:: misuka.Texture1f
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -18119,14 +18569,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.channel_count()
+    .. py:method:: misuka.Texture1f.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture1f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -18143,7 +18593,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture1f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -18179,7 +18629,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture1f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -18199,7 +18649,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture1f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -18217,7 +18667,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture1f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -18237,7 +18687,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture1f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -18254,14 +18704,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.filter_mode()
+    .. py:method:: misuka.Texture1f.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.map()
+    .. py:method:: misuka.Texture1f.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -18269,14 +18719,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.migrated()
+    .. py:method:: misuka.Texture1f.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture1f.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -18289,7 +18739,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture1f.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -18312,7 +18762,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture1f.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -18329,7 +18779,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture1f.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -18357,32 +18807,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture1f.shape
+    .. py:property:: misuka.Texture1f.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture1f.srgb()
+    .. py:method:: misuka.Texture1f.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.tensor()
+    .. py:method:: misuka.Texture1f.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.unmap()
+    .. py:method:: misuka.Texture1f.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture1f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -18403,21 +18853,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.use_accel()
+    .. py:method:: misuka.Texture1f.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.value()
+    .. py:method:: misuka.Texture1f.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.wrap(self, pos)
+    .. py:method:: misuka.Texture1f.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -18427,14 +18877,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.wrap_mode()
+    .. py:method:: misuka.Texture1f.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.writable()
+    .. py:method:: misuka.Texture1f.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -18442,7 +18892,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture1f.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -18466,7 +18916,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture1f16
+.. py:class:: misuka.Texture1f16
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -18570,14 +19020,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.channel_count()
+    .. py:method:: misuka.Texture1f16.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture1f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -18594,7 +19044,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture1f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -18630,7 +19080,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture1f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -18650,7 +19100,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture1f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -18668,7 +19118,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture1f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -18688,7 +19138,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture1f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -18705,14 +19155,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.filter_mode()
+    .. py:method:: misuka.Texture1f16.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.map()
+    .. py:method:: misuka.Texture1f16.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -18720,14 +19170,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.migrated()
+    .. py:method:: misuka.Texture1f16.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture1f16.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -18740,7 +19190,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture1f16.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -18763,7 +19213,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture1f16.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -18780,7 +19230,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture1f16.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -18808,32 +19258,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture1f16.shape
+    .. py:property:: misuka.Texture1f16.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture1f16.srgb()
+    .. py:method:: misuka.Texture1f16.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.tensor()
+    .. py:method:: misuka.Texture1f16.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.unmap()
+    .. py:method:: misuka.Texture1f16.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture1f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -18854,21 +19304,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.use_accel()
+    .. py:method:: misuka.Texture1f16.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.value()
+    .. py:method:: misuka.Texture1f16.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.wrap(self, pos)
+    .. py:method:: misuka.Texture1f16.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -18878,14 +19328,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.wrap_mode()
+    .. py:method:: misuka.Texture1f16.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.writable()
+    .. py:method:: misuka.Texture1f16.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -18893,7 +19343,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f16.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture1f16.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -18917,7 +19367,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture1f64
+.. py:class:: misuka.Texture1f64
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -19021,14 +19471,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.channel_count()
+    .. py:method:: misuka.Texture1f64.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture1f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -19045,7 +19495,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture1f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -19081,7 +19531,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture1f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -19101,7 +19551,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture1f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -19119,7 +19569,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture1f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -19139,7 +19589,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture1f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -19156,14 +19606,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.filter_mode()
+    .. py:method:: misuka.Texture1f64.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.map()
+    .. py:method:: misuka.Texture1f64.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -19171,14 +19621,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.migrated()
+    .. py:method:: misuka.Texture1f64.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture1f64.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -19191,7 +19641,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture1f64.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -19214,7 +19664,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture1f64.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -19231,7 +19681,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture1f64.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -19259,32 +19709,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture1f64.shape
+    .. py:property:: misuka.Texture1f64.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture1f64.srgb()
+    .. py:method:: misuka.Texture1f64.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.tensor()
+    .. py:method:: misuka.Texture1f64.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.unmap()
+    .. py:method:: misuka.Texture1f64.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture1f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -19305,21 +19755,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.use_accel()
+    .. py:method:: misuka.Texture1f64.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.value()
+    .. py:method:: misuka.Texture1f64.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.wrap(self, pos)
+    .. py:method:: misuka.Texture1f64.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -19329,14 +19779,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.wrap_mode()
+    .. py:method:: misuka.Texture1f64.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.writable()
+    .. py:method:: misuka.Texture1f64.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -19344,7 +19794,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture1f64.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture1f64.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -19368,7 +19818,458 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture2f
+.. py:class:: misuka.Texture1f8u
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
+
+        Create a new texture with the specified size and channel count
+
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
+
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
+
+        Construct a new texture from a given tensor
+
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
+
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval(self, pos, active=True)
+
+        Evaluate the linear interpolant represented by this texture.
+
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval_cubic(self, pos, active=True, force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval_cubic_grad(self, pos, active=True)
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval_cubic_helper(self, pos, active=True)
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval_cubic_hessian(self, pos, active=True)
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.eval_fetch(self, pos, active=True)
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, ...]:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.filter_mode()
+
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.migrated()
+
+        Is the texture data held exclusively in GPU texture memory?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.set_tensor(self, tensor, migrate=False)
+
+        Overwrite the texture contents with the provided tensor
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.set_value(self, value, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: misuka.Texture1f8u.shape
+
+        Return the texture shape
+
+    .. py:method:: misuka.Texture1f8u.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXu8:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with :py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.use_accel()
+
+        Are hardware texture units used for evaluation?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.UInt8:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.wrap_mode()
+
+        Return the boundary handling mode for out-of-bounds lookups
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture1f8u.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array1u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.Texture2f
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -19472,14 +20373,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.channel_count()
+    .. py:method:: misuka.Texture2f.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture2f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -19496,7 +20397,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture2f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -19532,7 +20433,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture2f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -19552,7 +20453,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture2f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -19570,7 +20471,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture2f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -19590,7 +20491,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture2f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -19607,14 +20508,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.filter_mode()
+    .. py:method:: misuka.Texture2f.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.map()
+    .. py:method:: misuka.Texture2f.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -19622,14 +20523,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.migrated()
+    .. py:method:: misuka.Texture2f.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture2f.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -19642,7 +20543,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture2f.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -19665,7 +20566,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture2f.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -19682,7 +20583,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture2f.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -19710,32 +20611,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture2f.shape
+    .. py:property:: misuka.Texture2f.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture2f.srgb()
+    .. py:method:: misuka.Texture2f.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.tensor()
+    .. py:method:: misuka.Texture2f.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.unmap()
+    .. py:method:: misuka.Texture2f.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture2f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -19756,21 +20657,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.use_accel()
+    .. py:method:: misuka.Texture2f.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.value()
+    .. py:method:: misuka.Texture2f.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.wrap(self, pos)
+    .. py:method:: misuka.Texture2f.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -19780,14 +20681,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.wrap_mode()
+    .. py:method:: misuka.Texture2f.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.writable()
+    .. py:method:: misuka.Texture2f.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -19795,7 +20696,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture2f.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -19819,7 +20720,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture2f16
+.. py:class:: misuka.Texture2f16
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -19923,14 +20824,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.channel_count()
+    .. py:method:: misuka.Texture2f16.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture2f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -19947,7 +20848,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture2f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -19983,7 +20884,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture2f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -20003,7 +20904,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture2f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -20021,7 +20922,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture2f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -20041,7 +20942,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture2f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -20058,14 +20959,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.filter_mode()
+    .. py:method:: misuka.Texture2f16.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.map()
+    .. py:method:: misuka.Texture2f16.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -20073,14 +20974,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.migrated()
+    .. py:method:: misuka.Texture2f16.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture2f16.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -20093,7 +20994,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture2f16.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -20116,7 +21017,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture2f16.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -20133,7 +21034,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture2f16.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -20161,32 +21062,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture2f16.shape
+    .. py:property:: misuka.Texture2f16.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture2f16.srgb()
+    .. py:method:: misuka.Texture2f16.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.tensor()
+    .. py:method:: misuka.Texture2f16.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.unmap()
+    .. py:method:: misuka.Texture2f16.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture2f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -20207,21 +21108,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.use_accel()
+    .. py:method:: misuka.Texture2f16.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.value()
+    .. py:method:: misuka.Texture2f16.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.wrap(self, pos)
+    .. py:method:: misuka.Texture2f16.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -20231,14 +21132,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.wrap_mode()
+    .. py:method:: misuka.Texture2f16.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.writable()
+    .. py:method:: misuka.Texture2f16.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -20246,7 +21147,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f16.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture2f16.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -20270,7 +21171,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture2f64
+.. py:class:: misuka.Texture2f64
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -20374,14 +21275,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.channel_count()
+    .. py:method:: misuka.Texture2f64.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture2f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -20398,7 +21299,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture2f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -20434,7 +21335,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture2f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -20454,7 +21355,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture2f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -20472,7 +21373,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture2f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -20492,7 +21393,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture2f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -20509,14 +21410,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.filter_mode()
+    .. py:method:: misuka.Texture2f64.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.map()
+    .. py:method:: misuka.Texture2f64.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -20524,14 +21425,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.migrated()
+    .. py:method:: misuka.Texture2f64.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture2f64.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -20544,7 +21445,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture2f64.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -20567,7 +21468,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture2f64.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -20584,7 +21485,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture2f64.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -20612,32 +21513,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture2f64.shape
+    .. py:property:: misuka.Texture2f64.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture2f64.srgb()
+    .. py:method:: misuka.Texture2f64.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.tensor()
+    .. py:method:: misuka.Texture2f64.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.unmap()
+    .. py:method:: misuka.Texture2f64.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture2f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -20658,21 +21559,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.use_accel()
+    .. py:method:: misuka.Texture2f64.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.value()
+    .. py:method:: misuka.Texture2f64.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.wrap(self, pos)
+    .. py:method:: misuka.Texture2f64.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -20682,14 +21583,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.wrap_mode()
+    .. py:method:: misuka.Texture2f64.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.writable()
+    .. py:method:: misuka.Texture2f64.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -20697,7 +21598,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture2f64.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture2f64.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -20721,7 +21622,458 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture3f
+.. py:class:: misuka.Texture2f8u
+
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
+
+        Create a new texture with the specified size and channel count
+
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
+
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
+
+        Construct a new texture from a given tensor
+
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
+
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval(self, pos, active=True)
+
+        Evaluate the linear interpolant represented by this texture.
+
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval_cubic(self, pos, active=True, force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval_cubic_grad(self, pos, active=True)
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval_cubic_helper(self, pos, active=True)
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval_cubic_hessian(self, pos, active=True)
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.eval_fetch(self, pos, active=True)
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, ...]:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.filter_mode()
+
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.migrated()
+
+        Is the texture data held exclusively in GPU texture memory?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.set_tensor(self, tensor, migrate=False)
+
+        Overwrite the texture contents with the provided tensor
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.set_value(self, value, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: misuka.Texture2f8u.shape
+
+        Return the texture shape
+
+    .. py:method:: misuka.Texture2f8u.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXu8:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with :py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.use_accel()
+
+        Are hardware texture units used for evaluation?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.UInt8:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.wrap_mode()
+
+        Return the boundary handling mode for out-of-bounds lookups
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture2f8u.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array2u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.Texture3f
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -20825,14 +22177,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.channel_count()
+    .. py:method:: misuka.Texture3f.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture3f.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -20849,7 +22201,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture3f.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -20885,7 +22237,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture3f.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -20905,7 +22257,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture3f.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -20923,7 +22275,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture3f.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -20943,7 +22295,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture3f.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -20960,14 +22312,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.filter_mode()
+    .. py:method:: misuka.Texture3f.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.map()
+    .. py:method:: misuka.Texture3f.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -20975,14 +22327,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.migrated()
+    .. py:method:: misuka.Texture3f.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture3f.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -20995,7 +22347,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture3f.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -21018,7 +22370,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture3f.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -21035,7 +22387,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture3f.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -21063,32 +22415,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture3f.shape
+    .. py:property:: misuka.Texture3f.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture3f.srgb()
+    .. py:method:: misuka.Texture3f.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.tensor()
+    .. py:method:: misuka.Texture3f.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.unmap()
+    .. py:method:: misuka.Texture3f.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture3f.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -21109,21 +22461,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.use_accel()
+    .. py:method:: misuka.Texture3f.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.value()
+    .. py:method:: misuka.Texture3f.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.wrap(self, pos)
+    .. py:method:: misuka.Texture3f.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -21133,14 +22485,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.wrap_mode()
+    .. py:method:: misuka.Texture3f.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.writable()
+    .. py:method:: misuka.Texture3f.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -21148,7 +22500,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture3f.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -21172,7 +22524,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture3f16
+.. py:class:: misuka.Texture3f16
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -21276,14 +22628,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.channel_count()
+    .. py:method:: misuka.Texture3f16.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture3f16.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -21300,7 +22652,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture3f16.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -21336,7 +22688,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture3f16.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -21356,7 +22708,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture3f16.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -21374,7 +22726,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture3f16.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -21394,7 +22746,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture3f16.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -21411,14 +22763,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.filter_mode()
+    .. py:method:: misuka.Texture3f16.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.map()
+    .. py:method:: misuka.Texture3f16.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -21426,14 +22778,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.migrated()
+    .. py:method:: misuka.Texture3f16.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture3f16.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -21446,7 +22798,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture3f16.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -21469,7 +22821,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture3f16.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -21486,7 +22838,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture3f16.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -21514,32 +22866,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture3f16.shape
+    .. py:property:: misuka.Texture3f16.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture3f16.srgb()
+    .. py:method:: misuka.Texture3f16.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.tensor()
+    .. py:method:: misuka.Texture3f16.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.unmap()
+    .. py:method:: misuka.Texture3f16.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture3f16.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -21560,21 +22912,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.use_accel()
+    .. py:method:: misuka.Texture3f16.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.value()
+    .. py:method:: misuka.Texture3f16.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float16:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.wrap(self, pos)
+    .. py:method:: misuka.Texture3f16.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -21584,14 +22936,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.wrap_mode()
+    .. py:method:: misuka.Texture3f16.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.writable()
+    .. py:method:: misuka.Texture3f16.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -21599,7 +22951,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f16.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture3f16.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -21623,7 +22975,7 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.Texture3f64
+.. py:class:: misuka.Texture3f64
 
 
     .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
@@ -21727,14 +23079,14 @@
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.channel_count()
+    .. py:method:: misuka.Texture3f64.channel_count()
 
         Return the number of channels (equals ``shape()[ndim()-1]``)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval(self, pos, active=True)
+    .. py:method:: misuka.Texture3f64.eval(self, pos, active=True)
 
         Evaluate the linear interpolant represented by this texture.
 
@@ -21751,7 +23103,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
+    .. py:method:: misuka.Texture3f64.eval_cubic(self, pos, active=True, force_nonaccel=False)
 
         Evaluate a clamped cubic B-Spline interpolant represented by this
         texture
@@ -21787,7 +23139,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_grad(self, pos, active=True)
+    .. py:method:: misuka.Texture3f64.eval_cubic_grad(self, pos, active=True)
 
         Evaluate the positional gradient of a cubic B-Spline
 
@@ -21807,7 +23159,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_helper(self, pos, active=True)
+    .. py:method:: misuka.Texture3f64.eval_cubic_helper(self, pos, active=True)
 
         Helper function to evaluate a clamped cubic B-Spline interpolant
 
@@ -21825,7 +23177,7 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_cubic_hessian(self, pos, active=True)
+    .. py:method:: misuka.Texture3f64.eval_cubic_hessian(self, pos, active=True)
 
         Evaluate the positional gradient and hessian matrix of a cubic B-Spline
 
@@ -21845,7 +23197,7 @@
         Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.eval_fetch(self, pos, active=True)
+    .. py:method:: misuka.Texture3f64.eval_fetch(self, pos, active=True)
 
         Fetch the texels that would be referenced in a texture lookup with
         linear interpolation without actually performing this interpolation.
@@ -21862,14 +23214,14 @@
         Returns → tuple[drjit.AnyArray, ...]:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.filter_mode()
+    .. py:method:: misuka.Texture3f64.filter_mode()
 
         Return the texture filtering mode (e.g., nearest, bilinear, etc.)
 
         Returns → drjit.FilterMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.map()
+    .. py:method:: misuka.Texture3f64.map()
 
         Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
         (no-op on Metal, required for CUDA/OpenGL).
@@ -21877,14 +23229,14 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.migrated()
+    .. py:method:: misuka.Texture3f64.migrated()
 
         Is the texture data held exclusively in GPU texture memory?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.native_handle(self, sub_index=0)
+    .. py:method:: misuka.Texture3f64.native_handle(self, sub_index=0)
 
         Return the native texture handle (as an integer), e.g. to display it in a
         GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
@@ -21897,7 +23249,7 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.set_tensor(self, tensor, migrate=False)
+    .. py:method:: misuka.Texture3f64.set_tensor(self, tensor, migrate=False)
 
         Overwrite the texture contents with the provided tensor
 
@@ -21920,7 +23272,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.set_value(self, value, migrate=False)
+    .. py:method:: misuka.Texture3f64.set_value(self, value, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array
 
@@ -21937,7 +23289,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.set_value_with_event(self, value, event, migrate=False)
+    .. py:method:: misuka.Texture3f64.set_value_with_event(self, value, event, migrate=False)
 
         Overwrite the texture contents with the provided linearized 1D array and
         record a device event
@@ -21965,32 +23317,32 @@
         Returns → None:
             *no description available*
 
-    .. py:property:: mitsuba.Texture3f64.shape
+    .. py:property:: misuka.Texture3f64.shape
 
         Return the texture shape
 
-    .. py:method:: mitsuba.Texture3f64.srgb()
+    .. py:method:: misuka.Texture3f64.srgb()
 
         Are 8-bit samples decoded from sRGB to linear?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.tensor()
+    .. py:method:: misuka.Texture3f64.tensor()
 
         Return the texture data as a tensor object
 
         Returns → drjit.llvm.ad.TensorXf64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.unmap()
+    .. py:method:: misuka.Texture3f64.unmap()
 
         Release a mapping established by :py:func:`map()`.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.update_inplace(self, migrate=False)
+    .. py:method:: misuka.Texture3f64.update_inplace(self, migrate=False)
 
         Update the texture after applying an indirect update to its tensor
         representation (obtained with :py:func:`tensor()`).
@@ -22011,21 +23363,21 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.use_accel()
+    .. py:method:: misuka.Texture3f64.use_accel()
 
         Are hardware texture units used for evaluation?
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.value()
+    .. py:method:: misuka.Texture3f64.value()
 
         Return the texture data as an array object
 
         Returns → drjit.llvm.ad.Float64:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.wrap(self, pos)
+    .. py:method:: misuka.Texture3f64.wrap(self, pos)
 
         Apply the configured texture wrapping mode to an integer position
 
@@ -22035,14 +23387,14 @@
         Returns → drjit.AnyArray:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.wrap_mode()
+    .. py:method:: misuka.Texture3f64.wrap_mode()
 
         Return the boundary handling mode for out-of-bounds lookups
 
         Returns → drjit.WrapMode:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.writable()
+    .. py:method:: misuka.Texture3f64.writable()
 
         Was this texture created so that kernels may store into it via
         :py:func:`write()`?
@@ -22050,7 +23402,7 @@
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.Texture3f64.write(self, pos, value, active=Bool(True))
+    .. py:method:: misuka.Texture3f64.write(self, pos, value, active=Bool(True))
 
         Store values into a writable hardware texture
 
@@ -22074,22 +23426,473 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.TexturePtr
+.. py:class:: misuka.Texture3f8u
 
-    .. py:method:: mitsuba.TexturePtr.eval(self, si, active=True)
+
+    .. py:method:: ``__init__(self, shape, channels, use_accel=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, writable=False, srgb=False)
+
+        Create a new texture with the specified size and channel count
+
+        On GPU backends, this is a slow operation that synchronizes the pipeline to
+        rewrite the device memory map. Therefore, prefer reusing and updating
+        texture objects via :py:func:`set_value()` and :py:func:`set_tensor()` over
+        creating new ones.
+
+        When ``use_accel`` is set to ``False``, GPU backends will emulate the
+        texture API instead of using the hardware texture units. In other modes,
+        this argument has no effect.
+
+        The ``filter_mode`` parameter defines the interpolation method to be used
+        in all evaluation routines. By default, the texture is linearly
+        interpolated. Besides nearest/linear filtering, the implementation also
+        provides a clamped cubic B-spline interpolation scheme in case a
+        higher-order interpolation is needed. On the CUDA and Metal backends, this
+        is done using a series of linear lookups to optimally use the hardware
+        (hence, linear filtering must be enabled to use this feature).
+
+        When evaluating the texture outside of its boundaries, the ``wrap_mode``
+        defines the wrapping method. The default behavior is ``drjit.WrapMode.Clamp``,
+        which indefinitely extends the colors on the boundary along each dimension.
+
+        On the CUDA and Metal backends, hardware texture units resolve the sub-texel
+        position using reduced-precision fixed-point weights (8 fractional bits on
+        CUDA, i.e. 256 steps between texels). This does not degrade the stored values
+        or the interpolated quantity, only how finely the fractional position within
+        a texel is resolved. Set ``use_accel=False`` to disable the texture units and
+        avoid this approximation at some cost in performance.
+
+        For 8-bit textures, setting ``srgb`` additionally requests that samples be
+        decoded from sRGB to linear. Passing it for a floating-point texture raises
+        an error. Channels are grouped into hardware RGBA quads, so within each group
+        of four the first three are decoded and the fourth (alpha) is left linear
+        (e.g. channel 3 is linear for a 6-channel texture).
+
+        Parameter ``shape`` (collections.abc.Sequence[int]):
+            *no description available*
+
+        Parameter ``channels`` (int):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``writable`` (bool):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: ``__init__(self, tensor, use_accel=True, migrate=True, filter_mode=FilterMode.Linear, wrap_mode=WrapMode.Clamp, srgb=False)
+
+        Construct a new texture from a given tensor
+
+        This constructor allocates texture memory just like the previous
+        constructor, extracting shape information from ``tensor``. It then also
+        invokes ``set_tensor(tensor)`` to fill the texture memory with the provided
+        tensor.
+
+        When ``migrate`` is set to ``True`` on a GPU backend, the texture is *fully*
+        migrated to GPU texture memory to avoid redundant storage. Note that the
+        texture is still differentiable even when migrated. The :py:func:`value()`
+        and :py:func:`tensor()` operations will perform a reverse migration in this
+        case.
+
+        Both the ``filter_mode`` and ``wrap_mode`` have the same defaults and
+        behaviors as for the previous constructor.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``use_accel`` (bool):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Parameter ``filter_mode`` (drjit.FilterMode):
+            *no description available*
+
+        Parameter ``wrap_mode`` (drjit.WrapMode):
+            *no description available*
+
+        Parameter ``srgb`` (bool):
+            *no description available*
+
+        Returns → None``:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.channel_count()
+
+        Return the number of channels (equals ``shape()[ndim()-1]``)
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval(self, pos, active=True)
+
+        Evaluate the linear interpolant represented by this texture.
+
+        When hardware-acceleration is not available, the numerical precision of the
+        interpolation is dictated by the floating point precision of the query
+        point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval_cubic(self, pos, active=True, force_nonaccel=False)
+
+        Evaluate a clamped cubic B-Spline interpolant represented by this
+        texture
+
+        Instead of interpolating the texture via B-Spline basis functions, the
+        implementation transforms this calculation into an equivalent weighted
+        sum of several linear interpolant evaluations. On the CUDA and Metal
+        backends, these steps can then be accelerated by hardware texture units,
+        which runs faster than a naive implementation. More information can be found
+        in:
+
+            GPU Gems 2, Chapter 20, "Fast Third-Order Texture Filtering"
+            by Christian Sigg.
+
+        When the underlying grid data and the query position are differentiable,
+        this transformation cannot be used as it is not linear with respect to position
+        (thus the default AD graph gives incorrect results). The implementation
+        calls :py:func:`eval_cubic_helper()` function to replace the AD graph with a
+        direct evaluation of the B-Spline basis functions in that case.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Parameter ``force_nonaccel`` (bool):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval_cubic_grad(self, pos, active=True)
+
+        Evaluate the positional gradient of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval_cubic_helper(self, pos, active=True)
+
+        Helper function to evaluate a clamped cubic B-Spline interpolant
+
+        This is an implementation detail and should only be called by the
+        :py:func:`eval_cubic()` function to construct an AD graph. When only the cubic
+        evaluation result is desired, the :py:func:`eval_cubic()` function is faster
+        than this simple implementation
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval_cubic_hessian(self, pos, active=True)
+
+        Evaluate the positional gradient and hessian matrix of a cubic B-Spline
+
+        This implementation computes the result directly from explicit
+        differentiated basis functions. It has no autodiff support.
+
+        The resulting gradient and hessian have been multiplied by the spatial extents
+        to count for the transformation from the unit size volume to the size of its
+        shape.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, list[drjit.AnyArray], list[drjit.AnyArray]]:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.eval_fetch(self, pos, active=True)
+
+        Fetch the texels that would be referenced in a texture lookup with
+        linear interpolation without actually performing this interpolation.
+
+        The numerical precision of the interpolation is dictated by the
+        floating point precision of the query point type.
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Parameter ``active`` (drjit.AnyArray | bool):
+            Mask to specify active lanes.
+
+        Returns → tuple[drjit.AnyArray, ...]:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.filter_mode()
+
+        Return the texture filtering mode (e.g., nearest, bilinear, etc.)
+
+        Returns → drjit.FilterMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.map()
+
+        Map an imported texture (:py:func:`from_native_handle()`) for use by Dr.Jit
+        (no-op on Metal, required for CUDA/OpenGL).
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.migrated()
+
+        Is the texture data held exclusively in GPU texture memory?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.native_handle(self, sub_index=0)
+
+        Return the native texture handle (as an integer), e.g. to display it in a
+        GUI. On Metal this is the ``id<MTLTexture>`` of sub-texture ``sub_index``; on
+        CUDA it is the wrapped OpenGL texture id (``sub_index`` is ignored, and the
+        result is 0 unless the texture wraps an OpenGL handle).
+
+        Parameter ``sub_index`` (int):
+            *no description available*
+
+        Returns → int:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.set_tensor(self, tensor, migrate=False)
+
+        Overwrite the texture contents with the provided tensor
+
+        This method updates the values of all texels. Changing the texture
+        resolution or its number of channels is also supported. However, on the
+        CUDA and Metal backends, such operations have a significantly larger
+        overhead (new hardware texture objects must be created; on CUDA this also
+        synchronizes the GPU pipeline).
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``tensor`` (drjit.llvm.ad.TensorXu8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.set_value(self, value, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.set_value_with_event(self, value, event, migrate=False)
+
+        Overwrite the texture contents with the provided linearized 1D array and
+        record a device event
+
+        This function is a convenience wrapper that simply does
+
+        .. code-block:: python
+
+           texture.set_value(value)
+           event.record()
+
+        This combination is helpful for interactive workflows, where a producer
+        renders to a texture that is then shown in an user interface. The consumer
+        must await the event before using the texture.
+
+        Parameter ``value`` (drjit.llvm.ad.UInt8):
+            *no description available*
+
+        Parameter ``event`` (drjit.llvm.Event):
+            *no description available*
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:property:: misuka.Texture3f8u.shape
+
+        Return the texture shape
+
+    .. py:method:: misuka.Texture3f8u.srgb()
+
+        Are 8-bit samples decoded from sRGB to linear?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.tensor()
+
+        Return the texture data as a tensor object
+
+        Returns → drjit.llvm.ad.TensorXu8:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.unmap()
+
+        Release a mapping established by :py:func:`map()`.
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.update_inplace(self, migrate=False)
+
+        Update the texture after applying an indirect update to its tensor
+        representation (obtained with :py:func:`tensor()`).
+
+        A tensor representation of this texture object can be retrieved with
+        :py:func:`tensor()`. That representation can be modified, but in order to
+        apply it successfully to the texture, this method must also be called. In
+        short, this method will use the tensor representation to update the
+        texture's internal state.
+
+        When ``migrate`` is set to ``True`` on the CUDA and Metal backends, the
+        texture information is *fully* migrated to GPU texture memory to avoid
+        redundant storage.
+
+        Parameter ``migrate`` (bool):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.use_accel()
+
+        Are hardware texture units used for evaluation?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.value()
+
+        Return the texture data as an array object
+
+        Returns → drjit.llvm.ad.UInt8:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.wrap(self, pos)
+
+        Apply the configured texture wrapping mode to an integer position
+
+        Parameter ``pos`` (drjit.AnyArray):
+            *no description available*
+
+        Returns → drjit.AnyArray:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.wrap_mode()
+
+        Return the boundary handling mode for out-of-bounds lookups
+
+        Returns → drjit.WrapMode:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.writable()
+
+        Was this texture created so that kernels may store into it via
+        :py:func:`write()`?
+
+        Returns → bool:
+            *no description available*
+
+    .. py:method:: misuka.Texture3f8u.write(self, pos, value, active=Bool(True))
+
+        Store values into a writable hardware texture
+
+        The per-channel values in ``value`` are written to the texel addressed by
+        the integer coordinates ``pos``. The texture must have been created with
+        ``writable=True``.
+
+        This is a hardware texture store (a side effect): it is not differentiable,
+        and the written texture is meant for display / external sampling rather than
+        :py:func:`eval()`.
+
+        Parameter ``pos`` (drjit.llvm.ad.Array3u):
+            *no description available*
+
+        Parameter ``value`` (collections.abc.Sequence[drjit.llvm.ad.Float]):
+            *no description available*
+
+        Parameter ``active`` (drjit.llvm.ad.Bool | None):
+            Mask to specify active lanes.
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.TexturePtr
+
+    .. py:method:: misuka.TexturePtr.eval(self, si, active=True)
 
         Evaluate the texture at the given surface interaction
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An unpolarized spectral power distribution or reflectance value
 
-    .. py:method:: mitsuba.TexturePtr.eval_1(self, si, active=True)
+    .. py:method:: misuka.TexturePtr.eval_1(self, si, active=True)
 
         Monochromatic evaluation of the texture at the given surface
         interaction
@@ -22099,7 +23902,7 @@
         spectral upsampling). This is useful in parts of the renderer that
         encode scalar quantities using textures, e.g. a height field.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -22108,21 +23911,21 @@
         Returns → drjit.llvm.ad.Float:
             An scalar intensity or reflectance value
 
-    .. py:method:: mitsuba.TexturePtr.eval_1_grad(self, si, active=True)
+    .. py:method:: misuka.TexturePtr.eval_1_grad(self, si, active=True)
 
         Monochromatic evaluation of the texture gradient at the given surface
         interaction
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector2f`:
+        Returns → misuka.Vector2f:
             A (u,v) pair of intensity or reflectance value gradients
 
-    .. py:method:: mitsuba.TexturePtr.eval_3(self, si, active=True)
+    .. py:method:: misuka.TexturePtr.eval_3(self, si, active=True)
 
         Trichromatic evaluation of the texture at the given surface
         interaction
@@ -22133,23 +23936,23 @@
         of the renderer that encode 3D quantities using textures, e.g. a
         normal map.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             An trichromatic intensity or reflectance value
 
-    .. py:method:: mitsuba.TexturePtr.is_spatially_varying()
+    .. py:method:: misuka.TexturePtr.is_spatially_varying()
 
         Does this texture evaluation depend on the UV coordinates
 
         Returns → drjit.llvm.ad.Bool:
             *no description available*
 
-    .. py:method:: mitsuba.TexturePtr.max()
+    .. py:method:: misuka.TexturePtr.max()
 
         Return the maximum value of the spectrum
 
@@ -22162,7 +23965,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.TexturePtr.mean()
+    .. py:method:: misuka.TexturePtr.mean()
 
         Return the mean value of the spectrum over the support
         (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
@@ -22176,11 +23979,11 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.TexturePtr.pdf_position(self, p, active=True)
+    .. py:method:: misuka.TexturePtr.pdf_position(self, p, active=True)
 
         Returns the probability per unit area of sample_position()
 
-        Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``p`` (misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -22189,7 +23992,7 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.TexturePtr.pdf_spectrum(self, si, active=True)
+    .. py:method:: misuka.TexturePtr.pdf_spectrum(self, si, active=True)
 
         Evaluate the density function of the sample_spectrum() method as a
         probability per unit wavelength (in units of 1/nm).
@@ -22197,17 +24000,17 @@
         Not every implementation necessarily overrides this function. The
         default implementation throws an exception.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color0f`:
+        Returns → misuka.Color0f:
             A density value for each wavelength in ``si.wavelengths`` (hence
             the Wavelength type).
 
-    .. py:method:: mitsuba.TexturePtr.sample_position(self, sample, active=True)
+    .. py:method:: misuka.TexturePtr.sample_position(self, sample, active=True)
 
         Importance sample a surface position proportional to the overall
         spectral reflectance or intensity of the texture
@@ -22219,18 +24022,18 @@
         implementation, and the default implementation simply return the input
         sample (i.e. uniform sampling is used).
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample`` (misuka.Point2f):
             A 2D vector of uniform variates
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+        Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
             1. A texture-space position in the range :math:`[0, 1]^2`
 
         2. The associated probability per unit area in UV space
 
-    .. py:method:: mitsuba.TexturePtr.sample_spectrum(self, si, sample, active=True)
+    .. py:method:: misuka.TexturePtr.sample_spectrum(self, si, sample, active=True)
 
         Importance sample a set of wavelengths proportional to the spectrum
         defined at the given surface position
@@ -22239,24 +24042,24 @@
         a no-op when compiling non-spectral variants of Mitsuba. The default
         implementation throws an exception.
 
-        Parameter ``si`` (:py:obj:`mitsuba.SurfaceInteraction3f`):
+        Parameter ``si`` (misuka.SurfaceInteraction3f):
             An interaction record describing the associated surface position
 
-        Parameter ``sample`` (:py:obj:`mitsuba.Color0f`):
+        Parameter ``sample`` (misuka.Color0f):
             A uniform variate for each desired wavelength.
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color0f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Color0f, misuka.Color3f]:
             1. Set of sampled wavelengths specified in nanometers
 
         2. The Monte Carlo importance weight (Spectral power distribution
         value divided by the sampling density)
 
-.. py:class:: mitsuba.Thread
+.. py:class:: misuka.Thread
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Dummy thread class for backward compatibility
 
@@ -22268,17 +24071,9 @@
     .. py:method:: __init__()
 
 
-.. py:class:: mitsuba.Timer
+.. py:class:: misuka.Timer
 
-    .. py:method:: mitsuba.Timer.begin_stage(self, arg)
-
-        Parameter ``arg`` (str, /):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.Timer.end_stage(self, arg)
+    .. py:method:: misuka.Timer.begin_stage(self, arg)
 
         Parameter ``arg`` (str, /):
             *no description available*
@@ -22286,17 +24081,25 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.Timer.reset()
+    .. py:method:: misuka.Timer.end_stage(self, arg)
+
+        Parameter ``arg`` (str, /):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.Timer.reset()
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Timer.value()
+    .. py:method:: misuka.Timer.value()
 
         Returns → int:
             *no description available*
 
-.. py:class:: mitsuba.TransportMode
+.. py:class:: misuka.TransportMode
 
     Specifies the transport mode when sampling or evaluating a scattering
     function
@@ -22311,7 +24114,7 @@
 
         Importance transport
 
-.. py:class:: mitsuba.TraversalCallback
+.. py:class:: misuka.TraversalCallback
 
     Abstract class providing an interface for traversing scene graphs
 
@@ -22340,7 +24143,7 @@
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.TraversalCallback.put(self, name, value, flags)
+    .. py:method:: misuka.TraversalCallback.put(self, name, value, flags)
 
         Unified method to register both objects and values with the traversal callback
 
@@ -22356,17 +24159,17 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.TraversalCallback.put_object(self, name, obj, flags)
+    .. py:method:: misuka.TraversalCallback.put_object(self, name, obj, flags)
 
         Register an object with the traversal callback.
 
         .. deprecated:: 3.7.0
-           Use :py:meth:`~:py:obj:`mitsuba.TraversalCallback.put`` instead.
+           Use :py:meth:`~misuka.TraversalCallback.put` instead.
 
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``obj`` (:py:obj:`mitsuba.Object`):
+        Parameter ``obj`` (misuka.Object):
             *no description available*
 
         Parameter ``flags`` (int):
@@ -22375,12 +24178,12 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.TraversalCallback.put_value(self, name, value, flags)
+    .. py:method:: misuka.TraversalCallback.put_value(self, name, value, flags)
 
         Register a value with the traversal callback.
 
         .. deprecated:: 3.7.0
-           Use :py:meth:`~:py:obj:`mitsuba.TraversalCallback.put`` instead.
+           Use :py:meth:`~misuka.TraversalCallback.put` instead.
 
         Parameter ``name`` (str):
             *no description available*
@@ -22394,78 +24197,78 @@
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.UInt
+.. py:class:: misuka.UInt
 
-.. py:class:: mitsuba.UInt64
+.. py:class:: misuka.UInt64
 
-.. py:class:: mitsuba.UInt8
+.. py:class:: misuka.UInt8
 
-.. py:class:: mitsuba.Vector0d
+.. py:class:: misuka.Vector0d
 
-.. py:class:: mitsuba.Vector0f
+.. py:class:: misuka.Vector0f
 
-.. py:class:: mitsuba.Vector0i
+.. py:class:: misuka.Vector0i
 
-.. py:class:: mitsuba.Vector0u
+.. py:class:: misuka.Vector0u
 
-.. py:class:: mitsuba.Vector1d
+.. py:class:: misuka.Vector1d
 
-.. py:class:: mitsuba.Vector1f
+.. py:class:: misuka.Vector1f
 
-.. py:class:: mitsuba.Vector1i
+.. py:class:: misuka.Vector1i
 
-.. py:class:: mitsuba.Vector1u
+.. py:class:: misuka.Vector1u
 
-.. py:class:: mitsuba.Vector2d
+.. py:class:: misuka.Vector2d
 
-.. py:class:: mitsuba.Vector2f
+.. py:class:: misuka.Vector2f
 
-.. py:class:: mitsuba.Vector2i
+.. py:class:: misuka.Vector2i
 
-.. py:class:: mitsuba.Vector2u
+.. py:class:: misuka.Vector2u
 
-.. py:class:: mitsuba.Vector3d
+.. py:class:: misuka.Vector3d
 
-.. py:class:: mitsuba.Vector3f
+.. py:class:: misuka.Vector3f
 
-.. py:class:: mitsuba.Vector3i
+.. py:class:: misuka.Vector3i
 
-.. py:class:: mitsuba.Vector3u
+.. py:class:: misuka.Vector3u
 
-.. py:class:: mitsuba.Vector4d
+.. py:class:: misuka.Vector4d
 
-.. py:class:: mitsuba.Vector4f
+.. py:class:: misuka.Vector4f
 
-.. py:class:: mitsuba.Vector4i
+.. py:class:: misuka.Vector4i
 
-.. py:class:: mitsuba.Vector4u
+.. py:class:: misuka.Vector4u
 
-.. py:class:: mitsuba.Version
+.. py:class:: misuka.Version
 
-    .. py:property:: mitsuba.Version.major_version
-
-        (self) -> int
-
-    .. py:property:: mitsuba.Version.minor_version
+    .. py:property:: misuka.Version.major_version
 
         (self) -> int
 
-    .. py:property:: mitsuba.Version.patch_version
+    .. py:property:: misuka.Version.minor_version
 
         (self) -> int
 
-.. py:class:: mitsuba.Volume
+    .. py:property:: misuka.Version.patch_version
 
-    Base class: :py:obj:`mitsuba.Object`
+        (self) -> int
 
-    .. py:method:: mitsuba.Volume.bbox()
+.. py:class:: misuka.Volume
+
+    Base class: misuka.Object
+
+    .. py:method:: misuka.Volume.bbox()
 
         Returns the bounding box of the volume
 
-        Returns → :py:obj:`mitsuba.ScalarBoundingBox3f`:
+        Returns → misuka.ScalarBoundingBox3f:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.channel_count()
+    .. py:method:: misuka.Volume.channel_count()
 
         Returns the number of channels stored in the volume
 
@@ -22475,25 +24278,25 @@
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval(self, it, active=True)
+    .. py:method:: misuka.Volume.eval(self, it, active=True)
 
         Evaluate the volume at the given surface interaction, with color
         processing.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Color3f`:
+        Returns → misuka.Color3f:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval_1(self, it, active=True)
+    .. py:method:: misuka.Volume.eval_1(self, it, active=True)
 
         Evaluate this volume as a single-channel quantity.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -22502,27 +24305,27 @@
         Returns → drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval_3(self, it, active=True)
+    .. py:method:: misuka.Volume.eval_3(self, it, active=True)
 
         Evaluate this volume as a three-channel quantity with no color
         processing (e.g. velocity field).
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → :py:obj:`mitsuba.Vector3f`:
+        Returns → misuka.Vector3f:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval_6(self, it, active=True)
+    .. py:method:: misuka.Volume.eval_6(self, it, active=True)
 
         Evaluate this volume as a six-channel quantity with no color
         processing This interface is specifically intended to encode the
         parameters of an SGGX phase function.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -22531,21 +24334,21 @@
         Returns → list[drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval_gradient(self, it, active=True)
+    .. py:method:: misuka.Volume.eval_gradient(self, it, active=True)
 
         Evaluate the volume at the given surface interaction, and compute the
         gradients of the linear interpolant as well.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Color3f`, :py:obj:`mitsuba.Vector3f`]:
+        Returns → tuple[misuka.Color3f, misuka.Vector3f]:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.eval_n(self, it, active=True)
+    .. py:method:: misuka.Volume.eval_n(self, it, active=True)
 
         Evaluate this volume as a n-channel float quantity
 
@@ -22553,7 +24356,7 @@
         parameters. Pointer allocation/deallocation must be performed by the
         caller.
 
-        Parameter ``it`` (:py:obj:`mitsuba.Interaction3f`):
+        Parameter ``it`` (misuka.Interaction3f):
             *no description available*
 
         Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -22562,14 +24365,14 @@
         Returns → list[drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.max()
+    .. py:method:: misuka.Volume.max()
 
         Returns the maximum value of the volume over all dimensions.
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.max_per_channel()
+    .. py:method:: misuka.Volume.max_per_channel()
 
         In the case of a multi-channel volume, this function returns the
         maximum value for each channel.
@@ -22579,26 +24382,26 @@
         Returns → list[float]:
             *no description available*
 
-    .. py:method:: mitsuba.Volume.resolution()
+    .. py:method:: misuka.Volume.resolution()
 
         Returns the resolution of the volume, assuming that it is based on a
         discrete representation.
 
         The default implementation returns ``(1, 1, 1)``
 
-        Returns → :py:obj:`mitsuba.ScalarVector3i`:
+        Returns → misuka.ScalarVector3i:
             *no description available*
 
-.. py:class:: mitsuba.VolumeGrid
+.. py:class:: misuka.VolumeGrid
 
-    Base class: :py:obj:`mitsuba.Object`
+    Base class: misuka.Object
 
     Overloaded function.
 
-    1. ``__init__(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
+    1. ``__init__(self, path: misuka.filesystem.path) -> None``
 
 
-    2. ``__init__(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+    2. ``__init__(self, stream: misuka.Stream) -> None``
 
 
     3. ``__init__(self, array: ndarray[dtype=float32, order='C', device='cpu'], compute_max: bool = True) -> None``
@@ -22609,35 +24412,35 @@
 
     Initialize a VolumeGrid from a drjit tensor
 
-    .. py:method:: mitsuba.VolumeGrid.buffer_size()
+    .. py:method:: misuka.VolumeGrid.buffer_size()
 
         Return the volume grid size in bytes (excluding metadata)
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.bytes_per_voxel()
+    .. py:method:: misuka.VolumeGrid.bytes_per_voxel()
 
         Return the number bytes of storage used per voxel
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.channel_count()
+    .. py:method:: misuka.VolumeGrid.channel_count()
 
         Return the number of channels
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.max()
+    .. py:method:: misuka.VolumeGrid.max()
 
         Return the precomputed maximum over the volume grid
 
         Returns → float:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.max_per_channel()
+    .. py:method:: misuka.VolumeGrid.max_per_channel()
 
         Return the precomputed maximum over the volume grid per channel
 
@@ -22646,7 +24449,7 @@
         Returns → list[float]:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.set_max(self, arg)
+    .. py:method:: misuka.VolumeGrid.set_max(self, arg)
 
         Set the precomputed maximum over the volume grid
 
@@ -22656,7 +24459,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.set_max_per_channel(self, arg)
+    .. py:method:: misuka.VolumeGrid.set_max_per_channel(self, arg)
 
         Set the precomputed maximum over the volume grid per channel
 
@@ -22668,37 +24471,37 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.size()
+    .. py:method:: misuka.VolumeGrid.size()
 
         Return the resolution of the voxel grid
 
-        Returns → :py:obj:`mitsuba.ScalarVector3u`:
+        Returns → misuka.ScalarVector3u:
             *no description available*
 
-    .. py:method:: mitsuba.VolumeGrid.write(self, stream)
+    .. py:method:: misuka.VolumeGrid.write(self, stream)
 
         Overloaded function.
 
-        1. ``write(self, stream: :py:obj:`mitsuba.Stream`) -> None``
+        1. ``write(self, stream: misuka.Stream) -> None``
 
         Write an encoded form of the bitmap to a binary volume file
 
         Parameter ``path``:
             Target file name (expected to end in ".vol")
 
-        2. ``write(self, path: :py:obj:`mitsuba.filesystem.path`) -> None``
+        2. ``write(self, path: misuka.filesystem.path) -> None``
 
         Write an encoded form of the volume grid to a stream
 
-        Parameter ``stream`` (:py:obj:`mitsuba.Stream`):
+        Parameter ``stream`` (misuka.Stream):
             Target stream that will receive the encoded output
 
         Returns → None:
             *no description available*
 
-.. py:class:: mitsuba.ZStream
+.. py:class:: misuka.ZStream
 
-    Base class: :py:obj:`mitsuba.Stream`
+    Base class: misuka.Stream
 
     Transparent compression/decompression stream based on ``zlib``.
 
@@ -22711,33 +24514,33 @@
         This new instance takes ownership of the child stream. The child
         stream must outlive the ZStream.
 
-        Parameter ``child_stream`` (:py:obj:`mitsuba.Stream`):
+        Parameter ``child_stream`` (misuka.Stream):
             *no description available*
 
-        Parameter ``stream_type`` (:py:obj:`mitsuba.ZStream.EStreamType`):
+        Parameter ``stream_type`` (misuka.ZStream.EStreamType):
             *no description available*
 
         Parameter ``level`` (int):
             *no description available*
 
         
-    .. py:method:: mitsuba.ZStream.child_stream()
+    .. py:method:: misuka.ZStream.child_stream()
 
         Returns the child stream of this compression stream
 
         Returns → object:
             *no description available*
 
-.. py:class:: mitsuba.ad.BaseGuidingDistr
+.. py:class:: misuka.ad.BaseGuidingDistr
 
-    .. py:method:: mitsuba.ad.BaseGuidingDistr.sample()
+    .. py:method:: misuka.ad.BaseGuidingDistr.sample()
 
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
-.. py:class:: mitsuba.ad.GridDistr
+.. py:class:: misuka.ad.GridDistr
 
-    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+    Base class: misuka.ad.guiding.BaseGuidingDistr
 
     Regular grid guiding distribution.
 
@@ -22758,23 +24561,23 @@
             `Debug` log level.
 
         
-    .. py:method:: mitsuba.ad.GridDistr.get_cell_array()
+    .. py:method:: misuka.ad.GridDistr.get_cell_array()
 
         Returns the 3D cell index corresponding to the 1D input index.
 
         With `index_array`=dr.arange(mi.UInt32, self.num_cells), the output
         array of this function is [[0, 0, 0], [0, 0, 1], ..., [Nx-1, Ny-1, Nz-1]].
 
-    .. py:method:: mitsuba.ad.GridDistr.set_mass()
+    .. py:method:: misuka.ad.GridDistr.set_mass()
 
         Sets the grid's density with the flat-1D input mass
 
-    .. py:method:: mitsuba.ad.GridDistr.sample()
+    .. py:method:: misuka.ad.GridDistr.sample()
 
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
-.. py:class:: mitsuba.ad.LargeSteps
+.. py:class:: misuka.ad.LargeSteps
 
     Implementation of the algorithm described in the paper "Large Steps in
     Inverse Rendering of Geometry" (Nicolet et al. 2021).
@@ -22796,33 +24599,32 @@
 
         Build the system matrix and its Cholesky factorization.
         
-        Parameter ``verts`` (``mitsuba.Float``):
+        Parameter ``verts`` (``misuka.Float``):
             Vertex coordinates of the mesh.
         
-        Parameter ``faces`` (``mitsuba.UInt``):
+        Parameter ``faces`` (``misuka.UInt``):
             Face indices of the mesh.
         
         Parameter ``lambda_`` (``float``):
             The hyper parameter λ. This controls how much gradients are diffused
             on the surface. this value should increase with the tesselation of
             the mesh.
-        
 
         
-    .. py:method:: mitsuba.ad.LargeSteps.to_differential()
+    .. py:method:: misuka.ad.LargeSteps.to_differential()
 
         Convert vertex coordinates to their differential form: u = (I + λL) v.
 
         This method typically only needs to be called once per mesh, to obtain
         the latent variable before optimization.
 
-        Parameter ``v`` (``mitsuba.Float``):
+        Parameter ``v`` (``misuka.Float``):
             Vertex coordinates of the mesh.
 
-        Returns ``mitsuba.Float`:
+        Returns ``misuka.Float`:
             Differential form of v.
 
-    .. py:method:: mitsuba.ad.LargeSteps.from_differential()
+    .. py:method:: misuka.ad.LargeSteps.from_differential()
 
         Convert differential coordinates back to their cartesian form: v = (I +
         λL)⁻¹ u.
@@ -22833,22 +24635,22 @@
         This method is typically called at each iteration of the optimization,
         to update the mesh coordinates before rendering.
 
-        Parameter ``u`` (``mitsuba.Float``):
+        Parameter ``u`` (``misuka.Float``):
             Differential form of v.
 
-        Returns ``mitsuba.Float`:
+        Returns ``misuka.Float`:
             Vertex coordinates of the mesh.
 
-.. py:function:: mitsuba.ad.Mapping(overloaded)
+.. py:function:: misuka.ad.Mapping(overloaded)
 
 
-.. py:class:: mitsuba.ad.OcSpaceDistr
+.. py:class:: misuka.ad.OcSpaceDistr
 
-    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+    Base class: misuka.ad.guiding.BaseGuidingDistr
 
     Octree space partitioned distribution.
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.aabbs(buffer, node_idx)
+    .. py:method:: misuka.ad.OcSpaceDistr.aabbs(buffer, node_idx)
 
         Returns the front bottom left corner and back top right corner points
         of the AABB with index `node_idx`.
@@ -22859,34 +24661,34 @@
         Parameter ``node_idx`` (~drjit.llvm.ad.UInt):
             *no description available*
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.split_offset()
+    .. py:method:: misuka.ad.OcSpaceDistr.split_offset()
 
         Computes the node offset for a split.
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.split(buffer, aabb_min, aabb_max, aabb_middle, node_idx)
+    .. py:method:: misuka.ad.OcSpaceDistr.split(buffer, aabb_min, aabb_max, aabb_middle, node_idx)
 
         Splits an AABB into 8 sub-nodes. The results are written to `buffer`.
 
         Parameter ``buffer`` (~drjit.llvm.ad.Float):
             *no description available*
 
-        Parameter ``aabb_min`` (~:py:obj:`mitsuba.Point3f`):
+        Parameter ``aabb_min`` (~misuka.Point3f):
             *no description available*
 
-        Parameter ``aabb_max`` (~:py:obj:`mitsuba.Point3f`):
+        Parameter ``aabb_max`` (~misuka.Point3f):
             *no description available*
 
-        Parameter ``aabb_middle`` (~:py:obj:`mitsuba.Point3f`):
+        Parameter ``aabb_middle`` (~misuka.Point3f):
             *no description available*
 
         Parameter ``node_idx`` (~drjit.llvm.ad.UInt):
             *no description available*
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.construct_octree()
+    .. py:method:: misuka.ad.OcSpaceDistr.construct_octree()
 
         Octree construction/partitioning for the given `input` points.
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.estimate_mass_in_leaves(log=False)
+    .. py:method:: misuka.ad.OcSpaceDistr.estimate_mass_in_leaves(log=False)
 
         Evaluates `extra_spc` random samples in each leaf to compute an average
         mass per leaf.
@@ -22894,67 +24696,67 @@
         Parameter ``log`` (bool):
             *no description available*
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.set_points()
+    .. py:method:: misuka.ad.OcSpaceDistr.set_points()
 
         Builds an octree from a set of points and their corresponding mass
 
-    .. py:method:: mitsuba.ad.OcSpaceDistr.sample()
+    .. py:method:: misuka.ad.OcSpaceDistr.sample()
 
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
-.. py:class:: mitsuba.ad.ProjectiveDetail
+.. py:class:: misuka.ad.ProjectiveDetail
 
     Class holding implementation details of various operations needed by
     projective-sampling/path-space style integrators.
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.init_primarily_visible_silhouette(scene, sensor)
+    .. py:method:: misuka.ad.ProjectiveDetail.init_primarily_visible_silhouette(scene, sensor)
 
         Precompute the silhouette of the scene as seen from the sensor and store
         the result in this python class.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.sample_primarily_visible_silhouette(scene, viewpoint, sample2, active)
+    .. py:method:: misuka.ad.ProjectiveDetail.sample_primarily_visible_silhouette(scene, viewpoint, sample2, active)
 
         Sample a primarily visible silhouette point as seen from the sensor.
         Returns a silhouette sample struct.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``viewpoint`` (~:py:obj:`mitsuba.Point3f`):
+        Parameter ``viewpoint`` (~misuka.Point3f):
             *no description available*
 
-        Parameter ``sample2`` (~:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (~misuka.Point2f):
             *no description available*
 
         Parameter ``active`` (~drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → ~:py:obj:`mitsuba.SilhouetteSample3f`:
+        Returns → ~misuka.SilhouetteSample3f:
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.sensor_jacobian(sensor, ss)
+    .. py:method:: misuka.ad.ProjectiveDetail.sensor_jacobian(sensor, ss)
 
         The silhouette sample `ss` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``ss`` (~:py:obj:`mitsuba.SilhouetteSample3f`):
+        Parameter ``ss`` (~misuka.SilhouetteSample3f):
             *no description available*
 
         Returns → ~drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.eval_primary_silhouette_radiance_difference()
+    .. py:method:: misuka.ad.ProjectiveDetail.eval_primary_silhouette_radiance_difference()
 
         Compute the difference in radiance between two rays that hit and miss a
         silhouette point ``ss.p`` viewed from ``viewpoint``.
@@ -22962,47 +24764,47 @@
         Returns → ~drjit.llvm.ad.Float:
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.get_projected_points(scene, sensor, sampler)
+    .. py:method:: misuka.ad.ProjectiveDetail.get_projected_points(scene, sensor, sampler)
 
         Helper function to project seed rays to obtain silhouette segments and
         map them to boundary sample space.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+        Parameter ``sampler`` (~misuka.Sampler):
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette(scene, sensor, seed)
+    .. py:method:: misuka.ad.ProjectiveDetail.init_indirect_silhouette(scene, sensor, seed)
 
         Initialize the guiding structure for indirect discontinuous derivatives
         based on the guiding mode. The result is stored in this python class.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (~drjit.llvm.ad.UInt):
             *no description available*
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_grid_unif()
+    .. py:method:: misuka.ad.ProjectiveDetail.init_indirect_silhouette_grid_unif()
 
         Guiding structure initialization for uniform grid sampling.
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_grid_proj()
+    .. py:method:: misuka.ad.ProjectiveDetail.init_indirect_silhouette_grid_proj()
 
         Guiding structure initialization for projective grid sampling.
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.init_indirect_silhouette_octree()
+    .. py:method:: misuka.ad.ProjectiveDetail.init_indirect_silhouette_octree()
 
         Guiding structure initialization for octree-based guiding.
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.eval_indirect_integrand(scene, sensor, sample, sampler, preprocess, active=True)
+    .. py:method:: misuka.ad.ProjectiveDetail.eval_indirect_integrand(scene, sensor, sample, sampler, preprocess, active=True)
 
         Evaluate the indirect discontinuous derivatives integral for a given
         sample point in boundary sample space.
@@ -23023,16 +24825,16 @@
             The UV coordinates on the sensor film to splat the result to. If
             ``preprocess`` is false, this coordinate is not used.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``sample`` (~:py:obj:`mitsuba.Vector3f`):
+        Parameter ``sample`` (~misuka.Vector3f):
             *no description available*
 
-        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+        Parameter ``sampler`` (~misuka.Sampler):
             *no description available*
 
         Parameter ``preprocess`` (bool):
@@ -23041,59 +24843,121 @@
         Parameter ``active`` (~drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-    .. py:class:: mitsuba.ad.ProjectiveDetail.ProjectOperation
+    .. py:class:: misuka.ad.ProjectiveDetail.ProjectOperation
 
-                Projection operation takes a seed ray as input and outputs a
-                
+        Projection operation takes a seed ray as input and outputs a
+
         ef SilhouetteSample3f object.
-                
 
-    .. py:method:: mitsuba.ad.ProjectiveDetail.ProjectOperation.eval()
+    .. py:method:: misuka.ad.ProjectiveDetail.ProjectOperation.eval()
 
         Dispatches the seed surface interaction object to the appropriate
         shape's projection algorithm.
 
-.. py:class:: mitsuba.ad.UniformDistr
+.. py:class:: misuka.ad.UniformDistr
 
-    Base class: :py:obj:`mitsuba.ad.guiding.BaseGuidingDistr`
+    Base class: misuka.ad.guiding.BaseGuidingDistr
 
-    .. py:method:: mitsuba.ad.UniformDistr.sample()
+    .. py:method:: misuka.ad.UniformDistr.sample()
 
         Return a sample in U^3 from the stored guiding distribution and its
         reciprocal density.
 
-.. py:class:: mitsuba.ad.integrators.common.ADIntegrator
+.. py:class:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator
 
-    Base class: :py:obj:`mitsuba.CppADIntegrator`
+    Base class: misuka.ad.integrators.common.RBIntegrator
 
-    Abstract base class of numerous differentiable integrators in Mitsuba
+    .. _integrator-acoustic_ad:
+
+    Acoustic AD Integrator (:monosp:`acoustic_ad`)
+    ---------------------------------------------------
 
     .. pluginparameters::
 
+     * - speed_of_sound
+         - |float|
+         - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+         - |float|
+         - Stopping criterion for the maximum propagation time in seconds.
+           Paths whose accumulated travel distance exceeds ``max_time *
+           speed_of_sound`` are terminated.
+
      * - max_depth
          - |int|
-         - Specifies the longest path depth in the generated output image (where -1
+         - Specifies the longest path depth (where -1
            corresponds to :math:`\infty`). A value of 1 will only render directly
-           visible light sources. 2 will lead to single-bounce (direct-only)
-           illumination, and so on. (Default: 6)
+           audible sound sources. 2 will lead to first-order reflections, and so
+           on. (Default: -1)
+
      * - rr_depth
          - |int|
-         - Specifies the path depth, at which the implementation will begin to use
-           the *russian roulette* path termination criterion. For example, if set to
-           1, then path generation many randomly cease after encountering directly
-           visible surfaces. (Default: 5)
+         - Russian roulette path termination is not yet supported. Setting this
+           to any value other than the default raises an error. Use
+           ``max_energy_loss`` instead. (Default: 100000)
+
+     * - max_energy_loss
+         - |float|
+         - Maximum energy loss in dB before a path is terminated. Set to -1 to
+           disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+         - |bool|
+         - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+           contribution from sound sources. (Default: no, i.e. |false|)
+
+     * - is_detached
+         - |bool|
+         - Whether the sampling strategy should be detached from the optimized
+           parameters. (Default: |true|)
+
+     * - track_time_derivatives
+         - |bool|
+         - Whether to track derivatives with respect to time/distance.
+           (Default: |true|)
+
+    This is the base class for differentiable acoustic integrators. It extends
+    the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
+    differentiation (AD) support, enabling gradient-based optimization of scene
+    parameters such as material properties.
+
+    Like the acoustic path tracer, it simulates sound propagation by tracing
+    paths from the sensor (microphone) to the emitters (sound sources), and
+    computes an energy-based impulse response (echogram) by accumulating path
+    contributions into time bins determined by the total path length and the
+    speed of sound.
+
+    This class is not meant to be used in practice, but mostly exists for
+    debugging purposes and as a reference implementation.
+    Instead, use :ref:`acoustic_prb <integrator-acoustic_prb>` for
+    differentiable rendering of static scenes or
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
+    non-static scenes.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
 
         Overloaded function.
 
-        1. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: :py:obj:`mitsuba.Sensor`, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        1. ``render(self, scene: misuka.Scene, sensor: misuka.Sensor, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -23127,7 +24991,7 @@
             (``develop=true``) or modified film (``develop=false``) represent
             the rendering task as an unevaluated computation graph.
 
-        2. ``render(self, scene: :py:obj:`mitsuba.Scene`, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+        2. ``render(self, scene: misuka.Scene, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
 
         Render the scene
 
@@ -23135,82 +24999,40 @@
         overload. It accepts a sensor *index* instead and renders the scene
         using sensor 0 by default.
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
-            *no description available*
-
-        Returns → drjit.llvm.ad.TensorXf:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
-
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-            *no description available*
-
-        Parameter ``params`` (object):
-            *no description available*
-
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
-            *no description available*
-
-        Parameter ``seed`` (drjit.llvm.ad.UInt):
-            *no description available*
-
-        Parameter ``spp`` (int):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.sample_rays(scene, sensor, sampler)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
-            *no description available*
-
-        Parameter ``params`` (object):
-            *no description available*
-
-        Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
-            *no description available*
-
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
-            *no description available*
-
-        Parameter ``seed`` (drjit.llvm.ad.UInt):
-            *no description available*
-
-        Parameter ``spp`` (int):
-            *no description available*
-
-        Returns → None:
-            *no description available*
-
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.sample_rays(scene, sensor, sampler)
-
-        Sample a 2D grid of primary rays for a given sensor
+        Sample a set of primary rays for a given sensor
 
         Returns a tuple containing
 
         - the set of sampled rays
         - a ray weight (usually 1 if the sensor's response function is sampled
           perfectly)
-        - the continuous 2D image-space positions associated with each ray
+        - the continuous positions on the Imageblock associated with each ray.
+          The first value contains the frequency index, the second value is not used.
 
-        Parameter ``scene`` (mi.Scene):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (mi.Sensor):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``sampler`` (mi.Sampler):
+        Parameter ``sampler`` (~misuka.Sampler):
             *no description available*
 
-        Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+        Returns → ~typing.Tuple[~misuka.RayDifferential3f, ~misuka.Color3f, ~misuka.Vector2f, ~drjit.llvm.ad.Float]:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
 
         Given a sensor and a desired number of samples per pixel, this function
         computes the necessary number of Monte Carlo samples and then suitably
@@ -23235,10 +25057,10 @@
             primal rendering step. The value provided within the original scene
             specification takes precedence if ``spp=0``.
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``seed`` (~drjit.llvm.ad.UInt):
+        Parameter ``seed`` (int):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -23247,7 +25069,7 @@
         Parameter ``aovs`` (list):
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active)
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.sample()
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -23320,6 +25142,920 @@
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
 
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+
+        Evaluates the forward-mode derivative of the rendering step.
+
+        Forward-mode differentiation propagates gradients from scene parameters
+        through the simulation, producing a *gradient image* (i.e., the derivative
+        of the rendered image with respect to those scene parameters). The gradient
+        image is very helpful for debugging, for example to inspect the gradient
+        variance or visualize the region of influence of a scene parameter. It is
+        not particularly useful for simultaneous optimization of many parameters,
+        since multiple differentiation passes are needed to obtain separate
+        derivatives for each scene parameter. See ``Integrator.render_backward()``
+        for an efficient way of obtaining all parameter derivatives at once, or
+        simply use the ``mi.render()`` abstraction that hides both
+        ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+        a unified interface.
+
+        Before calling this function, you must first enable gradient tracking and
+        furthermore associate concrete input gradients with one or more scene
+        parameters, or the function will just return a zero-valued gradient image.
+        This is typically done by invoking ``dr.enable_grad()`` and
+        ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
+        that can be obtained obtained via a call to
+        ``mi.traverse()``.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_forward()`` will not do this for you). Furthermore,
+           ``dr.set_grad(...)`` must be used to associate specific gradient values
+           with each parameter.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~misuka.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → ~drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~misuka.Scene):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:function:: misuka.ad.integrators.acoustic_ad.Callable(overloaded)
+
+
+    Callable[[int], str] signifies a function that takes a single
+    parameter of type int and returns a str.
+
+    The subscription syntax must always be used with exactly two
+    values: the argument list and the return type.
+    The argument list must be a list of types, a ParamSpec,
+    Concatenate or ellipsis. The return type must be a single type.
+
+    There is no syntax to indicate optional or keyword arguments;
+    such function types are rarely used as callback types.
+
+.. py:class:: misuka.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator
+
+    Base class: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator
+
+    .. _integrator-acoustic_ad_threepoint:
+
+    Acoustic AD Three-Point Form (:monosp:`acoustic_ad_threepoint`)
+    ---------------------------------------------------------------
+
+    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
+    reparametrization that can also handle **non-static scenes** with moving
+    geometry.
+
+    Rather than sampling directions in :math:`\mathbb{H}^2`, this integrator
+    samples surface points in the scene (which inherently move with the
+    geometry). This reparametrization:
+
+    1. Removes most of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    This variant merely exists for debugging purposes and as a reference
+    implementation. For differentiable rendering of non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_ad_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (misuka.Properties, /):
+            *no description available*
+
+
+    .. py:method:: misuka.ad.integrators.acoustic_ad_threepoint.AcousticADThreePointIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+.. py:class:: misuka.ad.integrators.acoustic_prb.AcousticPRBIntegrator
+
+    Base class: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator
+
+    .. _integrator-acoustic_prb:
+
+    Acoustic Path Replay Backpropagation (:monosp:`acoustic_prb`)
+    -------------------------------------------------------------
+
+    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator works analogously to the
+    :ref:`acoustic path tracer <integrator-acoustic_path>`, but includes
+    additional gradient tracking. It uses time-resolved path replay
+    backpropagation (PRB) to efficiently propagate gradients with respect to
+    material properties, using constant memory and linear time complexity.
+
+    This integrator is only suitable for **static scenes** (i.e., scenes with
+    no moving objects). For non-static scenes, use
+    :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`
+    instead.
+
+    .. warning:: This integrator is biased when used with moving geometry.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (misuka.Properties, /):
+            *no description available*
+
+
+    .. py:method:: misuka.ad.integrators.acoustic_prb.AcousticPRBIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+    .. py:method:: misuka.ad.integrators.acoustic_prb.AcousticPRBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~misuka.Scene):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator
+
+    Base class: misuka.ad.integrators.acoustic_ad.AcousticADIntegrator
+
+    .. _integrator-acoustic_prb_threepoint:
+
+    Acoustic PRB Three-Point Form (:monosp:`acoustic_prb_threepoint`)
+    -----------------------------------------------------------------
+
+    Inherits all parameters from :ref:`acoustic_ad <integrator-acoustic_ad>`.
+
+    This integrator behaves similarly to
+    :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
+    **non-static scenes** with moving geometry. Moving geometry causes two
+    challenges:
+
+    1. Moving geometry can cause discontinuities in the integrand whose
+       locations depend on the scene parameters -- for example, when a small
+       displacement of a surface causes a ray to start or stop intersecting it.
+       Even if the derivative of the integral with respect to a scene parameter
+       is continuous, it cannot be estimated by differentiating the individual
+       rays that sample the integrand, because those local derivatives are
+       discontinuous, making them incompatible with automatic differentiation.
+
+    2. Moving geometry influences the path geometry. When the ray sampling
+       strategy is detached from the optimized parameters, local changes of the
+       scene geometry have a global effect on all successive path vertices.
+       Standard PRB methods do not account for this and only consider the
+       influence on the next (few) ray segments.
+
+    This integrator handles both problems by reparametrizing the integral.
+    Rather than sampling directions in :math:`\mathbb{H}^2`, it samples
+    surface points in the scene (which inherently move with the geometry).
+    This:
+
+    1. Removes some of the discontinuities in the rendering integral, leaving
+       discontinuities only where visibility in the scene changes (e.g., at
+       shadow boundaries).
+    2. Ensures that the influence of the geometry on the ray path is local,
+       i.e., only affecting immediate neighbor vertices on a path.
+
+    .. note:: This integrator does not handle participating media or polarized
+       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
+       type.
+
+    .. tabs::
+        .. code-tab:: python
+
+            'type': 'acoustic_prb_threepoint',
+            'max_time': 1.0,
+            'speed_of_sound': 343.0,
+            'max_depth': -1,
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (misuka.Properties, /):
+            *no description available*
+
+
+    .. py:method:: misuka.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator.sample()
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
+
+    .. py:method:: misuka.ad.integrators.acoustic_prb_threepoint.AcousticPRBThreePointIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        Reverse-mode differentiation transforms image-space gradients into scene
+        parameter gradients, enabling simultaneous optimization of scenes with
+        millions of free parameters. The function is invoked with an input
+        *gradient image* (``grad_in``) and transforms and accumulates these into
+        the gradient arrays of scene parameters that previously had gradient
+        tracking enabled.
+
+        Before calling this function, you must first enable gradient tracking for
+        one or more scene parameters, or the function will not do anything. This is
+        typically done by invoking ``dr.enable_grad()`` on elements of the
+        ``SceneParameters`` data structure that can be obtained obtained via a call
+        to ``mi.traverse()``. Use ``dr.grad()`` to query the
+        resulting gradients of these parameters once ``render_backward()`` returns.
+
+        Parameter ``scene`` (``mi.Scene``):
+            The scene to be rendered differentially.
+
+        Parameter ``params`` (~typing.Any):
+           An arbitrary container of scene parameters that should receive
+           gradients. Typically this will be an instance of type
+           ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it
+           could also be a Python list/dict/object tree (DrJit will traverse it
+           to find all parameters). Gradient tracking must be explicitly enabled
+           for each of these parameters using ``dr.enable_grad(params['parameter_name'])``
+           (i.e. ``render_backward()`` will not do this for you).
+
+        Parameter ``grad_in`` (``mi.TensorXf``):
+            Gradient image that should be back-propagated.
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor or a (sensor index) to render the scene from a
+            different viewpoint. By default, the first sensor within the scene
+            description (index 0) will take precedence.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g., an
+            increasing sequence) if subsequent calls should produce statistically
+            independent images (e.g. to de-correlate gradient-based optimization
+            steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            differential rendering step. The value provided within the original
+            scene specification takes precedence if ``spp=0``.
+
+        Parameter ``scene`` (~misuka.Scene):
+            *no description available*
+
+        Parameter ``grad_in`` (~drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (int | ~misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (int):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+.. py:class:: misuka.ad.integrators.common.ADIntegrator
+
+    Base class: misuka.CppADIntegrator
+
+    Abstract base class of numerous differentiable integrators in Mitsuba
+
+    .. pluginparameters::
+
+     * - max_depth
+         - |int|
+         - Specifies the longest path depth in the generated output image (where -1
+           corresponds to :math:`\infty`). A value of 1 will only render directly
+           visible light sources. 2 will lead to single-bounce (direct-only)
+           illumination, and so on. (Default: 6)
+     * - rr_depth
+         - |int|
+         - Specifies the path depth, at which the implementation will begin to use
+           the *russian roulette* path termination criterion. For example, if set to
+           1, then path generation many randomly cease after encountering directly
+           visible surfaces. (Default: 5)
+
+    .. py:method:: __init__(self, arg)
+
+        Parameter ``arg`` (misuka.Properties, /):
+            *no description available*
+
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.render(self, scene, sensor, seed=0, spp=0, develop=True, evaluate=True)
+
+        Overloaded function.
+
+        1. ``render(self, scene: misuka.Scene, sensor: misuka.Sensor, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+
+        Render the scene
+
+        This function renders the scene from the viewpoint of ``sensor``. All
+        other parameters are optional and control different aspects of the
+        rendering process. In particular:
+
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
+            This parameter controls the initialization of the random number
+            generator. It is crucial that you specify different seeds (e.g.,
+            an increasing sequence) if subsequent ``render``() calls should
+            produce statistically independent images.
+
+        Parameter ``spp`` (int):
+            Set this parameter to a nonzero value to override the number of
+            samples per pixel. This value then takes precedence over whatever
+            was specified in the construction of ``sensor->sampler()``. This
+            parameter may be useful in research applications where an image
+            must be rendered multiple times using different quality levels.
+
+        Parameter ``develop`` (bool):
+            If set to ``True``, the implementation post-processes the data
+            stored in ``sensor->film()``, returning the resulting image as a
+            TensorXf. Otherwise, it returns an empty tensor.
+
+        Parameter ``evaluate`` (bool):
+            This parameter is only relevant for JIT variants of Mitsuba (LLVM,
+            CUDA). If set to ``True``, the rendering step evaluates the
+            generated image and waits for its completion. A log message also
+            denotes the rendering time. Otherwise, the returned tensor
+            (``develop=true``) or modified film (``develop=false``) represent
+            the rendering task as an unevaluated computation graph.
+
+        2. ``render(self, scene: misuka.Scene, sensor: int = 0, seed: drjit.llvm.ad.UInt = 0, spp: int = 0, develop: bool = True, evaluate: bool = True) -> drjit.llvm.ad.TensorXf``
+
+        Render the scene
+
+        This function is just a thin wrapper around the previous render()
+        overload. It accepts a sensor *index* instead and renders the scene
+        using sensor 0 by default.
+
+        Parameter ``scene`` (misuka.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (misuka.Sensor):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
+
+        Parameter ``scene`` (misuka.Scene):
+            *no description available*
+
+        Parameter ``params`` (object):
+            *no description available*
+
+        Parameter ``sensor`` (misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → drjit.llvm.ad.TensorXf:
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+
+        Parameter ``scene`` (misuka.Scene):
+            *no description available*
+
+        Parameter ``params`` (object):
+            *no description available*
+
+        Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
+            *no description available*
+
+        Parameter ``sensor`` (misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Returns → None:
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.sample_rays(scene, sensor, sampler)
+
+        Sample a 2D grid of primary rays for a given sensor
+
+        Returns a tuple containing
+
+        - the set of sampled rays
+        - a ray weight (usually 1 if the sensor's response function is sampled
+          perfectly)
+        - the continuous 2D image-space positions associated with each ray
+
+        Parameter ``scene`` (mi.Scene):
+            *no description available*
+
+        Parameter ``sensor`` (mi.Sensor):
+            *no description available*
+
+        Parameter ``sampler`` (mi.Sampler):
+            *no description available*
+
+        Returns → Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.prepare(sensor, seed=0, spp=0, aovs=[])
+
+        Given a sensor and a desired number of samples per pixel, this function
+        computes the necessary number of Monte Carlo samples and then suitably
+        seeds the sampler underlying the sensor.
+
+        Returns the created sampler and the final number of samples per pixel
+        (which may differ from the requested amount depending on the type of
+        ``Sampler`` being used)
+
+        Parameter ``sensor`` (``int``, ``mi.Sensor``):
+            Specify a sensor to render the scene from a different viewpoint.
+
+        Parameter ``seed` (``int``)
+            This parameter controls the initialization of the random number
+            generator during the primal rendering step. It is crucial that you
+            specify different seeds (e.g., an increasing sequence) if subsequent
+            calls should produce statistically independent images (e.g. to
+            de-correlate gradient-based optimization steps).
+
+        Parameter ``spp`` (``int``):
+            Optional parameter to override the number of samples per pixel for the
+            primal rendering step. The value provided within the original scene
+            specification takes precedence if ``spp=0``.
+
+        Parameter ``sensor`` (~misuka.Sensor):
+            *no description available*
+
+        Parameter ``seed`` (~drjit.llvm.ad.UInt):
+            *no description available*
+
+        Parameter ``spp`` (int):
+            *no description available*
+
+        Parameter ``aovs`` (list):
+            *no description available*
+
+    .. py:method:: misuka.ad.integrators.common.ADIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active)
+
+        This function does the main work of differentiable rendering and
+        remains unimplemented here. It is provided by subclasses of the
+        ``RBIntegrator`` interface.
+
+        In those concrete implementations, the function performs a Monte Carlo
+        random walk, implementing a number of different behaviors depending on
+        the ``mode`` argument. For example in primal mode (``mode ==
+        drjit.ADMode.Primal``), it behaves like a normal rendering algorithm
+        and estimates the radiance incident along ``ray``.
+
+        In forward mode (``mode == drjit.ADMode.Forward``), it estimates the
+        derivative of the incident radiance for a set of scene parameters being
+        differentiated. (This requires that these parameters are attached to
+        the AD graph and have gradients specified via ``dr.set_grad()``)
+
+        In backward mode (``mode == drjit.ADMode.Backward``), it takes adjoint
+        radiance ``δL`` and accumulates it into differentiable scene parameters.
+
+        You are normally *not* expected to directly call this function. Instead,
+        use ``mi.render()`` , which performs various necessary
+        setup steps to correctly use the functionality provided here.
+
+        The parameters of this function are as follows:
+
+        Parameter ``mode`` (``drjit.ADMode``)
+            Specifies whether the rendering algorithm should run in primal or
+            forward/backward derivative propagation mode
+
+        Parameter ``scene`` (``mi.Scene``):
+            Reference to the scene being rendered in a differentiable manner.
+
+        Parameter ``sampler`` (``mi.Sampler``):
+            A pre-seeded sample generator
+
+        Parameter ``depth`` (``mi.UInt32``):
+            Path depth of `ray` (typically set to zero). This is mainly useful
+            for forward/backward differentiable rendering phases that need to
+            obtain an incident radiance estimate. In this case, they may
+            recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
+            depth.
+
+        Parameter ``δL`` (``mi.Spectrum``):
+            When back-propagating gradients (``mode == drjit.ADMode.Backward``)
+            the ``δL`` parameter should specify the adjoint radiance associated
+            with each ray. Otherwise, it must be set to ``None``.
+
+        Parameter ``state_in`` (``Any``):
+            The primal phase of ``sample()`` returns a state vector as part of
+            its return value. The forward/backward differential phases expect
+            that this state vector is provided to them via this argument. When
+            invoked in primal mode, it should be set to ``None``.
+
+        Parameter ``active`` (``mi.Bool``):
+            This mask array can optionally be used to indicate that some of
+            the rays are disabled.
+
+        The function returns a tuple ``(spec, valid, state_out)`` where
+
+        Output ``spec`` (``mi.Spectrum``):
+            Specifies the estimated radiance and differential radiance in
+            primal and forward mode, respectively.
+
+        Output ``valid`` (``mi.Bool``):
+            Indicates whether the rays intersected a surface, which can be used
+            to compute an alpha channel.
+
+        Output ``aovs`` (``List[mi.Float]``):
+            Integrators may return one or more arbitrary output variables (AOVs).
+            The implementation has to guarantee that the number of returned AOVs
+            matches the length of self.aov_names().
 
         Parameter ``mode`` (dr.ADMode):
             *no description available*
@@ -23351,20 +26087,20 @@
         Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float]]:
             *no description available*
 
-.. py:class:: mitsuba.ad.integrators.common.PSIntegrator
+.. py:class:: misuka.ad.integrators.common.PSIntegrator
 
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+    Base class: misuka.ad.integrators.common.ADIntegrator
 
     Abstract base class of projective-sampling/path-space style differentiable
     integrators.
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.override_spp(integrator_spp, runtime_spp, sampler_spp)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.override_spp(integrator_spp, runtime_spp, sampler_spp)
 
         Utility method to override the intergrator's spp value with the one
         received at runtime in `render`/`render_backward`/`render_forward`.
@@ -23386,7 +26122,7 @@
         Parameter ``sampler_spp`` (int):
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.render_ad(scene, sensor, seed, spp, mode)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.render_ad(scene, sensor, seed, spp, mode)
 
         Renders and accumulates the outputs of the primarily visible
         discontinuities, indirect discontinuities and continuous derivatives.
@@ -23416,15 +26152,15 @@
         Returns → mi.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.render_forward(self, scene, params, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -23436,9 +26172,9 @@
         Returns → drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.render_backward(self, scene, params, grad_in, sensor, seed=0, spp=0)
 
-        Parameter ``scene`` (:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (misuka.Scene):
             *no description available*
 
         Parameter ``params`` (object):
@@ -23447,7 +26183,7 @@
         Parameter ``grad_in`` (drjit.llvm.ad.TensorXf):
             *no description available*
 
-        Parameter ``sensor`` (:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (misuka.Sensor):
             *no description available*
 
         Parameter ``seed`` (drjit.llvm.ad.UInt):
@@ -23459,20 +26195,20 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.render_primarily_visible_silhouette(scene, sensor, sampler, spp)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.render_primarily_visible_silhouette(scene, sensor, sampler, spp)
 
         Renders the primarily visible discontinuities.
 
         This method returns the AD-attached image. The result must still be
         traversed using one of the Dr.Jit functions to propagate gradients.
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (~misuka.Sensor):
             *no description available*
 
-        Parameter ``sampler`` (~:py:obj:`mitsuba.Sampler`):
+        Parameter ``sampler`` (~misuka.Sampler):
             *no description available*
 
         Parameter ``spp`` (int):
@@ -23481,7 +26217,7 @@
         Returns → ~drjit.llvm.ad.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.sample_radiance_difference()
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.sample_radiance_difference()
 
         Sample the radiance difference of two rays that hit and miss the
         silhouette point `ss.p` with direction `ss.d`.
@@ -23511,7 +26247,7 @@
         Output ``active`` (``mi.Bool``):
             Indicates if the radiance difference is valid.
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.sample_importance()
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.sample_importance()
 
         Sample the incident importance at the silhouette point `ss.p` with
         direction `-ss.d`. If multiple connections to the sensor are valid, this
@@ -23552,7 +26288,7 @@
         Output ``valid`` (``mi.Bool``):
             Indicates if a valid path is found.
 
-    .. py:method:: mitsuba.ad.integrators.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active, project=False, si_shade=None)
+    .. py:method:: misuka.ad.integrators.common.PSIntegrator.sample(mode, scene, sampler, ray, depth, L, aovs, state_in, active, project=False, si_shade=None)
 
         See ADIntegrator.sample() for a description of this function's purpose.
 
@@ -23634,20 +26370,20 @@
         Returns → Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
             *no description available*
 
-.. py:class:: mitsuba.ad.integrators.common.RBIntegrator
+.. py:class:: misuka.ad.integrators.common.RBIntegrator
 
-    Base class: :py:obj:`mitsuba.ad.integrators.common.ADIntegrator`
+    Base class: misuka.ad.integrators.common.ADIntegrator
 
     Abstract base class of radiative-backpropagation style differentiable
     integrators.
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.integrators.common.RBIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
+    .. py:method:: misuka.ad.integrators.common.RBIntegrator.render_forward(scene, params, sensor=0, seed=0, spp=0)
 
         Evaluates the forward-mode derivative of the rendering step.
 
@@ -23718,7 +26454,7 @@
         Returns → mi.TensorXf:
             *no description available*
 
-    .. py:method:: mitsuba.ad.integrators.common.RBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
+    .. py:method:: misuka.ad.integrators.common.RBIntegrator.render_backward(scene, params, grad_in, sensor=0, seed=0, spp=0)
 
         Evaluates the reverse-mode derivative of the rendering step.
 
@@ -23786,12 +26522,12 @@
         Returns → None:
             *no description available*
 
-.. py:function:: mitsuba.ad.integrators.common.mis_weight()
+.. py:function:: misuka.ad.integrators.common.mis_weight()
 
     Compute the Multiple Importance Sampling (MIS) weight given the densities
     of two sampling strategies according to the power heuristic.
 
-.. py:function:: mitsuba.ad.integrators.common.solid_angle_to_area_jacobian(o, p, n, active=True)
+.. py:function:: misuka.ad.integrators.common.solid_angle_to_area_jacobian(o, p, n, active=True)
 
     Computes the Jacobian determinant of the change of variables from solid
     angle (dω) to surface area (dA) when reparameterizing the integration over
@@ -23809,21 +26545,21 @@
     Output:
         The Jacobian determinant |∂A/∂ω| = (|dot(n, wi)| / ||p - o||^2)
 
-    Parameter ``o`` (~:py:obj:`mitsuba.Point3f`):
+    Parameter ``o`` (~misuka.Point3f):
         *no description available*
 
-    Parameter ``p`` (~:py:obj:`mitsuba.Point3f`):
+    Parameter ``p`` (~misuka.Point3f):
         *no description available*
 
-    Parameter ``n`` (~:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n`` (~misuka.Normal3f):
         *no description available*
 
     Parameter ``active`` (~drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
-.. py:class:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator
+.. py:class:: misuka.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator
 
-    Base class: :py:obj:`mitsuba.ad.integrators.common.RBIntegrator`
+    Base class: misuka.ad.integrators.common.RBIntegrator
 
     .. _integrator-volprim_rf_basic:
 
@@ -23853,19 +26589,19 @@
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_transmission()
+    .. py:method:: misuka.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_transmission()
 
         Evaluate the transmission model on intersected volumetric primitives
 
-    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_sh_emission()
+    .. py:method:: misuka.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.eval_sh_emission()
 
         Evaluate the SH directionally emission on intersected volumetric primitives
 
-    .. py:method:: mitsuba.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.sample()
+    .. py:method:: misuka.ad.integrators.volprim_rf_basic.BasicVolumetricPrimitiveRadianceFieldIntegrator.sample()
 
         This function does the main work of differentiable rendering and
         remains unimplemented here. It is provided by subclasses of the
@@ -23938,15 +26674,14 @@
             The implementation has to guarantee that the number of returned AOVs
             matches the length of self.aov_names().
 
-
-.. py:class:: mitsuba.ad.largesteps.SolveCholesky
+.. py:class:: misuka.ad.largesteps.SolveCholesky
 
     DrJIT custom operator to solve a linear system using a Cholesky factorization.
 
     .. py:method:: __init__()
 
 
-    .. py:method:: mitsuba.ad.largesteps.SolveCholesky.eval(self)
+    .. py:method:: misuka.ad.largesteps.SolveCholesky.eval(self)
 
         Evaluate the custom operation in primal mode.
 
@@ -23966,7 +26701,7 @@
         Returns → object:
             *no description available*
 
-    .. py:method:: mitsuba.ad.largesteps.SolveCholesky.forward()
+    .. py:method:: misuka.ad.largesteps.SolveCholesky.forward()
 
         Evaluate the forward derivative of the custom operation.
 
@@ -23990,7 +26725,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ad.largesteps.SolveCholesky.backward()
+    .. py:method:: misuka.ad.largesteps.SolveCholesky.backward()
 
         Evaluate the backward derivative of the custom operation.
 
@@ -24015,7 +26750,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ad.largesteps.SolveCholesky.name()
+    .. py:method:: misuka.ad.largesteps.SolveCholesky.name()
 
         Return a descriptive name of the ``CustomOp`` instance.
 
@@ -24025,34 +26760,34 @@
         Returns → str:
             *no description available*
 
-.. py:function:: mitsuba.ad.largesteps.mesh_laplacian()
+.. py:function:: misuka.ad.largesteps.mesh_laplacian()
 
     Compute the index and data arrays of the (combinatorial) Laplacian matrix of
     a given mesh.
 
-.. py:class:: mitsuba.ad.loaders.FlatSensor
+.. py:class:: misuka.ad.loaders.FlatSensor
 
-    Base class: :py:obj:`mitsuba.Sensor`
+    Base class: misuka.Sensor
 
-    Sensor used internally by :py:class:`~:py:obj:`mitsuba.ad.RayDataLoader``.
+    Sensor used internally by :py:class:`~misuka.ad.RayDataLoader`.
 
     Its film has one row with ``pixels_per_batch`` pixels. Before each render
-    call, :py:meth:`~:py:obj:`mitsuba.ad.RayDataLoader.next`()` stores the selected flat
+    call, :py:meth:`~misuka.ad.RayDataLoader.next()` stores the selected flat
     source pixel indices in ``pixel_idx``. Sampling this sensor then remaps
     those flat indices to the corresponding source sensor and pixel
     coordinates.
 
     .. py:method:: __init__(self, arg)
 
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
+        Parameter ``arg`` (misuka.Properties, /):
             *no description available*
 
 
-    .. py:method:: mitsuba.ad.loaders.FlatSensor.initialize(sensors, pixels_per_batch)
+    .. py:method:: misuka.ad.loaders.FlatSensor.initialize(sensors, pixels_per_batch)
 
         Initialize the flat sensor with multiple sensors.
 
-        Parameter ``sensors`` (list[~:py:obj:`mitsuba.Sensor`]):
+        Parameter ``sensors`` (list[~misuka.Sensor]):
             *no description available*
 
         Parameter ``pixels_per_batch`` (int):
@@ -24061,7 +26796,7 @@
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.ad.loaders.FlatSensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.ad.loaders.FlatSensor.sample_ray_differential(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray differential proportional to the sensor's
         sensitivity profile.
@@ -24084,12 +26819,12 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the sensitivity profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             This argument corresponds to the sample position in fractional
             pixel coordinates relative to the crop window of the underlying
             film.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. This
             argument determines the position on the aperture of the sensor.
             This argument is ignored if ``needs_sample_3() == false``.
@@ -24097,12 +26832,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.RayDifferential3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.RayDifferential3f, misuka.Color3f]:
             The sampled ray differential and (potentially spectrally varying)
             importance weights. The latter account for the difference between
             the sensor profile and the actual used sampling density function.
 
-    .. py:method:: mitsuba.ad.loaders.FlatSensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
+    .. py:method:: misuka.ad.loaders.FlatSensor.sample_ray(self, time, sample1, sample2, sample3, active=True)
 
         Importance sample a ray proportional to the endpoint's
         sensitivity/emission profile.
@@ -24122,14 +26857,14 @@
             A uniformly distributed 1D value that is used to sample the
             spectral dimension of the emission profile.
 
-        Parameter ``sample2`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample2`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument corresponds to the sample position
             in fractional pixel coordinates relative to the crop window of the
             underlying film. This argument is ignored if ``needs_sample_2() ==
             false``.
 
-        Parameter ``sample3`` (:py:obj:`mitsuba.Point2f`):
+        Parameter ``sample3`` (misuka.Point2f):
             A uniformly distributed sample on the domain ``[0,1]^2``. For
             sensor endpoints, this argument determines the position on the
             aperture of the sensor. This argument is ignored if
@@ -24138,12 +26873,12 @@
         Parameter ``active`` (drjit.llvm.ad.Bool):
             Mask to specify active lanes.
 
-        Returns → tuple[:py:obj:`mitsuba.Ray3f`, :py:obj:`mitsuba.Color3f`]:
+        Returns → tuple[misuka.Ray3f, misuka.Color3f]:
             The sampled ray and (potentially spectrally varying) importance
             weights. The latter account for the difference between the profile
             and the actual used sampling density function.
 
-.. py:class:: mitsuba.ad.loaders.RayDataLoader
+.. py:class:: misuka.ad.loaders.RayDataLoader
 
     Minibatch loader for rendering rays and matching target pixels.
 
@@ -24175,7 +26910,7 @@
         
         Parameter ``pixels_per_batch`` (``int``):
             Number of flattened pixels returned by each
-            :py:meth:`~:py:obj:`mitsuba.ad.RayDataLoader.next`()` call. It must be
+            :py:meth:`~misuka.ad.RayDataLoader.next()` call. It must be
             positive and no larger than ``total_pixels``.
         
         Parameter ``seed`` (``int``):
@@ -24191,7 +26926,7 @@
             improve spatial coherence, and values at least as large as the
             image dimensions fall back to whole-image permutation.
 
-        Parameter ``sensors`` (list[~:py:obj:`mitsuba.Sensor`] | ~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensors`` (list[~misuka.Sensor] | ~misuka.Sensor):
             *no description available*
 
         Parameter ``target_images`` (list[~drjit.llvm.ad.TensorXf] | ~drjit.llvm.ad.TensorXf):
@@ -24210,21 +26945,21 @@
             *no description available*
 
         
-    .. py:method:: mitsuba.ad.loaders.RayDataLoader.shuffle_pixel_index(seed)
+    .. py:method:: misuka.ad.loaders.RayDataLoader.shuffle_pixel_index(seed)
 
         Shuffle pixel index buffer using tile-based permutation for GPU coherence.
 
         Parameter ``seed`` (~drjit.llvm.ad.UInt):
             *no description available*
 
-    .. py:method:: mitsuba.ad.loaders.RayDataLoader.next()
+    .. py:method:: misuka.ad.loaders.RayDataLoader.next()
 
         Get the next batch of pixel indices and corresponding target tensor.
 
         This method reshuffles the pixel index buffer every `iter_shuffle`
         iterations. It reuses and mutates the same flat sensor on every call.
 
-.. py:function:: mitsuba.ad.loaders.Tuple(overloaded)
+.. py:function:: misuka.ad.loaders.Tuple(overloaded)
 
 
     Tuple[X, Y] is the cross-product type of X and Y.
@@ -24235,7 +26970,7 @@
 
     To specify a variable-length tuple of homogeneous type, use Tuple[T, ...].
 
-.. py:function:: mitsuba.chi2.BSDFAdapter()
+.. py:function:: misuka.chi2.BSDFAdapter()
 
     Adapter to test BSDF sampling using the Chi^2 test.
 
@@ -24249,7 +26984,7 @@
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
 
-.. py:class:: mitsuba.chi2.ChiSquareTest
+.. py:class:: misuka.chi2.ChiSquareTest
 
     Implements Pearson's chi-square test for goodness of fit of a distribution
     to a known reference distribution.
@@ -24320,21 +27055,21 @@
         The p-value of the test is computed in the ``run()`` method and stored
         in this attribute.
 
-    .. py:method:: mitsuba.chi2.ChiSquareTest.tabulate_histogram()
+    .. py:method:: misuka.chi2.ChiSquareTest.tabulate_histogram()
 
         Invoke the provided sampling strategy many times and generate a
         histogram in the parameter domain. If ``sample_func`` returns a tuple
         ``(positions, weights)`` instead of just positions, the samples are
         considered to be weighted.
 
-    .. py:method:: mitsuba.chi2.ChiSquareTest.tabulate_pdf()
+    .. py:method:: misuka.chi2.ChiSquareTest.tabulate_pdf()
 
         Numerically integrate the provided probability density function over
         each cell to generate an array resembling the histogram computed by
         ``tabulate_histogram()``. The function uses the trapezoid rule over
         intervals discretized into ``self.ires`` separate function evaluations.
 
-    .. py:method:: mitsuba.chi2.ChiSquareTest.run()
+    .. py:method:: misuka.chi2.ChiSquareTest.run()
 
         Run the Chi^2 test
 
@@ -24352,8 +27087,7 @@
             ``True`` upon success, ``False`` if the null hypothesis was
             rejected.
 
-
-.. py:function:: mitsuba.chi2.EmitterAdapter()
+.. py:function:: misuka.chi2.EmitterAdapter()
 
     Adapter to test Emitter sampling using the Chi^2 test.
 
@@ -24364,16 +27098,16 @@
         Additional XML used to specify the emitter's parameters, or a Python
         dictionary as used by the ``load_dict`` routine.
 
-.. py:class:: mitsuba.chi2.LineDomain
+.. py:class:: misuka.chi2.LineDomain
 
     The identity map on the line.
 
-.. py:function:: mitsuba.chi2.MicrofacetAdapter()
+.. py:function:: misuka.chi2.MicrofacetAdapter()
 
     Adapter for testing microfacet distribution sampling techniques
     (separately from BSDF models, which are also tested)
 
-.. py:function:: mitsuba.chi2.PhaseFunctionAdapter()
+.. py:function:: misuka.chi2.PhaseFunctionAdapter()
 
     Adapter to test phase function sampling using the Chi^2 test.
 
@@ -24387,20 +27121,20 @@
     Parameter ``wi`` (array(3,)):
         Incoming direction, in local coordinates.
 
-.. py:class:: mitsuba.chi2.PlanarDomain
+.. py:class:: misuka.chi2.PlanarDomain
 
     The identity map on the plane
 
-.. py:function:: mitsuba.chi2.SpectrumAdapter()
+.. py:function:: misuka.chi2.SpectrumAdapter()
 
     Adapter which permits testing 1D spectral power distributions using the
     Chi^2 test.
 
-.. py:class:: mitsuba.chi2.SphericalDomain
+.. py:class:: misuka.chi2.SphericalDomain
 
     Maps between the unit sphere and a [cos(theta), phi] parameterization.
 
-.. py:function:: mitsuba.cie1931_xyz(wavelength)
+.. py:function:: misuka.cie1931_xyz(wavelength)
 
     Evaluate the CIE 1931 XYZ color matching functions given a wavelength
     in nanometers
@@ -24408,10 +27142,10 @@
     Parameter ``wavelength`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:function:: mitsuba.cie1931_y(wavelength)
+.. py:function:: misuka.cie1931_y(wavelength)
 
     Evaluate the CIE 1931 Y color matching function given a wavelength in
     nanometers
@@ -24422,7 +27156,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.cie_d65(wavelength)
+.. py:function:: misuka.cie_d65(wavelength)
 
     Evaluate the CIE D65 illuminant spectrum given a wavelength in
     nanometers, normalized to ensures that it integrates to a luminance of
@@ -24434,29 +27168,29 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.coordinate_system(n)
+.. py:function:: misuka.coordinate_system(n)
 
     Complete the set {a} to an orthonormal basis {a, b, c}
 
-    Parameter ``n`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``n`` (misuka.Vector3f):
         *no description available*
 
-    Returns → tuple[:py:obj:`mitsuba.Vector3f`, :py:obj:`mitsuba.Vector3f`]:
+    Returns → tuple[misuka.Vector3f, misuka.Vector3f]:
         *no description available*
 
-.. py:function:: mitsuba.cornell_box()
+.. py:function:: misuka.cornell_box()
 
     Returns a dictionary containing a description of the Cornell Box scene.
 
-.. py:function:: mitsuba.depolarizer(arg)
+.. py:function:: misuka.depolarizer(arg)
 
-    Parameter ``arg`` (:py:obj:`mitsuba.Color3f`, /):
+    Parameter ``arg`` (misuka.Color3f, /):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:class:: mitsuba.detail.TransformWrapper
+.. py:class:: misuka.detail.TransformWrapper
 
     Helper functor that wraps Transform3f/Transform4f methods so that the following two
     calling conventions are equivalent:
@@ -24464,7 +27198,7 @@
      - Transform4f().translate().scale()...
      - Transform4f.translate().scale()...
 
-.. py:function:: mitsuba.detail.add_variant_callback(arg)
+.. py:function:: misuka.detail.add_variant_callback(arg)
 
     Parameter ``arg`` (collections.abc.Callable, /):
         *no description available*
@@ -24472,14 +27206,14 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.detail.clear_variant_callbacks()
+.. py:function:: misuka.detail.clear_variant_callbacks()
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.detail.patch_transform()
+.. py:function:: misuka.detail.patch_transform()
 
-.. py:function:: mitsuba.detail.remove_variant_callback(arg)
+.. py:function:: misuka.detail.remove_variant_callback(arg)
 
     Parameter ``arg`` (collections.abc.Callable, /):
         *no description available*
@@ -24487,19 +27221,19 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.dir_to_sph(v)
+.. py:function:: misuka.dir_to_sph(v)
 
     Converts a unit vector to its spherical coordinates parameterization
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         Vector to convert
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         The polar and azimuthal angles respectively.
 
-.. py:function:: mitsuba.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
+.. py:function:: misuka.eval_reflectance(type, alpha_u, alpha_v, wi, eta)
 
-    Parameter ``type`` (:py:obj:`mitsuba.MicrofacetType`):
+    Parameter ``type`` (misuka.MicrofacetType):
         *no description available*
 
     Parameter ``alpha_u`` (float):
@@ -24508,7 +27242,7 @@
     Parameter ``alpha_v`` (float):
         *no description available*
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``eta`` (float):
@@ -24517,12 +27251,12 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.file_resolver()
+.. py:function:: misuka.file_resolver()
 
-    Returns → :py:obj:`mitsuba.FileResolver`:
+    Returns → misuka.FileResolver:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.absolute(arg)
+.. py:function:: misuka.filesystem.absolute(arg)
 
     Returns an absolute path to the same location pointed by ``p``,
     relative to ``base``.
@@ -24530,104 +27264,104 @@
     See also:
         http ://en.cppreference.com/w/cpp/experimental/fs/absolute)
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.filesystem.path`:
+    Returns → misuka.filesystem.path:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.copy_file(arg0, arg1)
+.. py:function:: misuka.filesystem.copy_file(arg0, arg1)
 
     Copy a file from source to destination
 
-    Parameter ``arg0`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``arg0`` (misuka.filesystem.path):
         *no description available*
 
-    Parameter ``arg1`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg1`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.create_directory(arg)
+.. py:function:: misuka.filesystem.create_directory(arg)
 
     Creates a directory at ``p`` as if ``mkdir`` was used. Returns true if
     directory creation was successful, false otherwise. If ``p`` already
     exists and is already a directory, the function does nothing (this
     condition is not treated as an error).
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.current_path()
+.. py:function:: misuka.filesystem.current_path()
 
     Returns the current working directory (equivalent to getcwd)
 
-    Returns → :py:obj:`mitsuba.filesystem.path`:
+    Returns → misuka.filesystem.path:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.equivalent(arg0, arg1)
+.. py:function:: misuka.filesystem.equivalent(arg0, arg1)
 
     Checks whether two paths refer to the same file system object. Both
     must refer to an existing file or directory. Symlinks are followed to
     determine equivalence.
 
-    Parameter ``arg0`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``arg0`` (misuka.filesystem.path):
         *no description available*
 
-    Parameter ``arg1`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg1`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.exists(arg)
+.. py:function:: misuka.filesystem.exists(arg)
 
     Checks if ``p`` points to an existing filesystem object.
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.file_size(arg)
+.. py:function:: misuka.filesystem.file_size(arg)
 
     Returns the size (in bytes) of a regular file at ``p``. Attempting to
     determine the size of a directory (as well as any other file that is
     not a regular file or a symlink) is treated as an error.
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → int:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.is_directory(arg)
+.. py:function:: misuka.filesystem.is_directory(arg)
 
     Checks if ``p`` points to a directory.
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.is_regular_file(arg)
+.. py:function:: misuka.filesystem.is_regular_file(arg)
 
     Checks if ``p`` points to a regular file, as opposed to a directory or
     symlink.
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:class:: mitsuba.filesystem.path
+.. py:class:: misuka.filesystem.path
 
     Represents a path to a filesystem resource. On construction, the path
     is parsed and stored in a system-agnostic representation. The path can
@@ -24643,7 +27377,7 @@
         Default constructor. Constructs an empty path. An empty path is
         considered relative.
         
-        2. ``__init__(self, arg: :py:obj:`mitsuba.filesystem.path`) -> None``
+        2. ``__init__(self, arg: misuka.filesystem.path) -> None``
         
         Copy constructor.
         
@@ -24653,51 +27387,51 @@
         path can use both '/' or '\\' as a delimiter.
 
         
-    .. py:method:: mitsuba.filesystem.path.clear()
+    .. py:method:: misuka.filesystem.path.clear()
 
         Makes the path an empty path. An empty path is considered relative.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.empty()
+    .. py:method:: misuka.filesystem.path.empty()
 
         Checks if the path is empty
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.extension()
+    .. py:method:: misuka.filesystem.path.extension()
 
         Returns the extension of the filename component of the path (the
         substring starting at the rightmost period, including the period).
         Special paths '.' and '..' have an empty extension.
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.filename()
+    .. py:method:: misuka.filesystem.path.filename()
 
         Returns the filename component of the path, including the extension.
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.is_absolute()
+    .. py:method:: misuka.filesystem.path.is_absolute()
 
         Checks if the path is absolute.
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.is_relative()
+    .. py:method:: misuka.filesystem.path.is_relative()
 
         Checks if the path is relative.
 
         Returns → bool:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.native()
+    .. py:method:: misuka.filesystem.path.native()
 
         Returns the path in the form of a native string, so that it can be
         passed directly to system APIs. The path is constructed using the
@@ -24706,15 +27440,15 @@
         Returns → str:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.parent_path()
+    .. py:method:: misuka.filesystem.path.parent_path()
 
         Returns the path to the parent directory. Returns an empty path if it
         is already empty or if it has only one element.
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-    .. py:method:: mitsuba.filesystem.path.replace_extension(self, arg)
+    .. py:method:: misuka.filesystem.path.replace_extension(self, arg)
 
         Replaces the substring starting at the rightmost '.' symbol by the
         provided string.
@@ -24727,34 +27461,34 @@
 
         Returns *this.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+        Parameter ``arg`` (misuka.filesystem.path, /):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.filesystem.path`:
+        Returns → misuka.filesystem.path:
             *no description available*
 
-.. py:data:: mitsuba.filesystem.preferred_separator
+.. py:data:: misuka.filesystem.preferred_separator
     :type: str
     :value: /
 
-.. py:function:: mitsuba.filesystem.remove(arg)
+.. py:function:: misuka.filesystem.remove(arg)
 
     Removes a file or empty directory. Returns true if removal was
     successful, false if there was an error (e.g. the file did not exist).
 
-    Parameter ``arg`` (:py:obj:`mitsuba.filesystem.path`, /):
+    Parameter ``arg`` (misuka.filesystem.path, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.filesystem.resize_file(arg0, arg1)
+.. py:function:: misuka.filesystem.resize_file(arg0, arg1)
 
     Changes the size of the regular file named by ``p`` as if ``truncate``
     was called. If the file was larger than ``target_length``, the
     remainder is discarded. The file must exist.
 
-    Parameter ``arg0`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``arg0`` (misuka.filesystem.path):
         *no description available*
 
     Parameter ``arg1`` (int, /):
@@ -24763,7 +27497,7 @@
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.fresnel(cos_theta_i, eta)
+.. py:function:: misuka.fresnel(cos_theta_i, eta)
 
     Calculates the unpolarized Fresnel reflection coefficient at a planar
     interface between two dielectrics
@@ -24791,7 +27525,7 @@
     of travel. This also happens to be equal to the scale factor that must
     be applied to the X and Y component of the refracted direction.
 
-.. py:function:: mitsuba.fresnel_conductor(cos_theta_i, eta)
+.. py:function:: misuka.fresnel_conductor(cos_theta_i, eta)
 
     Calculates the unpolarized Fresnel reflection coefficient at a planar
     interface of a conductor, i.e. a surface with a complex-valued
@@ -24812,7 +27546,7 @@
     Returns → drjit.llvm.ad.Float:
         The unpolarized Fresnel reflection coefficient.
 
-.. py:function:: mitsuba.fresnel_diffuse_reflectance(eta)
+.. py:function:: misuka.fresnel_diffuse_reflectance(eta)
 
     Computes the diffuse unpolarized Fresnel reflectance of a dielectric
     material (sometimes referred to as "Fdr").
@@ -24826,7 +27560,7 @@
     Returns → drjit.llvm.ad.Float:
         F, the unpolarized Fresnel coefficient.
 
-.. py:function:: mitsuba.fresnel_polarized(cos_theta_i, eta)
+.. py:function:: misuka.fresnel_polarized(cos_theta_i, eta)
 
     Calculates the polarized Fresnel reflection coefficient at a planar
     interface between two dielectrics or conductors. Returns complex
@@ -24863,34 +27597,34 @@
     the scale factor that must be applied to the X and Y component of the
     refracted direction.
 
-.. py:function:: mitsuba.has_flag(arg0, arg1)
+.. py:function:: misuka.has_flag(arg0, arg1)
 
     Parameter ``arg0`` (int):
         *no description available*
 
-    Parameter ``arg1`` (:py:obj:`mitsuba.EmitterFlags`, /):
+    Parameter ``arg1`` (misuka.EmitterFlags, /):
         *no description available*
 
     Returns → bool:
         *no description available*
 
-.. py:data:: mitsuba.is_monochromatic
+.. py:data:: misuka.is_monochromatic
     :type: bool
     :value: False
 
-.. py:data:: mitsuba.is_polarized
+.. py:data:: misuka.is_polarized
     :type: bool
     :value: False
 
-.. py:data:: mitsuba.is_rgb
+.. py:data:: misuka.is_rgb
     :type: bool
     :value: True
 
-.. py:data:: mitsuba.is_spectral
+.. py:data:: misuka.is_spectral
     :type: bool
     :value: False
 
-.. py:function:: mitsuba.linear_rgb_rec(wavelength)
+.. py:function:: misuka.linear_rgb_rec(wavelength)
 
     Evaluate the ITU-R Rec. BT.709 linear RGB color matching functions
     given a wavelength in nanometers
@@ -24898,10 +27632,10 @@
     Parameter ``wavelength`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:function:: mitsuba.load_dict(dict, parallel=True, optimize=True)
+.. py:function:: misuka.load_dict(dict, parallel=True, optimize=True)
 
     Load a Mitsuba scene or object from an Python dictionary
 
@@ -24917,7 +27651,7 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.load_file(path, parallel=True, optimize=True, **kwargs)
+.. py:function:: misuka.load_file(path, parallel=True, optimize=True, **kwargs)
 
     Load a Mitsuba scene or object from an XML file
 
@@ -24939,7 +27673,7 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.load_string(value, parallel=True, optimize=True, **kwargs)
+.. py:function:: misuka.load_string(value, parallel=True, optimize=True, **kwargs)
 
     Load a Mitsuba scene or object from an XML string
 
@@ -24958,23 +27692,23 @@
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.log_level()
+.. py:function:: misuka.log_level()
 
     Returns the current log level.
 
-    Returns → :py:obj:`mitsuba.LogLevel`:
+    Returns → misuka.LogLevel:
         *no description available*
 
-.. py:function:: mitsuba.logger()
+.. py:function:: misuka.logger()
 
-    Returns → :py:obj:`mitsuba.Logger`:
+    Returns → misuka.Logger:
         *no description available*
 
-.. py:function:: mitsuba.lookup_ior(properties, name, default)
+.. py:function:: misuka.lookup_ior(properties, name, default)
 
     Lookup IOR value in table.
 
-    Parameter ``properties`` (:py:obj:`mitsuba.Properties`):
+    Parameter ``properties`` (misuka.Properties):
         *no description available*
 
     Parameter ``name`` (str):
@@ -24986,12 +27720,12 @@
     Returns → float:
         *no description available*
 
-.. py:function:: mitsuba.luminance(value, wavelengths, active=True)
+.. py:function:: misuka.luminance(value, wavelengths, active=True)
 
-    Parameter ``value`` (:py:obj:`mitsuba.Color3f`):
+    Parameter ``value`` (misuka.Color3f):
         *no description available*
 
-    Parameter ``wavelengths`` (:py:obj:`mitsuba.Color0f`):
+    Parameter ``wavelengths`` (misuka.Color0f):
         *no description available*
 
     Parameter ``active`` (drjit.llvm.ad.Bool):
@@ -25000,19 +27734,19 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:data:: mitsuba.math.RayEpsilon
+.. py:data:: misuka.math.RayEpsilon
     :type: float
     :value: 8.940696716308594e-05
 
-.. py:data:: mitsuba.math.ShadowEpsilon
+.. py:data:: misuka.math.ShadowEpsilon
     :type: float
     :value: 0.0008940696716308594
 
-.. py:data:: mitsuba.math.ShapeEpsilon
+.. py:data:: misuka.math.ShapeEpsilon
     :type: float
     :value: 1.1175870895385742e-06
 
-.. py:function:: mitsuba.math.chi2(arg0, arg1, arg2)
+.. py:function:: misuka.math.chi2(arg0, arg1, arg2)
 
     Compute the Chi^2 statistic and degrees of freedom of the given arrays
     while pooling low-valued entries together
@@ -25046,7 +27780,7 @@
     Returns → tuple[float, int, int, int]:
         *no description available*
 
-.. py:function:: mitsuba.math.find_interval(size, pred)
+.. py:function:: misuka.math.find_interval(size, pred)
 
     Find an interval in an ordered set
 
@@ -25088,7 +27822,7 @@
     Returns → drjit.llvm.ad.UInt:
         *no description available*
 
-.. py:function:: mitsuba.math.is_power_of_two(arg)
+.. py:function:: misuka.math.is_power_of_two(arg)
 
     Check whether the provided integer is a power of two
 
@@ -25098,7 +27832,7 @@
     Returns → bool:
         *no description available*
 
-.. py:function:: mitsuba.math.legendre_p(l, x)
+.. py:function:: misuka.math.legendre_p(l, x)
 
     Evaluate the l-th Legendre polynomial using recurrence
 
@@ -25111,7 +27845,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.math.legendre_pd(l, x)
+.. py:function:: misuka.math.legendre_pd(l, x)
 
     Evaluate the l-th Legendre polynomial and its derivative using
     recurrence
@@ -25125,7 +27859,7 @@
     Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         *no description available*
 
-.. py:function:: mitsuba.math.legendre_pd_diff(l, x)
+.. py:function:: misuka.math.legendre_pd_diff(l, x)
 
     Evaluate the function legendre_pd(l+1, x) - legendre_pd(l-1, x)
 
@@ -25138,7 +27872,7 @@
     Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         *no description available*
 
-.. py:function:: mitsuba.math.linear_to_srgb(arg)
+.. py:function:: misuka.math.linear_to_srgb(arg)
 
     Applies the sRGB gamma curve to the given argument.
 
@@ -25148,7 +27882,7 @@
     Returns → float:
         *no description available*
 
-.. py:function:: mitsuba.math.morton_decode2(m)
+.. py:function:: misuka.math.morton_decode2(m)
 
     Parameter ``m`` (drjit.llvm.ad.UInt):
         *no description available*
@@ -25156,7 +27890,7 @@
     Returns → drjit.llvm.ad.Array2u:
         *no description available*
 
-.. py:function:: mitsuba.math.morton_decode3(m)
+.. py:function:: misuka.math.morton_decode3(m)
 
     Parameter ``m`` (drjit.llvm.ad.UInt):
         *no description available*
@@ -25164,7 +27898,7 @@
     Returns → drjit.llvm.ad.Array3u:
         *no description available*
 
-.. py:function:: mitsuba.math.morton_encode2(v)
+.. py:function:: misuka.math.morton_encode2(v)
 
     Parameter ``v`` (drjit.llvm.ad.Array2u):
         *no description available*
@@ -25172,7 +27906,7 @@
     Returns → drjit.llvm.ad.UInt:
         *no description available*
 
-.. py:function:: mitsuba.math.morton_encode3(v)
+.. py:function:: misuka.math.morton_encode3(v)
 
     Parameter ``v`` (drjit.llvm.ad.Array3u):
         *no description available*
@@ -25180,7 +27914,7 @@
     Returns → drjit.llvm.ad.UInt:
         *no description available*
 
-.. py:function:: mitsuba.math.round_to_power_of_two(arg)
+.. py:function:: misuka.math.round_to_power_of_two(arg)
 
     Round an unsigned integer to the next integer power of two
 
@@ -25190,7 +27924,7 @@
     Returns → int:
         *no description available*
 
-.. py:function:: mitsuba.math.solve_quadratic(a, b, c)
+.. py:function:: misuka.math.solve_quadratic(a, b, c)
 
     Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
 
@@ -25206,7 +27940,7 @@
     Returns → tuple[drjit.llvm.ad.Bool, drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         ``True`` if a solution could be found
 
-.. py:function:: mitsuba.math.srgb_to_linear(arg)
+.. py:function:: misuka.math.srgb_to_linear(arg)
 
     Applies the inverse sRGB gamma curve to the given argument.
 
@@ -25216,7 +27950,7 @@
     Returns → float:
         *no description available*
 
-.. py:function:: mitsuba.math.ulpdiff(arg0, arg1)
+.. py:function:: misuka.math.ulpdiff(arg0, arg1)
 
     Compare the difference in ULPs between a reference value and another
     given floating point number
@@ -25230,7 +27964,7 @@
     Returns → float:
         *no description available*
 
-.. py:function:: mitsuba.math_py.chi2()
+.. py:function:: misuka.math_py.chi2()
 
     Pure-Python/numpy port of ``mitsuba::math::chi2()`` for backends that lack
     float64 (e.g. Metal). Cells with expected frequency below ``pool_threshold``
@@ -25238,18 +27972,18 @@
 
     Returns ``(statistic, dof, n_pooled_in, n_pooled_out)``.
 
-.. py:function:: mitsuba.math_py.rlgamma()
+.. py:function:: misuka.math_py.rlgamma()
 
     Regularized lower incomplete gamma function based on CEPHES
 
-.. py:function:: mitsuba.misc.core_count()
+.. py:function:: misuka.misc.core_count()
 
     Determine the number of available CPU cores (including virtual cores)
 
     Returns → int:
         *no description available*
 
-.. py:function:: mitsuba.misc.mem_string(size, precise=False)
+.. py:function:: misuka.misc.mem_string(size, precise=False)
 
     Turn a memory size into a human-readable string
 
@@ -25262,7 +27996,7 @@
     Returns → str:
         *no description available*
 
-.. py:function:: mitsuba.misc.time_string(time, precise=False)
+.. py:function:: misuka.misc.time_string(time, precise=False)
 
     Convert a time difference (in seconds) to a string representation
 
@@ -25276,7 +28010,7 @@
     Returns → str:
         *no description available*
 
-.. py:function:: mitsuba.misc.trap_debugger()
+.. py:function:: misuka.misc.trap_debugger()
 
     Generate a trap instruction if running in a debugger; otherwise,
     return.
@@ -25284,7 +28018,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.mueller.absorber(value)
+.. py:function:: misuka.mueller.absorber(value)
 
     Constructs the Mueller matrix of an ideal absorber
 
@@ -25294,7 +28028,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.depolarizer(value=1.0)
+.. py:function:: misuka.mueller.depolarizer(value=1.0)
 
     Constructs the Mueller matrix of an ideal depolarizer
 
@@ -25304,7 +28038,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.diattenuator(x, y)
+.. py:function:: misuka.mueller.diattenuator(x, y)
 
     Constructs the Mueller matrix of a linear diattenuator, which
     attenuates the electric field components at 0 and 90 degrees by 'x'
@@ -25319,7 +28053,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.left_circular_polarizer()
+.. py:function:: misuka.mueller.left_circular_polarizer()
 
     Constructs the Mueller matrix of a (left) circular polarizer.
 
@@ -25328,7 +28062,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.linear_polarizer(value=1.0)
+.. py:function:: misuka.mueller.linear_polarizer(value=1.0)
 
     Constructs the Mueller matrix of a linear polarizer which transmits
     linear polarization at 0 degrees.
@@ -25342,7 +28076,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.linear_retarder(phase)
+.. py:function:: misuka.mueller.linear_retarder(phase)
 
     Constructs the Mueller matrix of a linear retarder which has its fast
     axis aligned horizontally.
@@ -25361,7 +28095,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.right_circular_polarizer()
+.. py:function:: misuka.mueller.right_circular_polarizer()
 
     Constructs the Mueller matrix of a (right) circular polarizer.
 
@@ -25370,7 +28104,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.rotate_mueller_basis(M, in_forward, in_basis_current, in_basis_target, out_forward, out_basis_current, out_basis_target)
+.. py:function:: misuka.mueller.rotate_mueller_basis(M, in_forward, in_basis_current, in_basis_target, out_forward, out_basis_current, out_basis_target)
 
     Return the Mueller matrix for some new reference frames. This version
     rotates the input/output frames independently.
@@ -25384,25 +28118,25 @@
         The current Mueller matrix that operates from ``in_basis_current``
         to ``out_basis_current``.
 
-    Parameter ``in_forward`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``in_forward`` (misuka.Vector3f):
         Direction of travel for input Stokes vector (normalized)
 
-    Parameter ``in_basis_current`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``in_basis_current`` (misuka.Vector3f):
         Current (normalized) input Stokes basis. Must be orthogonal to
         ``in_forward``.
 
-    Parameter ``in_basis_target`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``in_basis_target`` (misuka.Vector3f):
         Target (normalized) input Stokes basis. Must be orthogonal to
         ``in_forward``.
 
-    Parameter ``out_forward`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``out_forward`` (misuka.Vector3f):
         Direction of travel for input Stokes vector (normalized)
 
-    Parameter ``out_basis_current`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``out_basis_current`` (misuka.Vector3f):
         Current (normalized) output Stokes basis. Must be orthogonal to
         ``out_forward``.
 
-    Parameter ``out_basis_target`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``out_basis_target`` (misuka.Vector3f):
         Target (normalized) output Stokes basis. Must be orthogonal to
         ``out_forward``.
 
@@ -25410,7 +28144,7 @@
         New Mueller matrix that operates from ``in_basis_target`` to
         ``out_basis_target``.
 
-.. py:function:: mitsuba.mueller.rotate_mueller_basis_collinear(M, forward, basis_current, basis_target)
+.. py:function:: misuka.mueller.rotate_mueller_basis_collinear(M, forward, basis_current, basis_target)
 
     Return the Mueller matrix for some new reference frames. This version
     applies the same rotation to the input/output frames.
@@ -25424,14 +28158,14 @@
         The current Mueller matrix that operates from ``basis_current`` to
         ``basis_current``.
 
-    Parameter ``forward`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``forward`` (misuka.Vector3f):
         Direction of travel for input Stokes vector (normalized)
 
-    Parameter ``basis_current`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_current`` (misuka.Vector3f):
         Current (normalized) input Stokes basis. Must be orthogonal to
         ``forward``.
 
-    Parameter ``basis_target`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_target`` (misuka.Vector3f):
         Target (normalized) input Stokes basis. Must be orthogonal to
         ``forward``.
 
@@ -25439,7 +28173,7 @@
         New Mueller matrix that operates from ``basis_target`` to
         ``basis_target``.
 
-.. py:function:: mitsuba.mueller.rotate_stokes_basis(wi, basis_current, basis_target)
+.. py:function:: misuka.mueller.rotate_stokes_basis(wi, basis_current, basis_target)
 
     Gives the Mueller matrix that aligns the reference frames (defined by
     their respective basis vectors) of two collinear stokes vectors.
@@ -25454,22 +28188,22 @@
     Parameter ``forward``:
         Direction of travel for Stokes vector (normalized)
 
-    Parameter ``basis_current`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_current`` (misuka.Vector3f):
         Current (normalized) Stokes basis. Must be orthogonal to
         ``forward``.
 
-    Parameter ``basis_target`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_target`` (misuka.Vector3f):
         Target (normalized) Stokes basis. Must be orthogonal to
         ``forward``.
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Matrix4f:
         Mueller matrix that performs the desired change of reference
         frames.
 
-.. py:function:: mitsuba.mueller.rotate_stokes_basis_m(wi, basis_current, basis_target)
+.. py:function:: misuka.mueller.rotate_stokes_basis_m(wi, basis_current, basis_target)
 
     Gives the Mueller matrix that aligns the reference frames (defined by
     their respective basis vectors) of two collinear stokes vectors.
@@ -25484,22 +28218,22 @@
     Parameter ``forward``:
         Direction of travel for Stokes vector (normalized)
 
-    Parameter ``basis_current`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_current`` (misuka.Vector3f):
         Current (normalized) Stokes basis. Must be orthogonal to
         ``forward``.
 
-    Parameter ``basis_target`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``basis_target`` (misuka.Vector3f):
         Target (normalized) Stokes basis. Must be orthogonal to
         ``forward``.
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit::Matrix<mitsuba::Color<drjit::DiffArray<(JitBackend)2, float>, 3ul>, 4ul>:
         Mueller matrix that performs the desired change of reference
         frames.
 
-.. py:function:: mitsuba.mueller.rotated_element(theta, M)
+.. py:function:: misuka.mueller.rotated_element(theta, M)
 
     Applies a counter-clockwise rotation to the mueller matrix of a given
     element.
@@ -25513,7 +28247,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.rotator(theta)
+.. py:function:: misuka.mueller.rotator(theta)
 
     Constructs the Mueller matrix of an ideal rotator, which performs a
     counter-clockwise rotation of the electric field by 'theta' radians
@@ -25532,7 +28266,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.specular_reflection(cos_theta_i, eta)
+.. py:function:: misuka.mueller.specular_reflection(cos_theta_i, eta)
 
     Calculates the Mueller matrix of a specular reflection at an interface
     between two dielectrics or conductors.
@@ -25549,7 +28283,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.specular_transmission(cos_theta_i, eta)
+.. py:function:: misuka.mueller.specular_transmission(cos_theta_i, eta)
 
     Calculates the Mueller matrix of a specular transmission at an
     interface between two dielectrics or conductors.
@@ -25566,7 +28300,7 @@
     Returns → drjit.llvm.ad.Matrix4f:
         *no description available*
 
-.. py:function:: mitsuba.mueller.stokes_basis(w)
+.. py:function:: misuka.mueller.stokes_basis(w)
 
     Gives the reference frame basis for a Stokes vector.
 
@@ -25579,36 +28313,36 @@
     Parameter ``forward``:
         Direction of travel for Stokes vector (normalized)
 
-    Parameter ``w`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``w`` (misuka.Vector3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         The (implicitly defined) reference coordinate system basis for the
         Stokes vector traveling along forward.
 
-.. py:function:: mitsuba.mueller.unit_angle(a, b)
+.. py:function:: misuka.mueller.unit_angle(a, b)
 
-    Parameter ``a`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``a`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``b`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``b`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.orthographic_projection(film_size, crop_size, crop_offset, near_clip, far_clip)
+.. py:function:: misuka.orthographic_projection(film_size, crop_size, crop_offset, near_clip, far_clip)
 
     Helper function to create a orthographic projection transformation
     matrix
 
-    Parameter ``film_size`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``film_size`` (misuka.ScalarVector2i):
         *no description available*
 
-    Parameter ``crop_size`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``crop_size`` (misuka.ScalarVector2i):
         *no description available*
 
-    Parameter ``crop_offset`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``crop_offset`` (misuka.ScalarVector2i):
         *no description available*
 
     Parameter ``near_clip`` (drjit.llvm.ad.Float):
@@ -25617,14 +28351,14 @@
     Parameter ``far_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.AffineTransform4f`:
+    Returns → misuka.AffineTransform4f:
         *no description available*
 
-.. py:function:: mitsuba.parse_fov(props, aspect)
+.. py:function:: misuka.parse_fov(props, aspect)
 
     Helper function to parse the field of view field of a camera
 
-    Parameter ``props`` (:py:obj:`mitsuba.Properties`):
+    Parameter ``props`` (misuka.Properties):
         *no description available*
 
     Parameter ``aspect`` (float):
@@ -25633,39 +28367,39 @@
     Returns → float:
         *no description available*
 
-.. py:class:: mitsuba.parser.ParserConfig
+.. py:class:: misuka.parser.ParserConfig
 
     Constructor that takes variant name
 
-    .. py:property:: mitsuba.parser.ParserConfig.max_include_depth
+    .. py:property:: misuka.parser.ParserConfig.max_include_depth
 
         Maximum include depth to prevent infinite recursion (default: 15)
 
-    .. py:property:: mitsuba.parser.ParserConfig.merge_equivalent
+    .. py:property:: misuka.parser.ParserConfig.merge_equivalent
 
         Enable merging of equivalent nodes (deduplication) (default: true)
 
-    .. py:property:: mitsuba.parser.ParserConfig.merge_meshes
+    .. py:property:: misuka.parser.ParserConfig.merge_meshes
 
         Enable merging of meshes into a single merge shape (default: true)
 
-    .. py:property:: mitsuba.parser.ParserConfig.parallel
+    .. py:property:: misuka.parser.ParserConfig.parallel
 
         Enable parallel instantiation for better performance (default: true)
 
-    .. py:property:: mitsuba.parser.ParserConfig.unused_parameters
+    .. py:property:: misuka.parser.ParserConfig.unused_parameters
 
         How to handle unused "$key" -> "value" substitution parameters: Error (default), Warn, or Debug
 
-    .. py:property:: mitsuba.parser.ParserConfig.unused_properties
+    .. py:property:: misuka.parser.ParserConfig.unused_properties
 
         How to handle unused properties during instantiation: Error (default), Warn, or Debug
 
-    .. py:property:: mitsuba.parser.ParserConfig.variant
+    .. py:property:: misuka.parser.ParserConfig.variant
 
         Target variant for instantiation (e.g., "scalar_rgb", "cuda_spectral")
 
-.. py:class:: mitsuba.parser.ParserState
+.. py:class:: misuka.parser.ParserState
 
 
     .. py:method:: ``__init__()
@@ -25678,37 +28412,37 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.ParserState`):
+        Parameter ``arg`` (misuka.parser.ParserState):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.parser.ParserState.files
+    .. py:property:: misuka.parser.ParserState.files
 
         List of parsed files
 
-    .. py:property:: mitsuba.parser.ParserState.id_to_index
+    .. py:property:: misuka.parser.ParserState.id_to_index
 
         Map from IDs to node indices
 
-    .. py:property:: mitsuba.parser.ParserState.node_paths
+    .. py:property:: misuka.parser.ParserState.node_paths
 
         Node paths for dictionary parsing
 
-    .. py:property:: mitsuba.parser.ParserState.nodes
+    .. py:property:: misuka.parser.ParserState.nodes
 
         List of all scene nodes
 
-    .. py:property:: mitsuba.parser.ParserState.root
+    .. py:property:: misuka.parser.ParserState.root
 
         Access the root node
 
-    .. py:property:: mitsuba.parser.ParserState.versions
+    .. py:property:: misuka.parser.ParserState.versions
 
         Version number for each file
 
-.. py:class:: mitsuba.parser.SceneNode
+.. py:class:: misuka.parser.SceneNode
 
 
     .. py:method:: ``__init__()
@@ -25721,29 +28455,29 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`):
+        Parameter ``arg`` (misuka.parser.SceneNode):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:property:: mitsuba.parser.SceneNode.file_index
+    .. py:property:: misuka.parser.SceneNode.file_index
 
         File index in ParserState::files
 
-    .. py:property:: mitsuba.parser.SceneNode.offset
+    .. py:property:: misuka.parser.SceneNode.offset
 
         Byte offset of the node within the parsed file/string
 
-    .. py:property:: mitsuba.parser.SceneNode.props
+    .. py:property:: misuka.parser.SceneNode.props
 
         Properties of this node
 
-    .. py:property:: mitsuba.parser.SceneNode.type
+    .. py:property:: misuka.parser.SceneNode.type
 
         Object type
 
-.. py:class:: mitsuba.parser.SceneNodeList
+.. py:class:: misuka.parser.SceneNodeList
 
 
     .. py:method:: ``__init__()
@@ -25757,7 +28491,7 @@
 
         Copy constructor
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNodeList`):
+        Parameter ``arg`` (misuka.parser.SceneNodeList):
             *no description available*
 
         Returns → None``:
@@ -25767,262 +28501,262 @@
 
         Construct from an iterable object
 
-        Parameter ``arg`` (collections.abc.Iterable[:py:obj:`mitsuba.parser.SceneNode`], /):
+        Parameter ``arg`` (collections.abc.Iterable[misuka.parser.SceneNode], /):
             *no description available*
 
         Returns → None``:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.append(self, arg)
+    .. py:method:: misuka.parser.SceneNodeList.append(self, arg)
 
         Append `arg` to the end of the list.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+        Parameter ``arg`` (misuka.parser.SceneNode, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.clear()
+    .. py:method:: misuka.parser.SceneNodeList.clear()
 
         Remove all items from list.
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.count(self, arg)
+    .. py:method:: misuka.parser.SceneNodeList.count(self, arg)
 
         Return number of occurrences of `arg`.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+        Parameter ``arg`` (misuka.parser.SceneNode, /):
             *no description available*
 
         Returns → int:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.extend(self, arg)
+    .. py:method:: misuka.parser.SceneNodeList.extend(self, arg)
 
         Extend `self` by appending elements from `arg`.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNodeList`, /):
+        Parameter ``arg`` (misuka.parser.SceneNodeList, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.insert(self, arg0, arg1)
+    .. py:method:: misuka.parser.SceneNodeList.insert(self, arg0, arg1)
 
         Insert object `arg1` before index `arg0`.
 
         Parameter ``arg0`` (int):
             *no description available*
 
-        Parameter ``arg1`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+        Parameter ``arg1`` (misuka.parser.SceneNode, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.pop(self, index=-1)
+    .. py:method:: misuka.parser.SceneNodeList.pop(self, index=-1)
 
         Remove and return item at `index` (default last).
 
         Parameter ``index`` (int):
             *no description available*
 
-        Returns → :py:obj:`mitsuba.parser.SceneNode`:
+        Returns → misuka.parser.SceneNode:
             *no description available*
 
-    .. py:method:: mitsuba.parser.SceneNodeList.remove(self, arg)
+    .. py:method:: misuka.parser.SceneNodeList.remove(self, arg)
 
         Remove first occurrence of `arg`.
 
-        Parameter ``arg`` (:py:obj:`mitsuba.parser.SceneNode`, /):
+        Parameter ``arg`` (misuka.parser.SceneNode, /):
             *no description available*
 
         Returns → None:
             *no description available*
 
-.. py:function:: mitsuba.parser.file_location(state, node)
+.. py:function:: misuka.parser.file_location(state, node)
 
     Get human-readable file location for a node
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
-    Parameter ``node`` (:py:obj:`mitsuba.parser.SceneNode`):
+    Parameter ``node`` (misuka.parser.SceneNode):
         *no description available*
 
     Returns → str:
         *no description available*
 
-.. py:function:: mitsuba.parser.instantiate(config, state)
+.. py:function:: misuka.parser.instantiate(config, state)
 
     Instantiate the parsed representation into concrete Mitsuba objects
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → object:
         *no description available*
 
-.. py:function:: mitsuba.parser.parse_dict(config, dict)
+.. py:function:: misuka.parser.parse_dict(config, dict)
 
     Parse a scene from a Python dictionary
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
     Parameter ``dict`` (dict):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.parser.ParserState`:
+    Returns → misuka.parser.ParserState:
         *no description available*
 
-.. py:function:: mitsuba.parser.parse_file(config, filename)
+.. py:function:: misuka.parser.parse_file(config, filename)
 
     Parse a scene from an XML file
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
     Parameter ``filename`` (str, **kwargs):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.parser.ParserState`:
+    Returns → misuka.parser.ParserState:
         *no description available*
 
-.. py:function:: mitsuba.parser.parse_string(config, string)
+.. py:function:: misuka.parser.parse_string(config, string)
 
     Parse a scene from an XML string
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
     Parameter ``string`` (str, **kwargs):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.parser.ParserState`:
+    Returns → misuka.parser.ParserState:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_all(config, state)
+.. py:function:: misuka.parser.transform_all(config, state)
 
     Apply all transformations in the correct order
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_merge_equivalent(config, state)
+.. py:function:: misuka.parser.transform_merge_equivalent(config, state)
 
     Merge equivalent nodes to reduce memory usage and improve performance
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_merge_meshes(config, state)
+.. py:function:: misuka.parser.transform_merge_meshes(config, state)
 
     Combine meshes with identical materials
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_relocate(config, state, output_directory)
+.. py:function:: misuka.parser.transform_relocate(config, state, output_directory)
 
     Relocate scene files to organized subfolders
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
-    Parameter ``output_directory`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``output_directory`` (misuka.filesystem.path):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_reorder(config, state)
+.. py:function:: misuka.parser.transform_reorder(config, state)
 
     Reorder immediate children of scene nodes for better readability
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_resolve(config, state)
+.. py:function:: misuka.parser.transform_resolve(config, state)
 
     Resolve named references and raise an error when detecting broken links
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_resolve_references(config, state)
+.. py:function:: misuka.parser.transform_resolve_references(config, state)
 
     Resolve named references and raise an error when detecting broken links
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.transform_upgrade(config, state)
+.. py:function:: misuka.parser.transform_upgrade(config, state)
 
     Upgrade scene data to latest version
 
-    Parameter ``config`` (:py:obj:`mitsuba.parser.ParserConfig`):
+    Parameter ``config`` (misuka.parser.ParserConfig):
         *no description available*
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.write_file(state, filename, add_section_headers=False)
+.. py:function:: misuka.parser.write_file(state, filename, add_section_headers=False)
 
     Write scene data to an XML file
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
-    Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``filename`` (misuka.filesystem.path):
         *no description available*
 
     Parameter ``add_section_headers`` (bool):
@@ -26031,11 +28765,11 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.parser.write_string(state, add_section_headers=False)
+.. py:function:: misuka.parser.write_string(state, add_section_headers=False)
 
     Convert scene data to an XML string
 
-    Parameter ``state`` (:py:obj:`mitsuba.parser.ParserState`):
+    Parameter ``state`` (misuka.parser.ParserState):
         *no description available*
 
     Parameter ``add_section_headers`` (bool):
@@ -26044,7 +28778,7 @@
     Returns → str:
         *no description available*
 
-.. py:function:: mitsuba.pdf_rgb_spectrum(wavelengths)
+.. py:function:: misuka.pdf_rgb_spectrum(wavelengths)
 
     PDF for the sample_rgb_spectrum strategy. It is valid to call this
     function for a single wavelength (Float), a set of wavelengths
@@ -26057,7 +28791,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.permute(value, size, seed, rounds=4)
+.. py:function:: misuka.permute(value, size, seed, rounds=4)
 
     Generate pseudorandom permutation vector using a shuffling network
 
@@ -26086,7 +28820,7 @@
         The index corresponding to the input index in the pseudorandom
         permutation vector.
 
-.. py:function:: mitsuba.permute_kensler(i, l, p, active=True)
+.. py:function:: misuka.permute_kensler(i, l, p, active=True)
 
     Generate pseudorandom permutation vector using the algorithm described
     in Pixar's technical memo "Correlated Multi-Jittered Sampling":
@@ -26122,18 +28856,18 @@
         The index corresponding to the input index in the pseudorandom
         permutation vector.
 
-.. py:function:: mitsuba.perspective_projection(film_size, crop_size, crop_offset, fov_x, near_clip, far_clip)
+.. py:function:: misuka.perspective_projection(film_size, crop_size, crop_offset, fov_x, near_clip, far_clip)
 
     Helper function to create a perspective projection transformation
     matrix
 
-    Parameter ``film_size`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``film_size`` (misuka.ScalarVector2i):
         *no description available*
 
-    Parameter ``crop_size`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``crop_size`` (misuka.ScalarVector2i):
         *no description available*
 
-    Parameter ``crop_offset`` (:py:obj:`mitsuba.ScalarVector2i`):
+    Parameter ``crop_offset`` (misuka.ScalarVector2i):
         *no description available*
 
     Parameter ``fov_x`` (drjit.llvm.ad.Float):
@@ -26145,10 +28879,10 @@
     Parameter ``far_clip`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.ProjectiveTransform4f`:
+    Returns → misuka.ProjectiveTransform4f:
         *no description available*
 
-.. py:function:: mitsuba.quad.chebyshev(n)
+.. py:function:: misuka.quad.chebyshev(n)
 
     Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
     polynomials of the first kind
@@ -26161,7 +28895,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.quad.composite_simpson(n)
+.. py:function:: misuka.quad.composite_simpson(n)
 
     Computes the nodes and weights of a composite Simpson quadrature rule
     with the given number of evaluations.
@@ -26179,7 +28913,7 @@
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
-.. py:function:: mitsuba.quad.composite_simpson_38(n)
+.. py:function:: misuka.quad.composite_simpson_38(n)
 
     Computes the nodes and weights of a composite Simpson 3/8 quadrature
     rule with the given number of evaluations.
@@ -26197,7 +28931,7 @@
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
-.. py:function:: mitsuba.quad.gauss_legendre(n)
+.. py:function:: misuka.quad.gauss_legendre(n)
 
     Computes the nodes and weights of a Gauss-Legendre quadrature (aka
     "Gaussian quadrature") rule with the given number of evaluations.
@@ -26219,7 +28953,7 @@
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
-.. py:function:: mitsuba.quad.gauss_lobatto(n)
+.. py:function:: misuka.quad.gauss_lobatto(n)
 
     Computes the nodes and weights of a Gauss-Lobatto quadrature rule with
     the given number of evaluations.
@@ -26243,7 +28977,7 @@
         A tuple (nodes, weights) storing the nodes and weights of the
         quadrature rule.
 
-.. py:function:: mitsuba.radical_inverse_2(index, scramble)
+.. py:function:: misuka.radical_inverse_2(index, scramble)
 
     Van der Corput radical inverse in base 2
 
@@ -26256,40 +28990,40 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.reflect(wi)
+.. py:function:: misuka.reflect(wi)
 
     Overloaded function.
 
-    1. ``reflect(wi: :py:obj:`mitsuba.Vector3f`) -> :py:obj:`mitsuba.Vector3f```
+    1. ``reflect(wi: misuka.Vector3f) -> misuka.Vector3f``
 
     Reflection in local coordinates
 
-    2. ``reflect(wi: :py:obj:`mitsuba.Vector3f`, m: :py:obj:`mitsuba.Normal3f`) -> :py:obj:`mitsuba.Vector3f```
+    2. ``reflect(wi: misuka.Vector3f, m: misuka.Normal3f) -> misuka.Vector3f``
 
     Reflect ``wi`` with respect to a given surface normal
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.refract(wi, cos_theta_t, eta_ti)
+.. py:function:: misuka.refract(wi, cos_theta_t, eta_ti)
 
     Overloaded function.
 
-    1. ``refract(wi: :py:obj:`mitsuba.Vector3f`, cos_theta_t: drjit.llvm.ad.Float, eta_ti: drjit.llvm.ad.Float) -> :py:obj:`mitsuba.Vector3f```
+    1. ``refract(wi: misuka.Vector3f, cos_theta_t: drjit.llvm.ad.Float, eta_ti: drjit.llvm.ad.Float) -> misuka.Vector3f``
 
     Refraction in local coordinates
 
     The 'cos_theta_t' and 'eta_ti' parameters are given by the last two
     tuple entries returned by the fresnel and fresnel_polarized functions.
 
-    2. ``refract(wi: :py:obj:`mitsuba.Vector3f`, m: :py:obj:`mitsuba.Normal3f`, cos_theta_t: drjit.llvm.ad.Float, eta_ti: drjit.llvm.ad.Float) -> :py:obj:`mitsuba.Vector3f```
+    2. ``refract(wi: misuka.Vector3f, m: misuka.Normal3f, cos_theta_t: drjit.llvm.ad.Float, eta_ti: drjit.llvm.ad.Float) -> misuka.Vector3f``
 
     Refract ``wi`` with respect to a given surface normal
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         Direction to refract
 
     Parameter ``m``:
@@ -26302,10 +29036,10 @@
     Parameter ``eta_ti`` (drjit.llvm.ad.Float):
         Relative index of refraction (transmitted / incident)
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.register_bsdf(name, constructor)
+.. py:function:: misuka.register_bsdf(name, constructor)
 
     Register a Python BSDF plugin
 
@@ -26318,7 +29052,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_emitter(name, constructor)
+.. py:function:: misuka.register_emitter(name, constructor)
 
     Register a Python emitter plugin
 
@@ -26331,7 +29065,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_film(name, constructor)
+.. py:function:: misuka.register_film(name, constructor)
 
     Register a Python film plugin
 
@@ -26344,7 +29078,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_integrator(name, constructor)
+.. py:function:: misuka.register_integrator(name, constructor)
 
     Register a Python integrator plugin
 
@@ -26357,7 +29091,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_medium(name, constructor)
+.. py:function:: misuka.register_medium(name, constructor)
 
     Register a Python medium plugin
 
@@ -26370,7 +29104,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_phase(name, constructor)
+.. py:function:: misuka.register_phase(name, constructor)
 
     Register a Python phase function plugin
 
@@ -26383,7 +29117,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_rfilter(name, constructor)
+.. py:function:: misuka.register_rfilter(name, constructor)
 
     Register a Python reconstruction filter plugin
 
@@ -26396,7 +29130,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_sampler(name, constructor)
+.. py:function:: misuka.register_sampler(name, constructor)
 
     Register a Python sampler plugin
 
@@ -26409,7 +29143,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_sensor(name, constructor)
+.. py:function:: misuka.register_sensor(name, constructor)
 
     Register a Python sensor plugin
 
@@ -26422,7 +29156,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_shape(name, constructor)
+.. py:function:: misuka.register_shape(name, constructor)
 
     Register a Python shape plugin
 
@@ -26435,7 +29169,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.register_texture(name, constructor)
+.. py:function:: misuka.register_texture(name, constructor)
 
     Register a Python texture plugin
 
@@ -26448,7 +29182,7 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
+.. py:function:: misuka.render(scene, params=None, sensor=0, integrator=None, seed=0, seed_grad=0, spp=0, spp_grad=0)
 
     This function provides a convenient high-level interface to differentiable
     rendering algorithms in Mi. The function returns a rendered image that can
@@ -26521,13 +29255,13 @@
         differential simulation phase. If not specified, the implementation will
         copy the value from ``spp``.
 
-    Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+    Parameter ``scene`` (~misuka.Scene):
         *no description available*
 
-    Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+    Parameter ``sensor`` (int | ~misuka.Sensor):
         *no description available*
 
-    Parameter ``integrator`` (~:py:obj:`mitsuba.Integrator`):
+    Parameter ``integrator`` (~misuka.Integrator):
         *no description available*
 
     Parameter ``seed`` (~drjit.llvm.ad.UInt):
@@ -26545,7 +29279,7 @@
     Returns → ~drjit.llvm.ad.TensorXf:
         *no description available*
 
-.. py:function:: mitsuba.sample_rgb_spectrum(sample)
+.. py:function:: misuka.sample_rgb_spectrum(sample)
 
     Importance sample a "importance spectrum" that concentrates the
     computation on wavelengths that are relevant for rendering of RGB data
@@ -26561,7 +29295,7 @@
     Returns → tuple[drjit.llvm.ad.Float, drjit.llvm.ad.Float]:
         *no description available*
 
-.. py:function:: mitsuba.sample_tea_32(v0, v1, rounds=4)
+.. py:function:: misuka.sample_tea_32(v0, v1, rounds=4)
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -26583,7 +29317,7 @@
     Returns → tuple[int, int]:
         Two uniformly distributed 32-bit integers
 
-.. py:function:: mitsuba.sample_tea_64(v0, v1, rounds=4)
+.. py:function:: misuka.sample_tea_64(v0, v1, rounds=4)
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -26605,7 +29339,7 @@
     Returns → int:
         A uniformly distributed 64-bit integer
 
-.. py:function:: mitsuba.sample_tea_float(overloaded)
+.. py:function:: misuka.sample_tea_float(overloaded)
 
     sample_tea_float32(v0: drjit.llvm.ad.UInt, v1: drjit.llvm.ad.UInt, rounds: int = 4) -> drjit.llvm.ad.Float
 
@@ -26630,7 +29364,7 @@
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
 
-.. py:function:: mitsuba.sample_tea_float32(v0, v1, rounds=4)
+.. py:function:: misuka.sample_tea_float32(v0, v1, rounds=4)
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -26653,7 +29387,7 @@
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
 
-.. py:function:: mitsuba.sample_tea_float64(v0, v1, rounds=4)
+.. py:function:: misuka.sample_tea_float64(v0, v1, rounds=4)
 
     Generate fast and reasonably good pseudorandom numbers using the Tiny
     Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
@@ -26676,41 +29410,41 @@
         A uniformly distributed floating point number on the interval
         ``[0, 1)``
 
-.. py:function:: mitsuba.scoped_set_variant()
+.. py:function:: misuka.scoped_set_variant()
 
     Temporarily override the active variant. Arguments are interpreted as
-    they are in :func:`mitsuba.set_variant`.
+    they are in :func:`misuka.set_variant`.
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.set_file_resolver(arg)
+.. py:function:: misuka.set_file_resolver(arg)
 
-    Parameter ``arg`` (:py:obj:`mitsuba.FileResolver`, /):
+    Parameter ``arg`` (misuka.FileResolver, /):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.set_log_level(arg)
+.. py:function:: misuka.set_log_level(arg)
 
     Sets the log level.
 
-    Parameter ``arg`` (:py:obj:`mitsuba.LogLevel`, /):
+    Parameter ``arg`` (misuka.LogLevel, /):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.set_logger(logger)
+.. py:function:: misuka.set_logger(logger)
 
-    Parameter ``logger`` (:py:obj:`mitsuba.Logger`):
+    Parameter ``logger`` (misuka.Logger):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.set_variant(args)
+.. py:function:: misuka.set_variant(args)
 
     Parameter ``args`` (str):
         *no description available*
@@ -26718,15 +29452,15 @@
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.sggx_pdf(wm, s)
+.. py:function:: misuka.sggx_pdf(wm, s)
 
     Evaluates the probability of sampling a given normal using the SGGX
     microflake distribution
 
-    Parameter ``wm`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wm`` (misuka.Vector3f):
         The microflake normal
 
-    Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
+    Parameter ``s`` (misuka.SGGXPhaseFunctionParams):
         The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
         S_xz, and S_yz that describe the entries of a symmetric positive
         definite 3x3 matrix. The user needs to ensure that the parameters
@@ -26735,14 +29469,14 @@
     Returns → drjit.llvm.ad.Float:
         The probability of sampling a certain normal
 
-.. py:function:: mitsuba.sggx_projected_area(wi, s)
+.. py:function:: misuka.sggx_projected_area(wi, s)
 
     Evaluates the projected area of the SGGX microflake distribution
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         A 3D direction
 
-    Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
+    Parameter ``s`` (misuka.SGGXPhaseFunctionParams):
         The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
         S_xz, and S_yz that describe the entries of a symmetric positive
         definite 3x3 matrix. The user needs to ensure that the parameters
@@ -26751,7 +29485,7 @@
     Returns → drjit.llvm.ad.Float:
         The projected area of the SGGX microflake distribution
 
-.. py:function:: mitsuba.sggx_sample(sh_frame, sample, s)
+.. py:function:: misuka.sggx_sample(sh_frame, sample, s)
 
     Samples the visible normal distribution of the SGGX microflake
     distribution
@@ -26761,24 +29495,24 @@
     "The SGGX microflake distribution", Siggraph 2015 by Eric Heitz,
     Jonathan Dupuy, Cyril Crassin and Carsten Dachsbacher
 
-    Parameter ``sh_frame`` (:py:obj:`mitsuba.Frame3f`):
+    Parameter ``sh_frame`` (misuka.Frame3f):
         Shading frame aligned with the incident direction, e.g.
         constructed as Frame3f(wi)
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         A uniformly distributed 2D sample
 
-    Parameter ``s`` (:py:obj:`mitsuba.SGGXPhaseFunctionParams`):
+    Parameter ``s`` (misuka.SGGXPhaseFunctionParams):
         The parameters of the SGGX phase function S_xx, S_yy, S_zz, S_xy,
         S_xz, and S_yz that describe the entries of a symmetric positive
         definite 3x3 matrix. The user needs to ensure that the parameters
         indeed represent a positive definite matrix.
 
-    Returns → :py:obj:`mitsuba.Normal3f`:
+    Returns → misuka.Normal3f:
         A normal (in world space) sampled from the distribution of visible
         normals
 
-.. py:function:: mitsuba.sobol_2(index, scramble)
+.. py:function:: misuka.sobol_2(index, scramble)
 
     Sobol' radical inverse in base 2
 
@@ -26791,7 +29525,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.spectrum_from_file(filename)
+.. py:function:: misuka.spectrum_from_file(filename)
 
     Read a spectral power distribution from an ASCII file.
 
@@ -26809,13 +29543,13 @@
     Parameter ``values``:
         Array that will be loaded with the values stored in the file
 
-    Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``filename`` (misuka.filesystem.path):
         *no description available*
 
     Returns → tuple[list[float], list[float]]:
         *no description available*
 
-.. py:function:: mitsuba.spectrum_list_to_srgb(wavelengths, values, bounded=True, d65=False)
+.. py:function:: misuka.spectrum_list_to_srgb(wavelengths, values, bounded=True, d65=False)
 
     Parameter ``wavelengths`` (collections.abc.Sequence[float]):
         *no description available*
@@ -26829,10 +29563,10 @@
     Parameter ``d65`` (bool):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.ScalarColor3f`:
+    Returns → misuka.ScalarColor3f:
         *no description available*
 
-.. py:function:: mitsuba.spectrum_to_file(filename, wavelengths, values)
+.. py:function:: misuka.spectrum_to_file(filename, wavelengths, values)
 
     Write a spectral power distribution to an ASCII file.
 
@@ -26847,13 +29581,13 @@
     Parameter ``values`` (collections.abc.Sequence[float]):
         Array with the values to be stored in the file
 
-    Parameter ``filename`` (:py:obj:`mitsuba.filesystem.path`):
+    Parameter ``filename`` (misuka.filesystem.path):
         *no description available*
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.sph_to_dir(theta, phi)
+.. py:function:: misuka.sph_to_dir(theta, phi)
 
     Converts spherical coordinates to a cartesian vector
 
@@ -26863,10 +29597,10 @@
     Parameter ``phi`` (drjit.llvm.ad.Float):
         The azimuth angle
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         Unit vector corresponding to the input angles
 
-.. py:function:: mitsuba.spline.eval_1d(min, max, values, x)
+.. py:function:: misuka.spline.eval_1d(min, max, values, x)
 
     Overloaded function.
 
@@ -26951,7 +29685,7 @@
         The interpolated value or zero when ``Extrapolate=false`` and
         ``x`` lies outside of \a [``min``, ``max``]
 
-.. py:function:: mitsuba.spline.eval_2d(nodes1, nodes2, values, x, y)
+.. py:function:: misuka.spline.eval_2d(nodes1, nodes2, values, x, y)
 
     Evaluate a cubic spline interpolant of a uniformly sampled 2D function
 
@@ -27002,7 +29736,7 @@
         The interpolated value or zero when ``Extrapolate=false``tt> and
         ``(x,y)`` lies outside of the node range
 
-.. py:function:: mitsuba.spline.eval_spline(f0, f1, d0, d1, t)
+.. py:function:: misuka.spline.eval_spline(f0, f1, d0, d1, t)
 
     Compute the definite integral and derivative of a cubic spline that is
     parameterized by the function values and derivatives at the endpoints
@@ -27026,7 +29760,7 @@
     Returns → float:
         The interpolated function value at ``t``
 
-.. py:function:: mitsuba.spline.eval_spline_d(f0, f1, d0, d1, t)
+.. py:function:: misuka.spline.eval_spline_d(f0, f1, d0, d1, t)
 
     Compute the value and derivative of a cubic spline that is
     parameterized by the function values and derivatives of the interval
@@ -27050,7 +29784,7 @@
     Returns → tuple[float, float]:
         The interpolated function value and its derivative at ``t``
 
-.. py:function:: mitsuba.spline.eval_spline_i(f0, f1, d0, d1, t)
+.. py:function:: misuka.spline.eval_spline_i(f0, f1, d0, d1, t)
 
     Compute the definite integral and value of a cubic spline that is
     parameterized by the function values and derivatives of the interval
@@ -27074,7 +29808,7 @@
     Returns → tuple[float, float]:
         The definite integral and the interpolated function value at ``t``
 
-.. py:function:: mitsuba.spline.eval_spline_weights(min, max, size, x)
+.. py:function:: misuka.spline.eval_spline_weights(min, max, size, x)
 
     Overloaded function.
 
@@ -27155,7 +29889,7 @@
         ``Extrapolate=false`` and ``x`` lies outside of [``min``, ``max``]
         and an offset into the function samples associated with weights[0]
 
-.. py:function:: mitsuba.spline.integrate_1d(min, max, values)
+.. py:function:: misuka.spline.integrate_1d(min, max, values)
 
     Overloaded function.
 
@@ -27221,7 +29955,7 @@
     Returns → drjit.scalar.ArrayXf:
         *no description available*
 
-.. py:function:: mitsuba.spline.invert_1d(min, max_, values, y, eps=9.999999974752427e-07)
+.. py:function:: misuka.spline.invert_1d(min, max_, values, y, eps=9.999999974752427e-07)
 
     Overloaded function.
 
@@ -27281,7 +30015,7 @@
     Returns → drjit.llvm.ad.Float:
         The spline parameter ``t`` such that ``eval_1d(..., t)=y``
 
-.. py:function:: mitsuba.spline.sample_1d(min, max, values, cdf, sample, eps=9.999999974752427e-07)
+.. py:function:: misuka.spline.sample_1d(min, max, values, cdf, sample, eps=9.999999974752427e-07)
 
     Overloaded function.
 
@@ -27352,31 +30086,31 @@
         position (which only differs from item 2. when the function does
         not integrate to one)
 
-.. py:function:: mitsuba.srgb_model_eval(arg0, arg1)
+.. py:function:: misuka.srgb_model_eval(arg0, arg1)
 
     Parameter ``arg0`` (drjit.llvm.ad.Array3f):
         *no description available*
 
-    Parameter ``arg1`` (:py:obj:`mitsuba.Color0f`, /):
+    Parameter ``arg1`` (misuka.Color0f, /):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:function:: mitsuba.srgb_model_fetch(arg)
+.. py:function:: misuka.srgb_model_fetch(arg)
 
     Look up the model coefficients for a sRGB color value
 
     Parameter ``c``:
         An sRGB color value where all components are in [0, 1].
 
-    Parameter ``arg`` (:py:obj:`mitsuba.ScalarColor3f`, /):
+    Parameter ``arg`` (misuka.ScalarColor3f, /):
         *no description available*
 
     Returns → drjit.scalar.Array3f:
         Coefficients for use with srgb_model_eval
 
-.. py:function:: mitsuba.srgb_model_mean(arg)
+.. py:function:: misuka.srgb_model_mean(arg)
 
     Parameter ``arg`` (drjit.llvm.ad.Array3f, /):
         *no description available*
@@ -27384,26 +30118,26 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.srgb_to_xyz(rgb, active=True)
+.. py:function:: misuka.srgb_to_xyz(rgb, active=True)
 
     Convert ITU-R Rec. BT.709 linear RGB to XYZ tristimulus values
 
-    Parameter ``rgb`` (:py:obj:`mitsuba.Color3f`):
+    Parameter ``rgb`` (misuka.Color3f):
         *no description available*
 
     Parameter ``active`` (drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:function:: mitsuba.tensor_io.read()
+.. py:function:: misuka.tensor_io.read()
 
-.. py:function:: mitsuba.tensor_io.size_fmt()
+.. py:function:: misuka.tensor_io.size_fmt()
 
-.. py:function:: mitsuba.tensor_io.write()
+.. py:function:: misuka.tensor_io.write()
 
-.. py:class:: mitsuba.testing.RenderingRegressionTest
+.. py:class:: misuka.testing.RenderingRegressionTest
 
     A rendering regression test is a test case that compares a rendered image
     against a reference image. The test is based on the Z-test, using the `moment`
@@ -27431,126 +30165,95 @@
         Parameter ``name`` (str):
             *no description available*
 
-        Parameter ``scene`` (~:py:obj:`mitsuba.Scene`):
+        Parameter ``scene`` (~misuka.Scene):
             *no description available*
 
-        Parameter ``sensor`` (int | ~:py:obj:`mitsuba.Sensor`):
+        Parameter ``sensor`` (int | ~misuka.Sensor):
             *no description available*
 
         Parameter ``generate_ref`` (bool):
             *no description available*
 
         
-    .. py:method:: mitsuba.testing.RenderingRegressionTest.render_reference()
+    .. py:method:: misuka.testing.RenderingRegressionTest.render_reference()
 
         Render a reference image for the test case
 
-    .. py:method:: mitsuba.testing.RenderingRegressionTest.run()
+    .. py:method:: misuka.testing.RenderingRegressionTest.run()
 
         Run the test case
 
         Returns → bool:
             *no description available*
 
-.. py:function:: mitsuba.testing.annotations
+.. py:function:: misuka.testing.annotations
 
-.. py:function:: mitsuba.traverse(node)
+.. py:function:: misuka.traverse(node)
 
     Traverse a node of Mitsuba's scene graph and return a dictionary-like
     object that can be used to read and write associated scene parameters.
 
-    See also :py:class:`mitsuba.SceneParameters`.
+    See also :py:class:`misuka.SceneParameters`.
 
-    Parameter ``node`` (~:py:obj:`mitsuba.Object`):
+    Parameter ``node`` (~misuka.Object):
         *no description available*
 
-    Returns → ~:py:obj:`mitsuba.python.util.SceneParameters`:
+    Returns → ~misuka.python.util.SceneParameters:
         *no description available*
 
-.. py:function:: mitsuba.unpolarized_spectrum(arg)
+.. py:function:: misuka.unpolarized_spectrum(arg)
 
-    Parameter ``arg`` (:py:obj:`mitsuba.Color3f`, /):
+    Parameter ``arg`` (misuka.Color3f, /):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
-.. py:function:: mitsuba.util.Optional()
+.. py:function:: misuka.util.Optional()
 
     Optional[X] is equivalent to Union[X, None].
 
-.. py:function:: mitsuba.util.Union()
-
-    Union type; Union[X, Y] means either X or Y.
-
-    On Python 3.10 and higher, the | operator
-    can also be used to denote unions;
-    X | Y means the same thing to the type checker as Union[X, Y].
-
-    To define a union, use e.g. Union[int, str]. Details:
-    - The arguments must be types and there must be at least one.
-    - None as an argument is a special case and is replaced by
-      type(None).
-    - Unions of unions are flattened, e.g.::
-
-        assert Union[Union[int, str], float] == Union[int, str, float]
-
-    - Unions of a single argument vanish, e.g.::
-
-        assert Union[int] == int  # The constructor actually returns int
-
-    - Redundant arguments are skipped, e.g.::
-
-        assert Union[int, str, int] == Union[int, str]
-
-    - When comparing unions, the argument order is ignored, e.g.::
-
-        assert Union[int, str] == Union[str, int]
-
-    - You cannot subclass or instantiate a union.
-    - You can use Optional[X] as a shorthand for Union[X, None].
-
-.. py:function:: mitsuba.util.convert_to_bitmap()
+.. py:function:: misuka.util.convert_to_bitmap()
 
     Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
     the resulting bitmap should be translated to a uint8 sRGB bitmap.
 
-.. py:function:: mitsuba.util.write_bitmap()
+.. py:function:: misuka.util.write_bitmap()
 
     Write the RGB image in `data` to a PNG/EXR/.. file.
 
-.. py:function:: mitsuba.variant()
+.. py:function:: misuka.variant()
 
     Returns → typing.Optional[str]:
         *no description available*
 
-.. py:function:: mitsuba.variant_context()
+.. py:function:: misuka.variant_context()
 
     Temporarily override the active variant. Arguments are interpreted as
-    they are in :func:`mitsuba.set_variant`.
+    they are in :func:`misuka.set_variant`.
 
     Returns → None:
         *no description available*
 
-.. py:function:: mitsuba.variants()
+.. py:function:: misuka.variants()
 
     Returns → typing.List[str]:
         *no description available*
 
-.. py:function:: mitsuba.warp.beckmann_to_square(v, alpha)
+.. py:function:: misuka.warp.beckmann_to_square(v, alpha)
 
     Inverse of the mapping square_to_uniform_cone
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``alpha`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.bilinear_to_square(v00, v10, v01, v11, sample)
+.. py:function:: misuka.warp.bilinear_to_square(v00, v10, v01, v11, sample)
 
     Inverse of square_to_bilinear
 
@@ -27566,23 +30269,23 @@
     Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+    Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
         *no description available*
 
-.. py:function:: mitsuba.warp.cosine_hemisphere_to_square(v)
+.. py:function:: misuka.warp.cosine_hemisphere_to_square(v)
 
     Inverse of the mapping square_to_cosine_hemisphere
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.interval_to_linear(v0, v1, sample)
+.. py:function:: misuka.warp.interval_to_linear(v0, v1, sample)
 
     Importance sample a linear interpolant
 
@@ -27603,7 +30306,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.interval_to_nonuniform_tent(a, b, c, d)
+.. py:function:: misuka.warp.interval_to_nonuniform_tent(a, b, c, d)
 
     Warp a uniformly distributed sample on [0, 1] to a nonuniform tent
     distribution with nodes ``{a, b, c}``
@@ -27623,21 +30326,21 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.interval_to_tangent_direction(n, sample)
+.. py:function:: misuka.warp.interval_to_tangent_direction(n, sample)
 
     Warp a uniformly distributed sample on [0, 1] to a direction in the
     tangent plane
 
-    Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n`` (misuka.Normal3f):
         *no description available*
 
     Parameter ``sample`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.interval_to_tent(sample)
+.. py:function:: misuka.warp.interval_to_tent(sample)
 
     Warp a uniformly distributed sample on [0, 1] to a tent distribution
 
@@ -27647,7 +30350,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.linear_to_interval(v0, v1, sample)
+.. py:function:: misuka.warp.linear_to_interval(v0, v1, sample)
 
     Inverse of interval_to_linear
 
@@ -27663,24 +30366,24 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_beckmann(sample, alpha)
+.. py:function:: misuka.warp.square_to_beckmann(sample, alpha)
 
     Warp a uniformly distributed square sample to a Beckmann distribution
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
     Parameter ``alpha`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_beckmann_pdf(v, alpha)
+.. py:function:: misuka.warp.square_to_beckmann_pdf(v, alpha)
 
     Probability density of square_to_beckmann()
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``alpha`` (drjit.llvm.ad.Float):
@@ -27689,7 +30392,7 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_bilinear(v00, v10, v01, v11, sample)
+.. py:function:: misuka.warp.square_to_bilinear(v00, v10, v01, v11, sample)
 
     Importance sample a bilinear interpolant
 
@@ -27717,13 +30420,13 @@
     Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → tuple[:py:obj:`mitsuba.Point2f`, drjit.llvm.ad.Float]:
+    Returns → tuple[misuka.Point2f, drjit.llvm.ad.Float]:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_bilinear_pdf(v00, v10, v01, v11, sample)
+.. py:function:: misuka.warp.square_to_bilinear_pdf(v00, v10, v01, v11, sample)
 
     Parameter ``v00`` (drjit.llvm.ad.Float):
         *no description available*
@@ -27737,64 +30440,64 @@
     Parameter ``v11`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_cosine_hemisphere(sample)
+.. py:function:: misuka.warp.square_to_cosine_hemisphere(sample)
 
     Sample a cosine-weighted vector on the unit hemisphere with respect to
     solid angles
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_cosine_hemisphere_pdf(v)
+.. py:function:: misuka.warp.square_to_cosine_hemisphere_pdf(v)
 
     Density of square_to_cosine_hemisphere() with respect to solid angles
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_rough_fiber(sample, wi, tangent, kappa)
+.. py:function:: misuka.warp.square_to_rough_fiber(sample, wi, tangent, kappa)
 
     Warp a uniformly distributed square sample to a rough fiber
     distribution
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point3f`):
+    Parameter ``sample`` (misuka.Point3f):
         *no description available*
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``tangent`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``tangent`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_rough_fiber_pdf(v, wi, tangent, kappa)
+.. py:function:: misuka.warp.square_to_rough_fiber_pdf(v, wi, tangent, kappa)
 
     Probability density of square_to_rough_fiber()
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``wi`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``wi`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``tangent`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``tangent`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
@@ -27803,46 +30506,46 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_std_normal(v)
+.. py:function:: misuka.warp.square_to_std_normal(v)
 
     Sample a point on a 2D standard normal distribution. Internally uses
     the Box-Muller transformation
 
-    Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``v`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_std_normal_pdf(v)
+.. py:function:: misuka.warp.square_to_std_normal_pdf(v)
 
-    Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``v`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_tent(sample)
+.. py:function:: misuka.warp.square_to_tent(sample)
 
     Warp a uniformly distributed square sample to a 2D tent distribution
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_tent_pdf(v)
+.. py:function:: misuka.warp.square_to_tent_pdf(v)
 
     Density of square_to_tent per unit area.
 
-    Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``v`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_cone(v, cos_cutoff)
+.. py:function:: misuka.warp.square_to_uniform_cone(v, cos_cutoff)
 
     Uniformly sample a vector that lies within a given cone of angles
     around the Z axis
@@ -27853,192 +30556,192 @@
     Parameter ``sample``:
         A uniformly distributed sample on :math:`[0,1]^2`
 
-    Parameter ``v`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``v`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_cone_pdf(v, cos_cutoff)
+.. py:function:: misuka.warp.square_to_uniform_cone_pdf(v, cos_cutoff)
 
     Density of square_to_uniform_cone per unit area.
 
     Parameter ``cos_cutoff`` (drjit.llvm.ad.Float):
         Cosine of the cutoff angle
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_disk(sample)
+.. py:function:: misuka.warp.square_to_uniform_disk(sample)
 
     Uniformly sample a vector on a 2D disk
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_disk_concentric(sample)
+.. py:function:: misuka.warp.square_to_uniform_disk_concentric(sample)
 
     Low-distortion concentric square to disk mapping by Peter Shirley
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_disk_concentric_pdf(p)
+.. py:function:: misuka.warp.square_to_uniform_disk_concentric_pdf(p)
 
     Density of square_to_uniform_disk per unit area
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_disk_pdf(p)
+.. py:function:: misuka.warp.square_to_uniform_disk_pdf(p)
 
     Density of square_to_uniform_disk per unit area
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_hemisphere(sample)
+.. py:function:: misuka.warp.square_to_uniform_hemisphere(sample)
 
     Uniformly sample a vector on the unit hemisphere with respect to solid
     angles
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_hemisphere_pdf(v)
+.. py:function:: misuka.warp.square_to_uniform_hemisphere_pdf(v)
 
     Density of square_to_uniform_hemisphere() with respect to solid angles
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_sphere(sample)
+.. py:function:: misuka.warp.square_to_uniform_sphere(sample)
 
     Uniformly sample a vector on the unit sphere with respect to solid
     angles
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_sphere_pdf(v)
+.. py:function:: misuka.warp.square_to_uniform_sphere_pdf(v)
 
     Density of square_to_uniform_sphere() with respect to solid angles
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_spherical_lune(sample, n1, n2)
+.. py:function:: misuka.warp.square_to_uniform_spherical_lune(sample, n1, n2)
 
     Uniformly sample a direction in the two spherical lunes defined by the
     valid boundary directions of two touching faces defined by their
     normals ``n1`` and ``n2``.
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n1`` (misuka.Normal3f):
         *no description available*
 
-    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n2`` (misuka.Normal3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_spherical_lune_pdf(d, n1, n2)
+.. py:function:: misuka.warp.square_to_uniform_spherical_lune_pdf(d, n1, n2)
 
     Density of square_to_uniform_spherical_lune() w.r.t. solid angles
 
-    Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``d`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n1`` (misuka.Normal3f):
         *no description available*
 
-    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n2`` (misuka.Normal3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_square_concentric(sample)
+.. py:function:: misuka.warp.square_to_uniform_square_concentric(sample)
 
     Low-distortion concentric square to square mapping (meant to be used
     in conjunction with another warping method that maps to the sphere)
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_triangle(sample)
+.. py:function:: misuka.warp.square_to_uniform_triangle(sample)
 
     Convert an uniformly distributed square sample into barycentric
     coordinates
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_uniform_triangle_pdf(p)
+.. py:function:: misuka.warp.square_to_uniform_triangle_pdf(p)
 
     Density of square_to_uniform_triangle per unit area.
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_von_mises_fisher(sample, kappa)
+.. py:function:: misuka.warp.square_to_von_mises_fisher(sample, kappa)
 
     Warp a uniformly distributed square sample to a von Mises Fisher
     distribution
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``sample`` (misuka.Point2f):
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Vector3f`:
+    Returns → misuka.Vector3f:
         *no description available*
 
-.. py:function:: mitsuba.warp.square_to_von_mises_fisher_pdf(v, kappa)
+.. py:function:: misuka.warp.square_to_von_mises_fisher_pdf(v, kappa)
 
     Probability density of square_to_von_mises_fisher()
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
@@ -28047,20 +30750,20 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.tangent_direction_to_interval(n, dir)
+.. py:function:: misuka.warp.tangent_direction_to_interval(n, dir)
 
     Inverse of uniform_to_tangent_direction
 
-    Parameter ``n`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n`` (misuka.Normal3f):
         *no description available*
 
-    Parameter ``dir`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``dir`` (misuka.Vector3f):
         *no description available*
 
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.tent_to_interval(value)
+.. py:function:: misuka.warp.tent_to_interval(value)
 
     Warp a tent distribution to a uniformly distributed sample on [0, 1]
 
@@ -28070,109 +30773,109 @@
     Returns → drjit.llvm.ad.Float:
         *no description available*
 
-.. py:function:: mitsuba.warp.tent_to_square(value)
+.. py:function:: misuka.warp.tent_to_square(value)
 
     Warp a uniformly distributed square sample to a 2D tent distribution
 
-    Parameter ``value`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``value`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_cone_to_square(v, cos_cutoff)
+.. py:function:: misuka.warp.uniform_cone_to_square(v, cos_cutoff)
 
     Inverse of the mapping square_to_uniform_cone
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``cos_cutoff`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_disk_to_square(p)
+.. py:function:: misuka.warp.uniform_disk_to_square(p)
 
     Inverse of the mapping square_to_uniform_disk
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_disk_to_square_concentric(p)
+.. py:function:: misuka.warp.uniform_disk_to_square_concentric(p)
 
     Inverse of the mapping square_to_uniform_disk_concentric
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_hemisphere_to_square(v)
+.. py:function:: misuka.warp.uniform_hemisphere_to_square(v)
 
     Inverse of the mapping square_to_uniform_hemisphere
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_sphere_to_square(sample)
+.. py:function:: misuka.warp.uniform_sphere_to_square(sample)
 
     Inverse of the mapping square_to_uniform_sphere
 
-    Parameter ``sample`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``sample`` (misuka.Vector3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_spherical_lune_to_square(d, n1, n2)
+.. py:function:: misuka.warp.uniform_spherical_lune_to_square(d, n1, n2)
 
     Inverse of the mapping square_to_uniform_spherical_lune
 
-    Parameter ``d`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``d`` (misuka.Vector3f):
         *no description available*
 
-    Parameter ``n1`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n1`` (misuka.Normal3f):
         *no description available*
 
-    Parameter ``n2`` (:py:obj:`mitsuba.Normal3f`):
+    Parameter ``n2`` (misuka.Normal3f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.uniform_triangle_to_square(p)
+.. py:function:: misuka.warp.uniform_triangle_to_square(p)
 
     Inverse of the mapping square_to_uniform_triangle
 
-    Parameter ``p`` (:py:obj:`mitsuba.Point2f`):
+    Parameter ``p`` (misuka.Point2f):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.warp.von_mises_fisher_to_square(v, kappa)
+.. py:function:: misuka.warp.von_mises_fisher_to_square(v, kappa)
 
     Inverse of the mapping von_mises_fisher_to_square
 
-    Parameter ``v`` (:py:obj:`mitsuba.Vector3f`):
+    Parameter ``v`` (misuka.Vector3f):
         *no description available*
 
     Parameter ``kappa`` (drjit.llvm.ad.Float):
         *no description available*
 
-    Returns → :py:obj:`mitsuba.Point2f`:
+    Returns → misuka.Point2f:
         *no description available*
 
-.. py:function:: mitsuba.while_loop(state, cond, body, labels=(), label=None, mode=None, strict=True, compress=None, max_iterations=None)
+.. py:function:: misuka.while_loop(state, cond, body, labels=(), label=None, mode=None, strict=True, compress=None, max_iterations=None)
 
     Repeatedly execute a function while a loop condition holds.
 
@@ -28562,16 +31265,16 @@
         tuple: The function returns the final state of the loop variables following
         termination of the loop.
 
-.. py:function:: mitsuba.xyz_to_srgb(rgb, active=True)
+.. py:function:: misuka.xyz_to_srgb(rgb, active=True)
 
     Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB
 
-    Parameter ``rgb`` (:py:obj:`mitsuba.Color3f`):
+    Parameter ``rgb`` (misuka.Color3f):
         *no description available*
 
     Parameter ``active`` (drjit.llvm.ad.Bool):
         Mask to specify active lanes.
 
-    Returns → :py:obj:`mitsuba.Color3f`:
+    Returns → misuka.Color3f:
         *no description available*
 
