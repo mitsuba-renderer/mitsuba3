@@ -58,7 +58,7 @@ to fetch the latest version of Mitsuba 3.
 Configuring :monosp:`misuka.conf`
 ----------------------------------
 
-Mitsuba variants are specified in the file :monosp:`misuka.conf`. This file
+misuka variants are specified in the file :monosp:`misuka.conf`. This file
 can be found in the build directory and will be created when executing CMake the
 first time.
 
