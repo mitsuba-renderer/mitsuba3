@@ -713,8 +713,6 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
         local = to_object * si.p;
 
         Vector3f dp_du = to_world * (dr::TwoPi<Float> *
@@ -734,6 +732,7 @@ public:
             si.dp_du      = dp_du;
             si.dp_dv      = dp_dv;
             si.sh_frame.n = si.n;
+            si.sh_frame.s = dp_du;
 
             // The normal partial along 'v' vanishes, the cylinder is straight
             if (has_flag(ray_flags, RayFlags::NormalPartials))

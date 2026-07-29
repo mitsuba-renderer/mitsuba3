@@ -29,7 +29,6 @@ struct PLYHeader {
 struct PLYAttributeDescriptor {
     std::string name;
     size_t dim;
-    std::vector<InputFloat> buf;
 };
 
 PLYHeader parse_ply_header(Stream *stream, std::string name) {
@@ -292,7 +291,7 @@ void find_other_fields(const std::string& type, std::vector<PLYAttributeDescript
             target_struct.append("a", struct_type_v<InputFloat>);
             ++field_count;
         }
-        vertex_attributes_descriptors.push_back({ type + "color", field_count, std::vector<InputFloat>() });
+        vertex_attributes_descriptors.push_back({ type + "color", field_count });
 
         if (!sj::type_is_float(ref_struct["r"].type))
             Log(Warn, "\"%s\": Mesh attribute \"%s\" has integer fields: color attributes are expected to be in the [0, 1] range.",
@@ -346,7 +345,7 @@ void find_other_fields(const std::string& type, std::vector<PLYAttributeDescript
         std::string color_postfix = (current_postfix_index == 1) ? "_color" : "";
         vertex_attributes_descriptors.push_back(
             { type + current_prefix + color_postfix,
-                current_postfix_level_index, std::vector<InputFloat>() });
+              current_postfix_level_index });
 
         prefixes_encountered.insert(current_prefix);
         // Reset state

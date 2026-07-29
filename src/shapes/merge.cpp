@@ -13,7 +13,7 @@ public:
     MergeShape(const Properties &props) {
         // Note: we are *not* calling the `Shape` constructor as we do not
         // want to accept various properties such as `to_world`.
-        std::unordered_map<Key, ref<Mesh>, key_hasher> tbl;
+        std::unordered_map<Key, std::vector<Base *>, key_hasher> tbl;
         size_t visited = 0, ignored = 0;
         Timer timer;
 
@@ -33,22 +33,22 @@ public:
             key.exterior_medium = mesh->exterior_medium();
             key.emitter = mesh->emitter();
             key.sensor = mesh->sensor();
-            key.has_normals = mesh->has_vertex_normals();
-            key.has_texcoords = mesh->has_vertex_texcoords();
+            key.has_normals = mesh->has_normals();
+            key.has_texcoords = mesh->has_texcoords();
             key.has_face_normals = mesh->has_face_normals();
 
-            auto [it, success] = tbl.try_emplace(key, mesh);
-            if (!success)
-                it->second = it->second->merge(mesh);
-
+            tbl[key].push_back(mesh);
             visited++;
         }
 
+        // Merge each group in one go, which touches the input data once
         for (auto &kv : tbl) {
-            if (tbl.size() == 1 && !props.id().empty())
-                kv.second->set_id(props.id());
+            ref<Mesh> merged = Mesh::merge(kv.second);
 
-            m_objects.push_back((ref<Object>) kv.second);
+            if (tbl.size() == 1 && !props.id().empty())
+                merged->set_id(props.id());
+
+            m_objects.push_back((ref<Object>) merged);
         }
 
         Log(Info, "Collapsed %zu into %zu meshes. (took %s, %zu objects ignored)",

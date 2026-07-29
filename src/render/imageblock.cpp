@@ -73,10 +73,9 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
 
     ScalarVector2u size_ext = m_size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * dr::prod(size_ext),
-           shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
-
-    m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
+    size_t size_flat = m_channel_count * dr::prod(size_ext);
+    m_tensor = TensorXf(dr::zeros<Array>(size_flat),
+                        { size_ext.y(), size_ext.x(), m_channel_count });
 }
 
 MI_VARIANT void
@@ -88,10 +87,9 @@ ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
 
     ScalarVector2u size_ext = size + 2 * m_border_size;
 
-    size_t size_flat = m_channel_count * dr::prod(size_ext),
-           shape[3]  = { size_ext.y(), size_ext.x(), m_channel_count };
-
-    m_tensor = TensorXf(dr::zeros<Array>(size_flat), 3, shape);
+    size_t size_flat = m_channel_count * dr::prod(size_ext);
+    m_tensor = TensorXf(dr::zeros<Array>(size_flat),
+                        { size_ext.y(), size_ext.x(), m_channel_count });
 
     m_size = size;
 }

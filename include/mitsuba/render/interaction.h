@@ -231,6 +231,15 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Shading frame
     Frame3f sh_frame;
 
+    /**
+     * \brief Is the shading frame left-handed?
+     *
+     * This bit denotes when a shape wants to set up a left-handed shading
+     * frame, e.g., on mehses with inverted UVs or instances with mirror
+     * transformation. This is important to correctly interpret normal maps.
+     */
+    Bool frame_flipped = false;
+
     /// Position partials wrt. the UV parameterization
     Vector3f dp_du, dp_dv;
 
@@ -275,16 +284,17 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     void zero_(size_t size = 1) override {
         Interaction<Float_, Spectrum_>::zero_(size);
-        uv          = dr::zeros<Point2f>(size);
-        sh_frame    = dr::zeros<Frame3f>(size);
-        dp_du       = dr::zeros<Vector3f>(size);
-        dp_dv       = dr::zeros<Vector3f>(size);
-        dn_du       = dr::zeros<Vector3f>(size);
-        dn_dv       = dr::zeros<Vector3f>(size);
-        duv_dx      = dr::zeros<Vector2f>(size);
-        duv_dy      = dr::zeros<Vector2f>(size);
-        wi          = dr::zeros<Vector3f>(size);
-        prim_index  = dr::zeros<Index>(size);
+        uv            = dr::zeros<Point2f>(size);
+        sh_frame      = dr::zeros<Frame3f>(size);
+        frame_flipped = dr::zeros<Bool>(size);
+        dp_du         = dr::zeros<Vector3f>(size);
+        dp_dv         = dr::zeros<Vector3f>(size);
+        dn_du         = dr::zeros<Vector3f>(size);
+        dn_dv         = dr::zeros<Vector3f>(size);
+        duv_dx        = dr::zeros<Vector2f>(size);
+        duv_dy        = dr::zeros<Vector2f>(size);
+        wi            = dr::zeros<Vector3f>(size);
+        prim_index    = dr::zeros<Index>(size);
 
         if constexpr (dr::is_jit_v<Float_>) {
             shape       = dr::zeros<ShapePtr>(size);
@@ -558,12 +568,15 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         wavelengths = ray.wavelengths;
 
         if (has_flag(ray_flags, RayFlags::Shading)) {
-            // Orthogonalize ``dp_du`` against the shading normal
+            /* Orthogonalize the tangent direction that the shape wrote to
+               ``sh_frame.s`` against the shading normal. Shapes that leave
+               the field at its zero initialization fall back to an
+               arbitrary basis below. */
             Vector3f n = sh_frame.n,
-                     s = dr::fnmadd(n, dr::dot(n, dp_du), dp_du);
+                     s = dr::fnmadd(n, dr::dot(n, sh_frame.s), sh_frame.s);
             Float sqr_norm = dr::squared_norm(s);
 
-            std::tie(sh_frame.s, sh_frame.t) = dr::if_stmt(
+            auto [s2, t2] = dr::if_stmt(
                 std::make_tuple(n, s, sqr_norm), sqr_norm > 0.f,
 
                 [](Vector3f &n, Vector3f &s, Float &sqr_norm) {
@@ -578,6 +591,11 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
                 "SurfaceInteraction::finalize_surface_interaction()"
             );
+
+            // The bitangent follows the orientation of the parameterization
+            sh_frame.s = s2;
+            sh_frame.t = dr::select(frame_flipped, -t2, t2);
+
             wi = dr::select(active, to_local(-ray.d), -ray.d);
         }
 
@@ -594,7 +612,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
-                 sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
+                 sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
                  duv_dy, wi, prim_index, instance)
 };
 

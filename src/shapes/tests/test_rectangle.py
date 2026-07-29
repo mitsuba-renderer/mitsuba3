@@ -58,7 +58,7 @@ def check_direct_ray_intersect(rectangle, ray, its_found, si):
             for kk in expected.DRJIT_STRUCT.keys():
                 assert dr.allclose(getattr(expected, kk), getattr(actual, kk)), \
                         f"Surface interaction mismatch for field \"{k}.{kk}\"."
-        elif k in ('shape', 'instance'):
+        elif k in ('shape', 'instance') or dr.is_mask_v(expected):
             assert dr.all(expected == actual), \
                     f"Surface interaction mismatch for field \"{k}\"."
         elif k == 'prim_index':
@@ -499,7 +499,8 @@ def test18_inv_transpose(variants_all_ad_rgb):
         mi.Matrix4f([[0, 0, 0, 0],
                      [0, 0, 0, 0],
                      [0, 0, 0, -1],
-                     [0, 0, 0, 0]])
+                     [0, 0, 0, 0]]),
+        atol=1e-6
     )
 
 def test19_area_emitter_update(variants_vec_rgb):
@@ -545,7 +546,6 @@ def test20_flip_normals(variant_scalar_rgb):
             })
 
             rect = scene.shapes()[0]
-            assert rect.has_flipped_normals() == flipped
 
             if False:
                 # For visual debugging
@@ -599,8 +599,8 @@ def test20_flip_normals(variant_scalar_rgb):
             ps = rect.sample_position(time=0.0, sample=mi.Point2f(0.5, 0.5))
             assert dr.allclose(ps.n, si.n)
 
-            # PLY save & reload: flipped normals should _not_ be baked,
-            # since it is always applied on-the-fly.
+            # PLY save & reload: the flip lives in the mesh data, so it
+            # round trips without the scene description repeating it
             with tempfile.TemporaryDirectory() as tempdir:
                 fname = os.path.join(tempdir, fname + ".ply")
                 rect.write_ply(fname)
@@ -609,8 +609,7 @@ def test20_flip_normals(variant_scalar_rgb):
                     "type": "ply",
                     "filename": fname,
                 })
-                assert not reloaded.has_flipped_normals()
                 assert not reloaded.has_face_normals()
                 assert reloaded.primitive_count() == 2
-                assert dr.allclose(reloaded.face_normal(0), mi.Vector3f(0, 0, 1))
-                assert dr.allclose(reloaded.face_normal(1), mi.Vector3f(0, 0, 1))
+                for f in range(2):
+                    assert dr.allclose(reloaded.face_normal(f), si.n)

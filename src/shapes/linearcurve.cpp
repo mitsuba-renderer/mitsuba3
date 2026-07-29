@@ -22,8 +22,6 @@
 #include "../render/metal/shapes.h"
 #endif
 
-#include "../render/bbox_reduce.h"
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -278,10 +276,10 @@ public:
 
         if constexpr (dr::is_jit_v<Float>) {
             DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(m_control_point_count);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u, true, ReduceMode::NoConflicts);
         } else {
             for (size_t i = 0; i < m_control_point_count; ++i) {
                 m_control_points[i * 4 + 0] = vertex_buffer[i * 3 + 0];
@@ -391,7 +389,6 @@ public:
             }
         }
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
         si.n = dr::normalize(si.p - c);
 
         // Embree and OptiX cull linear-curve backfaces at trace time; Metal's
@@ -418,6 +415,7 @@ public:
                        ((p1 - p0) + (c1.w() - c0.w()) * rad_vec_normalized);
 
             si.sh_frame.n = si.n;
+            si.sh_frame.s = si.dp_du;
         }
 
         si.prim_index = pi.prim_index;
@@ -490,26 +488,10 @@ private:
     }
 
     void recompute_bbox() {
-        m_bbox.reset();
-        if (m_control_point_count == 0)
-            return;
-
-        if constexpr (dr::is_jit_v<Float>) {
-            m_bbox = device_reduce_bbox<ScalarPoint3f>(
-                m_control_points, m_control_point_count, 4, /* radius_offset = */ 3);
-        } else {
-            const InputFloat *ptr = m_control_points.data();
-            for (ScalarSize i = 0; i < m_control_point_count; ++i) {
-                ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
-                ScalarFloat r(ptr[4 * i + 3]);
-                m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
-                m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
-                m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
-            }
-        }
+        m_bbox = reduce_bbox<
+            /* Type = */ ScalarPoint3f,
+            /* Stride = */ 4,
+            /* RadiusOffset = */ 3>(m_control_points, m_control_point_count);
     }
 
     std::tuple<Vector3f, Vector3f>

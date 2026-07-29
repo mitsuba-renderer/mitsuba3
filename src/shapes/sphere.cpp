@@ -663,8 +663,6 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
         si.sh_frame.n = dr::normalize(si.p - center);
         Point3f local = to_object * si.p;
 
@@ -692,6 +690,7 @@ public:
 
             si.dp_du = to_world * si.dp_du * (2.f * dr::Pi<Float>);
             si.dp_dv = to_world * si.dp_dv * dr::Pi<Float>;
+            si.sh_frame.s = si.dp_du;
 
             if (has_flag(ray_flags, RayFlags::NormalPartials)) {
                 Float inv_radius =
@@ -748,8 +747,10 @@ public:
     MI_DECLARE_CLASS(Sphere)
 
 private:
-    field<Point3f> m_center; ///< Center in world-space
-    field<Float> m_radius;   ///< Radius in world-space
+    /// Center in world-space
+    field<Point3f> m_center;
+    /// Radius in world-space
+    field<Float> m_radius;
     Float m_inv_surface_area;
     bool m_flip_normals;
 

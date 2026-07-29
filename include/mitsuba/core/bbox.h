@@ -349,6 +349,81 @@ template <typename Point_> struct BoundingBox {
     Point max; /// Component-wise maximum
 };
 
+/// Compute the bounding box of an interleaved position buffer.
+///
+/// \c data is interleaved with \c Stride scalars per element and the position
+/// at offsets 0, 1, 2.
+///
+/// If \c RadiusOffset >= 0, each point is grown by the scalar at that offset.
+/// This is used by the curve shapes which pass curve control points to this
+/// function.
+///
+/// An empty buffer produces an invalid bounding box. In JIT variants, the
+/// reduction runs on the device.
+template <typename Type, uint32_t Stride, int RadiusOffset = -1,
+          typename StoredFloat>
+BoundingBox<Type> reduce_bbox(const StoredFloat &data, uint32_t count) {
+    BoundingBox<Type> bbox;
+    if (count == 0)
+        return bbox;
+
+    if constexpr (dr::is_jit_v<StoredFloat>) {
+        using Value  = dr::scalar_t<StoredFloat>;
+        using UInt32 = dr::uint32_array_t<StoredFloat>;
+        using Mask   = dr::mask_t<StoredFloat>;
+        using Vec    = dr::Array<StoredFloat, 3>;
+
+        UInt32 base = dr::arange<UInt32>(count) * Stride;
+        Vec pos(dr::gather<StoredFloat>(data, base + 0u),
+                dr::gather<StoredFloat>(data, base + 1u),
+                dr::gather<StoredFloat>(data, base + 2u));
+
+        Vec lo = pos, hi = pos;
+        if constexpr (RadiusOffset >= 0) {
+            StoredFloat r =
+                dr::gather<StoredFloat>(data, base + (uint32_t) RadiusOffset);
+            lo = pos - r;
+            hi = pos + r;
+        }
+
+        // Reduce into a flat buffer holding the minimum and maximum corner
+        constexpr Value inf = dr::Infinity<Value>;
+        Value init[6] = { inf, inf, inf, -inf, -inf, -inf };
+        StoredFloat bounds = dr::load<StoredFloat>(init, 6);
+
+        Mask active = true;
+        for (uint32_t i = 0; i < 3; ++i) {
+            dr::scatter_reduce(ReduceOp::Min, bounds, lo[i], UInt32(i), active,
+                               ReduceMode::Local);
+            dr::scatter_reduce(ReduceOp::Max, bounds, hi[i], UInt32(i + 3),
+                               active, ReduceMode::Local);
+        }
+
+        StoredFloat corners = dr::migrate(bounds, JitBackend::None);
+        dr::sync_thread();
+
+        const Value *c = corners.data();
+        bbox.min = Type(c[0], c[1], c[2]);
+        bbox.max = Type(c[3], c[4], c[5]);
+    } else {
+        using ScalarValue = dr::scalar_t<StoredFloat>;
+        const ScalarValue *ptr = data.data();
+
+        for (uint32_t i = 0; i < count; ++i) {
+            const ScalarValue *p = ptr + (size_t) i * Stride;
+            if constexpr (RadiusOffset >= 0) {
+                ScalarValue r = p[RadiusOffset];
+                bbox.expand(Type(p[0] - r, p[1] - r, p[2] - r));
+                bbox.expand(Type(p[0] + r, p[1] + r, p[2] + r));
+            } else {
+                bbox.expand(Type(p[0], p[1], p[2]));
+            }
+        }
+    }
+
+    return bbox;
+}
+
 /// Print a string representation of the bounding box
 template <typename Point>
 std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {

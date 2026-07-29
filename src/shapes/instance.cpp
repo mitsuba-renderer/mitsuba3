@@ -211,6 +211,14 @@ public:
                 si.dn_du = dr::fnmadd(n, dr::dot(n, dn_du), dn_du);
                 si.dn_dv = dr::fnmadd(n, dr::dot(n, dn_dv), dn_dv);
             }
+
+            /* A tangent direction supplied by the nested shape transforms
+               along; finalize_surface_interaction() orthonormalizes it
+               against the transformed normal and derives the bitangent. A
+               mirroring instance transform flips the orientation of the
+               nested parameterization. */
+            si.sh_frame.s = to_world_d * si.sh_frame.s;
+            si.frame_flipped ^= dr::det(Matrix3f(to_world_d.matrix)) < 0.f;
         }
 
         if constexpr (IsDiff) {

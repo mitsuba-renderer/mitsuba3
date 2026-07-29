@@ -549,6 +549,11 @@ public:
      * by the caller following the call to \ref compute_surface_interaction(), and
      * \c duv_dx, and \c duv_dy are left uninitialized.
      *
+     * Every call must be followed by \ref
+     * SurfaceInteraction::finalize_surface_interaction(), which implementations
+     * rely on: it is what invalidates \c t on the inactive lanes, so they need
+     * not mask it themselves.
+     *
      * \param ray
      *      Ray associated with the ray intersection
      * \param pi
@@ -714,6 +719,10 @@ public:
      * Shape attributes are user-provided fields that provide extra
      * information at an intersection. An example of this would be a per-vertex
      * or per-face color on a triangle mesh.
+     *
+     * An attribute that the shape does not carry, or that does not fit the
+     * requested channel count, evaluates to zero. Use \ref has_attribute()
+     * to distinguish this from an attribute that is present and zero.
      *
      * \param name
      *     Name of the attribute to evaluate

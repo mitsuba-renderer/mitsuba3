@@ -8,6 +8,7 @@ import sys
 from functools import wraps
 from inspect import signature, _empty
 
+import numpy as np
 import pytest
 import drjit as dr
 
@@ -174,81 +175,250 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
             assert dr.allclose(results_vec[i], np.transpose(results_scalar[i]), atol=atol)
 
 
-def curved_triangle(flip_normals=False, texcoords=True):
+def unit_triangle(name="tri", **kwargs):
+    """The triangle (0,0,0), (1,0,0), (0,1,0), built through from_fields()"""
+    import mitsuba as mi
+    m = mi.Mesh(name)
+    m.from_fields(faces=[[0, 1, 2]],
+                  positions=[[0, 0, 0], [1, 0, 0], [0, 1, 0]], **kwargs)
+    return m
+
+
+def quad_corners(seam=False):
     """
-    Build a single triangle whose randomly generated vertex normals give it
-    curvature, and return an exact model of its shading normal along with it.
-
-    Parameter ``texcoords`` (bool):
-        Assign a random parameterization, which is not the barycentric one.
-
-    Returns a ``(mesh, normal_field)`` pair, where ``normal_field(u, v)``
-    evaluates the unit shading normal in double precision.
+    Corner-indexed description of a unit quad in the z=0 plane: two
+    triangles (0,1,2) and (0,2,3), returned as a ``(positions,
+    corner_vertex, uv)`` triple for ``Mesh.from_corners()``. With ``seam``,
+    the second triangle's UVs jump to a separate island along the diagonal.
     """
     import numpy as np
+    positions = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
+                         dtype=np.float32)
+    corner_vertex = np.array([0, 1, 2, 0, 2, 3], dtype=np.uint32)
+    uv = np.array([[0, 0], [1, 0], [1, 1], [0, 0], [1, 1], [0, 1]],
+                  dtype=np.float32)
+    if seam:
+        uv[3] = (5, 5)
+        uv[4] = (6, 6)
+    return positions, corner_vertex, uv
+
+
+def seam_quad_fields():
+    """
+    The quad from ``quad_corners(seam=True)``, written out by hand in the
+    form that ``Mesh.from_fields()`` takes: the two vertices on the seam
+    appear twice (6 vertices, 4 positions), and ``position_index`` says
+    which position each vertex sits on. Kept independent of the corner
+    welder so that ``from_fields()`` tests do not rely on it. Returns
+    ``(positions, faces, position_index, uv)``.
+    """
+    import numpy as np
+    coarse = np.float32([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]])
+    faces = np.uint32([[0, 1, 2], [3, 4, 5]])
+    pidx = np.uint32([0, 1, 2, 0, 2, 3])
+    uv = np.float32([[0, 0], [1, 0], [1, 1], [5, 5], [6, 6], [0, 1]])
+    return coarse, faces, pidx, uv
+
+
+def seam_quad():
+    """The mesh described by ``seam_quad_fields()``: 4 surface points, 6
+    vertices, faces (0,1,2)/(0,2,3) in surface point space"""
+    import mitsuba as mi
+    coarse, faces, pidx, uv = seam_quad_fields()
+    m = mi.Mesh("seam")
+    m.from_fields(faces=mi.TensorXu(faces), position_index=pidx,
+                  positions=mi.TensorXf(coarse), texcoords=mi.TensorXf(uv))
+    return m
+
+
+# A material that consumes the tangent frame, which makes a mesh spend the
+# trailing packed lane on the tangent instead of on n.z
+ANISOTROPIC_BSDF = {'type': 'roughconductor', 'alpha_u': 0.1, 'alpha_v': 0.3}
+
+
+def anisotropic_bsdf():
+    """Instance of the ``ANISOTROPIC_BSDF`` description"""
+    import mitsuba as mi
+    return mi.load_dict(dict(ANISOTROPIC_BSDF))
+
+
+def assert_uniform_within_groups(values, index):
+    """Assert that all rows of ``values`` sharing an ``index`` entry (a
+    position or normal group) hold the same value"""
+    import numpy as np
+    for g in np.unique(index):
+        members = values[index == g]
+        assert len(members) > 0 and np.allclose(members, members[0])
+
+
+def assert_valid_tangent_frame(mesh):
+    """Assert that a mesh's tangents are unit length and perpendicular to
+    the corresponding vertex normals"""
+    import numpy as np
+    t, n = np.array(mesh.tangents()), vertex_normals(mesh)
+    assert np.all(np.isfinite(t))
+    assert np.allclose(np.linalg.norm(t, axis=1), 1, atol=1e-6)
+    assert np.allclose((t * n).sum(axis=1), 0, atol=1e-6)
+
+
+def _expand(values, index):
+    """Resolve grouped values through an index map (empty means identity)"""
+    import numpy as np
+    values = np.array(values)
+    index = np.array(index)
+    return values if index.size == 0 else values[index]
+
+
+def vertex_positions(mesh):
+    """Per-vertex positions of a mesh, resolved through the position map"""
+    return _expand(mesh.positions(), mesh.position_index())
+
+
+def vertex_normals(mesh):
+    """Per-vertex normals of a mesh, resolved through the normal map"""
+    return _expand(mesh.normals(), mesh.normal_index())
+
+
+def faces_of(mesh):
+    """(F, 3) vertex indices read through the 'faces' parameter"""
+    import numpy as np
+    import mitsuba as mi
+    return np.array(mi.traverse(mesh)['faces'])
+
+
+def face_records(mesh):
+    """(F, 4) vertex indices + BSDF index from the parameter interface"""
+    import numpy as np
+    import mitsuba as mi
+    params = mi.traverse(mesh)
+    faces = np.array(params['faces'])
+    bsdf_index = np.array(params['bsdf_index'])
+    if bsdf_index.size == 0:  # an empty assignment stands for zeros
+        bsdf_index = np.zeros(faces.shape[0], dtype=np.uint32)
+    return np.column_stack([faces, bsdf_index])
+
+
+def rows(value, dim):
+    """``(N, dim)`` double precision view of a Dr.Jit vector, in any variant"""
+    return np.array(value, dtype=np.float64).reshape(dim, -1).T
+
+
+class CurvedPatch:
+    """
+    Reference normals and shading frame on a 2-triangle curved patch.
+    """
+
+    def __init__(self, p, n, uv, sign):
+        self.p, self.uv, self.sign = np.float64(p), np.float64(uv), sign
+        self.n = np.float64(n)
+        self.n /= np.linalg.norm(self.n, axis=-1, keepdims=True)
+
+    def basis(self, f):
+        """Position and texture coordinate edges of a face, plus the
+        reciprocal determinant of the latter"""
+        e, d = self.p[f, 1:] - self.p[f, 0], self.uv[f, 1:] - self.uv[f, 0]
+        return e, d, 1.0 / (d[0, 0] * d[1, 1] - d[0, 1] * d[1, 0])
+
+    @staticmethod
+    def interpolate(v, b1, b2):
+        """Barycentric interpolation of a face's corner values"""
+        b1, b2 = np.atleast_1d(b1)[:, None], np.atleast_1d(b2)[:, None]
+        return v[0] * (1 - b1 - b2) + v[1] * b1 + v[2] * b2
+
+    def normal_field(self, f):
+        """The unit shading normal of a face as a function of ``(u, v)``"""
+        _, d, inv_det = self.basis(f)
+
+        def field(u, v):
+            du, dv = u - self.uv[f, 0, 0], v - self.uv[f, 0, 1]
+            n = self.interpolate(self.n[f],
+                                 (d[1, 1] * du - d[1, 0] * dv) * inv_det,
+                                 (d[0, 0] * dv - d[0, 1] * du) * inv_det)
+            return self.sign * n / np.linalg.norm(n, axis=-1, keepdims=True)
+
+        return field
+
+    def expected(self, f, b1, b2):
+        """The exact fields at barycentric coordinates on the given face"""
+        e, d, inv_det = self.basis(f)
+        unit = lambda v: v / np.linalg.norm(v, axis=-1, keepdims=True)
+        return dict(
+            p=self.interpolate(self.p[f], b1, b2),
+            n=unit(np.cross(e[0], e[1])),
+            sh_n=self.sign * unit(self.interpolate(self.n[f], b1, b2)),
+            uv=self.interpolate(self.uv[f], b1, b2),
+            dp_du=(d[1, 1] * e[0] - d[0, 1] * e[1]) * inv_det,
+            dp_dv=(d[0, 0] * e[1] - d[1, 0] * e[0]) * inv_det,
+            flipped=bool(inv_det < 0))
+
+
+def curved_patch(hard_edge=False, flip_normals=False, face_normals=False):
+    """
+    Build a curved patch of two triangles with a diagonal from surface point 2
+    and 0. Returns a reference model of the associated shading fields.
+    The diagonal is a UV seam. The second triangle is mirrored in VU space.
+    When ``hard_edge`` is true, the edge is furthermore creased.
+    """
     import mitsuba as mi
 
-    props = mi.Properties()
-    props['flip_normals'] = flip_normals
-    mesh = mi.Mesh("curved_triangle", 3, 1, props, has_vertex_normals=True,
-                   has_vertex_texcoords=texcoords)
+    def unit(v):
+        v = np.float32(v)
+        return v / np.linalg.norm(v, axis=-1, keepdims=True)
 
-    rng = np.random.default_rng(0)
-    p = mi.traverse(mesh)
-    p['faces'] = [0, 1, 2]
-    p['vertex_positions'] = [0, 0, 0,  1, 0, 0,  0, 1, 0]
-    # Tilt the normals away from the triangle's own, but keep them on its side
-    p['vertex_normals'] = (rng.normal(size=(3, 3)) + [0, 0, 4]).ravel()
-    if texcoords:
-        p['vertex_texcoords'] = rng.random(6)
-    p.update()
+    positions = np.float32([[0, 0, 0], [1, 0, 0.2], [1, 1, -0.1], [0, 1, 0.3]])
+    position_index = np.uint32([0, 1, 2, 0, 2, 3])
+    texcoords = np.float32([[0.10, 0.20], [0.70, 0.05], [0.55, 0.80],
+                            [2.30, 0.40], [2.05, 0.95], [2.85, 0.75]])
+    normals = unit([[-0.3, -0.2, 1], [0.4, -0.1, 1],
+                    [0.25, 0.35, 1], [-0.2, 0.3, 1]])
 
-    # Without texture coordinates the parameterization is barycentric, which
-    # the identity below turns into the same change of variables
-    n = np.array(p['vertex_normals'], dtype=np.float64).reshape(3, 3)
-    uv = (np.array(p['vertex_texcoords'], dtype=np.float64).reshape(3, 2)
-          if texcoords else np.array([[0., 0.], [1., 0.], [0., 1.]]))
-    to_bary = np.linalg.inv(np.column_stack((uv[1] - uv[0], uv[2] - uv[0])))
+    # The normal groups coincide with the surface points, unless the second
+    # face carries its own normals on the shared diagonal
+    normal_index = position_index
+    if hard_edge:
+        normals = np.vstack([normals[[0, 1, 2]],
+                             unit([[0.5, 0.45, 1], [-0.45, 0.5, 1]]),
+                             normals[[3]]])
+        normal_index = np.uint32([0, 1, 2, 3, 4, 5])
 
-    def normal_field(u, v):
-        b = to_bary @ (np.array([u, v]) - uv[0])
-        ni = (1 - b[0] - b[1]) * n[0] + b[0] * n[1] + b[1] * n[2]
-        return (-1 if flip_normals else 1) * ni / np.linalg.norm(ni)
+    m = mi.Mesh("patch", flip_normals=flip_normals, face_normals=face_normals)
+    m.from_fields(faces=[[0, 1, 2], [3, 4, 5]], positions=positions,
+                  position_index=position_index, normals=normals,
+                  normal_index=normal_index, texcoords=texcoords)
 
-    return mesh, normal_field
+    # 'flip_normals' reverses the winding of the built mesh and negates its
+    # shading normals, which the reference model has to follow
+    corner = np.uint32([[0, 1, 2], [3, 4, 5]])
+    if flip_normals:
+        corner = corner[:, ::-1]
+
+    return m, CurvedPatch(positions[position_index[corner]],
+                          normals[normal_index[corner]], texcoords[corner],
+                          -1.0 if flip_normals else 1.0)
 
 
 def check_normal_partials(si, normal_field, to_world=None, h=1e-3, rtol=2e-3):
     """
-    Check ``si.dn_du``/``si.dn_dv`` against central differences of an exact
-    normal field, and return the relative error.
-
-    Parameter ``normal_field`` (callable):
-        Maps ``(u, v)`` to the unit shading normal, in double precision.
-
-    Parameter ``to_world`` (``mi.ScalarTransform4f``):
-        If given, map the field to world space through the inverse transpose,
-        as a shape's ``to_world`` or an instance transform does.
+    Check ``si.dn_du``/``si.dn_dv`` against central differences of a normal
+    field ``normal_field(u, v)``, and return the largest relative error.
     """
-    import numpy as np
-
     field = normal_field
     if to_world is not None:
-        N = np.linalg.inv(np.array(to_world.matrix, dtype=np.float64)[:3, :3]).T
+        N = np.linalg.inv(np.array(to_world.matrix, dtype=np.float64)[:3, :3])
 
         def field(u, v):
-            n = N @ normal_field(u, v)
-            return n / np.linalg.norm(n)
+            n = normal_field(u, v) @ N
+            return n / np.linalg.norm(n, axis=-1, keepdims=True)
 
-    u, v = float(si.uv[0]), float(si.uv[1])
+    u, v = rows(si.uv, 2).T
     ref = [(field(u + h, v) - field(u - h, v)) / (2 * h),
            (field(u, v + h) - field(u, v - h)) / (2 * h)]
 
-    scale = max(np.linalg.norm(ref[0]), np.linalg.norm(ref[1]), 1.0)
-    err = max(np.abs(np.array(d).ravel() - r).max()
+    scale = max(max(np.abs(r).max() for r in ref), 1.0)
+    err = max(np.abs(rows(d, 3) - r).max()
               for d, r in zip((si.dn_du, si.dn_dv), ref)) / scale
 
-    assert err < rtol, (f"normal partials at uv=({u}, {v}) are off by {err}:\n"
-                        f"  dn_du = {si.dn_du}, expected {ref[0]}\n"
-                        f"  dn_dv = {si.dn_dv}, expected {ref[1]}")
+    assert err < rtol, (f"normal partials are off by {err}:\n"
+                        f"  dn_du = {rows(si.dn_du, 3)}, expected {ref[0]}\n"
+                        f"  dn_dv = {rows(si.dn_dv, 3)}, expected {ref[1]}")
     return err

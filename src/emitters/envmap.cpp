@@ -186,8 +186,8 @@ public:
 
         refresh_halo((ScalarFloat *) bitmap_2->data(), m_res);
 
-        size_t shape[3] = { (size_t) m_res.y(), (size_t) sw, (size_t) PixelWidth };
-        TensorXf tensor(bitmap_2->data(), 3, shape);
+        TensorXf tensor(bitmap_2->data(), { (size_t) m_res.y(), (size_t) sw,
+                                            (size_t) PixelWidth });
         m_texture = Tex(tensor, /* use_accel = */ true,
                         /* migrate = */ dr::is_jit_v<Float>,
                         dr::FilterMode::Linear, dr::WrapMode::Clamp);
@@ -240,8 +240,10 @@ public:
                 dr::scatter(corrected, dr::gather<PixelData>(array, row + 1u),
                             row + (m_res.x() + 1u));
 
-                size_t shape[3] = { (size_t) m_res.y(), (size_t) sw, (size_t) PixelWidth };
-                m_texture.set_tensor(TensorXf(corrected, 3, shape), /* migrate */ true);
+                m_texture.set_tensor(
+                    TensorXf(corrected, { (size_t) m_res.y(), (size_t) sw,
+                                          (size_t) PixelWidth }),
+                    /* migrate */ true);
             } else {
                 refresh_halo((ScalarFloat *) tensor.array().data(), m_res);
                 m_texture.update_inplace();

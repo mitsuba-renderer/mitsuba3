@@ -152,15 +152,15 @@ public:
                 Log(Error, "\"%s\": file does not exist!", file_path);
             VolumeGrid<float, Color<float, 3>> vol_grid(file_path);
             ScalarVector3i res = vol_grid.size();
-            size_t shape[4]    = { (size_t) res.z(), (size_t) res.y(),
-                                   (size_t) res.x(), 1 };
             if (vol_grid.channel_count() != 1)
                 Throw("SDF grid data source \"%s\" has %lu channels, expected 1.",
                       file_path, vol_grid.channel_count());
 
             m_grid_texture = InputTexture3f(
-                InputTensorXf(vol_grid.data(), 4, shape), true, true,
-                dr::FilterMode::Linear, dr::WrapMode::Clamp);
+                InputTensorXf(vol_grid.data(), { (size_t) res.z(),
+                                                 (size_t) res.y(),
+                                                 (size_t) res.x(), 1 }),
+                true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else if (props.has_property("grid")) {
             const TensorXf& tensor = props.get_any<TensorXf>("grid");
             if (tensor.ndim() != 4)
@@ -378,8 +378,6 @@ public:
         }
 
         si.attach_motion(ray, p_att, ray_flags);
-
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
         Vector3f grad = sdf_grad(m_to_world.value().inverse() * si.p);
 
@@ -1046,13 +1044,13 @@ private:
                 stride = sizeof(InputScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
             m_jit_bboxes = dr::zeros<InputFloat>(2 * stride * max_voxel_count);
-            dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied);
-            dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied);
-            dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied);
-            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
+            dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied, ReduceMode::NoConflicts);
             dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
             aabbs_ptr = (void *) m_jit_bboxes.data();

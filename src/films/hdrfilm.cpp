@@ -384,33 +384,30 @@ public:
                                       dr::gather<Float>(data, in_idx + 2));
 
                 if (to_y) {
-                    dr::scatter(values, luminance(rgb), out_idx);
+                    dr::scatter(values, luminance(rgb), out_idx, true,
+                                ReduceMode::NoConflicts);
                 } else {
                     Color3f xyz = srgb_to_xyz(rgb);
-                    dr::scatter(values, xyz[0], out_idx);
-                    dr::scatter(values, xyz[1], out_idx + 1);
-                    dr::scatter(values, xyz[2], out_idx + 2);
+                    dr::scatter(values, xyz[0], out_idx, true, ReduceMode::NoConflicts);
+                    dr::scatter(values, xyz[1], out_idx + 1, true, ReduceMode::NoConflicts);
+                    dr::scatter(values, xyz[2], out_idx + 2, true, ReduceMode::NoConflicts);
                 }
             }
 
             // Perform the weight division unless the weight is zero
             values /= dr::select(weight == 0.f, 1.f, weight);
 
-            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
-                                target_ch };
-
-            return TensorXf(values, 3, shape);
+            return TensorXf(values, { (size_t) size.y(), (size_t) size.x(),
+                                      target_ch });
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
             size_t width = source->channel_count() * dr::prod(size);
             auto data = dr::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
 
-            size_t shape[3] = { (size_t) source->height(),
-                                (size_t) source->width(),
-                                source->channel_count() };
-
-            return TensorXf(data, 3, shape);
+            return TensorXf(data, { (size_t) source->height(),
+                                    (size_t) source->width(),
+                                    source->channel_count() });
         }
     }
 

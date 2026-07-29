@@ -126,9 +126,7 @@ struct Transform {
     }
 
     /// Inequality comparison operator
-    bool operator!=(const Transform &t) const {
-        return dr::all_nested(matrix != t.matrix);
-    }
+    bool operator!=(const Transform &t) const { return !operator==(t); }
 
     /// Create a translation transformation
     static Transform translate(const Vector<Float, Size - 1> &v) {
@@ -450,8 +448,8 @@ struct Transform {
                     inverse_transpose.entry(i, j);
             }
             result.matrix.entry(i, Size - 2) = matrix.entry(i, Size - 1);
-            result.inverse_transpose.entry(i, Size - 2) =
-                inverse_transpose.entry(i, Size - 1);
+            result.inverse_transpose.entry(Size - 2, i) =
+                inverse_transpose.entry(Size - 1, i);
         }
 
         return result;

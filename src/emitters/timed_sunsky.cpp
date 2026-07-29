@@ -480,8 +480,7 @@ private:
 
             dr::masked(sampling_weigths, !dr::isfinite(sampling_weigths)) = 0.f;
 
-            const size_t shape[2] = { MPDF_ELEVATION_COUNT, 1 };
-            TensorXf temp = TensorXf(sampling_weigths, 2, shape);
+            TensorXf temp(sampling_weigths, { MPDF_ELEVATION_COUNT, 1 });
 
             sky_weight_tex = new SamplingTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
@@ -495,8 +494,8 @@ private:
                 sun_irrad_data = dr::ravel(rgb_sun_irrad);
             }
 
-            const size_t shape[2] = { MPDF_ELEVATION_COUNT, CHANNEL_COUNT };
-            TensorXf temp = TensorXf(sun_irrad_data, 2, shape);
+            TensorXf temp(sun_irrad_data,
+                          { MPDF_ELEVATION_COUNT, CHANNEL_COUNT });
 
             sun_irrad_tex = new SunIrradTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }

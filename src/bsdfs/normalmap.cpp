@@ -120,6 +120,10 @@ public:
             m_components.push_back((m_nested_bsdf->flags(i)));
             m_flags |= m_components.back();
         }
+
+        // Tangent-space normals are relative to the shading frame, so the
+        // mesh must supply its UV-oriented tangent
+        m_flags |= (uint32_t) BSDFFlags::NormalMapped;
     }
 
     void traverse(TraversalCallback *cb) override {

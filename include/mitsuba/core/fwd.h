@@ -189,6 +189,7 @@ template <typename Float_> struct CoreAliases {
     using TensorXf16 = dr::Tensor<mitsuba::DynamicBuffer<Float16>>;
     using TensorXf32 = dr::Tensor<mitsuba::DynamicBuffer<Float32>>;
     using TensorXf64 = dr::Tensor<mitsuba::DynamicBuffer<Float64>>;
+    using TensorXu32 = dr::Tensor<mitsuba::DynamicBuffer<UInt32>>;
 
     using Texture1f = dr::Texture<Float, 1>;
     using Texture2f = dr::Texture<Float, 2>;
@@ -295,6 +296,7 @@ template <typename Float_> struct CoreAliases {
     using prefix ## TensorXf16           = typename prefix ## CoreAliases::TensorXf16;             \
     using prefix ## TensorXf32           = typename prefix ## CoreAliases::TensorXf32;             \
     using prefix ## TensorXf64           = typename prefix ## CoreAliases::TensorXf64;             \
+    using prefix ## TensorXu32           = typename prefix ## CoreAliases::TensorXu32;             \
     using prefix ## Texture1f16          = typename prefix ## CoreAliases::Texture1f16;            \
     using prefix ## Texture2f16          = typename prefix ## CoreAliases::Texture2f16;            \
     using prefix ## Texture3f16          = typename prefix ## CoreAliases::Texture3f16;            \
@@ -357,14 +359,29 @@ extern "C" {
     constexpr uint32_t operator|(uint32_t f1, name f2) {                       \
         return f1 | (uint32_t) f2;                                             \
     }                                                                          \
+    constexpr uint32_t operator|(name f1, uint32_t f2) {                       \
+        return (uint32_t) f1 | f2;                                             \
+    }                                                                          \
     constexpr uint32_t operator&(name f1, name f2) {                           \
         return (uint32_t) f1 & (uint32_t) f2;                                  \
     }                                                                          \
     constexpr uint32_t operator&(uint32_t f1, name f2) {                       \
         return f1 & (uint32_t) f2;                                             \
     }                                                                          \
+    constexpr uint32_t operator&(name f1, uint32_t f2) {                       \
+        return (uint32_t) f1 & f2;                                             \
+    }                                                                          \
     constexpr uint32_t operator~(name f1) { return ~(uint32_t) f1; }           \
     constexpr uint32_t operator+(name e) { return (uint32_t) e; }              \
+    constexpr name &operator|=(name &f1, name f2) {                            \
+        return f1 = (name) ((uint32_t) f1 | (uint32_t) f2);                    \
+    }                                                                          \
+    constexpr name &operator&=(name &f1, uint32_t f2) {                        \
+        return f1 = (name) ((uint32_t) f1 & f2);                               \
+    }                                                                          \
+    constexpr bool has_flag(name flags, name f) {                              \
+        return ((uint32_t) flags & (uint32_t) f) != 0;                         \
+    }                                                                          \
     template <typename UInt32>                                                 \
     constexpr auto has_flag(UInt32 flags, name f) {                            \
         return neq_expr(flags & (uint32_t) f, 0u);                             \

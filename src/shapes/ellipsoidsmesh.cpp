@@ -121,21 +121,22 @@ detailed in :cite:`Condor2024Gaussians`.
 template <typename Float, typename Spectrum>
 class EllipsoidsMesh final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, initialize, m_vertex_count, m_face_count, m_faces, mark_dirty,
-                   m_vertex_positions, m_bbox, recompute_bbox, get_children_string, m_shape_type)
+    MI_IMPORT_BASE(Mesh, m_vertex_count, m_face_count, m_packed_faces, mark_dirty,
+                   m_packed_vertices, m_position_count, m_normal_count, m_bbox,
+                   recompute_bbox, get_children_string, m_shape_type)
     MI_IMPORT_TYPES(Shape)
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::InputFloat;
     using typename Base::InputPoint3f;
-    using FloatStorage = DynamicBuffer<dr::replace_scalar_t<Float, InputFloat>>;
+    using StoredFloat = DynamicBuffer<dr::replace_scalar_t<Float, InputFloat>>;
     using IndexStorage = DynamicBuffer<dr::replace_scalar_t<Float, ScalarIndex>>;
     using ArrayXf      = dr::DynamicArray<Float>;
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
-    using Base::m_vertex_positions_ptr;
-    using Base::m_faces_ptr;
+    using Base::m_packed_vertices_ptr;
+    using Base::m_packed_faces_ptr;
 #endif
 
     EllipsoidsMesh(const Properties &props) : Base(props) {
@@ -172,38 +173,24 @@ public:
             Log(Debug, "Load shell template from nested mesh object.");
             ref<Base> mesh(dynamic_cast<Base *>(props.get<ref<Object>>("shell").get()));
 
-            struct MeshDataRetriever : public TraversalCallback {
-                void put_object(std::string_view, Object *, uint32_t) override {}
-                void put_value(std::string_view name, void *val, uint32_t, const std::type_info &) override {
-                    if (name == "vertex_positions")
-                        vertex_positions = *((FloatStorage *) val);
-                    else if (name == "faces")
-                        faces = *((IndexStorage *) val);
-                };
-                FloatStorage vertex_positions;
-                IndexStorage faces;
-            };
+            // Consume the shell through the geometric topology
+            auto geometric_faces = mesh->geometric_faces();
 
-            MeshDataRetriever retriever = MeshDataRetriever();
-            mesh->traverse((TraversalCallback *) &retriever);
-
-            auto&& vertex_positions = dr::migrate(retriever.vertex_positions, JitBackend::None);
-            auto&& faces            = dr::migrate(retriever.faces,            JitBackend::None);
+            auto&& pos = dr::migrate(mesh->positions().array(),
+                                     JitBackend::None);
+            auto&& faces = dr::migrate(geometric_faces.array(),
+                                       JitBackend::None);
 
             if constexpr (dr::is_jit_v<Float>)
                 dr::sync_thread();
 
-            const InputFloat *vertex_positions_ptr = vertex_positions.data();
-            const ScalarIndex *faces_ptr           = faces.data();
+            const ScalarIndex *faces_ptr = faces.data();
+            const InputFloat *pos_ptr = pos.data();
 
             m_shell_vertices.clear();
-            for (size_t i = 0; i < dr::width(vertex_positions) / 3; ++i) {
-                m_shell_vertices.push_back({
-                    vertex_positions_ptr[3 * i + 0],
-                    vertex_positions_ptr[3 * i + 1],
-                    vertex_positions_ptr[3 * i + 2],
-                });
-            }
+            for (size_t i = 0; i < dr::width(pos) / 3; ++i)
+                m_shell_vertices.push_back({ pos_ptr[3 * i], pos_ptr[3 * i + 1],
+                                             pos_ptr[3 * i + 2] });
 
             m_shell_faces.clear();
             for (size_t i = 0; i < dr::width(faces) / 3; ++i) {
@@ -403,28 +390,46 @@ private:
 
             m_vertex_count = vertex_count;
             m_face_count   = face_count;
+            // The shells reference their vertices directly, without maps
+            m_position_count = m_normal_count = vertex_count;
 
-            m_vertex_positions = dr::empty<FloatStorage>(3 * m_vertex_count);
-            m_faces            = dr::empty<IndexStorage>(3 * m_face_count);
+            /* The shell vertices carry positions only: the remaining lanes
+               of the packed records stay zero, and this plugin never runs
+               Mesh::pack(). */
+            m_packed_vertices = dr::zeros<StoredFloat>(
+                (size_t) MeshVertexStride * m_vertex_count);
+            m_packed_faces    = dr::empty<IndexStorage>(4 * m_face_count);
 
             for (int i = 0; i < nb_vertices; ++i) {
                 Point3f v = to_world * Point3f(m_shell_vertices[i]);
                 // Convert to 32-bit precision
                 using JitInputPoint3f = Point<dr::replace_scalar_t<Float, InputFloat>, 3>;
-                dr::scatter(m_vertex_positions, JitInputPoint3f(v), idx * nb_vertices + i);
+                JitInputPoint3f v32(v);
+                UInt32 base = (idx * uint32_t(nb_vertices) + uint32_t(i)) *
+                              MeshVertexStride;
+                for (uint32_t k = 0; k < 3; ++k)
+                    dr::scatter(m_packed_vertices, v32[k], base + k, true,
+                                ReduceMode::NoConflicts);
             }
 
             UInt32 offset = idx * uint32_t(nb_vertices);
             for (int i = 0; i < nb_faces; ++i) {
                 Vector3u face = m_shell_faces[i];
-                dr::scatter(m_faces, face + offset, idx * nb_faces + i);
+                // 4-word face records; the BSDF index lane is zero
+                Vector4u rec(face[0] + offset, face[1] + offset,
+                             face[2] + offset, 0u);
+                dr::scatter(m_packed_faces, rec, idx * nb_faces + i, true,
+                            ReduceMode::NoConflicts);
             }
 
-            // Don't call Mesh::initialize() as it will initialize data-structure
-            // that are not needed for this plugin!
+            // This plugin writes the packed records directly and skips
+            // Mesh::refresh(), which would build data structures that it
+            // does not need. The field views now describe stale records
+            // and rebuild on demand.
+            this->drop_views();
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
-            m_vertex_positions_ptr = m_vertex_positions.data();
-            m_faces_ptr = m_faces.data();
+            m_packed_vertices_ptr = m_packed_vertices.data();
+            m_packed_faces_ptr = m_packed_faces.data();
 #endif
             if (initialized)
                 recompute_bbox();
@@ -440,9 +445,12 @@ private:
 
             m_vertex_count = vertex_count;
             m_face_count   = face_count;
+            // The shells reference their vertices directly, without maps
+            m_position_count = m_normal_count = vertex_count;
 
-            m_vertex_positions = dr::empty<FloatStorage>(3 * m_vertex_count);
-            m_faces            = dr::empty<IndexStorage>(3 * m_face_count);
+            m_packed_vertices = dr::zeros<StoredFloat>(
+                (size_t) MeshVertexStride * m_vertex_count);
+            m_packed_faces    = dr::zeros<IndexStorage>(4 * m_face_count);
 
             for (size_t i = 0; i < m_ellipsoids.count(); ++i) {
                 auto ellipsoid = m_ellipsoids.template get_ellipsoid<Float>(i);
@@ -457,21 +465,23 @@ private:
                 for (size_t j = 0; j < nb_vertices; ++j) {
                     Point3f v = to_world * Point3f(m_shell_vertices[j]);
                     for (size_t k = 0; k < 3; ++k)
-                        m_vertex_positions[i * nb_vertices * 3 + j * 3 + k] = float(v[k]);
+                        m_packed_vertices[(i * nb_vertices + j) *
+                                          MeshVertexStride + k] = float(v[k]);
                 }
 
                 UInt32 offset = (uint32_t) i * uint32_t(nb_vertices);
                 for (size_t j = 0; j < nb_faces; ++j) {
                     Vector3u face = m_shell_faces[j];
+                    // 4-word face records; the BSDF index lane stays zero
                     for (size_t k = 0; k < 3; ++k)
-                        m_faces[i * nb_faces * 3 + j * 3 + k] = face[k] + offset;
+                        m_packed_faces[i * nb_faces * 4 + j * 4 + k] = face[k] + offset;
                 }
 
-                // Don't call Mesh::initialize() as it will initialize data-structure
-                // that are not needed for this plugin!
+                // Skips Mesh::refresh(), see above
+                this->drop_views();
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
-                m_vertex_positions_ptr = m_vertex_positions.data();
-                m_faces_ptr = m_faces.data();
+                m_packed_vertices_ptr = m_packed_vertices.data();
+                m_packed_faces_ptr = m_packed_faces.data();
 #endif
                 if (initialized)
                     recompute_bbox();
