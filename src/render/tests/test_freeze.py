@@ -173,7 +173,7 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     w, h = (16, 16)
     n = 10
 
-    def apply_transformation(initial_vertex_positions, opt, params):
+    def apply_transformation(initial_positions, opt, params):
         opt["trans"] = dr.clip(opt["trans"], -0.5, 0.5)
         opt["angle"] = dr.clip(opt["angle"], -0.5, 0.5)
 
@@ -183,7 +183,8 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
             .rotate([0, 1, 0], opt["angle"] * 100.0)
         )
 
-        params["bunny.vertex_positions"] = dr.ravel(trafo @ initial_vertex_positions)
+        positions_new = trafo @ initial_positions
+        params["bunny.positions"] = mi.TensorXf(positions_new, flip_axes=True)
 
     def compute_grad(scene, ref):
         params = mi.traverse(scene)
@@ -236,10 +237,9 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
     ) -> Tuple[mi.TensorXf, mi.Point3f, mi.Float]:
         params = mi.traverse(scene)
 
-        params.keep("bunny.vertex_positions")
-        initial_vertex_positions = dr.unravel(
-            mi.Point3f, mi.Float(params["bunny.vertex_positions"])
-        )
+        params.keep("bunny.positions")
+        initial_positions = mi.Point3f(params["bunny.positions"],
+                                       flip_axes=True)
 
         image_ref = mi.render(scene, spp=4)
 
@@ -249,9 +249,9 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
         for i in range(n):
             params = mi.traverse(scene)
-            params.keep("bunny.vertex_positions")
+            params.keep("bunny.positions")
 
-            apply_transformation(initial_vertex_positions, opt, params)
+            apply_transformation(initial_positions, opt, params)
 
             params.update(opt)
 
@@ -272,12 +272,12 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
     scene = load_scene()
     params = mi.traverse(scene)
-    initial_vertex_positions = mi.Float(params["bunny.vertex_positions"])
+    initial_positions = mi.TensorXf(params["bunny.positions"])
 
     img_ref, trans_ref, angle_ref = run(scene, compute_grad, n)
 
     # Reset parameters:
-    params["bunny.vertex_positions"] = initial_vertex_positions
+    params["bunny.positions"] = initial_positions
     params.update()
 
     img_frozen, trans_frozen, angle_frozen = run(scene, frozen, n)

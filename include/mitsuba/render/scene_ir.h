@@ -15,12 +15,23 @@ struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see \ref NumGeometryKinds).
     enum class Kind : uint32_t {
-        Triangles,        ///< double-sided meshes
-        TrianglesCulled,  ///< back-face-culled meshes (EllipsoidsMesh)
-        BSplineCurve,     ///< cubic B-spline curve
-        LinearCurve,      ///< linear curve
-        Custom,           ///< AABB/implicit: sphere, disk, cylinder, sdfgrid, ellipsoids
-        Instance          ///< ShapeGroup instance, carries no geometry and is never bucketed
+        /// Double-sided meshes
+        Triangles,
+
+        /// Back-face-culled meshes (EllipsoidsMesh)
+        TrianglesCulled,
+
+        /// Cubic B-spline curve
+        BSplineCurve,
+
+        /// Linear curve
+        LinearCurve,
+
+        /// AABB/implicit: sphere, disk, cylinder, sdfgrid, ellipsoids
+        Custom,
+
+        /// ShapeGroup instance, carries no geometry and is never bucketed
+        Instance
     };
 
     Kind kind = Kind::Custom;
@@ -62,6 +73,15 @@ struct ShapeIR {
     const void *vertex_ptr = nullptr;
     const void *index_ptr = nullptr;
     size_t vertex_count = 0, face_count = 0;
+
+    /// Distance between consecutive vertex records in bytes; the position
+    /// occupies the first three floats of each record.
+    size_t vertex_stride = 3 * sizeof(float);
+
+    /// Distance between consecutive face records in bytes; the three vertex
+    /// indices occupy the first three words of each record. Metal inputs
+    /// must be tightly packed (12 bytes).
+    size_t index_stride = 3 * sizeof(uint32_t);
 
     // --- Curve (linear / b-spline) ---
 

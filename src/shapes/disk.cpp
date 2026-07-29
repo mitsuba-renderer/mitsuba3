@@ -468,8 +468,6 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
         // Recover the local coordinates (``pi.prim_uv`` is not set on all backends)
         Point3f local = to_object * si.p;
         Point2f prim_uv(local.x(), local.y());
@@ -494,6 +492,7 @@ public:
                        (dr::TwoPi<Float> * r);
 
             si.sh_frame.n = m_frame.n;
+            si.sh_frame.s = si.dp_du;
         }
 
         si.prim_index = pi.prim_index;

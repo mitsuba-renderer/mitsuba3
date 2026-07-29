@@ -86,7 +86,8 @@ public:
         m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
         m_polarizing = props.get<bool>("polarizing", true);
 
-        m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
+        m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null |
+                  BSDFFlags::Anisotropic;
         m_components.push_back(m_flags);
     }
 

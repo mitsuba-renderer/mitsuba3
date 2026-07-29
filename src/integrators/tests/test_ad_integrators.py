@@ -426,7 +426,7 @@ class CropWindowConfig(ConfigBase):
 class RotateShadingNormalsPlaneConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_normals'
+        self.key = 'plane.normals'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -453,13 +453,12 @@ class RotateShadingNormalsPlaneConfig(ConfigBase):
     def initialize(self):
         super().initialize()
         self.params.keep([self.key])
-        self.initial_state = mi.Float(self.params[self.key])
+        self.initial_state = mi.Normal3f(self.params[self.key], flip_axes=True)
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(
+        self.params[self.key] = mi.TensorXf(
             mi.Transform4f().rotate(angle=theta, axis=[0.0, 1.0, 0.0]) @
-            dr.unravel(mi.Normal3f, self.initial_state)
-        )
+            self.initial_state, flip_axes=True)
         self.params.update()
         dr.eval()
 
@@ -475,12 +474,9 @@ class TranslateShapeConfigBase(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
 
-    def initialize(self):
-        super().initialize()
-        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key])))
-
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(theta, 0.0, 0.0))
+        offset = mi.TensorXf(mi.Vector3f(theta, 0.0, 0.0), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -492,12 +488,8 @@ class ScaleShapeConfigBase(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
 
-    def initialize(self):
-        super().initialize()
-        self.initial_state = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key])))
-
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state * (1.0 + theta))
+        self.params[self.key] = self.initial_state * (1.0 + theta)
         self.params.update()
         dr.eval()
 
@@ -506,7 +498,7 @@ class ScaleShapeConfigBase(ConfigBase):
 class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -536,7 +528,7 @@ class TranslateTexturedPlaneConfig(TranslateShapeConfigBase):
 class TranslatePlaneUnderEnvmapConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -557,7 +549,8 @@ class TranslatePlaneUnderEnvmapConfig(TranslateShapeConfigBase):
         self.error_max_threshold = 0.2
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -567,7 +560,7 @@ class TranslatePlaneUnderEnvmapConfig(TranslateShapeConfigBase):
 class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -593,7 +586,8 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
         self.error_max_threshold = 0.2
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -602,7 +596,7 @@ class TranslatePlaneUnderProjectorConfig(TranslateShapeConfigBase):
 class TranslateGlassPlaneLensConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'shape.vertex_positions'
+        self.key = 'shape.positions'
         self.scene_dict = {
             'type': 'scene',
             'rough_glass': {
@@ -671,7 +665,8 @@ class TranslateGlassPlaneLensConfig(TranslateShapeConfigBase):
         self.error_max_threshold = 0.3
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -681,7 +676,7 @@ class TranslateGlassPlaneLensConfig(TranslateShapeConfigBase):
 class TranslateTexturedAreaEmitterConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.res = 64
         self.scene_dict = {
             'type': 'scene',
@@ -719,7 +714,8 @@ class TranslateTexturedAreaEmitterConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.25
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -728,7 +724,7 @@ class TranslateTexturedAreaEmitterConfig(TranslateShapeConfigBase):
 class TranslatePlaneUnderTexturedAreaEmitterConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.res = 64
         self.scene_dict = {
             'type': 'scene',
@@ -773,7 +769,8 @@ class TranslatePlaneUnderTexturedAreaEmitterConfig(TranslateShapeConfigBase):
         self.error_mean_threshold_bwd = 0.25
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -782,7 +779,7 @@ class TranslatePlaneUnderTexturedAreaEmitterConfig(TranslateShapeConfigBase):
 class TranslateTexturedAreaEmitterIlluminatingPlaneConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'light.vertex_positions'
+        self.key = 'light.positions'
         self.res = 64
         self.scene_dict = {
             'type': 'scene',
@@ -827,7 +824,8 @@ class TranslateTexturedAreaEmitterIlluminatingPlaneConfig(TranslateShapeConfigBa
         self.error_mean_threshold_bwd = 0.25
 
     def update(self, theta):
-        self.params[self.key] = dr.ravel(self.initial_state + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key] = self.initial_state + offset
         self.params.update()
         dr.eval()
 
@@ -837,7 +835,7 @@ class TranslateTexturedAreaEmitterIlluminatingPlaneConfig(TranslateShapeConfigBa
 class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'rectangle.vertex_positions'
+        self.key = 'rectangle.positions'
         self.scene_dict = {
             'type': 'scene',
             'rectangle': {
@@ -860,7 +858,7 @@ class TranslateDiffuseRectangleConstantConfig(TranslateShapeConfigBase):
 class TranslateRectangleEmitterOnBlackConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'light.vertex_positions'
+        self.key = 'light.positions'
         self.scene_dict = {
             'type': 'scene',
             'light': {
@@ -947,7 +945,7 @@ class TranslateDiskEmitterOnGrayConfig(ConfigBase):
 class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'light.vertex_positions'
+        self.key = 'light.positions'
         self.scene_dict = {
             'type': 'scene',
             'light': {
@@ -970,7 +968,7 @@ class TranslateSphereEmitterOnBlackConfig(TranslateShapeConfigBase):
 class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'light.vertex_positions'
+        self.key = 'light.positions'
         self.scene_dict = {
             'type': 'scene',
             'light': {
@@ -993,7 +991,7 @@ class ScaleSphereEmitterOnBlackConfig(ScaleShapeConfigBase):
 class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'occluder.vertex_positions'
+        self.key = 'occluder.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -1026,7 +1024,7 @@ class TranslateOccluderAreaLightConfig(TranslateShapeConfigBase):
 class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key = 'plane.vertex_positions'
+        self.key = 'plane.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -1064,8 +1062,8 @@ class TranslateShadowReceiverAreaLightConfig(TranslateShapeConfigBase):
 class TranslatePlaneAndAreaEmitterConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key1 = 'plane.vertex_positions'
-        self.key2 = 'light.vertex_positions'
+        self.key1 = 'plane.positions'
+        self.key2 = 'light.positions'
         self.scene_dict = {
             'type': 'scene',
             'plane': {
@@ -1114,12 +1112,13 @@ class TranslatePlaneAndAreaEmitterConfig(ConfigBase):
     def initialize(self):
         super().initialize()
         self.params.keep([self.key1, self.key2])
-        self.initial_state1 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key1])))
-        self.initial_state2 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key2])))
+        self.initial_state1 = mi.TensorXf(self.params[self.key1])
+        self.initial_state2 = mi.TensorXf(self.params[self.key2])
 
     def update(self, theta):
-        self.params[self.key1] = dr.ravel(self.initial_state1 + mi.Vector3f(0.0, 0.0, theta))
-        self.params[self.key2] = dr.ravel(self.initial_state2 + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key1] = self.initial_state1 + offset
+        self.params[self.key2] = self.initial_state2 + offset
         self.params.update()
         dr.eval()
 
@@ -1129,8 +1128,8 @@ class TranslatePlaneAndAreaEmitterConfig(ConfigBase):
 class TranslateSelfShadowingRightAngleConfig(ConfigBase):
     def __init__(self) -> None:
         super().__init__()
-        self.key1 = 'wall.vertex_positions'
-        self.key2 = 'floor.vertex_positions'
+        self.key1 = 'wall.positions'
+        self.key2 = 'floor.positions'
         self.scene_dict = {
             'type': 'scene',
             'wall': {
@@ -1189,12 +1188,13 @@ class TranslateSelfShadowingRightAngleConfig(ConfigBase):
     def initialize(self):
         super().initialize()
         self.params.keep([self.key1, self.key2])
-        self.initial_state1 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key1])))
-        self.initial_state2 = mi.Vector3f(dr.unravel(mi.Vector3f, mi.Float(self.params[self.key2])))
+        self.initial_state1 = mi.TensorXf(self.params[self.key1])
+        self.initial_state2 = mi.TensorXf(self.params[self.key2])
 
     def update(self, theta):
-        self.params[self.key1] = dr.ravel(self.initial_state1 + mi.Vector3f(0.0, 0.0, theta))
-        self.params[self.key2] = dr.ravel(self.initial_state2 + mi.Vector3f(0.0, 0.0, theta))
+        offset = mi.TensorXf(mi.Vector3f(0.0, 0.0, theta), flip_axes=True)
+        self.params[self.key1] = self.initial_state1 + offset
+        self.params[self.key2] = self.initial_state2 + offset
         self.params.update()
         dr.eval()
 

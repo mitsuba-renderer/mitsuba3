@@ -57,16 +57,21 @@ class SceneParameters(Mapping):
         cur, value_type, node, flags = self.properties[key]
 
         if (flags & mi.ParamFlags.ReadOnly) != 0:
-            raise Exception(f'{key} is a Read-Only parameter!')
+            raise Exception(f'{key} is a read-only parameter!')
 
         cur_value = cur
         if value_type is not None:
             cur_value = self.get_property(cur, value_type, node)
 
-        if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
-            dr.all(cur_value == value, axis=None)):
-            # Turn this into a no-op when the set value is identical to the new value
-            return
+        try:
+            if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
+                dr.all(cur_value == value, axis=None)):
+                # Turn this into a no-op when the set value is identical to the new value
+                return
+        except Exception:
+            # Incomparable (e.g. mismatched shapes): let the write proceed so
+            # that the parameter owner can report a meaningful error
+            pass
 
         self.set_dirty(key)
 
@@ -215,9 +220,6 @@ class SceneParameters(Mapping):
                 continue
 
             self.set_dirty(key)
-
-        for key in self.keys():
-            dr.schedule(self.__get_value(key))
 
         # Notify nodes from bottom to top
         work_list = [(d, n, k) for (d, n), k in self.nodes_to_update.items()]

@@ -269,12 +269,12 @@ def test05_normal_partials_non_similarity(variant_scalar_rgb):
     """The instance transform must not assume that it is a similarity"""
     from drjit.scalar import ArrayXf as ScalarF
     from mitsuba import ScalarTransform4f as T
-    from mitsuba.scalar_rgb.test.util import curved_triangle, check_normal_partials
+    from mitsuba.scalar_rgb.test.util import curved_patch, check_normal_partials
 
     to_world = T().rotate([0.6, 0.8, 0.0], 37).scale([1.0, 2.0, 3.0])
     assert not to_world.is_similarity()
 
-    mesh, normal_field = curved_triangle()
+    mesh, ref = curved_patch()
     scene = mi.load_dict({
         'type': 'scene',
         'group': {'type': 'shapegroup', 'shape': mesh},
@@ -284,14 +284,17 @@ def test05_normal_partials_non_similarity(variant_scalar_rgb):
     })
     flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
 
-    hits = 0
-    for x in dr.linspace(ScalarF, -0.9, 0.9, 8):
-        for y in dr.linspace(ScalarF, -0.9, 0.9, 8):
-            ray = mi.Ray3f(mi.Point3f(x, y, 8), mi.Vector3f(0, 0, -1))
+    # Probe a grid spanning the transformed patch from above
+    bbox, hits = scene.bbox(), 0
+    for x in dr.linspace(ScalarF, bbox.min.x, bbox.max.x, 10):
+        for y in dr.linspace(ScalarF, bbox.min.y, bbox.max.y, 10):
+            ray = mi.Ray3f(mi.Point3f(x, y, bbox.max.z + 1),
+                           mi.Vector3f(0, 0, -1))
             si = scene.ray_intersect(ray, flags, True)
             if not si.is_valid():
                 continue
             hits += 1
-            check_normal_partials(si, normal_field, to_world)
+            check_normal_partials(si, ref.normal_field(int(si.prim_index)),
+                                  to_world)
 
     assert hits > 5, hits

@@ -896,7 +896,15 @@ static const char *__doc_mitsuba_BSDFFlags_GlossyTransmission = R"doc(Glossy tra
 
 static const char *__doc_mitsuba_BSDFFlags_NeedsDifferentials = R"doc(Does the implementation require access to texture-space differentials)doc";
 
+static const char *__doc_mitsuba_BSDFFlags_NeedsTangents =
+R"doc(Any reason the shading frame must carry a smooth tangent rather than
+an arbitrary basis around the shading normal)doc";
+
 static const char *__doc_mitsuba_BSDFFlags_NonSymmetric = R"doc(Flags non-symmetry (e.g. transmission in dielectric materials))doc";
+
+static const char *__doc_mitsuba_BSDFFlags_NormalMapped =
+R"doc(The lobe lives in a shading frame that a normal map perturbs, so the
+frame's orientation around the normal is observable)doc";
 
 static const char *__doc_mitsuba_BSDFFlags_Null = R"doc('null' scattering event, i.e. particles do not undergo deflection)doc";
 
@@ -2812,6 +2820,76 @@ static const char *__doc_mitsuba_ContinuousDistribution_traverse_1_cb_ro = R"doc
 static const char *__doc_mitsuba_ContinuousDistribution_traverse_1_cb_rw = R"doc()doc";
 
 static const char *__doc_mitsuba_ContinuousDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pdf.)doc";
+
+static const char *__doc_mitsuba_CornerAttribute =
+R"doc(Per-corner values of one attribute, see CornerMesh
+
+``data`` points to ``value_count x dim`` records. When ``indices`` is
+null, the records align with the corner records of the CornerMesh.
+Otherwise, ``indices`` supplies one record index per corner record,
+and ``UINT32_MAX`` marks a missing entry that resolves to zeros.)doc";
+
+static const char *__doc_mitsuba_CornerAttribute_data = R"doc(Attribute records (``value_count * dim`` floats))doc";
+
+static const char *__doc_mitsuba_CornerAttribute_dim = R"doc(Number of channels (1 to 4 for custom attributes))doc";
+
+static const char *__doc_mitsuba_CornerAttribute_indices = R"doc(Optional indices into ``data`` (CornerMesh::record_count entries))doc";
+
+static const char *__doc_mitsuba_CornerAttribute_name = R"doc(Attribute name, which custom attributes must prefix with ``vertex_``)doc";
+
+static const char *__doc_mitsuba_CornerAttribute_value_count = R"doc()doc";
+
+static const char *__doc_mitsuba_CornerMesh =
+R"doc(Corner-indexed mesh description
+
+Many DCC applications and file formats store positions per vertex,
+while normals, texture coordinates and colors live per *face corner*
+so that they can be discontinuous across edges. This structure is a
+non-owning view of such data: positions holds one entry per source
+vertex, the faces are triangles or arbitrary polygons (face_offsets),
+and the per-corner attributes are read either directly or through the
+record indirection of corner_index.
+
+corner_to_packed_mesh() turns this description into the split-vertex
+representation used by Mesh.)doc";
+
+static const char *__doc_mitsuba_CornerMesh_attr_count = R"doc()doc";
+
+static const char *__doc_mitsuba_CornerMesh_attrs = R"doc(Custom ``vertex_*`` attributes (``attr_count`` entries))doc";
+
+static const char *__doc_mitsuba_CornerMesh_bsdf_index =
+R"doc(Optional per-face BSDF indices (one entry per input face, replicated
+when a polygon fans into several triangles))doc";
+
+static const char *__doc_mitsuba_CornerMesh_corner_count = R"doc(Number of face corners)doc";
+
+static const char *__doc_mitsuba_CornerMesh_corner_index =
+R"doc(Optional map from face corner to corner record
+
+When given (``corner_count`` entries), corner_vertex and the
+CornerAttribute records hold record_count entries that corner ``c``
+reads at ``corner_index[c]``, instead of one per corner.)doc";
+
+static const char *__doc_mitsuba_CornerMesh_corner_vertex = R"doc(Vertex referenced by each corner record (``record_count`` entries))doc";
+
+static const char *__doc_mitsuba_CornerMesh_face_count = R"doc(Number of faces (only used together with ``face_offsets``))doc";
+
+static const char *__doc_mitsuba_CornerMesh_face_offsets =
+R"doc(Optional polygonal face topology (``face_count + 1`` entries)
+
+Face ``i`` spans corners ``[face_offsets[i], face_offsets[i+1])`` and
+fans into triangles. The array must be non-decreasing, start at 0, and
+end at ``corner_count``. Null input implies pure triangles.)doc";
+
+static const char *__doc_mitsuba_CornerMesh_normals = R"doc(Shading normals (3 channels); optional)doc";
+
+static const char *__doc_mitsuba_CornerMesh_positions = R"doc(Vertex positions (``vertex_count * 3`` floats))doc";
+
+static const char *__doc_mitsuba_CornerMesh_record_count = R"doc(Number of corner records. Zero implies a value of corner_count.)doc";
+
+static const char *__doc_mitsuba_CornerMesh_texcoords = R"doc(Texture coordinates (2 channels); optional)doc";
+
+static const char *__doc_mitsuba_CornerMesh_vertex_count = R"doc(Number of source vertices)doc";
 
 static const char *__doc_mitsuba_DateTimeRecord = R"doc()doc";
 
@@ -5051,6 +5129,18 @@ static const char *__doc_mitsuba_JitObject_m_id = R"doc(Stores the identifier of
 
 static const char *__doc_mitsuba_JitObject_set_id = R"doc(Set the identifier of this instance)doc";
 
+static const char *__doc_mitsuba_Layout = R"doc(Content of the packed records of a Mesh)doc";
+
+static const char *__doc_mitsuba_Layout_FaceBSDFs = R"doc(< The face records carry per-face BSDF indices)doc";
+
+static const char *__doc_mitsuba_Layout_Normals = R"doc(< Shading normals)doc";
+
+static const char *__doc_mitsuba_Layout_Positions = R"doc(< Every vertex record carries positions)doc";
+
+static const char *__doc_mitsuba_Layout_Tangents = R"doc(< Shading tangents)doc";
+
+static const char *__doc_mitsuba_Layout_Texcoords = R"doc(< Texture coordinates)doc";
+
 static const char *__doc_mitsuba_LocationRecord = R"doc()doc";
 
 static const char *__doc_mitsuba_LocationRecord_LocationRecord = R"doc()doc";
@@ -5582,7 +5672,152 @@ of the memory buffer is extended if necessary.)doc";
 
 static const char *__doc_mitsuba_Mesh = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_2 = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_2 =
+R"doc(Triangle mesh
+
+This class represents indexed triangle meshes, in which each triangle
+references three vertices that carry data like positions, shading
+normals, texture coordinates, and tangents that the renderer
+interpolates across faces. Tangents orient the shading frame for use
+with normal maps and anisotropic appearance models (e.g., brushed
+metal) and are computed following the MikkTSpace
+(https://github.com/mmikk/MikkTSpace) standard. The class can also
+store and interpolate arbitrary user-provided data with 1 to 4
+dimensions.
+
+Constructing a mesh involves two steps: the ``Mesh()`` constructor to
+create an empty mesh followed by a call to one of from_fields() (for
+indexed triangle data), from_corners() (for corner-indexed data from
+3D modeling tools like Blender or interchange formats like OBJ), or
+from_packed() (for packed data explained below). There is also a
+``Mesh(name, faces, positions, ...)`` convenience constructor that
+directly calls from_fields(). Subsequent changes to the mesh data go
+through the parameter interface described below, or through one of the
+dedicated methods transform(), add_attribute() and remove_attribute().
+
+Interpolation makes mesh attributes vary smoothly along the surface,
+but many meshes in practice also need deliberate *discontinuities*:
+
+- Shading normals across sharp edges (e.g. of a cube) must be
+discontinuous, which is incompatible with smooth interpolation.
+
+- Closed surfaces cannot be flattened into a 2D texture domain without
+cutting them open. Texture coordinates must therefore be able to
+represent seams, where the two sides of a curve on the surface map to
+different parts of the texture.
+
+- Tangents follow the texture parameterization and inherit its seams.
+
+The ``Mesh`` class uses an indexed representation that expresses such
+a jump by splitting a vertex, so that the faces on either side can
+reference separate copies with their own values. However, splitting
+alone is not sufficient because it turns seams into geometric cuts
+that have undesirable side effects like creases in recomputed normals,
+spurious silhouettes in a differentiable renderer, and split vertices
+drifting apart when the mesh is optimized.
+
+The class therefore records which copies belong together, by storing
+each attribute at the coarsest level at which it is constant. A mesh
+with ``F`` faces and ``V`` vertices consists of ``P`` surface
+positions and ``N`` normal groups, where each level subdivides the
+previous one (``P <= N <= V``). In particular, the ``Mesh`` exposes
+the following set of arrays:
+
+```
+Name              Type          Shape     Range     Optional
+------------------------------------------------------------
+faces             TensorXu32    (F, 3)    [0, V)
+position_index    UInt32 array  V         [0, P)       x
+normal_index      UInt32 array  V         [0, N)       x
+positions         TensorXf32    (P, 3)
+normals           TensorXf32    (N, 3)                 x
+texcoords         TensorXf32    (V, 2)                 x
+bsdf_index        UInt32 array  F         [0, B)       x
+```
+
+The fields have the following roles:
+
+- ``faces``: stores the 3 vertex indices for each triangular face.
+
+- ``position_index`` (optional): maps from *vertex index* to *position
+index*. When not present, the map is implicitly the identity and
+vertex and position indices coincide.
+
+- ``normal_index`` (optional): maps from *vertex index* to *normal
+index*. When not present, the map is implicitly the identity and
+vertex and normal indices coincide.
+
+- ``positions``: surface positions.
+
+- ``normals`` (optional): surface normals.
+
+- ``bsdf_index`` (optional): per-face index into a set of ``B``
+materials.
+
+## Example usage
+
+Texture coordinates and tangents vary *per vertex*. For example,
+reading the UV coordinate for corner ``c`` of face ``f`` involves
+
+```
+vertex_idx = faces[f][c]
+texcoord   = texcoords[vertex_idx]
+```
+
+Positions and normals require one further indirection
+
+```
+vertex_idx   = faces[f][c]
+position_idx = position_index[vertex_idx] if len(position_index) > 0 else vertex_idx
+position     = positions[position_idx]
+```
+
+and analogously for normals through ``normal_index``.
+
+Split vertices may reference different attributes while sharing a
+position and/or normal. This permits splitting a mesh into different
+parameterization charts or adding creases without the problems
+mentioned earlier.
+
+## Parameter interface
+
+The mesh exposes the fields listed above via traverse(), and all of
+them can be written. Custom mesh attributes appear as further
+``vertex_*`` and ``face_*`` entries with 1 to 4 channels. The mesh
+size (i.e., the number of faces or vertices) may be changed as well.
+Following a change to the parameters, call ``update()``, which will
+validate the size of all fields, and refresh dependent state (bounding
+box, sampling tables, tangents, acceleration structures).
+
+## Packed layout
+
+The representation explained above is expressive but not particularly
+efficient in a ray tracer, since it involves several indirections and
+data spread out over many different buffers.
+
+To address this, the ``Mesh`` class internally encodes data into a
+*packed* layout, which uses 16 bytes per face and 32 bytes per vertex
+(plus custom attributes). This is an implementation detail that is
+only exposed through from_packed() and the low-level
+packed_vertices(), packed_face() and packed_vertex() accessors. Access
+to the per-field representation explained earlier implicitly
+reconstructs it from the packed state.
+
+Using the packed representation, a ray intersection can then fetch all
+per-corner triangle data using 4 packet loads, which map to a single
+hardware instruction each on recent GPUs with 256-bit loads (NVIDIA
+Blackwell), as opposed to ~28 scalar loads spread across multiple
+buffers.
+
+## Orientation
+
+The face winding order defines the orientation of the surface. In
+particular, the geometric normal of a face follows from the right hand
+rule applied to its positions. Shading normals are expected to lie in
+the same hemisphere, and the ``Mesh`` class preserves this invariant
+by potentially changing the winding order depending on Shape
+parameters like ``flip_normals``, ``to_world``, and subsequent
+transformations via transform().)doc";
 
 static const char *__doc_mitsuba_Mesh_3 = R"doc()doc";
 
@@ -5595,29 +5830,37 @@ static const char *__doc_mitsuba_Mesh_6 = R"doc()doc";
 static const char *__doc_mitsuba_MeshAttribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_Mesh =
-R"doc(Creates a zero-initialized mesh with the given vertex and face counts
+R"doc(Create an empty mesh
 
-The vertex and face buffers can be filled using the ``mi.traverse``
-mechanism. When initializing these buffers through another method, an
-explicit call to initialize must be made once all buffers are filled.)doc";
+The resulting object is not ready for use. You must call
+from_fields(), from_corners() or from_packed() to initialize its
+storage.)doc";
 
-static const char *__doc_mitsuba_Mesh_Mesh_2 = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_Mesh_2 =
+R"doc(Create an empty mesh
 
-static const char *__doc_mitsuba_Mesh_Mesh_3 = R"doc()doc";
+Analogous to the previous constructor, except that attributes are
+specified manually and not through a Properties object.
+
+The resulting object is not ready for use. You must call
+from_fields(), from_corners() or from_packed() to initialize its
+storage.)doc";
+
+static const char *__doc_mitsuba_Mesh_Mesh_3 =
+R"doc(Create a mesh from a per-field representation
+
+Convenience constructor that chains the previous constructor and
+from_fields(). See this function for details.)doc";
 
 static const char *__doc_mitsuba_Mesh_MeshAttribute = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_MeshAttributeType = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_MeshAttributeType_Face = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_MeshAttributeType_Vertex = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_MeshAttribute_MeshAttribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_MeshAttribute_MeshAttribute_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_MeshAttribute_buf = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_MeshAttribute_data = R"doc(Interleaved ``(rows, dim)`` attribute records)doc";
+
+static const char *__doc_mitsuba_Mesh_MeshAttribute_dim = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_MeshAttribute_fields = R"doc()doc";
 
@@ -5633,21 +5876,26 @@ static const char *__doc_mitsuba_Mesh_MeshAttribute_operator_assign = R"doc()doc
 
 static const char *__doc_mitsuba_Mesh_MeshAttribute_operator_assign_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_MeshAttribute_size = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_add_attribute =
+R"doc(Add the mesh attribute ``name``
 
-static const char *__doc_mitsuba_Mesh_MeshAttribute_type = R"doc()doc";
+The name must start with ``vertex_`` or ``face_``, which selects the
+domain and hence the expected row count of the ``(rows, dim)`` tensor
+``values``. Attributes may carry 1 to 4 dimensions.)doc";
 
-static const char *__doc_mitsuba_Mesh_add_attribute = R"doc(Add an attribute buffer with the given ``name`` and ``dim``)doc";
-
-static const char *__doc_mitsuba_Mesh_attribute_buffer = R"doc(Return the mesh attribute associated with ``name``)doc";
+static const char *__doc_mitsuba_Mesh_attribute = R"doc(Return the mesh attribute ``name`` as a ``(rows, dim)`` tensor)doc";
 
 static const char *__doc_mitsuba_Mesh_barycentric_coordinates = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_bbox = R"doc(//! @{ \name Shape interface implementation)doc";
+static const char *__doc_mitsuba_Mesh_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_bsdf_index =
+R"doc(Return the per-face BSDF index (size face_count()). An empty buffer
+stands for zeros, see has_face_bsdfs().)doc";
 
 static const char *__doc_mitsuba_Mesh_build_directed_edges =
 R"doc(Build directed edge data structure to efficiently access adjacent
@@ -5674,18 +5922,32 @@ Internally, the function creates a nested scene to leverage optimized
 ray tracing functionality in eval_parameterization())doc";
 
 static const char *__doc_mitsuba_Mesh_build_pmf =
-R"doc(Build internal tables for sampling uniformly wrt. area.
+R"doc(Build the table for sampling the surface uniformly wrt. area
 
-Computes the surface area and sets up ``m_area_pmf`` Thread-safe,
-since it uses a mutex.)doc";
+Computes the surface area and sets up ``m_area_pmf``.
+
+Emitter and sensor meshes sample positions during rendering, so
+refresh() builds their table eagerly.)doc";
+
+static const char *__doc_mitsuba_Mesh_build_views = R"doc(Derive the field views from the packed state, preserving AD identity)doc";
 
 static const char *__doc_mitsuba_Mesh_class_name = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_compute_normals =
+R"doc(Compute smooth shading normals from the field views, accumulated over
+the ``m_normal_index`` grouping, as an ``(N, 3)`` tensor)doc";
+
 static const char *__doc_mitsuba_Mesh_compute_surface_interaction = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_compute_tangents =
+R"doc(Compute MikkTSpace shading tangents from the field views as a ``(V,
+3)`` tensor)doc";
 
 static const char *__doc_mitsuba_Mesh_describe = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_differential_motion = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_drop_views = R"doc(Release the field views and make the packed state authoritative)doc";
 
 static const char *__doc_mitsuba_Mesh_edge_indices =
 R"doc(Returns the vertex indices associated with edge ``edge_index`` (0..2)
@@ -5693,11 +5955,15 @@ of triangle ``tri_index``.)doc";
 
 static const char *__doc_mitsuba_Mesh_ensure_pmf_built = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_ensure_views = R"doc(Materialize the views if they are dormant)doc";
+
 static const char *__doc_mitsuba_Mesh_eval_attribute = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_eval_attribute_1 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_eval_attribute_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_eval_attribute_n = R"doc(Shared body of eval_attribute_1() and eval_attribute_3())doc";
 
 static const char *__doc_mitsuba_Mesh_eval_parameterization = R"doc()doc";
 
@@ -5711,58 +5977,230 @@ static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal dir
 
 static const char *__doc_mitsuba_Mesh_face_normal_2 = R"doc(Returns the normal direction of the face with index ``index``)doc";
 
-static const char *__doc_mitsuba_Mesh_faces_buffer = R"doc(Return face indices buffer)doc";
+static const char *__doc_mitsuba_Mesh_faces = R"doc(Return the vertex index triplets as an ``(F, 3)`` tensor)doc";
 
-static const char *__doc_mitsuba_Mesh_faces_buffer_2 = R"doc(Const variant of faces_buffer.)doc";
+static const char *__doc_mitsuba_Mesh_find_attribute = R"doc(Return the mesh attribute ``name`` or NULL)doc";
+
+static const char *__doc_mitsuba_Mesh_flip_winding =
+R"doc(Reverse the corner order of every face, which flips the geometric
+normals
+
+The orientation of each face's UV triangle reverses along with it, so
+the packed tangent frames are updated to match. The caller is
+responsible for the subsequent refresh().)doc";
+
+static const char *__doc_mitsuba_Mesh_from_corners =
+R"doc(Build the mesh from corner-indexed data
+
+A number of DCC applications and mesh formats store positions per
+vertex but normals, UVs and colors per *face corner*, so that they can
+be discontinuous across edges. This function constructs a Mesh from
+such input by splitting vertices with incompatible state.
+
+A mesh can be built only once: a second ``from_*`` call raises an
+exception; later mesh changes must go through the parameter interface
+instead.)doc";
+
+static const char *__doc_mitsuba_Mesh_from_fields =
+R"doc(Build the mesh from a per-field representation
+
+This function initializes the mesh using device-resident field tensors
+as explained in the Mesh class documentation. A mesh can be built only
+once: a second ``from_*`` call raises an exception, and later mesh
+changes must go through the parameter interface instead.
+
+The function checks the tensor shapes for consistency but trusts that
+any specified indices are in-bounds (see validate()).
+
+In differentiable variants, derivatives will propagate between the
+supplied tensors and the resulting mesh.
+
+On a mesh constructed with ``face_normals`` set, the ``normals`` and
+``normal_index`` parameters are silently ignored.
+
+Parameter ``faces``:
+    ``(F, 3)`` tensor of vertex indices in ``[0, V)``
+
+Parameter ``positions``:
+    ``(P, 3)`` tensor of surface positions
+
+Parameter ``normals``:
+    Optional ``(N, 3)`` tensor of shading normals, which must be of
+    unit length. When empty, smooth normals are derived from the
+    positions and regenerate after later position edits (unless the
+    mesh uses face normals).
+
+Parameter ``texcoords``:
+    Optional ``(V, 2)`` tensor of texture coordinates
+
+Parameter ``position_index``:
+    Optional map from vertex index to surface position, in which case
+    ``positions`` has one entry per surface position rather than per
+    vertex. An empty map encodes the identity.
+
+Parameter ``normal_index``:
+    Optional map from vertex index to normal group. An empty map
+    encodes the identity, or the position map when the normal count
+    matches the surface position count.
+
+Parameter ``bsdf_index``:
+    Optional per-face material index. An empty buffer stands for
+    zeros.)doc";
+
+static const char *__doc_mitsuba_Mesh_from_packed =
+R"doc(Build the mesh from a packed representation
+
+This function initializes the mesh using device-resident tensors that
+are already in the packed format that is internally used by the Mesh
+class. A mesh can be built only once: a second ``from_*`` call raises
+an exception; later mesh changes must go through the parameter
+interface.
+
+The function checks the tensor shapes for consistency but trusts that
+any specified indices are in-bounds and that the per-face UV
+orientation bits of a tangent layout are consistent with the stored
+texture coordinates.
+
+The operation is differentiable in the sense that derivatives
+propagate between function parameters and the resulting mesh state.
+
+Parameter ``layout``:
+    Describes the content of the vertex records.
+
+Parameter ``packed_faces``:
+    ``(F, 4)`` tensor of packed face records
+
+Parameter ``packed_vertices``:
+    ``(V, 8)`` tensor of packed vertex records
+
+Parameter ``position_index``:
+    Optional map from vertex index to surface position
+
+Parameter ``normal_index``:
+    Optional map from vertex index to normal group. It may simply
+    alias ``position_index`` when the normals are stored at surface
+    position granularity.
+
+Parameter ``position_count``:
+    Number of surface positions. Only needed when ``position_index``
+    is nonempty.
+
+Parameter ``normal_count``:
+    Number of normal groups. Only needed when ``normal_index`` is
+    nonempty.
+
+Parameter ``bbox``:
+    Optional precomputed bounding box, which skips the bounding box
+    reduction)doc";
+
+static const char *__doc_mitsuba_Mesh_from_packed_2 =
+R"doc(Build the mesh from host-side staging data
+
+The PackedMesh data structure can be used to incrementally build a
+packed mesh in a device-shared staging buffer while validating inputs.
+This method then consumes the resulting PackedMesh and efficiently
+blits it to the target device. A mesh can be built only once: a second
+``from_*`` call raises an exception; later mesh changes must go
+through the parameter interface.
+
+Any transformations (e.g. ``flip_normals``, ``to_world`` parameters)
+should already have been baked into the packed mesh data by the
+caller. (The PackedMesh class provides an API for this.))doc";
+
+static const char *__doc_mitsuba_Mesh_geometric_faces =
+R"doc(Return an ``(F, 3)`` tensor encoding the geometric topology
+
+This function returns faces() re-indexed into surface position space,
+i.e., the geometric topology of the mesh without UV/normal-related
+seams. It is used by features like build_directed_edges() and the mesh
+Laplacian in ``largesteps.py``.)doc";
 
 static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_has_face_normals = R"doc(Does this mesh use face normals?)doc";
+static const char *__doc_mitsuba_Mesh_has_face_bsdfs = R"doc(Does this mesh have a per-face BSDF assignment?)doc";
 
-static const char *__doc_mitsuba_Mesh_has_flipped_normals = R"doc(Does this shape have flipped normals?)doc";
+static const char *__doc_mitsuba_Mesh_has_face_normals = R"doc(Does this mesh use face normals?)doc";
 
 static const char *__doc_mitsuba_Mesh_has_mesh_attributes = R"doc(Does this mesh have additional mesh attributes?)doc";
 
-static const char *__doc_mitsuba_Mesh_has_vertex_normals = R"doc(Does this mesh have per-vertex normals?)doc";
+static const char *__doc_mitsuba_Mesh_has_normals = R"doc(Does the mesh provide interpolated normals?)doc";
 
-static const char *__doc_mitsuba_Mesh_has_vertex_texcoords = R"doc(Does this mesh have per-vertex texture coordinates?)doc";
+static const char *__doc_mitsuba_Mesh_has_tangents = R"doc(Does the mesh provide interpolated tangents?)doc";
 
-static const char *__doc_mitsuba_Mesh_initialize =
-R"doc(Must be called once at the end of the construction of a Mesh
+static const char *__doc_mitsuba_Mesh_has_texcoords = R"doc(Does the mesh provide interpolated texture coordinates?)doc";
 
-This method computes internal data structures and notifies the parent
-sensor or emitter (if there is one) that this instance is their
-internal shape.)doc";
+static const char *__doc_mitsuba_Mesh_holds_rgb2spec_coeffs =
+R"doc(Do the records of the attribute ``name`` hold RGB2Spec upsampling
+coefficients?)doc";
 
-static const char *__doc_mitsuba_Mesh_interpolate_attribute = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_interpolate_attribute =
+R"doc(Read the attribute ``attr`` at the interaction ``si``
+
+With ``Raw``, the result holds the stored values (``Float`` or
+``Color3f``). Otherwise, the read may perform variant-specific
+conversions (e.g., spectral upsampling))doc";
 
 static const char *__doc_mitsuba_Mesh_invert_silhouette_sample = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_E2E = R"doc(Directed edges data structures to support neighbor queries)doc";
+static const char *__doc_mitsuba_Mesh_is_vertex_attribute =
+R"doc(Does the attribute ``name`` live on the vertices rather than the
+faces?)doc";
 
-static const char *__doc_mitsuba_Mesh_m_E2E_outdated = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_E2E = R"doc(Directed edges data structures to support neighbor queries)doc";
 
 static const char *__doc_mitsuba_Mesh_m_area_pmf = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_bbox = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_bbox = R"doc(Bounding box of the mesh positions)doc";
+
+static const char *__doc_mitsuba_Mesh_m_bsdf_index = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_built = R"doc(Set by the first successful build; construction is one-shot)doc";
 
 static const char *__doc_mitsuba_Mesh_m_face_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_face_normals =
-R"doc(Flag that can be set by the user to disable loading/computation of
-vertex normals)doc";
+static const char *__doc_mitsuba_Mesh_m_face_normals = R"doc(Is the mesh flat shaded, without stored shading normals?)doc";
 
 static const char *__doc_mitsuba_Mesh_m_faces = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_flip_normals = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_filename = R"doc(Short human-readable label used in log and error messages.)doc";
 
-static const char *__doc_mitsuba_Mesh_m_mesh_attributes = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_flip_normals = R"doc(Potentially flip the normals once at construction time)doc";
+
+static const char *__doc_mitsuba_Mesh_m_layout = R"doc(Content of the packed vertex records)doc";
+
+static const char *__doc_mitsuba_Mesh_m_mesh_attributes =
+R"doc(Custom mesh attributes. The use of a node-based map is intentional as
+this provides stable references.)doc";
 
 static const char *__doc_mitsuba_Mesh_m_mutex = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_name = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_m_normal_count = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_normal_index = R"doc(Vertex index to normal index map. Optional.)doc";
+
+static const char *__doc_mitsuba_Mesh_m_normal_rep =
+R"doc(Inverses of the two index maps above, mapping each group to a
+representative vertex)doc";
+
+static const char *__doc_mitsuba_Mesh_m_normals = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_packed_faces =
+R"doc(Packed faces, material IDs and UV orientation bits (4 x UInt32 per
+face))doc";
+
+static const char *__doc_mitsuba_Mesh_m_packed_vertices = R"doc(Packed per-vertex state (8 x Float32 per vertex))doc";
 
 static const char *__doc_mitsuba_Mesh_m_parameterization = R"doc(Optional: used in eval_parameterization())doc";
+
+static const char *__doc_mitsuba_Mesh_m_position_count = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_position_index = R"doc(Vertex index to position index map. Optional.)doc";
+
+static const char *__doc_mitsuba_Mesh_m_position_rep =
+R"doc(Inverses of the two index maps above, mapping each group to a
+representative vertex)doc";
+
+static const char *__doc_mitsuba_Mesh_m_positions = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_scene = R"doc(Pointer to the scene that owns this mesh)doc";
 
@@ -5770,15 +6208,22 @@ static const char *__doc_mitsuba_Mesh_m_sil_dedge_pmf =
 R"doc(Sampling density of silhouette
 (build_indirect_silhouette_distribution))doc";
 
+static const char *__doc_mitsuba_Mesh_m_source_path = R"doc(Resolved path of the source file when the mesh was constructed)doc";
+
+static const char *__doc_mitsuba_Mesh_m_tangents = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_m_texcoords = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_vertex_normals = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_merge =
+R"doc(Merge several meshes into one
 
-static const char *__doc_mitsuba_Mesh_m_vertex_positions = R"doc()doc";
+All meshes must be compatible and have identical attachments (BSDF,
+emitter, sensor, media), face-normal setting, vertex layout and
+tangent state. Custom attributes are not supported.
 
-static const char *__doc_mitsuba_Mesh_m_vertex_texcoords = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_merge = R"doc(Merge two meshes into one)doc";
+The method raises an exception when called with incompatible inputs.)doc";
 
 static const char *__doc_mitsuba_Mesh_moeller_trumbore =
 R"doc(Moeller and Trumbore algorithm for computing ray-triangle intersection
@@ -5805,19 +6250,71 @@ Returns:
     and ``v`` contains the first two components of the intersection in
     barycentric coordinates)doc";
 
+static const char *__doc_mitsuba_Mesh_needs_parameterization = R"doc(Does a spatially varying emitter require m_parameterization?)doc";
+
+static const char *__doc_mitsuba_Mesh_needs_tangents =
+R"doc(Does this mesh need tangents?
+
+True when the mesh can supply tangents (has_tangents()) and the
+attached material declares BSDFFlags::NeedsTangents. This is the
+layout that the next repack will write, see packs_tangent().)doc";
+
+static const char *__doc_mitsuba_Mesh_normal_count = R"doc(Return the number of normal groups)doc";
+
+static const char *__doc_mitsuba_Mesh_normal_index =
+R"doc(Return the vertex index -> normal index map. An empty map encodes the
+identity.)doc";
+
+static const char *__doc_mitsuba_Mesh_normals = R"doc(Return the shading normal group values as an ``(N, 3)`` tensor)doc";
+
 static const char *__doc_mitsuba_Mesh_opposite_dedge =
 R"doc(Returns the opposite edge index associated with directed edge
 ``index``
 
-If the directed edge data structure is not initialized or outdated,
-the return value is undefined. Ensure that build_directed_edges() is
-called before this method.)doc";
+If the directed edge data structure is not initialized, the return
+value is undefined. Ensure that build_directed_edges() is called
+before this method.)doc";
+
+static const char *__doc_mitsuba_Mesh_pack =
+R"doc(Compile the field views into the packed records
+
+This is the one mutation path of a built mesh. It validates the views,
+derives the element counts and the vertex layout, generates shading
+normals (when ``regenerate_normals`` is set, discarding the current
+values while preserving their grouping) and MikkTSpace tangents (when
+the attached material consumes them), writes both packed buffers in a
+single pass, and ends in refresh().
+
+The ``flip_normals`` flag turns the surface inside out as the records
+are written, which from_fields() uses to bake the property of the same
+name.)doc";
+
+static const char *__doc_mitsuba_Mesh_packed_face = R"doc(Returns the packed face record of triangle ``index``)doc";
+
+static const char *__doc_mitsuba_Mesh_packed_vertex =
+R"doc(Returns the packed vertex data for vertex index ``index``
+
+When ``detach`` is ``True``, the read is detached from the AD graph.)doc";
+
+static const char *__doc_mitsuba_Mesh_packed_vertices = R"doc(Return the packed per-vertex buffer)doc";
+
+static const char *__doc_mitsuba_Mesh_packed_vertices_2 = R"doc(Const variant of packed_vertices.)doc";
+
+static const char *__doc_mitsuba_Mesh_packs_tangent = R"doc(Does the mesh store per-vertex tangents?)doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_parameters_grad_enabled = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_pdf_position = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_position_count = R"doc(Return the number of surface positions)doc";
+
+static const char *__doc_mitsuba_Mesh_position_index =
+R"doc(Return the vertex index -> surface position index map. An empty map
+encodes the identity.)doc";
+
+static const char *__doc_mitsuba_Mesh_positions = R"doc(Return the surface position positions as a ``(P, 3)`` tensor)doc";
 
 static const char *__doc_mitsuba_Mesh_precompute_silhouette = R"doc()doc";
 
@@ -5853,9 +6350,22 @@ static const char *__doc_mitsuba_Mesh_ray_intersect_triangle_packet_3 = R"doc()d
 
 static const char *__doc_mitsuba_Mesh_ray_intersect_triangle_scalar = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_recompute_bbox = R"doc(Recompute the bounding box (e.g. after modifying the vertex positions))doc";
+static const char *__doc_mitsuba_Mesh_recompute_bbox = R"doc((Re-)compute the bounding box from the packed positions)doc";
 
-static const char *__doc_mitsuba_Mesh_recompute_vertex_normals = R"doc(Compute smooth vertex normals and replace the current normal values)doc";
+static const char *__doc_mitsuba_Mesh_recompute_normals = R"doc((Re-) compute smooth interpolated normals from the positions)doc";
+
+static const char *__doc_mitsuba_Mesh_refresh =
+R"doc(Regenerate everything downstream of the packed state
+
+Every mutation ends with a call to this method. It rebuilds the
+bounding box (adopting ``bbox`` when given), the area sampling table
+of emitter/sensor meshes, the UV parameterization of spatially varying
+emitters, and the silhouette structures of gradient-enabled meshes,
+refreshes the raw data pointers, marks the scene acceleration
+structure dirty, and rebinds the field views unless they are dormant.
+The directed edge structure is not touched here: it is expensive and
+purely topological, so parameters_changed() clears it only when a
+topology write occurs.)doc";
 
 static const char *__doc_mitsuba_Mesh_remove_attribute =
 R"doc(Remove an attribute with the given ``name``.
@@ -5872,13 +6382,32 @@ static const char *__doc_mitsuba_Mesh_sample_silhouette = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_set_bsdf = R"doc(Set the shape's BSDF)doc";
 
-static const char *__doc_mitsuba_Mesh_set_scene = R"doc()doc";
+static const char *__doc_mitsuba_Mesh_set_scene = R"doc(//! @{ \name Miscellaneous)doc";
 
 static const char *__doc_mitsuba_Mesh_surface_area = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_tangents = R"doc(Return the shading tangents as a ``(V, 3)`` tensor)doc";
+
+static const char *__doc_mitsuba_Mesh_texcoords = R"doc(Return the texture coordinates as a ``(V, 2)`` tensor)doc";
+
+static const char *__doc_mitsuba_Mesh_to_rgb2spec_coeffs =
+R"doc(Convert ``rows`` RGB triplets in place into RGB2Spec upsampling
+coefficients.)doc";
+
 static const char *__doc_mitsuba_Mesh_to_string = R"doc(Return a human-readable string representation of the shape contents.)doc";
 
-static const char *__doc_mitsuba_Mesh_traverse = R"doc(@})doc";
+static const char *__doc_mitsuba_Mesh_transform =
+R"doc(Transform the mesh geometry in place
+
+Maps positions and tangents through ``t`` and shading normals through
+its inverse transpose. A mirroring ``t`` additionally reverses the
+face winding, so that the geometric normals remain consistent with
+respect to the shading normals. The method also refreshes dependent
+state (bounding box, sampling tables, field views). In differentiable
+variants, derivatives propagate from ``t`` to the resulting mesh
+state.)doc";
+
+static const char *__doc_mitsuba_Mesh_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_traverse_1_cb_fields = R"doc()doc";
 
@@ -5888,27 +6417,29 @@ static const char *__doc_mitsuba_Mesh_traverse_1_cb_ro = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_traverse_1_cb_rw = R"doc()doc";
 
+static const char *__doc_mitsuba_Mesh_validate =
+R"doc(Check the field views for consistency
+
+By default, this function cheaply checks tensor ranks and shapes of
+the mesh state for consistency. When ``check_bounds`` is set, the
+function also verifies that every index is in range. This is
+relatively expensive because it requires several device reductions.)doc";
+
 static const char *__doc_mitsuba_Mesh_vertex_count = R"doc(Return the total number of vertices)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_data_bytes = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_normal = R"doc(Returns the normal direction of the vertex with index ``index``)doc";
 
-static const char *__doc_mitsuba_Mesh_vertex_normals_buffer = R"doc(Return vertex normals buffer)doc";
+static const char *__doc_mitsuba_Mesh_vertex_position =
+R"doc(Returns the world-space position of the vertex with index ``index``
 
-static const char *__doc_mitsuba_Mesh_vertex_normals_buffer_2 = R"doc(Const variant of vertex_normals_buffer.)doc";
-
-static const char *__doc_mitsuba_Mesh_vertex_position = R"doc(Returns the world-space position of the vertex with index ``index``)doc";
-
-static const char *__doc_mitsuba_Mesh_vertex_positions_buffer = R"doc(Return vertex positions buffer)doc";
-
-static const char *__doc_mitsuba_Mesh_vertex_positions_buffer_2 = R"doc(Const variant of vertex_positions_buffer.)doc";
+The index type is generic because the host-side kd-tree paths
+(bbox(ScalarIndex) and ray_intersect_triangle_scalar()) read vertices
+one at a time with a plain ``uint32_t``, while the packet variants of
+ray_intersect_triangle() pass a ``dr::Packet``.)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_texcoord = R"doc(Returns the UV texture coordinates of the vertex with index ``index``)doc";
-
-static const char *__doc_mitsuba_Mesh_vertex_texcoords_buffer = R"doc(Return vertex texcoords buffer)doc";
-
-static const char *__doc_mitsuba_Mesh_vertex_texcoords_buffer_2 = R"doc(Const variant of vertex_texcoords_buffer.)doc";
 
 static const char *__doc_mitsuba_Mesh_write_ply =
 R"doc(Write the mesh to a binary PLY file
@@ -5918,6 +6449,28 @@ Parameter ``filename``:
 
 static const char *__doc_mitsuba_Mesh_write_ply_2 =
 R"doc(Write the mesh encoded in binary PLY format to a stream
+
+Parameter ``stream``:
+    Target stream that will receive the encoded output)doc";
+
+static const char *__doc_mitsuba_Mesh_write_serialized =
+R"doc(Write the mesh to a ``.serialized`` file
+
+This function writes the packed mesh state to an efficient compressed
+file representation.
+
+Parameter ``filename``:
+    Target file path on disk)doc";
+
+static const char *__doc_mitsuba_Mesh_write_serialized_2 =
+R"doc(Write the mesh in ``.serialized`` encoding to a stream
+
+Appends a single self-contained mesh segment at the current stream
+position, without the trailing dictionary that indexes multiple meshes
+within one file; write_serialized(const fs::path&) adds it. Segments
+of several meshes may be concatenated by calling this method
+repeatedly, recording the byte offsets, and appending one ``uint64``
+offset per mesh followed by a ``uint32`` mesh count.
 
 Parameter ``stream``:
     Target stream that will receive the encoded output)doc";
@@ -6574,6 +7127,104 @@ static const char *__doc_mitsuba_PCG32Sampler_seed = R"doc()doc";
 static const char *__doc_mitsuba_PCG32Sampler_traverse_1_cb_ro = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_traverse_1_cb_rw = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh =
+R"doc(Helper data structure to efficiently construct and upload the internal
+Mesh data structure.
+
+Loaders fill this structure on the host and pass it to
+Mesh::from_packed(PackedMesh &&), which uploads or adopts each buffer
+exactly once.
+
+The constructor allocates staging memory of the flavor appropriate for
+the target backend (host-pinned on CUDA, shared on Metal, plain host
+memory otherwise), so the subsequent transfer is a single asynchronous
+copy per buffer, or an in-place adoption on CPU backends.
+
+When ``position_count`` / ``normal_count`` are nonzero, they indicate
+the size of the ``*_index`` maps (see Mesh for details).)doc";
+
+static const char *__doc_mitsuba_PackedMesh_Attribute = R"doc(Custom mesh attribute (see Mesh::add_attribute()).)doc";
+
+static const char *__doc_mitsuba_PackedMesh_Attribute_dim = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_Attribute_name = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_Attribute_upsample_srgb = R"doc(Upsample RGB colors to color spectra?)doc";
+
+static const char *__doc_mitsuba_PackedMesh_Attribute_values = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_PackedMesh = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_PackedMesh_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_PackedMesh_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_PackedMesh_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_add_attribute =
+R"doc(Allocate a custom attribute and return a pointer to its buffer
+
+The name must be prefixed ``vertex_`` or ``face_``. Spectral variants
+turn 3-channel ``*color*`` attributes into sRGB upsampling
+coefficients while adopting the buffer. Clear ``upsample_srgb`` when
+the producer already stores coefficients.)doc";
+
+static const char *__doc_mitsuba_PackedMesh_attrs = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_backend = R"doc(Dr.Jit backend of the allocated buffers)doc";
+
+static const char *__doc_mitsuba_PackedMesh_bbox = R"doc(Bounding box computed from the mesh positions)doc";
+
+static const char *__doc_mitsuba_PackedMesh_face_count = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_faces = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_layout = R"doc(Content of the vertex records)doc";
+
+static const char *__doc_mitsuba_PackedMesh_m_negate_normals = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_m_to_world = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_m_transform = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_m_written = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_normal_count = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_normal_index = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_position_count = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_position_index = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_reverse_winding = R"doc(Reverse the corner order of the face records? (set_transform()))doc";
+
+static const char *__doc_mitsuba_PackedMesh_set_face = R"doc(Write one face record, checking that its indices are in bounds)doc";
+
+static const char *__doc_mitsuba_PackedMesh_set_transform =
+R"doc(Bake a placement and orientation into the mesh
+
+Call this method to to apply a to-world transformation to any mesh
+data that is subsequently filled via set_face() and set_vertex().
+Mirroring transformations and ``flip_normals`` may also reverse the
+winding order.)doc";
+
+static const char *__doc_mitsuba_PackedMesh_set_vertex = R"doc(Write one vertex record and grow bbox)doc";
+
+static const char *__doc_mitsuba_PackedMesh_transform_records =
+R"doc(Transform mesh data written so far
+
+Producers that fill PackedMesh directly without set_vertex() and
+set_face() should call this method at the end.)doc";
+
+static const char *__doc_mitsuba_PackedMesh_vertex_count = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMesh_vertices = R"doc()doc";
 
 static const char *__doc_mitsuba_ParamFlags =
 R"doc(This list of flags is used to classify the different types of
@@ -9198,6 +9849,16 @@ static const char *__doc_mitsuba_Sensor_type = R"doc(This is both a class and th
 
 static const char *__doc_mitsuba_Sensor_variant_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
+static const char *__doc_mitsuba_SerializedFlags =
+R"doc(Flag word of a ``.serialized`` file. The low bits store the Layout of
+the vertex records verbatim.)doc";
+
+static const char *__doc_mitsuba_SerializedFlags_FaceNormals = R"doc()doc";
+
+static const char *__doc_mitsuba_SerializedFlags_LayoutMask = R"doc()doc";
+
+static const char *__doc_mitsuba_SerializedFlags_SinglePrecision = R"doc()doc";
+
 static const char *__doc_mitsuba_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_2 = R"doc(Forward declaration for `SilhouetteSample`)doc";
@@ -9284,17 +9945,17 @@ static const char *__doc_mitsuba_ShapeIR_Kind =
 R"doc(Mitsuba bundles each of the following geometry kinds into its own
 BLAS. Instance must remain last (see NumGeometryKinds).)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_BSplineCurve = R"doc(< cubic B-spline curve)doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_BSplineCurve = R"doc(Cubic B-spline curve)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_Custom = R"doc(< AABB/implicit: sphere, disk, cylinder, sdfgrid, ellipsoids)doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_Custom = R"doc(AABB/implicit: sphere, disk, cylinder, sdfgrid, ellipsoids)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_Instance = R"doc(< ShapeGroup instance, carries no geometry and is never bucketed)doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_Instance = R"doc(ShapeGroup instance, carries no geometry and is never bucketed)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_LinearCurve = R"doc(< linear curve)doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_LinearCurve = R"doc(Linear curve)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_Triangles = R"doc(< double-sided meshes)doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_Triangles = R"doc(Double-sided meshes)doc";
 
-static const char *__doc_mitsuba_ShapeIR_Kind_TrianglesCulled = R"doc(< back-face-culled meshes (EllipsoidsMesh))doc";
+static const char *__doc_mitsuba_ShapeIR_Kind_TrianglesCulled = R"doc(Back-face-culled meshes (EllipsoidsMesh))doc";
 
 static const char *__doc_mitsuba_ShapeIR_aabb_buffer =
 R"doc(Precomputed device AABB buffer for zero-copy builds (OptiX only; Metal
@@ -9329,6 +9990,11 @@ static const char *__doc_mitsuba_ShapeIR_group_id = R"doc(BLAS-set cache key (sh
 
 static const char *__doc_mitsuba_ShapeIR_index_ptr = R"doc()doc";
 
+static const char *__doc_mitsuba_ShapeIR_index_stride =
+R"doc(Distance between consecutive face records in bytes; the three vertex
+indices occupy the first three words of each record. Metal inputs must
+be tightly packed (12 bytes).)doc";
+
 static const char *__doc_mitsuba_ShapeIR_kind = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeIR_pdata_size = R"doc(Per-primitive POD size in bytes (0 if the shape writes none).)doc";
@@ -9348,6 +10014,10 @@ static const char *__doc_mitsuba_ShapeIR_vertex_count = R"doc()doc";
 static const char *__doc_mitsuba_ShapeIR_vertex_ptr =
 R"doc(Backend-appropriate buffer handles (host pointer on CPU/Embree, device
 pointer on Metal/OptiX).)doc";
+
+static const char *__doc_mitsuba_ShapeIR_vertex_stride =
+R"doc(Distance between consecutive vertex records in bytes; the position
+occupies the first three floats of each record.)doc";
 
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
@@ -9497,6 +10167,11 @@ the caller. The field ``wi`` is initialized by the caller following
 the call to compute_surface_interaction(), and ``duv_dx``, and
 ``duv_dy`` are left uninitialized.
 
+Every call must be followed by
+SurfaceInteraction::finalize_surface_interaction(), which
+implementations rely on: it is what invalidates ``t`` on the inactive
+lanes, so they need not mask it themselves.
+
 Parameter ``ray``:
     Ray associated with the ray intersection
 
@@ -9578,6 +10253,10 @@ R"doc(Evaluate a specific shape attribute at the given surface interaction.
 Shape attributes are user-provided fields that provide extra
 information at an intersection. An example of this would be a per-
 vertex or per-face color on a triangle mesh.
+
+An attribute that the shape does not carry, or that does not fit the
+requested channel count, evaluates to zero. Use has_attribute() to
+distinguish this from an attribute that is present and zero.
 
 Parameter ``name``:
     Name of the attribute to evaluate
@@ -10467,6 +11146,13 @@ Parameter ``ray``:
 
 Parameter ``ray_flags``:
     Flags specifying which information should be computed)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_frame_flipped =
+R"doc(Is the shading frame left-handed?
+
+This bit denotes when a shape wants to set up a left-handed shading
+frame, e.g., on mehses with inverted UVs or instances with mirror
+transformation. This is important to correctly interpret normal maps.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc";
 
@@ -11796,6 +12482,29 @@ Parameter ``frame``:
 
 static const char *__doc_mitsuba_coordinate_system = R"doc(Complete the set {a} to an orthonormal basis {a, b, c})doc";
 
+static const char *__doc_mitsuba_corner_to_packed_mesh =
+R"doc(Convert a corner-indexed mesh description into a packed mesh
+compatible with the internal representation of Mesh
+
+This function triangulates polygonal faces and then welds the corners
+of each source vertex: corners that agree on all per-corner data
+collapse into a single vertex, while differing ones yield separate
+copies. The generated ``position_index`` and ``normal_index`` maps
+record which of these copies still share a position or a normal, so
+that seams do not turn into geometric cuts (see the Mesh
+documentation). Corners also split when their triangles disagree on
+the orientation of the texture parameterization, since such triangles
+cannot share a tangent frame.
+
+Unreferenced source vertices are dropped, the remaining ones keep
+their relative order, and split copies follow their original vertex.
+
+``name`` identifies the mesh in error messages. ``face_normals``
+announces that the mesh will use per-face normals, in which case any
+supplied shading normals are ignored. The ``flip_normals`` and
+``to_world`` arguments are baked into the result, see
+PackedMesh::set_transform().)doc";
+
 static const char *__doc_mitsuba_depolarizer =
 R"doc(Turn a spectrum into a Mueller matrix representation that only has a
 non-zero (1,1) entry. For all non-polarized modes, this is the
@@ -12192,6 +12901,22 @@ R"doc(Changes the size of the regular file named by ``p`` as if ``truncate``
 was called. If the file was larger than ``target_length``, the
 remainder is discarded. The file must exist.)doc";
 
+static const char *__doc_mitsuba_frame_decode = R"doc(Decode a frame produced by frame_encode() into normal and tangent)doc";
+
+static const char *__doc_mitsuba_frame_encode =
+R"doc(Encode a unit normal ``n`` and a tangent ``s`` into three floats
+
+Together with the (implied) bitangent, this is an element of
+``SO(3)``, which this function parameterizes using 3 parameters by
+stereographically projecting the frame's unit quaternion (the
+*modified Rodrigues parameters*, Terzakis et al. 2018).
+
+After flipping the quaternion to a non-negative real part ``w``, the
+result is ``imag(q) / (1 + w)``, of length ``tan(angle/4) <= 1``.
+
+The parameterization has a (benign) seam at ``angle=pi``. Antipodal
+points of the unit sphere decode to the same frame.)doc";
+
 static const char *__doc_mitsuba_fresnel =
 R"doc(Calculates the unpolarized Fresnel reflection coefficient at a planar
 interface between two dielectrics
@@ -12355,6 +13080,26 @@ static const char *__doc_mitsuba_has_flag_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_8 = R"doc()doc";
 
+static const char *__doc_mitsuba_has_flag_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_10 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_11 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_12 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_13 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_14 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_15 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_16 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_17 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_18 = R"doc()doc";
+
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
 static const char *__doc_mitsuba_hash_2 = R"doc()doc";
@@ -12443,6 +13188,8 @@ static const char *__doc_mitsuba_lookup_ior_3 = R"doc()doc";
 static const char *__doc_mitsuba_luminance = R"doc()doc";
 
 static const char *__doc_mitsuba_luminance_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_make_layout = R"doc(Assemble the Layout flags of the packed records)doc";
 
 static const char *__doc_mitsuba_math_bisect =
 R"doc(Bisect a floating point interval given a predicate function
@@ -12790,6 +13537,8 @@ static const char *__doc_mitsuba_operator_add_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_9 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_10 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -12822,6 +13571,28 @@ static const char *__doc_mitsuba_operator_band_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_16 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_17 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_18 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_19 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_20 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_21 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_22 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_23 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_24 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_25 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_26 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_27 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
@@ -12837,6 +13608,8 @@ static const char *__doc_mitsuba_operator_bnot_6 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bnot_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -12869,6 +13642,64 @@ static const char *__doc_mitsuba_operator_bor_14 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bor_15 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_16 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_17 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_18 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_19 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_20 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_21 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_22 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_23 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_24 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_25 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_26 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_27 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_iand_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_8 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 
@@ -13466,6 +14297,19 @@ Returns:
     quadrature rule.)doc";
 
 static const char *__doc_mitsuba_radical_inverse_2 = R"doc(Van der Corput radical inverse in base 2)doc";
+
+static const char *__doc_mitsuba_reduce_bbox =
+R"doc(Compute the bounding box of an interleaved position buffer.
+
+``data`` is interleaved with ``Stride`` scalars per element and the
+position at offsets 0, 1, 2.
+
+If ``RadiusOffset`` >= 0, each point is grown by the scalar at that
+offset. This is used by the curve shapes which pass curve control
+points to this function.
+
+An empty buffer produces an invalid bounding box. In JIT variants, the
+reduction runs on the device.)doc";
 
 static const char *__doc_mitsuba_reflect = R"doc(Reflection in local coordinates)doc";
 

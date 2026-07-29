@@ -515,9 +515,6 @@ MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *cb) {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
-    if (m_environment)
-        m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
-
     bool accel_is_dirty = false;
     for (auto &s : m_shapes) {
         if (s->dirty()) {
@@ -541,6 +538,9 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
         for (auto &s : m_shapes)
             m_bbox.expand(s->bbox());
     }
+
+    if (m_environment)
+        m_environment->set_scene(this);
 
     // Check whether any shape parameters have gradient tracking enabled
     m_shapes_grad_enabled = false;

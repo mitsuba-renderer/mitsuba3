@@ -340,10 +340,9 @@ protected:
                 upsample_spectral<StoredScalar>(m_bitmap.get());
 
         ScalarVector2i res(m_bitmap->size());
-        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(),
-                            m_bitmap->channel_count() };
-        dr::replace_scalar_t<TensorXf, StoredScalar> tensor(m_bitmap->data(), 3,
-                                                            shape);
+        dr::replace_scalar_t<TensorXf, StoredScalar> tensor(
+            m_bitmap->data(),
+            { (size_t) res.y(), (size_t) res.x(), m_bitmap->channel_count() });
 
         return instantiate<StoredType>(std::move(tensor), srgb);
     }
@@ -489,6 +488,9 @@ public:
             m_texture.update_inplace();
             rebuild_internals(m_texture.tensor(), true, m_distr2d != nullptr);
         }
+
+        if ((keys.empty() || string::contains(keys, "to_uv")) && m_distr2d)
+            check_sampling_transform();
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
@@ -654,16 +656,22 @@ public:
             }
         }
 
-        return { sample2, pdf_position(sample2) };
+        return { m_transform.inverse() * sample2,
+                 pdf_texture(sample2, active) };
     }
 
-    Float pdf_position(const Point2f &pos_, Mask active = true) const override {
+    Float pdf_position(const Point2f &pos, Mask active = true) const override {
         if (dr::none_or<false>(active))
             return dr::zeros<Float>();
 
         if (!m_distr2d)
             init_distr();
 
+        return pdf_texture(m_transform * pos, active);
+    }
+
+    /// Position sampling density, in the texture's own parameterization
+    Float pdf_texture(const Point2f &pos_, Mask active) const {
         ScalarVector2i res = resolution();
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
             BilinearWeights bw = bilinear_weights(pos_);
@@ -955,6 +963,7 @@ protected:
     MI_INLINE void init_distr() const {
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
+            check_sampling_transform();
             dr::scoped_disable_symbolic<Float> guard{};
             auto self = const_cast<BitmapTextureImpl *>(this);
             self->rebuild_internals(m_texture.tensor(), false, true);
@@ -962,6 +971,26 @@ protected:
     }
 
 protected:
+    /// Transferring the texel distribution to the surface parameterization
+    /// needs \c to_uv to permute the corners of the unit square
+    void check_sampling_transform() const {
+        const ScalarPoint2f corners[4] = { { 0.f, 0.f }, { 1.f, 0.f },
+                                           { 1.f, 1.f }, { 0.f, 1.f } };
+        uint32_t hits = 0;
+        for (const ScalarPoint2f &c : corners)
+            for (uint32_t j = 0; j < 4; ++j)
+                if (dr::squared_norm(m_transform * c - corners[j]) < 1e-8f)
+                    hits |= 1u << j;
+
+        if (hits != 0xF)
+            Throw("Bitmap texture \"%s\": position sampling (e.g. of an area "
+                  "emitter's radiance) requires a 'to_uv' transformation that "
+                  "maps the unit square onto itself, such as a flip, a "
+                  "transpose or a multiple of a 90 degree rotation. Under %s "
+                  "a texel has no well-defined surface position.",
+                  m_name, m_transform);
+    }
+
     std::string m_name;
     ScalarAffineTransform3f m_transform;
     bool m_raw;

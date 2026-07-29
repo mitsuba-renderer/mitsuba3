@@ -508,8 +508,9 @@ def test21_normal_partials(variant_scalar_rgb):
 
     def normal_field(u, v):
         phi, theta = 2 * np.pi * u, np.pi * v
-        return np.array([np.sin(theta) * np.cos(phi),
-                         np.sin(theta) * np.sin(phi), np.cos(theta)])
+        return np.stack([np.sin(theta) * np.cos(phi),
+                         np.sin(theta) * np.sin(phi),
+                         np.cos(theta)], axis=-1)
 
     hits = 0
     for x in dr.linspace(Float, -0.5, 0.5, 6):

@@ -5,6 +5,148 @@ Being an experimental research framework, Mitsuba 3 does not strictly follow the
 `Semantic Versioning <https://semver.org/>`__ convention. That said, we will
 strive to document breaking API changes in the release notes below.
 
+Mitsuba 3.10.0
+--------------
+*in development*
+
+- **Redesigned mesh representation**. The ``Mesh`` class was rewritten from
+  scratch. Improvements include:
+
+  - It can now represent with discontinuous attributes (e.g., normals, UVs)
+    without introducing geometric seams.
+
+  - It can directly ingest corner-indexed meshes (e.g., from OBJ files or
+    Blender) and efficiently convert them into its representation.
+
+  - It tightly packs mesh data into an interleaved representation compatible
+    with packet loads/atomics for efficient use in a GPU renderer.
+
+  - It smoothly interpolates vertex tangents, which avoids tesselation
+    artifacts present in prior versions. The interpolation follows the
+    `MikkTSpace <https://github.com/mmikk/MikkTSpace>`__ convention, which
+    makes it possible to use normal maps authored elsewhere in Mitsuba
+    and optimize maps in Mitsuba for use in other tools.
+
+  - It adds early support for per-face material assignments. (Though this
+    will require further work in the renderer.)
+
+  - Mesh orientation is now a property of the mesh data rather than of the
+    scene description. The face winding order defines the orientation of the
+    surface, and the ``flip_normals`` and ``to_world`` properties are baked
+    into the records once when the shape is built, instead of being reapplied
+    to the result of every query. A flipped mesh written back out via
+    ``write_ply()`` or ``write_serialized()`` therefore carries the flip, and
+    reloading it does not require the scene description to repeat it.
+
+  ⚠️ **WARNING** ⚠️: This is an **API-breaking change**. Code that constructs
+  meshes or touches mesh scene parameters must be updated as follows.
+
+  - **Scene parameters**. A mesh with ``F`` faces and ``V`` vertices further
+    consists of ``P`` surface positions and ``N`` normal groups (``P <= N <=
+    V``). The parameters exposed by ``mi.traverse()`` changed name and shape.
+
+    ============================== ==========================================
+    Before (flat buffer)           After (tensor)
+    ============================== ==========================================
+    ``vertex_positions`` ``[3V]``  ``positions``, ``(P, 3)``
+    ``vertex_normals`` ``[3V]``    ``normals``, ``(N, 3)``
+    ``vertex_texcoords`` ``[2V]``  ``texcoords``, ``(V, 2)``
+    ``faces`` ``[3F]``             ``faces``, ``(F, 3)``
+    vertex attribute ``[dV]``      ``(V, d)``, and ``(F, d)`` per face
+    ============================== ==========================================
+
+    The ``position_index`` ``[V]``, ``normal_index`` ``[V]``, and
+    ``bsdf_index`` ``[F]`` entries are new and writable. These maps are empty
+    by default and indicate that there is no indirection for positions/normals,
+    or no per-face material assignment.
+
+    Because the values are now shaped tensors, the flat-buffer bookkeeping that
+    used to surround an edit tends to disappear:
+
+    .. code-block:: python
+
+        # Before
+        v = dr.unravel(mi.Point3f, params['teapot.vertex_positions'])
+        v.z += 0.5
+        params['teapot.vertex_positions'] = dr.ravel(v)
+
+        # After
+        params['teapot.positions'] += mi.TensorXf([[0, 0, 0.5]])
+
+    An operation that does need the structure-of-arrays layout, such as
+    applying a ``Transform4f``, converts in either direction via ``flip_axes``:
+
+    .. code-block:: python
+
+        # Before
+        v = dr.unravel(mi.Point3f, params['bunny.vertex_positions'])
+        params['bunny.vertex_positions'] = dr.ravel(trafo @ v)
+
+        # After
+        v = mi.Point3f(params['bunny.positions'], flip_axes=True)
+        params['bunny.positions'] = mi.TensorXf(trafo @ v, flip_axes=True)
+
+    Sizes are editable: a step that resizes a mesh (e.g. remeshing) simply
+    writes the new tensors and calls ``update()``.
+
+    .. code-block:: python
+
+        params['shape.faces']     = mi.TensorXu(new_faces)
+        params['shape.positions'] = mi.TensorXf(new_positions)
+        params.update()
+
+  - **Construction**. Building a mesh is now a single call that supplies the
+    data up front:
+
+    .. code-block:: python
+
+        # Before
+        mesh = mi.Mesh("wavydisk", vertex_count=N, face_count=N - 1,
+                       has_vertex_normals=False, has_vertex_texcoords=False)
+        params = mi.traverse(mesh)
+        params['vertex_positions'] = dr.ravel(vertex_pos)    # mi.Point3f
+        params['faces'] = dr.ravel(face_indices)             # mi.Vector3u
+        params.update()
+
+        # After
+        mesh = mi.Mesh("wavydisk",
+                       faces=face_indices,                   # (F, 3) TensorXu
+                       positions=vertex_pos)                 # (P, 3) TensorXf
+
+    The constructor optionally also accepts ``normals``, ``texcoords``,
+    ``position_index``, ``normal_index``, and ``bsdf_index``. Alternatively,
+    an empty mesh created via ``mi.Mesh(name)`` can be built by calling
+    ``from_fields()`` (the same parameters as above), ``from_corners()``
+    (corner-indexed data as produced by OBJ files or DCC applications), or
+    ``from_packed()`` (the packed representation verbatim).
+
+   - **Parameter handling and winding order**: The face winding order now
+     defines the orientation of the surface. In particular, the geometric
+     normal of a face follows from the right hand rule applied to its
+     positions. Shading normals must lie in the same hemisphere, and ``Mesh``
+     maintains that invariant.
+
+     The ``flip_normals`` and ``to_world`` transformation parameters of
+     mesh-based shapes are now baked into the vertex positions and winding
+     order at construction time.
+
+  - **Method renames**. The remaining interface changes are mechanical:
+
+    ============================================ ==============================
+    Before                                       After
+    ============================================ ==============================
+    ``faces_buffer()``                           ``faces()``
+    ``vertex_positions_buffer()``                ``positions()``
+    ``vertex_normals_buffer()``                  ``normals()``
+    ``vertex_texcoords_buffer()``                ``texcoords()``
+    ``attribute_buffer(name)``                   ``attribute(name)``
+    ``has_vertex_texcoords()``                   ``has_texcoords()``
+    ``has_vertex_normals()``                     ``has_normals()``
+    ``recompute_vertex_normals()``               ``recompute_normals()``
+    ``mesh.merge(other)``                        ``mi.Mesh.merge(shapes)``
+    ``mesh.has_flipped_normals()``               *removed, see above*
+    ============================================ ==============================
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

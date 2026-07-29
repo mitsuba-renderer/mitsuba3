@@ -413,8 +413,6 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
-
         Point3f local = dr::transpose(rot) * (si.p - ellipsoid.center);
         si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
 

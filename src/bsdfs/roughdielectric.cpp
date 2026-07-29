@@ -209,7 +209,8 @@ public:
             m_alpha_u = m_alpha_v = props.get_unbounded_texture<Texture>("alpha", 0.1f);
         }
 
-        BSDFFlags extra = (m_alpha_u != m_alpha_v) ? BSDFFlags::Anisotropic : BSDFFlags(0);
+        uint32_t extra =
+            (m_alpha_u != m_alpha_v) ? (uint32_t) BSDFFlags::Anisotropic : 0u;
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | extra);
         m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |

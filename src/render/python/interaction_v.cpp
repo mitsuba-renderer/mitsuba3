@@ -42,6 +42,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, shape,         "shape"_a.none(), D(SurfaceInteraction, shape))
         .def_field(SurfaceInteraction3f, uv,            D(SurfaceInteraction, uv))
         .def_field(SurfaceInteraction3f, sh_frame,      D(SurfaceInteraction, sh_frame))
+        .def_field(SurfaceInteraction3f, frame_flipped, D(SurfaceInteraction, frame_flipped))
         .def_field(SurfaceInteraction3f, dp_du,         D(SurfaceInteraction, dp_du))
         .def_field(SurfaceInteraction3f, dp_dv,         D(SurfaceInteraction, dp_dv))
         .def_field(SurfaceInteraction3f, dn_du,         D(SurfaceInteraction, dn_du))
@@ -90,8 +91,8 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_repr(SurfaceInteraction3f);
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
-                       shape, uv, sh_frame, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                       duv_dy, wi, prim_index, instance)
+                       shape, uv, sh_frame, frame_flipped, dp_du, dp_dv, dn_du,
+                       dn_dv, duv_dx, duv_dy, wi, prim_index, instance)
 }
 
 MI_PY_EXPORT(MediumInteraction) {

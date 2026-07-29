@@ -1,8 +1,17 @@
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/mesh_utils.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
 MI_PY_EXPORT(DiscontinuityFlags) {
+    nb::enum_<Layout>(m, "Layout", nb::is_arithmetic(),
+                            D(Layout))
+        .def_value(Layout, Positions)
+        .def_value(Layout, Normals)
+        .def_value(Layout, Texcoords)
+        .def_value(Layout, Tangents)
+        .def_value(Layout, FaceBSDFs);
+
     auto disc_flags = nb::enum_<DiscontinuityFlags>(m, "DiscontinuityFlags", nb::is_arithmetic(), D(DiscontinuityFlags))
         .def_value(DiscontinuityFlags, Empty)
         .def_value(DiscontinuityFlags, PerimeterType)

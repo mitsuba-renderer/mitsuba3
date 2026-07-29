@@ -85,9 +85,17 @@ enum class BSDFFlags : uint32_t {
     /// Does the implementation require access to texture-space differentials
     NeedsDifferentials   = 0x20000,
 
+    /// The lobe lives in a shading frame that a normal map perturbs, so
+    /// the frame's orientation around the normal is observable
+    NormalMapped         = 0x40000,
+
     // =============================================================
     //!                 Compound lobe attributes
     // =============================================================
+
+    /// Any reason the shading frame must carry a smooth tangent rather
+    /// than an arbitrary basis around the shading normal
+    NeedsTangents = Anisotropic | NormalMapped,
 
     /// Any reflection component (scattering into discrete, 1D, or 2D set of directions)
     Reflection   = DiffuseReflection | DeltaReflection |

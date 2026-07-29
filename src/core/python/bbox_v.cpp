@@ -89,8 +89,6 @@ MI_PY_EXPORT(BoundingBox) {
     bind_bbox<BoundingBox2f, Ray3f>(m, "BoundingBox2f");
     bind_bbox<BoundingBox3f, Ray3f>(m, "BoundingBox3f");
 
-    if constexpr (!std::is_same_v<Float, ScalarFloat>) {
-        bind_bbox<ScalarBoundingBox2f, Ray3f>(m, "ScalarBoundingBox2f");
-        bind_bbox<ScalarBoundingBox3f, Ray3f>(m, "ScalarBoundingBox3f");
-    }
+    bind_bbox<ScalarBoundingBox2f, Ray3f>(m, "ScalarBoundingBox2f");
+    bind_bbox<ScalarBoundingBox3f, Ray3f>(m, "ScalarBoundingBox3f");
 }
