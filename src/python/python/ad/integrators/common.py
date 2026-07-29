@@ -607,7 +607,7 @@ class RBIntegrator(ADIntegrator):
                 value=δL * weight,
                 weight=1.0,
                 alpha=dr.select(valid_2, mi.Float(1), mi.Float(0)),
-                aovs=[δaov * weight for δaov in δaovs],
+                aovs=δaovs,
                 wavelengths=ray.wavelengths
             )
 
@@ -739,7 +739,7 @@ class RBIntegrator(ADIntegrator):
                     value=L * weight,
                     weight=1.0,
                     alpha=1.0,
-                    aovs=[aov * weight for aov in aovs]
+                    aovs=aovs
                 )
 
                 δL = dr.grad(L)
@@ -1001,7 +1001,7 @@ class PSIntegrator(ADIntegrator):
                 value=L * weight,
                 weight=1.0,
                 alpha=dr.select(valid, mi.Float(1), mi.Float(0)),
-                aovs=[aov * weight for aov in aovs],
+                aovs=aovs,
                 wavelengths=ray.wavelengths
             )
 
