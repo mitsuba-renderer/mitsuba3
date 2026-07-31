@@ -67,6 +67,17 @@ INTEGRATORS = [
     'acoustic_prb_threepoint'
 ]
 
+# `track_time_derivatives` is only accepted by the PRB pair; the AD pair always
+# tracks time derivatives unconditionally. Defaults differ between the two:
+# acoustic_prb is static-scene-only, so tracking is off by default for
+# efficiency; acoustic_prb_threepoint needs it on by default to be unbiased
+# for moving geometry.
+PRB_TRACK_TIME_DERIVATIVES_DEFAULT = {
+    'acoustic_prb': False,
+    'acoustic_prb_threepoint': True,
+}
+PRB_INTEGRATORS = list(PRB_TRACK_TIME_DERIVATIVES_DEFAULT)
+
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test01_initialization(variants_all_jit_acoustic, integrator_name):
     integrator = mi.load_dict({'type': integrator_name,
@@ -86,10 +97,16 @@ def test02_constructor_default_values(variants_all_jit_acoustic, integrator_name
     assert integrator.max_time == 1.0
     assert integrator.is_detached
     assert not integrator.hide_emitters
-    assert integrator.track_time_derivatives
     assert integrator.max_depth == 0xffffffff  # -1 maps to 2^32-1
     assert integrator.rr_depth == 100000
     assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
+
+    # Only the PRB pair exposes track_time_derivatives; the default differs
+    # between the two (see PRB_TRACK_TIME_DERIVATIVES_DEFAULT above).
+    if integrator_name in PRB_INTEGRATORS:
+        assert integrator.track_time_derivatives == PRB_TRACK_TIME_DERIVATIVES_DEFAULT[integrator_name]
+    else:
+        assert not hasattr(integrator, 'track_time_derivatives')
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name):
@@ -102,7 +119,6 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
         'rr_depth': 100000,
         'is_detached': False,
         'hide_emitters': True,
-        'track_time_derivatives': False,
         'max_energy_loss': 60.0,
     })
 
@@ -112,8 +128,19 @@ def test03_constructor_custom_values(variants_all_jit_acoustic, integrator_name)
     assert integrator.rr_depth == 100000
     assert not integrator.is_detached
     assert integrator.hide_emitters
-    assert not integrator.track_time_derivatives
     assert dr.allclose(integrator.throughput_threshold, 10 ** (-60.0 / 10.0))
+
+    # Only the PRB pair accepts track_time_derivatives; the AD pair rejects it
+    # as an unqueried property instead of silently ignoring it.
+    if integrator_name in PRB_INTEGRATORS:
+        non_default = not PRB_TRACK_TIME_DERIVATIVES_DEFAULT[integrator_name]
+        integrator = mi.load_dict({'type': integrator_name, 'max_time': 1.0,
+                                   'track_time_derivatives': non_default})
+        assert integrator.track_time_derivatives == non_default
+    else:
+        with pytest.raises(RuntimeError, match='track_time_derivatives'):
+            mi.load_dict({'type': integrator_name, 'max_time': 1.0,
+                          'track_time_derivatives': False})
 
 @pytest.mark.parametrize('integrator_name', INTEGRATORS)
 def test04_constructor_max_time_missing(variants_all_jit_acoustic, integrator_name):

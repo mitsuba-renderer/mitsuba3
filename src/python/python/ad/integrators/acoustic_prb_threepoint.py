@@ -17,10 +17,16 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
     -----------------------------------------------------------------
 
     .. pluginparameters::
-        :extra-rows: 0
 
-        (Inherits all parameters from
-        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+     * - track_time_derivatives
+       - |bool|
+       - Whether to track derivatives with respect to time/distance, needed
+         to compute gradients with respect to geometry (time-dependent)
+         scene parameters. Takes effect during the adjoint (gradient) pass
+         only. (Default: |true|)
+
+    Also inherits all other parameters from
+    :ref:`acoustic_ad <integrator-acoustic_ad>`.
 
     This integrator behaves similarly to
     :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
@@ -64,6 +70,10 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
             'speed_of_sound': 343.0,
             'max_depth': -1,
     """
+
+    def __init__(self, props):
+        super().__init__(props)
+        self.track_time_derivatives = props.get("track_time_derivatives", True)
 
     @dr.syntax
     def sample(self,

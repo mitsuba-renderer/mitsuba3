@@ -55,11 +55,6 @@ class AcousticADIntegrator(RBIntegrator):
        - Whether the sampling strategy should be detached from the optimized
          parameters. (Default: |true|)
 
-     * - track_time_derivatives
-       - |bool|
-       - Whether to track derivatives with respect to time/distance.
-         (Default: |true|)
-
     This is the base class for differentiable acoustic integrators. It extends
     the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
     differentiation (AD) support, enabling gradient-based optimization of scene
@@ -105,8 +100,6 @@ class AcousticADIntegrator(RBIntegrator):
 
 
         self.is_detached = props.get("is_detached", True)
-
-        self.track_time_derivatives = props.get("track_time_derivatives", True)
 
         max_depth = props.get('max_depth', -1)
         if max_depth < 0 and max_depth != -1:
