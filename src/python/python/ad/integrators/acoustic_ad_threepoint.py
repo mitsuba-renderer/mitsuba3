@@ -71,6 +71,13 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x
         n_channels = film.base_channels_count()
 
+        if film.rfilter().is_box_filter():
+            mi.Log(mi.LogLevel.Warn,
+                   "The film's reconstruction filter is a box filter: "
+                   "time derivatives will be incorrect, since a box filter "
+                   "is not differentiable. Use a differentiable filter "
+                   "instead (e.g. gaussian).")
+
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 

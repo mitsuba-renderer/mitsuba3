@@ -86,6 +86,13 @@ class AcousticPRBIntegrator(AcousticADIntegrator):
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x
         n_channels = film.base_channels_count()
 
+        if dr.hint(self.track_time_derivatives and film.rfilter().is_box_filter(), mode='scalar'):
+            mi.Log(mi.LogLevel.Warn,
+                   "The film's reconstruction filter is a box filter: "
+                   "time derivatives will be incorrect, since a box filter "
+                   "is not differentiable. Use a differentiable filter "
+                   "instead (e.g. gaussian).")
+
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
 

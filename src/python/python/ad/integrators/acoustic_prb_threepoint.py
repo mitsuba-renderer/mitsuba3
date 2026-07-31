@@ -74,6 +74,11 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
     def __init__(self, props):
         super().__init__(props)
         self.track_time_derivatives = props.get("track_time_derivatives", True)
+        if not self.track_time_derivatives:
+            mi.Log(mi.LogLevel.Warn,
+                   "track_time_derivatives is set to False: gradients with "
+                   "respect to moving geometry will be biased, since this "
+                   "integrator relies on time derivatives to account for it.")
 
     @dr.syntax
     def sample(self,
@@ -101,6 +106,13 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
         film = sensor.film()
         n_frequencies = mi.ScalarVector2f(film.crop_size()).x
         n_channels = film.base_channels_count()
+
+        if dr.hint(self.track_time_derivatives and film.rfilter().is_box_filter(), mode='scalar'):
+            mi.Log(mi.LogLevel.Warn,
+                   "The film's reconstruction filter is a box filter: "
+                   "time derivatives will be incorrect, since a box filter "
+                   "is not differentiable. Use a differentiable filter "
+                   "instead (e.g. gaussian).")
 
         # Standard BSDF evaluation context for path tracing
         bsdf_ctx = mi.BSDFContext()
