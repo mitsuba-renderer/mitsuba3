@@ -124,8 +124,12 @@ class PRBVolpathIntegrator(RBIntegrator):
         last_scatter_event = dr.zeros(mi.Interaction3f)
         last_scatter_direction_pdf = mi.Float(1.0)
 
-        # TODO: support sensors inside media
-        medium = dr.zeros(mi.MediumPtr)
+        medium = kwargs.get('medium', None)
+        if medium is None:
+            medium = dr.zeros(mi.MediumPtr)
+        else:
+            medium = mi.MediumPtr(medium)
+            medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
 
         channel = 0
         depth = mi.UInt32(0)
