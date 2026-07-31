@@ -39,7 +39,8 @@ B-spline curve (:monosp:`bsplinecurve`)
 
  * - filename
    - |string|
-   - Filename of the curves to be loaded
+   - Filename of the curves to be loaded (alternatively, see
+     :monosp:`control_points` below)
 
  * - to_world
    - |transform|
@@ -58,13 +59,15 @@ B-spline curve (:monosp:`bsplinecurve`)
 
  * - segment_indices
    - :paramtype:`uint32[]`
-   - Starting indices of a B-Spline segment
+   - Starting indices of a B-Spline segment. Can also be set at construction
+     time (see below).
    - |exposed|
 
  * - control_points
    - :paramtype:`float[]`
    - Flattened control points buffer pre-multiplied by the object-to-world transformation.
-     Each control point in the buffer is structured as follows: position_x, position_y, position_z, radius
+     Each control point in the buffer is structured as follows: position_x, position_y, position_z, radius.
+     Can also be set at construction time (see below).
    - |exposed|, |differentiable|, |discontinuous|
 
 .. subfigstart::
@@ -126,6 +129,22 @@ points and increasing radii::
             'filename': 'curves.txt'
         }
 
+The curves can also be passed in memory: :monosp:`control_points` takes a Dr.Jit
+array or tensor holding four values per control point (position, radius), either
+flat or with the shape ``(N, 4)``. The optional :monosp:`segment_indices`
+parameter lists the first control point of every segment; consecutive indices
+belong to the same curve. Without it, all control points describe a single curve.
+
+.. tabs::
+    .. code-tab:: python
+
+        # Two curves with four control points each
+        'curves': {
+            'type': 'bsplinecurve',
+            'control_points': mi.TensorXf(control_points),  # shape (8, 4)
+            'segment_indices': mi.UInt32([0, 4])  # dr.scalar.ArrayXu in scalar variants
+        }
+
 .. note:: The backfaces of curves are always culled. It is therefore impossible
           to intersect the curve with a ray that's origin is inside of the curve.
 */
@@ -154,179 +173,255 @@ public:
                   "variants!");
 #endif
 
-        auto fs = file_resolver();
-        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
-        std::string m_name = file_path.filename().string();
+        // Both paths below fill `m_control_points` and the segment indices
+        std::vector<ScalarIndex> indices;
 
-        // used for throwing an error later
-        auto fail = [&](const char *descr, auto... args) {
-            Throw(("Error while loading B-spline curve(s) from \"%s\": " + std::string(descr))
-                      .c_str(), m_name, args...);
-        };
+        // Curves passed in memory instead of being read from a file
+        if (props.has_property("control_points")) {
+            if (props.has_property("filename"))
+                Throw("Cannot specify both \"filename\" and \"control_points\"!");
 
-        Log(Debug, "Loading B-spline curve(s) from \"%s\" ..", m_name);
-        if (!fs::exists(file_path))
-            fail("file not found!");
+            ScopedPhase phase(ProfilerPhase::LoadGeometry);
+            Timer timer;
 
-        ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
-        ScopedPhase phase(ProfilerPhase::LoadGeometry);
-
-        // Temporary buffers for vertices and radius
-        std::vector<InputPoint3f> vertices;
-        std::vector<InputFloat> radius;
-        ScalarSize vertex_guess = (ScalarSize) mmap->size() / 100;
-        vertices.reserve(vertex_guess);
-        radius.reserve(vertex_guess);
-
-        // Load data from the given file
-        const char *ptr = (const char *) mmap->data();
-        const char *eof = ptr + mmap->size();
-        char buf[1025];
-        Timer timer;
-
-        size_t segment_count = 0;
-        std::vector<size_t> curve_1st_idx;
-        curve_1st_idx.reserve(vertex_guess / 4);
-        bool new_curve = true;
-
-        auto finish_curve = [&]() {
-            if (!new_curve) {
-                size_t num_control_points = vertices.size() - curve_1st_idx[curve_1st_idx.size() - 1];
-                if (unlikely((num_control_points < 4) && (num_control_points > 0)))
-                    fail("B-spline curves must have at least four control points!");
-                if (likely(num_control_points > 0))
-                    segment_count += (num_control_points - 3);
-            }
-        };
-
-        while (ptr < eof) {
-            // Determine the offset of the next newline
-            const char *next = ptr;
-            advance<false>(&next, eof, "\n");
-
-            // Copy buf into a 0-terminated buffer
-            ScalarSize size = (ScalarSize) (next - ptr);
-            if (size >= sizeof(buf) - 1)
-                fail("file contains an excessively long line! (%i characters)!", size);
-            memcpy(buf, ptr, size);
-            buf[size] = '\0';
-
-            // Skip whitespace(s)
-            const char *cur = buf, *eol = buf + size;
-            advance<true>(&cur, eol, " \t\r");
-            bool parse_error = false;
-
-            // Empty line
-            if (*cur == '\0') {
-                finish_curve();
-                new_curve = true;
-                ptr = next + 1;
-                continue;
+            // Four values per control point: (position, radius)
+            Any cp_any = props.get<Any>("control_points");
+            if (const TensorXf *tensor = any_cast<TensorXf>(&cp_any)) {
+                size_t ndim = tensor->ndim();
+                if (ndim > 2 || (ndim == 2 && tensor->shape(1) != 4))
+                    Throw("The \"control_points\" tensor must be flat or have "
+                          "the shape (N, 4)!");
+                m_control_points = FloatStorage(tensor->array());
+            } else if (const FloatStorage *buf = any_cast<FloatStorage>(&cp_any)) {
+                m_control_points = *buf;
+            } else {
+                Throw("The \"control_points\" property must be a Dr.Jit tensor "
+                      "or array of floating point values (e.g. mi.TensorXf)!");
             }
 
-            // Handle current line: v.x v.y v.z radius
-            if (new_curve) {
-                curve_1st_idx.push_back(vertices.size());
-                new_curve = false;
+            size_t size = dr::width(m_control_points);
+            if (size % 4 != 0 || size < 16)
+                Throw("The \"control_points\" buffer must hold at least four "
+                      "control points, each given by four values (position_x, "
+                      "position_y, position_z, radius), found %zu!", size);
+            m_control_point_count = (ScalarSize) (size / 4);
+
+            // First control point of every segment (default: a single curve)
+            if (props.has_property("segment_indices")) {
+                using UInt32Tensor = dr::Tensor<UInt32Storage>;
+                Any idx_any = props.get<Any>("segment_indices");
+                UInt32Storage buffer;
+
+                if (const UInt32Storage *buf = any_cast<UInt32Storage>(&idx_any)) {
+                    buffer = *buf;
+                } else if (const UInt32Tensor *tensor =
+                               any_cast<UInt32Tensor>(&idx_any)) {
+                    if (tensor->ndim() != 1)
+                        Throw("The \"segment_indices\" tensor must be flat!");
+                    buffer = tensor->array();
+                } else {
+                    Throw("The \"segment_indices\" property must be a Dr.Jit "
+                          "tensor or array of 32-bit unsigned integers (e.g. "
+                          "mi.UInt32)!");
+                }
+
+                // Read them back to the host
+                dr::eval(buffer);
+                auto &&host = dr::migrate(buffer, JitBackend::None);
+                if constexpr (dr::is_jit_v<Float>)
+                    dr::sync_thread();
+                indices.assign(host.data(), host.data() + dr::width(buffer));
+            } else {
+                for (ScalarSize i = 0; i + 3 < m_control_point_count; ++i)
+                    indices.push_back(i);
             }
 
-            // Vertex position
-            InputPoint3f p;
-            for (ScalarSize i = 0; i < 3; ++i) {
-                const char *orig = cur;
-                p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
-                parse_error |= cur == orig;
-            }
-            p = m_to_world.scalar() * p;
-
-            // Vertex radius
-            InputFloat r;
-            const char *orig = cur;
-            r = string::strtof<InputFloat>(cur, (char **) &cur);
-            parse_error |= cur == orig;
-
-            if (unlikely(!all(dr::isfinite(p))))
-                fail("B-spline control point contains invalid position data (line: \"%s\")!", buf);
-            if (unlikely(!dr::isfinite(r)))
-                fail("B-spline control point contains invalid radius data (line: \"%s\")!", buf);
-
-            vertices.push_back(p);
-            radius.push_back(r);
-
-            if (unlikely(parse_error))
-                fail("Could not parse line \"%s\"!", buf);
-            ptr = next + 1;
-        }
-        if (curve_1st_idx.size() == 0)
-            fail("Empty B-spline file: no control points were read!");
-        finish_curve();
-
-        m_control_point_count = (ScalarSize) vertices.size();
-
-        std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(segment_count);
-        std::unique_ptr<ScalarIndex[]> curves_1st_prim_idx =
-            std::make_unique<ScalarIndex[]>(curve_1st_idx.size() + 1);
-        size_t segment_index = 0;
-        for (size_t i = 0; i < curve_1st_idx.size(); ++i) {
-            size_t next_curve_idx = i + 1 < curve_1st_idx.size() ? curve_1st_idx[i + 1] : vertices.size();
-            size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
-            curves_1st_prim_idx[i] = (ScalarIndex) segment_index;
-            for (size_t j = 0; j < curve_segment_count; ++j)
-                indices[segment_index++] = (ScalarIndex) (curve_1st_idx[i] + j);
-        }
-        curves_1st_prim_idx[curve_1st_idx.size()] = (ScalarIndex) segment_index;
-
-        m_indices = dr::load<UInt32Storage>(indices.get(), segment_count);
-        m_curves_prim_idx = dr::load<UInt32Storage>(curves_1st_prim_idx.get(),
-                                                    curve_1st_idx.size() + 1);
-
-        std::unique_ptr<InputFloat[]> positions =
-            std::make_unique<InputFloat[]>(m_control_point_count * 3);
-        for (ScalarIndex i = 0; i < vertices.size(); i++) {
-            InputFloat *vertex_ptr = positions.get() + i * 3;
-            dr::store(vertex_ptr, vertices[i]);
-        }
-
-        // Merge buffers into m_control_points
-        m_control_points = dr::empty<FloatStorage>(m_control_point_count * 4);
-        FloatStorage vertex_buffer = dr::load<FloatStorage>(positions.get(), m_control_point_count * 3);
-        FloatStorage radius_buffer = dr::load<FloatStorage>(radius.data(), m_control_point_count * 1);
-
-        if constexpr (dr::is_jit_v<Float>) {
-            DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(m_control_point_count);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+            Log(Debug, "Read %i control points and %zu segments from memory (%s in %s)",
+                m_control_point_count, indices.size(),
+                util::mem_string(size * sizeof(InputFloat)),
+                util::time_string((float) timer.value())
+            );
         } else {
-            for (size_t i = 0; i < m_control_point_count; ++i) {
-                m_control_points[i * 4 + 0] = vertex_buffer[i * 3 + 0];
-                m_control_points[i * 4 + 1] = vertex_buffer[i * 3 + 1];
-                m_control_points[i * 4 + 2] = vertex_buffer[i * 3 + 2];
-                m_control_points[i * 4 + 3] = radius_buffer[i * 1 + 0];
+            auto fs = file_resolver();
+            fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
+            std::string m_name = file_path.filename().string();
+
+            // used for throwing an error later
+            auto fail = [&](const char *descr, auto... args) {
+                Throw(("Error while loading B-spline curve(s) from \"%s\": " + std::string(descr))
+                          .c_str(), m_name, args...);
+            };
+
+            Log(Debug, "Loading B-spline curve(s) from \"%s\" ..", m_name);
+            if (!fs::exists(file_path))
+                fail("file not found!");
+
+            ref<MemoryMappedFile> mmap = new MemoryMappedFile(file_path);
+            ScopedPhase phase(ProfilerPhase::LoadGeometry);
+
+            // Temporary buffer for the control points
+            std::vector<InputFloat> cps;
+            ScalarSize vertex_guess = (ScalarSize) mmap->size() / 100;
+            cps.reserve(vertex_guess * 4);
+
+            // Load data from the given file
+            const char *ptr = (const char *) mmap->data();
+            const char *eof = ptr + mmap->size();
+            char buf[1025];
+            Timer timer;
+
+            size_t segment_count = 0;
+            std::vector<size_t> curve_1st_idx;
+            curve_1st_idx.reserve(vertex_guess / 4);
+            bool new_curve = true;
+
+            auto finish_curve = [&]() {
+                if (!new_curve) {
+                    size_t num_control_points = cps.size() / 4 - curve_1st_idx[curve_1st_idx.size() - 1];
+                    if (unlikely((num_control_points < 4) && (num_control_points > 0)))
+                        fail("B-spline curves must have at least four control points!");
+                    if (likely(num_control_points > 0))
+                        segment_count += (num_control_points - 3);
+                }
+            };
+
+            while (ptr < eof) {
+                // Determine the offset of the next newline
+                const char *next = ptr;
+                advance<false>(&next, eof, "\n");
+
+                // Copy buf into a 0-terminated buffer
+                ScalarSize size = (ScalarSize) (next - ptr);
+                if (size >= sizeof(buf) - 1)
+                    fail("file contains an excessively long line! (%i characters)!", size);
+                memcpy(buf, ptr, size);
+                buf[size] = '\0';
+
+                // Skip whitespace(s)
+                const char *cur = buf, *eol = buf + size;
+                advance<true>(&cur, eol, " \t\r");
+                bool parse_error = false;
+
+                // Empty line
+                if (*cur == '\0') {
+                    finish_curve();
+                    new_curve = true;
+                    ptr = next + 1;
+                    continue;
+                }
+
+                // Handle current line: v.x v.y v.z radius
+                if (new_curve) {
+                    curve_1st_idx.push_back(cps.size() / 4);
+                    new_curve = false;
+                }
+
+                // Vertex position
+                InputPoint3f p;
+                for (ScalarSize i = 0; i < 3; ++i) {
+                    const char *orig = cur;
+                    p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
+                    parse_error |= cur == orig;
+                }
+
+                // Vertex radius
+                InputFloat r;
+                const char *orig = cur;
+                r = string::strtof<InputFloat>(cur, (char **) &cur);
+                parse_error |= cur == orig;
+
+                if (unlikely(!all(dr::isfinite(p))))
+                    fail("B-spline control point contains invalid position data (line: \"%s\")!", buf);
+                if (unlikely(!dr::isfinite(r)))
+                    fail("B-spline control point contains invalid radius data (line: \"%s\")!", buf);
+
+                cps.push_back(p.x());
+                cps.push_back(p.y());
+                cps.push_back(p.z());
+                cps.push_back(r);
+
+                if (unlikely(parse_error))
+                    fail("Could not parse line \"%s\"!", buf);
+                ptr = next + 1;
+            }
+            if (curve_1st_idx.size() == 0)
+                fail("Empty B-spline file: no control points were read!");
+            finish_curve();
+
+            m_control_point_count = (ScalarSize) (cps.size() / 4);
+            m_control_points = dr::load<FloatStorage>(cps.data(), cps.size());
+
+            indices.reserve(segment_count);
+            for (size_t i = 0; i < curve_1st_idx.size(); ++i) {
+                size_t next_curve_idx = i + 1 < curve_1st_idx.size()
+                                            ? curve_1st_idx[i + 1] : cps.size() / 4;
+                size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
+                for (size_t j = 0; j < curve_segment_count; ++j)
+                    indices.push_back((ScalarIndex) (curve_1st_idx[i] + j));
+            }
+
+            Log(Debug, "\"%s\": read %i control points (%s in %s)",
+                m_name, m_control_point_count,
+                util::mem_string(cps.size() * sizeof(InputFloat)),
+                util::time_string((float) timer.value())
+            );
+        }
+
+        /* Bake `to_world` into the positions, leaving the radii alone. The
+           write is in place: Dr.Jit copies the buffer first if the caller of
+           the memory path still holds on to it. */
+        const ScalarAffineTransform4f &to_world = m_to_world.scalar();
+        if (!(to_world == ScalarAffineTransform4f())) {
+            if constexpr (dr::is_jit_v<Float>) {
+                UInt32Storage idx =
+                    dr::arange<UInt32Storage>(m_control_point_count) * 4u;
+                Point<FloatStorage, 3> p(
+                    dr::gather<FloatStorage>(m_control_points, idx + 0u),
+                    dr::gather<FloatStorage>(m_control_points, idx + 1u),
+                    dr::gather<FloatStorage>(m_control_points, idx + 2u));
+                p = Point<FloatStorage, 3>(to_world * p);
+                dr::eval(p); // Read the buffer before writing back into it
+
+                dr::scatter(m_control_points, p.x(), idx + 0u);
+                dr::scatter(m_control_points, p.y(), idx + 1u);
+                dr::scatter(m_control_points, p.z(), idx + 2u);
+                dr::eval(m_control_points);
+            } else {
+                for (ScalarSize i = 0; i < m_control_point_count; ++i) {
+                    InputPoint3f p(m_control_points[4 * i + 0],
+                                   m_control_points[4 * i + 1],
+                                   m_control_points[4 * i + 2]);
+                    p = to_world * p;
+
+                    m_control_points[4 * i + 0] = (InputFloat) p.x();
+                    m_control_points[4 * i + 1] = (InputFloat) p.y();
+                    m_control_points[4 * i + 2] = (InputFloat) p.z();
+                }
             }
         }
 
-        // Compute bounding box
-        m_bbox.reset();
-        for (ScalarSize i = 0; i < m_control_point_count; ++i) {
-            ScalarPoint3f p(positions[3 * i + 0], positions[3 * i + 1],
-                            positions[3 * i + 2]);
-            ScalarFloat r(radius[i]);
-            m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
-            m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
-        }
+        if (indices.empty())
+            Throw("No B-spline segments were specified!");
 
-        ScalarSize control_point_bytes = 4 * sizeof(InputFloat);
-        Log(Debug, "\"%s\": read %i control points (%s in %s)",
-            m_name, m_control_point_count,
-            util::mem_string(m_control_point_count * control_point_bytes),
-            util::time_string((float) timer.value())
-        );
+        /* The segments of a curve have consecutive indices: a new curve starts
+           wherever that ordering breaks */
+        std::vector<ScalarIndex> curves_1st_prim_idx;
+        for (size_t i = 0; i < indices.size(); ++i) {
+            if ((size_t) indices[i] + 4 > (size_t) m_control_point_count)
+                Throw("Segment %zu starts at control point %u: a B-spline "
+                      "segment is defined by four consecutive control points, "
+                      "but only %u were given!", i, indices[i],
+                      m_control_point_count);
+            if (i == 0 || indices[i] != indices[i - 1] + 1)
+                curves_1st_prim_idx.push_back((ScalarIndex) i);
+        }
+        curves_1st_prim_idx.push_back((ScalarIndex) indices.size());
+
+        m_indices = dr::load<UInt32Storage>(indices.data(), indices.size());
+        m_curves_prim_idx = dr::load<UInt32Storage>(curves_1st_prim_idx.data(),
+                                                    curves_1st_prim_idx.size());
+
+        recompute_bbox();
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
 
@@ -1170,6 +1265,7 @@ private:
         Float v_global = uv.y();
         size_t segment_count = dr::width(m_indices);
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * segment_count);
+        segment_idx = dr::clip(segment_idx, 0, (uint32_t) segment_count - 1);
         Float v_local = v_global * segment_count - segment_idx;
 
         Point3f c;
