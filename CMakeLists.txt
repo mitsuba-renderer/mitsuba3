@@ -84,10 +84,10 @@ include(ext/drjit/ext/drjit-core/ext/nanothread/ext/cmake-defaults/CMakeLists.tx
 
 if (SKBUILD)
 
-  set(CMAKE_INSTALL_LIBDIR mitsuba)
-  set(CMAKE_INSTALL_BINDIR mitsuba)
-  set(CMAKE_INSTALL_DATAROOTDIR mitsuba/data)
-  set(CMAKE_INSTALL_INCLUDEDIR mitsuba/include)
+  set(CMAKE_INSTALL_LIBDIR misuka)
+  set(CMAKE_INSTALL_BINDIR misuka)
+  set(CMAKE_INSTALL_DATAROOTDIR misuka/data)
+  set(CMAKE_INSTALL_INCLUDEDIR misuka/include)
 
   set(MI_DRJIT_CMAKE_DIR "" CACHE STRING "Location of Dr.Jit's CMake directory that should be used instead of the output of `drjit.get_cmake_dir()` when building with scikit-build.")
   mark_as_advanced(MI_DRJIT_CMAKE_DIR)
