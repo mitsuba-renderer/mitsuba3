@@ -13,7 +13,7 @@ on:
       - synchronize
 
 env:
-  VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic, metal_ad_rgb, metal_ad_acoustic"
+  VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic,metal_ad_rgb,metal_ad_acoustic"
 
 jobs:
   build_wheels:
@@ -76,13 +76,13 @@ jobs:
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DMI_DEFAULT_VARIANTS=\"${{ env.VARIANTS }}\"\"" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment (Windows)
         if: ${{ ! endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
         run: |
           echo "CIBW_BUILD=${{ matrix.python }}-*" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DMI_DEFAULT_VARIANTS='${{ env.VARIANTS }}''" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $env:GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (UNIX)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os != 'Windows' }}
@@ -93,7 +93,7 @@ jobs:
           echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $GITHUB_ENV
           echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $GITHUB_ENV
           echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=\"cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}\"" >> $GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $GITHUB_ENV
 
       - name: Prepare cibuildwheel environment for stable ABI wheel (Windows)
         if: ${{ endsWith(matrix.python, '_stable') && runner.os == 'Windows' }}
@@ -104,7 +104,7 @@ jobs:
           echo "CIBW_BUILD_FRONTEND=pip; args: --no-build-isolation" >> $env:GITHUB_ENV
           echo "CIBW_BEFORE_BUILD=python {project}/.github/install_build_deps_abi3.py" >> $env:GITHUB_ENV
           echo "CIBW_BEFORE_TEST=python {project}/.github/install_build_deps_abi3.py --drjit-only" >> $env:GITHUB_ENV
-          echo "CIBW_CONFIG_SETTINGS=cmake.args='-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}'" >> $env:GITHUB_ENV
+          echo "CIBW_CONFIG_SETTINGS=cmake.args=-DDRJIT_STABLE_ABI=ON;-DMI_STABLE_ABI=ON;-DMI_DEFAULT_VARIANTS=${{ env.VARIANTS }}" >> $env:GITHUB_ENV
 
 
       #########################
