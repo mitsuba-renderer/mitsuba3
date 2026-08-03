@@ -7,10 +7,10 @@ on:
   #       required: true
   #       default: '0'
 
-  # pull_request:
-  #   types:
-  #     - opened
-  #     - synchronize
+  pull_request:
+    types:
+      - opened
+      - synchronize
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic, metal_ad_rgb, metal_ad_acoustic"
