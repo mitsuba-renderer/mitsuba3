@@ -311,10 +311,10 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
             uint32_t reg_id = 0;
             if constexpr (dr::is_jit_v<Float>)
                 reg_id = jit_registry_id(shape);
-            registry_data.push_back(reg_id);
+            bool is_mi = shape->is_merge_instance();
             // For MergeInstance, gi is the batch element index; else -1.
             batch_element_data.push_back(
-                geoms.size() > 1 ? (uint32_t) gi : (uint32_t) -1);
+                is_mi ? (uint32_t) gi : (uint32_t) -1);
 
             // Ensure mapping vectors are large enough (geom_ids are
             // sequentially assigned by Embree starting from 0).
@@ -324,7 +324,7 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
             }
             geom_id_to_shape_idx[gid] = (uint32_t) si;
             // For a MergeInstance, geoms has N entries; gi is the batch index.
-            if (geoms.size() > 1)
+            if (is_mi)
                 geom_id_to_batch_idx[gid] = (uint32_t) gi;
         }
     }
