@@ -99,7 +99,7 @@ logic can no longer be carried out using ordinary ``if`` statements.
 The alternative operation ``dr::select(mask, arg1, arg2)`` takes a *mask*
 argument (typically the result of a comparison) and evaluates ``(mask ? arg1 :
 arg2)`` in parallel for each lane. We refer to `Dr.Jit's documentation
-<https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_ for
+<https://drjit.readthedocs.io/en/latest/basics.html#mask-operations>`_ for
 further information on working with masks. The following shows an example
 contrasting these two cases:
 
@@ -147,7 +147,7 @@ JIT backend synchronization point
 ---------------------------------
 
 As described in `Dr.Jit's documentation
-<https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_,
+<https://drjit.readthedocs.io/en/latest/eval.html>`_,
 the ``cuda`` and ``llvm`` computational backends rely on a JIT compiler that
 dynamically generates kernels using NVIDIA's PTX intermediate language. This JIT
 compiler is highly efficient for *vertical* operations (additions,
@@ -205,7 +205,7 @@ pointer aliases are used as follows:
     bsdf->eval(..., active);
 
 More information on vectorized method calls is provided in the `Dr.Jit
-documentation <https://enoki.readthedocs.io/en/master/calls.html>`_.
+documentation <https://drjit.readthedocs.io/en/latest/cpp.html#vectorized-method-calls>`_.
 
 Variant-specific code
 ---------------------
