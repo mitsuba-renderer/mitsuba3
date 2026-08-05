@@ -81,13 +81,24 @@ class PRBVolpathIntegrator(RBIntegrator):
         if self.is_prepared:
             return
 
+        def register_medium(medium):
+            if medium is None:
+                return
+            # Enable NEE if a medium specifically asks for it
+            self.use_nee = self.use_nee or medium.use_emitter_sampling()
+            self.nee_handle_homogeneous = self.nee_handle_homogeneous or medium.is_homogeneous()
+            self.handle_null_scattering = self.handle_null_scattering or (not medium.is_homogeneous())
+
         for shape in scene.shapes():
             for medium in [shape.interior_medium(), shape.exterior_medium()]:
-                if medium is not None:
-                    # Enable NEE if a medium specifically asks for it
-                    self.use_nee = self.use_nee or medium.use_emitter_sampling()
-                    self.nee_handle_homogeneous = self.nee_handle_homogeneous or medium.is_homogeneous()
-                    self.handle_null_scattering = self.handle_null_scattering or (not medium.is_homogeneous())
+                register_medium(medium)
+
+        # A sensor placed inside a medium may be the only reference to it (an
+        # unbounded medium with no bounding geometry), in which case the loop
+        # above never sees it and null scattering would go unhandled.
+        for sensor in scene.sensors():
+            register_medium(sensor.get_medium())
+
         self.is_prepared = True
         # By default enable always NEE in case there are surfaces
         self.use_nee = True
@@ -124,8 +135,12 @@ class PRBVolpathIntegrator(RBIntegrator):
         last_scatter_event = dr.zeros(mi.Interaction3f)
         last_scatter_direction_pdf = mi.Float(1.0)
 
-        # TODO: support sensors inside media
-        medium = dr.zeros(mi.MediumPtr)
+        medium = kwargs.get('medium', None)
+        if medium is None:
+            medium = dr.zeros(mi.MediumPtr)
+        else:
+            medium = mi.MediumPtr(medium)
+            medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
 
         channel = 0
         depth = mi.UInt32(0)
