@@ -1,5 +1,6 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/mesh_utils.h>
+#include <mitsuba/render/dedge.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/python/python.h>
 
@@ -11,6 +12,13 @@ MI_PY_EXPORT(DiscontinuityFlags) {
         .def_value(Layout, Texcoords)
         .def_value(Layout, Tangents)
         .def_value(Layout, FaceBSDFs);
+
+    nb::enum_<VertexFlags>(m, "VertexFlags", nb::is_arithmetic(),
+                           D(VertexFlags))
+        .def_value(VertexFlags, Boundary)
+        .def_value(VertexFlags, NonManifoldEdge)
+        .def_value(VertexFlags, NonManifoldVertex)
+        .def_value(VertexFlags, InconsistentOrientation);
 
     auto disc_flags = nb::enum_<DiscontinuityFlags>(m, "DiscontinuityFlags", nb::is_arithmetic(), D(DiscontinuityFlags))
         .def_value(DiscontinuityFlags, Empty)

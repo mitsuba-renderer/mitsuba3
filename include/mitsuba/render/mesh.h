@@ -4,6 +4,7 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/mesh_utils.h>
+#include <mitsuba/render/dedge.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/struct.h>
@@ -164,7 +165,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(BSDF)
+    MI_IMPORT_TYPES(BSDF, DirectedEdge)
     MI_IMPORT_BASE(Shape, m_to_world, mark_dirty, m_emitter, m_sensor, m_bsdf,
                    m_interior_medium, m_exterior_medium, m_is_instance,
                    m_discontinuity_types, m_shape_type, m_initialized,
@@ -415,7 +416,7 @@ public:
      *
      * This function returns \ref faces() re-indexed into surface position space,
      * i.e., the geometric topology of the mesh without UV/normal-related
-     * seams. It is used by features like \ref build_directed_edges() and the
+     * seams. It is used by features like \ref directed_edges() and the
      * mesh Laplacian in ``largesteps.py``.
      */
     TensorXu32 geometric_faces() const;
@@ -578,14 +579,15 @@ public:
     /**
      * Returns the opposite edge index associated with directed edge \c index
      *
-     * If the directed edge data structure is not initialized, the return
-     * value is undefined. Ensure that \ref build_directed_edges() is
-     * called before this method.
+     * The function returns \c DirectedEdge::Invalid when the adjacency
+     * structure has not been built. It deliberately does not build it, so that
+     * a vectorized call over a set of meshes of which only some carry the
+     * structure remains well defined. Call \ref directed_edges() first.
      */
     MI_INLINE UInt32 opposite_dedge(UInt32 index, Mask active = true) const {
-        if (m_E2E.size() == 0)
-            return UInt32((uint32_t) -1);
-        return dr::gather<UInt32>(m_E2E, index, active);
+        if (!m_dedge)
+            return UInt32(DirectedEdge::Invalid);
+        return m_dedge->opposite(index, active);
     }
 
     Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
@@ -691,14 +693,26 @@ public:
      */
     void transform(const AffineTransform4f &t);
 
-    /**
-     * \brief Build directed edge data structure to efficiently access adjacent
-     * edges.
+    /** \brief Return a data structure describing the half-edge adjacency
      *
-     * This is an implementation of the technique described in:
-     * <tt>https://www.graphics.rwth-aachen.de/media/papers/directed.pdf</tt>.
+     * This function returns a \ref DirectedEdge data structure that enables
+     * geometric queries such as finding the triangle across an edge or
+     * traversing faces surrounding a vertex.
+     *
+     * The data structure is built on demand and uses the geometric
+     * connectivity specified by \ref geometric_faces() so that attribute
+     * discontinuities do not introduce artificial geometric boundaries.
+     *
+     * The result is immutable and invariant to changes in mesh positions,
+     * normals and materials. The \ref Mesh class automatically deletes the
+     * cached instance when the index buffer, the position index map, or the
+     * position count changes.
+     *
+     * The on-demand construction not lock a mutex to protect from concurrent
+     * calls to this function. This matches the expected usage (JIT variants),
+     * where a single thread orchestrates the parallel computation.
      */
-    void build_directed_edges();
+    const DirectedEdge *directed_edges() const;
 
     /**
      * \brief Check the field views for consistency
@@ -971,8 +985,8 @@ protected:
      *
      * This method filters out any concave edges or flat surfaces.
      *
-     * Internally, this method relies on the directed edge data structure. A
-     * call to \ref build_directed_edges before a call to this method is
+     * Internally, this method relies on the half-edge adjacency structure. A
+     * call to \ref directed_edges() before a call to this method is
      * therefore necessary.
      */
     void build_indirect_silhouette_distribution();
@@ -1225,8 +1239,8 @@ protected:
     IndexBuffer m_bsdf_index;
     TensorXf32 m_tangents;
 
-    /// Directed edges data structures to support neighbor queries
-    mutable IndexBuffer m_E2E;
+    /// Half-edge adjacency, null until \ref directed_edges() builds it
+    mutable ref<DirectedEdge> m_dedge;
 
     /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
     DiscreteDistribution<Float> m_sil_dedge_pmf;
@@ -1255,7 +1269,7 @@ protected:
     MI_DECLARE_TRAVERSE_CB(m_packed_vertices, m_packed_faces,
                            m_positions, m_normals, m_texcoords,
                            m_position_index, m_normal_index,
-                           m_E2E, m_sil_dedge_pmf, m_mesh_attributes,
+                           m_dedge, m_sil_dedge_pmf, m_mesh_attributes,
                            m_area_pmf, m_parameterization)
 };
 

@@ -1,5 +1,6 @@
 set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/bsdf_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/dedge_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/emitter_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/endpoint_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/film_v.cpp

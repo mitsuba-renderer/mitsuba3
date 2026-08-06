@@ -9,6 +9,7 @@ NAMESPACE_BEGIN(mitsuba)
 struct BSDFContext;
 struct ShapeIR;
 template <typename Float, typename Spectrum> class BSDF;
+template <typename Float, typename Spectrum> class DirectedEdge;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
@@ -119,6 +120,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ShapeGroup             = mitsuba::ShapeGroup<Float, Spectrum>;
     using ShapeKDTree            = mitsuba::ShapeKDTree<Float, Spectrum>;
     using Mesh                   = mitsuba::Mesh<Float, Spectrum>;
+    using DirectedEdge           = mitsuba::DirectedEdge<Float, Spectrum>;
     using Integrator             = mitsuba::Integrator<Float, Spectrum>;
     using SamplingIntegrator     = mitsuba::SamplingIntegrator<Float, Spectrum>;
     using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<Float, Spectrum>;

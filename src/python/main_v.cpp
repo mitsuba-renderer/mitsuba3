@@ -93,6 +93,7 @@ MI_PY_DECLARE(Interaction);
 MI_PY_DECLARE(SurfaceInteraction);
 MI_PY_DECLARE(MediumInteraction);
 MI_PY_DECLARE(PreliminaryIntersection);
+MI_PY_DECLARE(DirectedEdge);
 MI_PY_DECLARE(Medium);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
@@ -196,6 +197,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
+    MI_PY_IMPORT(DirectedEdge);
     MI_PY_IMPORT(Medium);
     MI_PY_IMPORT(Endpoint);
     MI_PY_IMPORT(Emitter);
