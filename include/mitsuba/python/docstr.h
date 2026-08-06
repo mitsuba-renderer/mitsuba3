@@ -2983,6 +2983,324 @@ static const char *__doc_mitsuba_DefaultFormatter_set_has_log_level = R"doc(Shou
 
 static const char *__doc_mitsuba_DefaultFormatter_set_has_thread = R"doc(Should thread information be included? The default is yes.)doc";
 
+static const char *__doc_mitsuba_DirectedEdge =
+R"doc(Immutable half-edge adjacency for an indexed triangle mesh
+
+This class derives edge and vertex adjacency from a flat triangle
+index buffer ``F`` using the directed-edge representation of Campagna
+et al. [1]. It supports queries such as finding the triangle across an
+edge, traversing the triangles around a vertex, processing each mesh
+edge once, and identifying boundaries or malformed connectivity.
+
+The result is purely combinatorial and immutable. It stores neither
+vertex positions nor a copy of the index buffer.
+
+**Representation**
+
+``F`` stores the three vertex indices of each triangle consecutively
+and in winding order. Triangle ``f`` therefore contributes three half-
+edges ``e = 3*f + i``, where ``i`` is in ``{0, 1, 2}``. Their basic
+relationships are:
+
+```
+next(e)             = 3*f + (i + 1) % 3
+prev(e)             = 3*f + (i + 2) % 3
+face(e)             = e / 3
+corner(e)           = e % 3
+source(e)           = F[e]
+target(e)           = F[next(e)]
+opposing_vertex(e)  = F[prev(e)]
+```
+
+Hence, next() advances along the triangle's winding direction and
+prev() goes in the opposite direction; neither operation leaves the
+triangle.
+
+The structure provides four principal arrays:
+
+* E2E() maps each half-edge to the oppositely oriented half-edge of
+the adjacent triangle, or to Invalid when the result is ambiguous.
+
+* V2E() maps each vertex to a canonical outgoing half-edge, or to
+Invalid when no triangle with three distinct indices contains it.
+
+* valence() records how many triangles with three distinct indices
+contain each vertex.
+
+* flags() records per-vertex boundary and connectivity diagnostics.
+
+On a consistently oriented manifold triangle mesh, each interior edge
+is shared by two triangles, which contribute oppositely oriented half-
+edges. ``E2E`` pairs these half-edges. A boundary edge belongs to only
+one triangle, and its half-edge maps to Invalid.
+
+``V2E[v]`` provides a starting point for walking around vertex ``v``.
+For an interior vertex, any outgoing half-edge would work; ``V2E[v]``
+contains the smallest one for deterministic results. At a boundary
+vertex, ``V2E[v] = next(b)``, where ``b`` is the incoming boundary
+half-edge. Starting there, repeatedly applying ``e =
+next(opposite(e))`` visits the complete fan of faces. The walk stops
+at the other boundary edge, where ``opposite(e)`` is Invalid.
+
+The examples below use Python-style scalar pseudocode.
+
+**Example 1: querying the neighborhood of an edge**
+
+The following snippet obtains the two faces ``f0`` and ``f1`` that
+share an interior manifold edge (which is the case when ``o !=
+Invalid``).
+
+```
+python
+f0 = de.face(e)
+o  = de.opposite(e)  # Load E2E[e]
+f1 = de.face(o)
+```
+
+The two triangles share the edge endpoints ``v0`` and ``v1``. Each
+triangle also has one vertex opposite the shared edge, denoted by
+``c0`` and ``c1``. These are obtained as follows:
+
+```
+python
+v0 = F[e]
+v1 = F[de.next(e)]
+c0 = F[de.prev(e)]
+c1 = F[de.prev(o)]
+```
+
+This local neighborhood is useful when computing cotangent weights,
+curvature, etc.
+
+**Example 2: traversing the faces around a vertex**
+
+Starting at vertex_edge(), repeatedly crossing the current edge and
+advancing within the neighboring triangle walks around its source
+vertex:
+
+```
+start = de.vertex_edge(v)  # Load V2E[v]
+e, visited = start, 0
+
+while e != de.Invalid:
+    visit_face(de.face(e))
+    visited += 1
+
+    o = de.opposite(e)
+    if o == de.Invalid:
+        break
+
+    e = de.next(o)
+    if e == start:
+        break
+```
+
+A closed fan returns to ``start``. An open fan terminates at an
+unpaired edge. For a manifold vertex, ``visited`` equals
+``valence(v)``.
+
+Each visited half-edge starts at ``v``, so its target is one of
+``v``'s neighbors. For a closed fan, these targets include every
+neighbor. For an open fan, the incoming boundary edge is not visited
+because it points toward ``v``. The missing neighbor is
+``F[de.prev(start)]``.
+
+These neighborhoods are commonly used by Laplacian and curvature
+operators.
+
+**Robustness**
+
+The implementation only pairs half-edges when the result is
+unambiguous. Whenever ``o = E2E[e]`` is not Invalid, the following
+invariants hold:
+
+```
+E2E[o]     == e
+F[o]       == F[next(e)]
+F[next(o)] == F[e]
+```
+
+These invariants remain true in the presence of boundaries and
+malformed topology.
+
+**Boundaries and edge defects**
+
+On a well-formed mesh, every edge belongs to at most two triangles. An
+interior edge is shared by two triangles with oppositely oriented
+half-edges, which ``E2E`` pairs up. A boundary edge belongs to a
+single triangle, and its half-edge maps to Invalid. Both endpoints of
+such an edge receive the VertexFlags::Boundary flag. Triangles with
+repeated vertex indices are ignored throughout (see below).
+
+Malformed input deviates from this picture in two ways. In both cases
+there is no valid way to pair the involved half-edges, so all of them
+remain unpaired and read as boundaries. The endpoints of the affected
+edge receive VertexFlags::Boundary and a flag identifying the defect:
+
+- When the two half-edges of a shared edge are oriented the same way,
+one triangle is wound backwards relative to the other. The endpoints
+receive VertexFlags::InconsistentOrientation.
+
+- When three or more triangles share an edge (think of a fin attached
+to the edge of a box), no pair is preferable to the others. The
+endpoints receive VertexFlags::NonManifoldEdge.
+
+The following table summarizes the classification:
+
+```
+faces  winding    E2E entries  flags at both endpoints
+-------------------------------------------------------
+1      -          Invalid      Boundary
+2      opposite   paired       none
+2      same       Invalid      Boundary | InconsistentOrientation
+>= 3   any        Invalid      Boundary | NonManifoldEdge
+```
+
+A vertex accumulates the flags of all edges that touch it, so several
+bits may be set at once. Test them individually using ``has_flag()``
+rather than comparing the complete bitmask for equality. The remaining
+flag, VertexFlags::NonManifoldVertex, is not part of the edge
+classification and is explained next.
+
+**Disconnected fans around a vertex**
+
+VertexFlags::NonManifoldVertex marks vertices where the walk of
+Example 2 reaches fewer faces than valence() reports. The typical case
+is a bowtie: two fans that touch only at their common apex. Every edge
+of such a configuration may pair normally, and those pairings are
+preserved. The defect is a property of the vertex, not of its edges.
+vertex_edge() selects a starting point in one of the fans, and the
+walk covers only that fan.
+
+To enumerate every face around a non-manifold vertex, scan ``F`` for
+half-edges with ``F[e] == v`` (again skipping triangles with repeated
+indices) instead of walking from vertex_edge().
+
+**Triangles with repeated indices**
+
+A triangle such as ``(a, a, b)`` has no area and is ignored as a
+whole: it keeps its slots in the half-edge numbering, but its three
+``E2E`` entries are Invalid, its half-edges never appear in V2E(), and
+it contributes no face counts or flags. The remaining triangles are
+paired as if it did not exist.
+
+One consequence is that ``E2E[e] == Invalid`` alone does not identify
+a boundary edge: code that scans all half-edges must first skip those
+of triangles with repeated indices.
+
+**Geometric and input limitations**
+
+This structure only examines vertex indices. It cannot detect zero-
+area geometry caused by collinear vertices or distinct indices that
+refer to the same position, nor can it detect self-intersections. The
+constructor also does not validate index bounds: every entry of ``F``
+must be smaller than ``vertex_count``, and violations cause undefined
+behavior.
+
+[1] S. Campagna, L. Kobbelt, and H.-P. Seidel, "Directed Edges: A
+Scalable Representation for Triangle Meshes", Journal of Graphics
+Tools 3(4), 1998.)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_DirectedEdge =
+R"doc(Build the adjacency structure of a triangle mesh
+
+The caller must ensure that ``F[i] < vertex_count`` holds for all
+provided indices. Violations cause undefined behavior.
+
+Parameter ``F``:
+    A flat index buffer holding the three vertex indices of each
+    triangle face, in winding order. Its size must be a multiple of 3.
+
+Parameter ``vertex_count``:
+    The number of mesh vertices.
+
+Parameter ``name``:
+    An optional name identifying the mesh in log messages.)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_E2E = R"doc(Per-half-edge buffer of opposites or Invalid entries)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_V2E = R"doc(Per-vertex buffer of canonical outgoing half-edges)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_build_host = R"doc(Single-threaded builder used in scalar variants)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_build_jit = R"doc(Data-parallel builder used in JIT variants)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_corner = R"doc(Return the local corner index of the half-edge within its face)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_face = R"doc(Return the index of the face containing the half-edge)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_flag_count = R"doc(Number of vertices carrying the given single-bit flag)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_flags = R"doc(Per-vertex buffer of VertexFlags bitmasks)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_half_edge_count = R"doc(Number of half-edges, i.e. three times the face count)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_E2E = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_V2E = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_flag_counts = R"doc(Number of vertices carrying each of the four VertexFlags)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_flags = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_half_edge_count = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_name = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_valence = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_vertex_count = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_name = R"doc(Return the name passed to the constructor)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_next = R"doc(Return the next half-edge within the same face)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_opposite =
+R"doc(Return the half-edge opposite to ``e``, or Invalid
+
+This accessor loads ``E2E[e]``.)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_prev = R"doc(Return the previous half-edge within the same face)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_traverse_1_cb_ro = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_traverse_1_cb_rw = R"doc()doc";
+
+static const char *__doc_mitsuba_DirectedEdge_valence =
+R"doc(Return the valence of ``v``
+
+This is the number of faces containing ``v``. It excludes degenerate
+faces with a repeated vertex index.)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_valence_2 = R"doc(Per-vertex buffer of valences, i.e. face counts)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_vertex_count = R"doc(Number of vertices in the numbering used by the per-vertex outputs)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_vertex_edge =
+R"doc(Return the canonical half-edge starting at ``v``, or Invalid
+
+This accessor loads ``V2E[v]``.
+
+This is the smallest half-edge at ``v`` whose predecessor is unpaired,
+or the smallest one overall when no such half-edge exists. It is the
+entry point of the vertex walk described in the class documentation.)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_vertex_flags = R"doc(Return the bitmask of VertexFlags associated with vertex ``v``)doc";
+
 static const char *__doc_mitsuba_DirectionSample = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectionSample_2 =
@@ -5897,21 +6215,14 @@ static const char *__doc_mitsuba_Mesh_bsdf_index =
 R"doc(Return the per-face BSDF index (size face_count()). An empty buffer
 stands for zeros, see has_face_bsdfs().)doc";
 
-static const char *__doc_mitsuba_Mesh_build_directed_edges =
-R"doc(Build directed edge data structure to efficiently access adjacent
-edges.
-
-This is an implementation of the technique described in:
-``https://www.graphics.rwth-aachen.de/media/papers/directed.pdf``.)doc";
-
 static const char *__doc_mitsuba_Mesh_build_indirect_silhouette_distribution =
 R"doc(Precompute the set of edges that could contribute to the indirect
 discontinuous integral.
 
 This method filters out any concave edges or flat surfaces.
 
-Internally, this method relies on the directed edge data structure. A
-call to build_directed_edges before a call to this method is therefore
+Internally, this method relies on the half-edge adjacency structure. A
+call to directed_edges() before a call to this method is therefore
 necessary.)doc";
 
 static const char *__doc_mitsuba_Mesh_build_parameterization =
@@ -5946,6 +6257,19 @@ R"doc(Compute MikkTSpace shading tangents from the field views as a ``(V,
 static const char *__doc_mitsuba_Mesh_describe = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_differential_motion = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_directed_edges =
+R"doc(Return the half-edge adjacency of the mesh, building it on demand
+
+The structure is built from geometric_faces(), so that the two sides
+of an attribute seam are adjacent instead of reading as mesh
+boundaries. It survives position, normal and material edits, and is
+discarded when the index buffer, the position index map, or the
+position count changes.
+
+This function performs no synchronization, which is fine in the
+expected usage (JIT variants), where a single thread orchestrates the
+parallel computation.)doc";
 
 static const char *__doc_mitsuba_Mesh_drop_views = R"doc(Release the field views and make the packed state authoritative)doc";
 
@@ -6112,7 +6436,7 @@ R"doc(Return an ``(F, 3)`` tensor encoding the geometric topology
 
 This function returns faces() re-indexed into surface position space,
 i.e., the geometric topology of the mesh without UV/normal-related
-seams. It is used by features like build_directed_edges() and the mesh
+seams. It is used by features like directed_edges() and the mesh
 Laplacian in ``largesteps.py``.)doc";
 
 static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
@@ -6146,8 +6470,6 @@ static const char *__doc_mitsuba_Mesh_is_vertex_attribute =
 R"doc(Does the attribute ``name`` live on the vertices rather than the
 faces?)doc";
 
-static const char *__doc_mitsuba_Mesh_m_E2E = R"doc(Directed edges data structures to support neighbor queries)doc";
-
 static const char *__doc_mitsuba_Mesh_m_area_pmf = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc(Bounding box of the mesh positions)doc";
@@ -6155,6 +6477,8 @@ static const char *__doc_mitsuba_Mesh_m_bbox = R"doc(Bounding box of the mesh po
 static const char *__doc_mitsuba_Mesh_m_bsdf_index = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_built = R"doc(Set by the first successful build; construction is one-shot)doc";
+
+static const char *__doc_mitsuba_Mesh_m_dedge = R"doc(Half-edge adjacency, null until directed_edges() builds it)doc";
 
 static const char *__doc_mitsuba_Mesh_m_face_count = R"doc()doc";
 
@@ -6271,9 +6595,10 @@ static const char *__doc_mitsuba_Mesh_opposite_dedge =
 R"doc(Returns the opposite edge index associated with directed edge
 ``index``
 
-If the directed edge data structure is not initialized, the return
-value is undefined. Ensure that build_directed_edges() is called
-before this method.)doc";
+The function returns ``DirectedEdge::Invalid`` when the adjacency
+structure has not been built. It deliberately does not build it, so
+that a vectorized call over a set of meshes of which only some carry
+the structure remains well defined. Call directed_edges() first.)doc";
 
 static const char *__doc_mitsuba_Mesh_pack =
 R"doc(Compile the field views into the packed records
@@ -6287,7 +6612,7 @@ single pass, and ends in refresh().
 
 The ``flip_normals`` flag turns the surface inside out as the records
 are written, which from_fields() uses to bake the property of the same
-name.)doc";
+name. See validate_impl() for ``updating``.)doc";
 
 static const char *__doc_mitsuba_Mesh_packed_face = R"doc(Returns the packed face record of triangle ``index``)doc";
 
@@ -6424,6 +6749,13 @@ By default, this function cheaply checks tensor ranks and shapes of
 the mesh state for consistency. When ``check_bounds`` is set, the
 function also verifies that every index is in range. This is
 relatively expensive because it requires several device reductions.)doc";
+
+static const char *__doc_mitsuba_Mesh_validate_impl =
+R"doc(Implementation of validate()
+
+When ``updating`` is set, the mesh is checking a parameters_changed()
+batch, and shape mismatches also report how to rewrite the offending
+field.)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_count = R"doc(Return the total number of vertices)doc";
 
@@ -12171,6 +12503,16 @@ static const char *__doc_mitsuba_Vector_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Vector_operator_assign_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_VertexFlags = R"doc(Per-vertex boundary and defect flags reported by DirectedEdge)doc";
+
+static const char *__doc_mitsuba_VertexFlags_Boundary = R"doc(An edge incident to the vertex is unpaired)doc";
+
+static const char *__doc_mitsuba_VertexFlags_InconsistentOrientation = R"doc(The vertex is an endpoint of an edge whose two faces wind the same way)doc";
+
+static const char *__doc_mitsuba_VertexFlags_NonManifoldEdge = R"doc(The vertex is an endpoint of an edge with more than two faces)doc";
+
+static const char *__doc_mitsuba_VertexFlags_NonManifoldVertex = R"doc(The faces around the vertex form more than one ring (e.g. a bowtie))doc";
+
 static const char *__doc_mitsuba_Volume = R"doc()doc";
 
 static const char *__doc_mitsuba_Volume_2 = R"doc(Abstract base class for 3D volumes.)doc";
@@ -13100,6 +13442,10 @@ static const char *__doc_mitsuba_has_flag_17 = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_18 = R"doc()doc";
 
+static const char *__doc_mitsuba_has_flag_19 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_20 = R"doc()doc";
+
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
 static const char *__doc_mitsuba_hash_2 = R"doc()doc";
@@ -13539,6 +13885,8 @@ static const char *__doc_mitsuba_operator_add_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_10 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_11 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -13593,6 +13941,12 @@ static const char *__doc_mitsuba_operator_band_26 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_27 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_28 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_29 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_30 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
@@ -13610,6 +13964,8 @@ static const char *__doc_mitsuba_operator_bnot_7 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bnot_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -13665,6 +14021,12 @@ static const char *__doc_mitsuba_operator_bor_26 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_27 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_bor_28 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_29 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_30 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_iand = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_iand_2 = R"doc()doc";
@@ -13683,6 +14045,8 @@ static const char *__doc_mitsuba_operator_iand_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_iand_9 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_iand_10 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_ior = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_ior_2 = R"doc()doc";
@@ -13700,6 +14064,8 @@ static const char *__doc_mitsuba_operator_ior_7 = R"doc()doc";
 static const char *__doc_mitsuba_operator_ior_8 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_ior_9 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 

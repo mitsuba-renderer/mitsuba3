@@ -38,6 +38,10 @@ Mitsuba 3.10.0
     ``write_ply()`` or ``write_serialized()`` therefore carries the flip, and
     reloading it does not require the scene description to repeat it.
 
+  - The directed edge adjacency data structure moved into a standalone
+    ``mi.DirectedEdge`` class that a mesh builds on demand. The new class
+    produces a richer representation while also improving build efficiency.
+
   ⚠️ **WARNING** ⚠️: This is an **API-breaking change**. Code that constructs
   meshes or touches mesh scene parameters must be updated as follows.
 
@@ -144,6 +148,7 @@ Mitsuba 3.10.0
     ``has_vertex_normals()``                     ``has_normals()``
     ``recompute_vertex_normals()``               ``recompute_normals()``
     ``mesh.merge(other)``                        ``mi.Mesh.merge(shapes)``
+    ``build_directed_edges()``                   ``directed_edges()``
     ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 

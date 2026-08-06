@@ -1,7 +1,7 @@
 """
-Tests of mesh silhouette sampling, the MeshPtr pointer type and its
-vectorized calls, and the directed edge structure on closed, open and
-non-manifold geometry.
+Tests of mesh silhouette sampling, and of the MeshPtr pointer type and its
+vectorized calls. The half-edge adjacency itself is covered by
+test_dedge.py.
 """
 
 import numpy as np
@@ -145,7 +145,7 @@ def test04_primitive_silhouette_projection(variants_vec_rgb):
         "type": "ply",
         "filename": "resources/data/tests/ply/rectangle_uv.ply",
     })
-    mesh.build_directed_edges()
+    mesh.directed_edges()
 
     u = dr.linspace(mi.Float, 1e-6, 1 - 1e-6, 10)
     uv = mi.Point2f(dr.meshgrid(u, u))
@@ -216,7 +216,7 @@ def test06_mesh_ptr_and_vcalls(variants_vec_rgb):
             assert sh.shape_type() == mi.ShapeType.Mesh
             assert dr.all(dr.gather(mi.MeshPtr, shapes, i) == as_mesh)
             assert as_mesh[0] == shapes[i] and as_mesh[0] == sh
-            sh.build_directed_edges()
+            sh.directed_edges()
         else:
             assert dr.all(dr.reinterpret_array(mi.UInt32, as_mesh) == 0)
             assert as_mesh[0] is None
@@ -278,8 +278,8 @@ def test06_mesh_ptr_and_vcalls(variants_vec_rgb):
 
 @fresolver_append_path
 def test07_vcalls_partial_dedges(variants_vec_rgb):
-    """Vcalls involving only meshes with an initialized E2E structure work
-    even when other meshes lack one."""
+    """A vcall over a mix of meshes with and without half-edge adjacency is
+    well defined: the ones that lack it report every edge as a boundary."""
     scene = mi.load_dict({
         "type": "scene",
         "mesh1": {
@@ -292,63 +292,10 @@ def test07_vcalls_partial_dedges(variants_vec_rgb):
         },
     })
 
-    # The second mesh will *not* have a valid E2E data structure
-    mesh_ptr = dr.gather(mi.MeshPtr, scene.shapes_dr(), dr.zeros(mi.UInt32, 3))
-    mesh_ptr[0].build_directed_edges()
+    # Only the first mesh gets the structure, and the accessor must not build
+    # one for the second
+    scene.shapes()[0].directed_edges()
 
+    mesh_ptr = dr.gather(mi.MeshPtr, scene.shapes_dr(), mi.UInt32([0, 1, 0]))
     result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
-    assert dr.all(result == mi.UInt32([3, 2, 3]))
-
-
-# -------------------------------------------------------------------
-# Directed edges
-# -------------------------------------------------------------------
-
-def test08_directed_edges(variants_all_rgb, capfd):
-    """Half-edge pairing runs on the geometric topology, so a tetrahedron
-    whose faces are separate UV islands still reads as a closed surface.
-    Boundary edges of an open surface have no opposite, and three faces
-    meeting at one edge are reported as non-manifold."""
-    def opposite(m):
-        return [int(np.ravel(m.opposite_dedge(mi.UInt32(e)))[0])
-                for e in range(3 * m.face_count())]
-
-    # A closed tetrahedron, with each face in its own UV island
-    positions = np.float32([[0, 0, 0], [1, 0, 0], [0, 1, 0], [0, 0, 1]])
-    tris = [(0, 2, 1), (0, 1, 3), (0, 3, 2), (1, 2, 3)]
-    uv = np.float32([(10 * f + i, f) for f in range(4) for i in range(3)])
-
-    m = mi.Mesh("tet")
-    m.from_corners(positions=positions,
-                   corner_vertex=np.uint32(tris).ravel(), texcoords=uv)
-    assert m.vertex_count() == 12 and m.position_count() == 4
-
-    m.build_directed_edges()
-    assert INVALID_DEDGE not in opposite(m)
-
-    # Two triangles of an open quad: the shared diagonal is traversed as
-    # (2, 0) in face 0 (dedge 2) and as (0, 2) in face 1 (dedge 3), while
-    # every other edge is a boundary
-    m = mi.Mesh("quad", faces=[[0, 1, 2], [0, 2, 3]],
-                positions=np.float32([[0, 0, 0], [1, 0, 0],
-                                      [1, 1, 0], [0, 1, 0]]))
-    m.build_directed_edges()
-    assert opposite(m) == [INVALID_DEDGE, INVALID_DEDGE, 3,
-                           2, INVALID_DEDGE, INVALID_DEDGE]
-
-    # A topology edit through the parameter map invalidates the pairing;
-    # rebuilding pairs the new shared diagonal
-    params = mi.traverse(m)
-    params['faces'] = np.uint32([[0, 1, 2], [2, 1, 3]])
-    params.update()
-    assert opposite(m) == [INVALID_DEDGE] * 6
-    m.build_directed_edges()
-    assert opposite(m) == [INVALID_DEDGE, 3, INVALID_DEDGE,
-                           1, INVALID_DEDGE, INVALID_DEDGE]
-
-    # Three triangles sharing one edge
-    m = mi.Mesh("nm", faces=[[0, 1, 2], [1, 0, 3], [0, 1, 4]],
-                positions=np.float32([[0, 0, 0], [1, 0, 0], [0.5, 1, 0],
-                                      [0.5, -1, 0], [0.5, 0, 1]]))
-    m.build_directed_edges()
-    assert "non-manifold" in capfd.readouterr().out
+    assert dr.all(result == mi.UInt32([3, INVALID_DEDGE, 3]))

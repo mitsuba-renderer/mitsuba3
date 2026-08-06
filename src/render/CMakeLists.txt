@@ -73,6 +73,7 @@ add_library(mitsuba-render OBJECT
   ${INC_DIR}/records.h
 
   bsdf.cpp         ${INC_DIR}/bsdf.h
+  dedge.cpp ${INC_DIR}/dedge.h
   emitter.cpp      ${INC_DIR}/emitter.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h

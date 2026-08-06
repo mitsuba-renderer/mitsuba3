@@ -568,8 +568,8 @@ MI_PY_EXPORT(Shape) {
         .def("recompute_normals", &Mesh::recompute_normals,
              D(Mesh, recompute_normals))
         .def("transform", &Mesh::transform, "t"_a, D(Mesh, transform))
-        .def("build_directed_edges", &Mesh::build_directed_edges,
-             D(Mesh, build_directed_edges))
+        .def("directed_edges", &Mesh::directed_edges,
+             nb::rv_policy::reference_internal, D(Mesh, directed_edges))
 
         .def("from_corners", &mesh_from_corners<Mesh>,
              "positions"_a, "corner_vertex"_a,
