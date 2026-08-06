@@ -328,3 +328,64 @@ def test07_test_aov_normalmap(variants_all_ad_rgb):
     assert(dr.allclose(
         image[:,:,3:6].array,
         dr.tile(n, image.shape[0] * image.shape[1])))
+
+
+def test08_nested_aov_integrators(variants_all_rgb):
+    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'), res=32)
+
+    direct_integrator = mi.load_dict({'type': 'direct'})
+    outer_aov = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'dd:depth',
+        'inner_aov': {
+            'type': 'aov',
+            'aovs': 'nn:sh_normal',
+            'inner_direct': direct_integrator,
+        },
+    })
+
+    spp = 4
+    direct_image = direct_integrator.render(scene, seed=0, spp=spp)
+    aov_image = outer_aov.render(scene, seed=0, spp=spp)
+    expected_aov_names = [
+        'inner_aov.R',
+        'inner_aov.G',
+        'inner_aov.B',
+        'inner_aov.A',
+        'inner_aov.inner_direct.R',
+        'inner_aov.inner_direct.G',
+        'inner_aov.inner_direct.B',
+        'inner_aov.inner_direct.A',
+        'inner_aov.nn.X',
+        'inner_aov.nn.Y',
+        'inner_aov.nn.Z',
+        'dd.T',
+    ]
+    assert outer_aov.aov_names() == expected_aov_names
+    # Developed RGB image contains 7 channels (6 from inner_aov + 1 depth)
+    assert aov_image.shape[2] == 7
+    assert dr.allclose(direct_image[:, :, :3], aov_image[:, :, :3], atol=1e-2)
+    assert dr.any(aov_image[:, :, 3:6] != 0.0) # non-zero normal values
+    assert dr.any(aov_image[:, :, 6] > 0.0)  # positive depth values
+
+    # Verify that bitmap.split() cleanly splits channels into expected layer sub-bitmaps
+    split_layers = dict(scene.sensors()[0].film().bitmap().split())
+    assert split_layers.keys() == {
+        '<root>',
+        'inner_aov',
+        'inner_aov.inner_direct',
+        'inner_aov.nn',
+        'dd',
+    }
+
+    # inner_aov layer contains the developed RGBA image from inner_aov
+    inner_aov_layer = mi.TensorXf(split_layers['inner_aov'])
+    assert dr.allclose(direct_image[:, :, :3], inner_aov_layer[:, :, :3], atol=1e-2)
+
+    # inner_aov.inner_direct layer contains the developed RGBA image from inner_direct
+    inner_direct_layer = mi.TensorXf(split_layers['inner_aov.inner_direct'])
+    assert dr.allclose(direct_image[:, :, :3], inner_direct_layer[:, :, :3], atol=1e-2)
+
+    # <root> layer contains the developed base RGB image
+    root_layer = mi.TensorXf(split_layers['<root>'])
+    assert dr.allclose(direct_image[:, :, :3], root_layer[:, :, :3], atol=1e-2)
