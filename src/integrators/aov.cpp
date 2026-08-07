@@ -339,7 +339,19 @@ public:
                         else
                             *aovs++ = Float(it->second);
                     } else {
-                        *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
+                        ShapePtr target = dr::select(
+                            si.instance != dr::zeros<ShapePtr>(),
+                            si.instance, si.shape);
+
+                        UInt32 shape_idx = dr::zeros<UInt32>();
+                        uint32_t counter = 1;
+                        for (const ref<Shape> &shape : shapes) {
+                            shape_idx = dr::select(
+                                target == ShapePtr(shape.get()),
+                                UInt32(counter), shape_idx);
+                            ++counter;
+                        }
+                        *aovs++ = Float(shape_idx);
                     }
                     break;
 

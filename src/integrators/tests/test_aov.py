@@ -328,3 +328,67 @@ def test07_test_aov_normalmap(variants_all_ad_rgb):
     assert(dr.allclose(
         image[:,:,3:6].array,
         dr.tile(n, image.shape[0] * image.shape[1])))
+
+
+def test08_shape_index_correct(variants_all_rgb):
+    W, H = 32, 32
+
+    def make_diffuse(r, g, b):
+        return {'type': 'diffuse', 'reflectance': {'type': 'rgb', 'value': [r, g, b]}}
+
+    # Render with box filter + 1spp to get exact per pixel values
+    # and avoid fractional blending.
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sensor': {
+            'type': 'orthographic',
+            'to_world': mi.ScalarTransform4f().look_at(
+                origin=(0, 0, 2),
+                target=(0, 0, 0),
+                up=(0, 1, 0),
+            ),
+            'sampler': {'type': 'independent'},
+            'film': {
+                'type': 'hdrfilm',
+                'width': W, 'height': H,
+                'rfilter': {'type': 'box'},
+            },
+        },
+        'emitter': {
+            'type': 'constant',
+            'radiance': {'type': 'rgb', 'value': 1.0},
+        },
+        'left': {
+            'type': 'rectangle',
+            'material': make_diffuse(1, 0, 0),
+            'to_world': mi.ScalarTransform4f()
+                .translate([-0.5, 0, 0])
+                .scale([0.5, 1.0, 1.0]),
+        },
+        'right': {
+            'type': 'rectangle',
+            'material': make_diffuse(0, 0, 1),
+            'to_world': mi.ScalarTransform4f()
+                .translate([0.5, 0, 0])
+                .scale([0.5, 1.0, 1.0]),
+        },
+    })
+
+    aov_integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'si:shape_index',
+        'my_image': {'type': 'path', 'max_depth': 1},
+    })
+
+    image = aov_integrator.render(scene, seed=0, spp=1)
+
+    # `shape_index` is the last channel (inner RGBA + shape_index = 5 channels).
+    idx = image[:, :, -1:].array
+
+    # All values must be 0, 1, or 2.
+    assert dr.all((idx == 0.0) | (idx == 1.0) | (idx == 2.0)), \
+        "shape_index contains values outside {0, 1, 2} -- likely raw pointer reinterpret"
+
+    # Both shapes must appear in the output.
+    assert dr.any(idx == 1.0), "shape index 1 not found in AOV output"
+    assert dr.any(idx == 2.0), "shape index 2 not found in AOV output"
