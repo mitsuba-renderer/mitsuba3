@@ -48,8 +48,15 @@ How to make a new release?
 18. Check that the new version is available on
     `readthedocs <https://mitsuba.readthedocs.io/>`__.
 
-19. Create a `release on GitHub <https://github.com/mitsuba-renderer/mitsuba3/releases/new>`__
-    from the tag created at step 10. The changelog can be copied from step 2.
+19. Create the release on GitHub from the tag pushed at step 16:
+
+    .. code-block:: bash
+
+       python3 resources/changelog_to_release.py X.Y.Z --create
+
+    This converts the matching section of ``docs/release_notes.rst`` to Markdown
+    and hands it to ``gh release create``. Omit ``--create`` to preview the
+    notes, or add ``--draft`` to review them on GitHub before publishing.
 
 20. Checkout the ``stable`` branch and run ``git pull --ff-only origin vX.Y.Z``
     and ``git push``
