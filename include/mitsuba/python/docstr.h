@@ -5707,7 +5707,9 @@ static const char *__doc_mitsuba_Mesh_face_data_bytes = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_face_indices = R"doc(Returns the vertex indices associated with triangle ``index``)doc";
 
-static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal direction of the face with index ``index``)doc";
+static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal direction of a face with the given vertex positions)doc";
+
+static const char *__doc_mitsuba_Mesh_face_normal_2 = R"doc(Returns the normal direction of the face with index ``index``)doc";
 
 static const char *__doc_mitsuba_Mesh_faces_buffer = R"doc(Return face indices buffer)doc";
 
@@ -7811,53 +7813,66 @@ static const char *__doc_mitsuba_RayDifferential_operator_assign_2 = R"doc()doc"
 static const char *__doc_mitsuba_RayDifferential_scale_differential = R"doc()doc";
 
 static const char *__doc_mitsuba_RayFlags =
-R"doc(This list of flags is used to determine which members of
-SurfaceInteraction should be computed when calling
-compute_surface_interaction().
+R"doc(Flags to determine which members of SurfaceInteraction should be
+computed when calling compute_surface_interaction().
 
-It also specifies whether the SurfaceInteraction should be
-differentiable with respect to the shapes parameters.)doc";
+It also specifies differentiation behavior with respect to shape
+parameters.)doc";
 
-static const char *__doc_mitsuba_RayFlags_Shading =
-R"doc(Additionally compute the UV coordinates, the position partials and the
-shading frame
+static const char *__doc_mitsuba_RayFlags_All = R"doc(Deprecated alias for Shading)doc";
 
-The tangent of the shading frame follows ``dp_du``, hence the two
-cannot be requested separately. Without this flag, ``uv``, ``dp_du``,
-``dp_dv``, ``sh_frame`` and ``wi`` are left undefined.)doc";
+static const char *__doc_mitsuba_RayFlags_Default =
+R"doc(The detail level requested by default, i.e. everything but
+NormalPartials)doc";
 
-static const char *__doc_mitsuba_RayFlags_All =
-R"doc(Deprecated alias for Shading
+static const char *__doc_mitsuba_RayFlags_DetachShape =
+R"doc(Ignore the differentiable dependence of the SurfaceInteraction on
+respect to shape parameters.
 
-This is the detail level that ``All`` selected in Mitsuba 3.9 and
-earlier.)doc";
+With ``DetachShape``, the shape's parameters are detached before the
+interaction is computed, which amounts to intersecting a
+differentiable ray with a static surface. Derivatives then originate
+exclusively from ``ray.o`` and ``ray.d``, and the hit point slides
+across a surface that is held in place.
 
-static const char *__doc_mitsuba_RayFlags_Default = R"doc(The detail level requested by default, i.e. everything but NormalPartials)doc";
+At most one of FollowShape or DetachShape can be specified. The flag
+has no effect in non-differentiable variants.)doc";
 
+static const char *__doc_mitsuba_RayFlags_FollowShape =
+R"doc(Track differentiable dependence of the SurfaceInteraction with respect
+to shape parameters.
 
-static const char *__doc_mitsuba_RayFlags_DetachShape = R"doc(Derivatives of the SurfaceInteraction fields ignore shape's motion)doc";
+By default (i.e., when neither FollowShape nor DetachShape is
+specified), intersections differentiably depend on both the ray
+(``ray.o``, ``ray.d``) and shape parameters. They conceptually slide
+along the surface as either the ray or the geometry moves.
 
+With ``FollowShape``, the intersection is instead rigidly glued to the
+surface. The hit is first located non-differentiably, and the
+resulting point is then differentiably re-evaluated using a local
+parameterization. The point consequently moves along with and no
+longer tracks infinitesimal changes of the ray. This is the same
+quantity that Shape::differential_motion() returns.
 
-static const char *__doc_mitsuba_RayFlags_FollowShape = R"doc(Derivatives of the SurfaceInteraction fields follow shape's motion)doc";
+At most one of FollowShape or DetachShape can be specified. The flag
+has no effect in non-differentiable variants.)doc";
 
-static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute the distance, position and geometric normal
-
-This is the baseline: it is the absence of Shading rather than a flag
-of its own, so ``has_flag(flags, Minimal)`` is always false.)doc";
+static const char *__doc_mitsuba_RayFlags_Minimal =
+R"doc(Compute the distance, position and geometric normal (cannot be
+disabled))doc";
 
 static const char *__doc_mitsuba_RayFlags_NormalPartials =
-R"doc(Additionally compute the partial derivatives of the shading normal
-wrt. the UV parameterization
+R"doc(Additionally compute normal partial derivatives (``dn_du``,
+``dn_dv``), which encode information about curvature.
 
-Depends on Shading: the partials differentiate the parameterization
-that flag defines, hence they are not computed without it. Shapes with
-a flat shading normal, and those that do not implement the partials,
-report zero.)doc";
+Depends on Shading.)doc";
 
+static const char *__doc_mitsuba_RayFlags_Shading =
+R"doc(Additionally compute the UV coordinates (``uv``), position partials
+(``dp_du``, ``dp_dv``), shading frame (``sh_frame``), and the incident
+direction in the shading frame (``wi``).
 
-
-
-
+This is also the default option selected by Default.)doc";
 
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time 'time')doc";
 
@@ -8564,8 +8579,8 @@ In the context of differentiable rendering, the ``ray_flags``
 parameter also influences how derivatives propagate between the input
 ray, the shape parameters, and the computed intersection (see
 RayFlags::FollowShape and RayFlags::DetachShape for details on this).
-The default, RayFlags::Default, propagates derivatives through all steps
-of the intersection computation.
+The default, RayFlags::Default, propagates derivatives through all
+steps of the intersection computation.
 
 The ``coherent`` flag is a hint that can improve performance in the
 first step of finding the PreliminaryInteraction if the input set of
@@ -8633,8 +8648,8 @@ In the context of differentiable rendering, the ``ray_flags``
 parameter also influences how derivatives propagate between the input
 ray, the shape parameters, and the computed intersection (see
 RayFlags::FollowShape and RayFlags::DetachShape for details on this).
-The default, RayFlags::Default, propagates derivatives through all steps
-of the intersection computation.
+The default, RayFlags::Default, propagates derivatives through all
+steps of the intersection computation.
 
 The ``coherent`` flag is a hint that can improve performance in the
 first step of finding the PreliminaryInteraction if the input set of
@@ -10383,6 +10398,29 @@ static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_3 = R"doc
 
 static const char *__doc_mitsuba_SurfaceInteraction_SurfaceInteraction_4 = R"doc(//! @})doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_attach_motion =
+R"doc(Attach the motion of this interaction under the requested
+differentiation mode
+
+This function exists for use within implementations of
+Shape::compute_surface_interaction(). It reads ``t``, ``p`` and ``n``
+and updates the AD state of ``t`` and ``p``, so that their derivatives
+express how the interaction point responds to a change of the scene
+parameters: it either stays on the ray while the surface moves
+underneath it (the default), or follows the surface
+(RayFlags::FollowShape). The case RayFlags::DetachShape must be
+handled on the caller's end.
+
+Shapes that recover their local coordinates from ``p`` need nothing
+further. Those parameterized by ``pi``.prim_uv must furthermore update
+it to match p by projecting the (primal-zero) displacement ``p -
+p_att`` onto the tangent basis and attaching it via
+``dr::replace_grad``.
+
+Parameter ``p_att``:
+    Surface position at the *detached* parameterization, attached to
+    the shape's parameters. Its primal value equals ``p``.)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf =
 R"doc(Returns the BSDF of the intersected shape.
 
@@ -10395,8 +10433,6 @@ Implementation in 'bsdf.h')doc";
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_compute_uv_partials = R"doc(Computes texture coordinate partials)doc";
-
-
 
 static const char *__doc_mitsuba_SurfaceInteraction_dn_du = R"doc(Shading normal partials wrt. the UV parameterization)doc";
 
@@ -10432,11 +10468,9 @@ Parameter ``ray``:
 Parameter ``ray_flags``:
     Flags specifying which information should be computed)doc";
 
-
 static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc()doc";
-
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
 
@@ -11272,16 +11306,16 @@ R"doc(Test for a scale component in each transform matrix by checking
 whether ``M . M^T == I`` (where ``M`` is the matrix in question and
 ``I`` is the identity).)doc";
 
+static const char *__doc_mitsuba_Transform_inverse = R"doc()doc";
+
+static const char *__doc_mitsuba_Transform_inverse_transpose = R"doc()doc";
+
 static const char *__doc_mitsuba_Transform_is_similarity =
 R"doc(Test whether the linear part is a similarity, i.e., a
 rotation/reflection, potentially with a uniform scale and translation.
 
 The implementation checks whether ``M . M^T`` is a multiple of the
 identity.)doc";
-
-static const char *__doc_mitsuba_Transform_inverse = R"doc()doc";
-
-static const char *__doc_mitsuba_Transform_inverse_transpose = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_labels = R"doc()doc";
 
