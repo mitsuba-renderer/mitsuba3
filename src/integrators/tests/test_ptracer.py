@@ -234,3 +234,37 @@ def test07_adjoint_integrator_trampoline(variants_all_ad_rgb):
     mi.load_dict({
         'type': 'myptracer'
     })
+
+
+def test08_delta_light_irradiancemeter(variants_all_ad_rgb):
+    scene_dict = {
+        'type': 'scene',
+        'integrator': {
+            'type': 'ptracer',
+            'max_depth': 2,
+        },
+        'sensor': {
+            'type': 'sphere',
+            'center': [0, 0, 0],
+            'radius': 1.0,
+            'sensor': {
+                'type': 'irradiancemeter',
+                'film': {
+                    'type': 'hdrfilm',
+                    'width': 1,
+                    'height': 1,
+                    'rfilter': {'type': 'box'},
+                }
+            }
+        },
+        'emitter': {
+            'type': 'point',
+            'position': [2, 0, 0]
+        }
+    }
+
+    scene = mi.load_dict(scene_dict)
+    sensor = scene.sensors()[0]
+    image = mi.render(scene, seed=0, sensor=sensor)
+
+    assert image[0][0][0].numpy() > 0.1

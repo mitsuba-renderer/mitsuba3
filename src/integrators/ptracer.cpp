@@ -110,7 +110,9 @@ public:
             dr::gather<EmitterPtr>(scene->emitters_dr(), emitter_idx);
 
         // Don't connect delta emitters with sensor (both position and direction)
-        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
+        // Unless the sensor has spatial extent (e.g. irradiancemeter)
+        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta) ||
+                      sensor->needs_aperture_sample();
 
         // 3. Emitter position sampling
         Spectrum emitter_weight = dr::zeros<Spectrum>();
@@ -347,7 +349,9 @@ public:
         // Foreshortening term and BSDF value for that direction (for surface interactions).
         Spectrum result = 0.f;
         Spectrum surface_weight = 1.f;
-        Vector3f local_d        = si.to_local(sensor_ray.d);
+        Mask has_frame          = dr::norm(si.n) > 0.f;
+        Vector3f local_d        = dr::zeros<Vector3f>();
+        local_d[has_frame]      = si.to_local(sensor_ray.d);
         Mask on_surface         = active && (si.shape != nullptr);
         if (dr::any_or<true>(on_surface)) {
             /* Note that foreshortening is only missing for directly visible
@@ -382,7 +386,7 @@ public:
            we still don't want light coming from behind the emitter. */
         Mask not_on_surface = active && (si.shape == nullptr) && (bsdf == nullptr);
         if (dr::any_or<true>(not_on_surface)) {
-            Mask invalid_side = Frame3f::cos_theta(local_d) <= 0.f;
+            Mask invalid_side = has_frame && (Frame3f::cos_theta(local_d) <= 0.f);
             surface_weight[not_on_surface && invalid_side] = 0.f;
         }
 
