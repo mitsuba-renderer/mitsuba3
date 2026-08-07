@@ -1440,7 +1440,7 @@ def test38_ray_intersect_triangle(variants_all_rgb):
     mesh = mi.Mesh(name='', vertex_count=3, face_count=1)
     params = mi.traverse(mesh)
     params['vertex_positions'] = [
-        0.0, 0.0, 0.0, 
+        0.0, 0.0, 0.0,
         1.0, 0.0, 0.0,
         0.5, 1.0, 0.0,
     ]
@@ -1467,3 +1467,17 @@ def test39_custom_vertex_normals(variants_vec_rgb):
 
     # The custom vertex normals should not have been modified.
     assert dr.allclose(params['vertex_normals'], normals)
+
+
+def test40_write_and_load_2d_ply_attribute(variants_all_rgb, tmp_path):
+    mesh = mi.load_dict({"type": "rectangle"})
+    mesh.add_attribute(
+        "vertex_extra_uv", 2, [0.5, 0.5, 1.5, 0.5, 0.5, 1.5, 1.5, 1.5]
+    )
+    ply_file = str(tmp_path / "test_2d_attr.ply")
+    mesh.write_ply(ply_file)
+    mesh_loaded = mi.load_dict({"type": "ply", "filename": ply_file})
+    assert mesh_loaded.has_attribute("vertex_extra_uv")
+    si = mesh_loaded.eval_parameterization([0.5, 0.5])
+    uv = mesh_loaded.eval_attribute_2("vertex_extra_uv", si)
+    assert dr.allclose(uv, [1.0, 1.0])

@@ -132,6 +132,12 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                 return shape->eval_attribute_1(name, si, active);
             },
             "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_1))
+       .def("eval_attribute_2",
+            [](Ptr shape, const std::string &name,
+               const SurfaceInteraction3f &si, const Mask &active) {
+                return shape->eval_attribute_2(name, si, active);
+            },
+            "name"_a, "si"_a, "active"_a = true)
        .def("eval_attribute_3",
             [](Ptr shape, const std::string &name,
                const SurfaceInteraction3f &si, const Mask &active) {
