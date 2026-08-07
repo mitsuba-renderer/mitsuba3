@@ -14,17 +14,16 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * The typical usage is
  *
- * \code
- * ArgParser p;
- * auto arg0 = p.register("--myParameter");
- * auto arg1 = p.register("-f", true);
- * p.parse(argc, argv);
- * if (*arg0)
- *     std::cout << "Got --myParameter" << std::endl;
- * if (*arg1)
- *     std::cout << "Got -f " << arg1->value() << std::endl;
- * \endcode
+ * .. code-block:: python
  *
+ *    p = mi.ArgParser()
+ *    arg0 = p.add("--myParameter")
+ *    arg1 = p.add("-f", True)
+ *    p.parse(sys.argv)
+ *    if arg0:
+ *        print("Got --myParameter")
+ *    if arg1:
+ *        print("Got -f", arg1.as_string())
  */
 class MI_EXPORT_LIB ArgParser {
 public:

@@ -76,9 +76,9 @@ NAMESPACE_BEGIN(spline)
 
 
 /**
- * \brief Compute the definite integral and derivative of a cubic spline that
- * is parameterized by the function values and derivatives at the endpoints
- * of the interval <tt>[0, 1]</tt>.
+ * \brief Compute the value of a cubic spline that is parameterized by the
+ * function values and derivatives at the endpoints of the interval
+ * <tt>[0, 1]</tt>.
  *
  * \param f0
  *      The function value at the left position
@@ -196,8 +196,6 @@ std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
  * \param values
  *      Array containing \c size regularly spaced evaluations in the range [\c
  *      min, \c max] of the approximated function.
- * \param size
- *      Denotes the size of the \c values array
  * \param x
  *      Evaluation point
  * \remark
@@ -259,8 +257,6 @@ Value eval_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, const dr::scalar
  * \param values
  *      Array containing function evaluations matched to the entries of \c
  *      nodes.
- * \param size
- *      Denotes the size of the \c nodes and \c values array
  * \param x
  *      Evaluation point
  * \remark
@@ -271,10 +267,10 @@ Value eval_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, const dr::scalar
  *      the function for many arguments \c x.
  * \return
  *      The interpolated value or zero when <tt>Extrapolate=false</tt>
- *      and \c x lies outside of \a [\c min, \c max]
+ *      and \c x lies outside of [\c min, \c max]
  */
 template <bool Extrapolate = false, typename Value>
-Value eval_1d(const dr::scalar_t<Value> *nodes_, 
+Value eval_1d(const dr::scalar_t<Value> *nodes_,
               const dr::scalar_t<Value> *values_,
               uint32_t size, Value x) {
     using Mask      = dr::mask_t<Value>;
@@ -323,15 +319,12 @@ Value eval_1d(const dr::scalar_t<Value> *nodes_,
   * \param values
  *      Array containing \c size regularly spaced evaluations in the range
  *      [\c min, \c max] of the approximated function.
- * \param size
- *      Denotes the size of the \c values array
- * \param[out] out
- *      An array with \c size entries, which will be used to store the
- *      prefix sum
+ * \return
+ *      A list with \c size entries containing the prefix sum
+ *
  * \remark
- *      The Python API lacks the \c size and \c out parameters. The former
- *      is inferred automatically from the size of the input array, and \c out
- *      is returned as a list.
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
 void integrate_1d(Value min, Value max, const Value *values,
@@ -363,15 +356,12 @@ void integrate_1d(Value min, Value max, const Value *values,
  * \param values
  *      Array containing function evaluations matched to the entries of
  *      \c nodes.
- * \param size
- *      Denotes the size of the \c values array
- * \param[out] out
- *      An array with \c size entries, which will be used to store the
- *      prefix sum
+ * \return
+ *      A list with \c size entries containing the prefix sum
+ *
  * \remark
- *      The Python API lacks the \c size and \c out parameters. The former
- *      is inferred automatically from the size of the input array, and \c out
- *      is returned as a list.
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
 void integrate_1d(const Value *nodes, const Value *values,
@@ -399,17 +389,19 @@ void integrate_1d(const Value *nodes, const Value *values,
  * \param values
  *      Array containing \c size regularly spaced evaluations in the range
  *      [\c min, \c max] of the approximated function.
- * \param size
- *      Denotes the size of the \c values array
  * \param y
  *      Input parameter for the inversion
  * \param eps
  *      Error tolerance (default: 1e-6f)
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
+ *
+ * \remark
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
-Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, 
+Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
                 const dr::scalar_t<Value> *values_, uint32_t size,
                 Value y, dr::scalar_t<Value> eps = 1e-6f) {
     using Mask      = dr::mask_t<Value>;
@@ -493,14 +485,16 @@ Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
  * \param values
  *      Array containing function evaluations matched to the entries of
  *      \c nodes.
- * \param size
- *      Denotes the size of the \c values array
  * \param y
  *      Input parameter for the inversion
  * \param eps
  *      Error tolerance (default: 1e-6f)
  * \return
  *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
+ *
+ * \remark
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
 Value invert_1d(const dr::scalar_t<Value> *nodes_,
@@ -590,10 +584,8 @@ Value invert_1d(const dr::scalar_t<Value> *nodes_,
  *      Array containing \c size regularly spaced evaluations in the range [\c
  *      min, \c max] of the approximated function.
  * \param cdf
- *      Array containing a cumulative distribution function computed by \ref
- *      integrate_1d().
- * \param size
- *      Denotes the size of the \c values array
+ *      Array containing a cumulative distribution function computed by
+ *      \ref integrate_1d().
  * \param sample
  *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
  * \param eps
@@ -603,10 +595,14 @@ Value invert_1d(const dr::scalar_t<Value> *nodes_,
  *      2. The value of the spline evaluated at the sampled position
  *      3. The probability density at the sampled position (which only differs
  *         from item 2. when the function does not integrate to one)
+ *
+ * \remark
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
 std::tuple<Value, Value, Value>
-sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, 
+sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
           const dr::scalar_t<Value> *values_, 
           const dr::scalar_t<Value> *cdf_,
           uint32_t size, Value sample, dr::scalar_t<Value> eps = 1e-6f) {
@@ -695,10 +691,8 @@ sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
  *      Array containing function evaluations matched to the entries of \c
  *      nodes.
  * \param cdf
- *      Array containing a cumulative distribution function computed by \ref
- *      integrate_1d().
- * \param size
- *      Denotes the size of the \c values array
+ *      Array containing a cumulative distribution function computed by
+ *      \ref integrate_1d().
  * \param sample
  *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
  * \param eps
@@ -708,6 +702,10 @@ sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
  *      2. The value of the spline evaluated at the sampled position
  *      3. The probability density at the sampled position (which only differs
  *         from item 2. when the function does not integrate to one)
+ *
+ * \remark
+ *      The Python API lacks the \c size parameter, which is inferred
+ *      automatically from the size of the input array.
  */
 template <typename Value>
 std::tuple<Value, Value, Value>
@@ -792,8 +790,8 @@ sample_1d(const dr::scalar_t<Value> *nodes_,
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
- * segment. The resulting weights are identical those internally used by \ref
- * sample_1d().
+ * segment. The resulting weights are identical those internally used by
+ * \ref sample_1d().
  *
  * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
@@ -805,8 +803,6 @@ sample_1d(const dr::scalar_t<Value> *nodes_,
  *      Denotes the number of function samples
  * \param x
  *      Evaluation point
- * \param[out] weights
- *      Pointer to a weight array of size 4 that will be populated
  * \remark
  *      In the Python API, the \c offset and \c weights parameters are returned
  *      as the second and third elements of a triple.
@@ -882,8 +878,8 @@ std::pair<Mask, Int32> eval_spline_weights(dr::scalar_t<Value> min,
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
- * segment. The resulting weights are identical those internally used by \ref
- * sample_1d().
+ * segment. The resulting weights are identical those internally used by
+ * \ref sample_1d().
  *
  * \tparam Extrapolate
  *      Extrapolate values when \c x is out of range? (default: \c false)
@@ -891,12 +887,8 @@ std::pair<Mask, Int32> eval_spline_weights(dr::scalar_t<Value> min,
  *      Array containing \c size non-uniformly spaced values denoting positions
  *      the where the function to be interpolated was evaluated. They must be
  *      provided in \a increasing order.
- * \param size
- *      Denotes the size of the \c nodes array
  * \param x
  *      Evaluation point
- * \param[out] weights
- *      Pointer to a weight array of size 4 that will be populated
  * \remark
  *      The Python API lacks the \c size parameter, which is inferred
  *      automatically from the size of the input array. The \c offset
@@ -987,7 +979,7 @@ std::pair<Mask, Int32> eval_spline_weights(const dr::scalar_t<Value>* nodes_,
 }
 
 /**
- * \brief Evaluate a cubic spline interpolant of a uniformly sampled 2D function
+ * \brief Evaluate a cubic spline interpolant of a non-uniformly sampled 2D function
  *
  * This implementation relies on a tensor product of Catmull-Rom splines, i.e.
  * it uses finite differences to approximate the derivatives for each dimension
@@ -999,14 +991,10 @@ std::pair<Mask, Int32> eval_spline_weights(const dr::scalar_t<Value>* nodes_,
  *      Arrays containing \c size1 non-uniformly spaced values denoting
  *      positions the where the function to be interpolated was evaluated
  *      on the \c X axis (in increasing order)
- * \param size1
- *      Denotes the size of the \c nodes1 array
- * \param nodes
+ * \param nodes2
  *      Arrays containing \c size2 non-uniformly spaced values denoting
  *      positions the where the function to be interpolated was evaluated
  *      on the \c Y axis (in increasing order)
- * \param size2
- *      Denotes the size of the \c nodes2 array
  * \param values
  *      A 2D floating point array of <tt>size1*size2</tt> cells containing
  *      irregularly spaced evaluations of the function to be interpolated.
@@ -1020,7 +1008,7 @@ std::pair<Mask, Int32> eval_spline_weights(const dr::scalar_t<Value>* nodes_,
  *      The Python API lacks the \c size1 and \c size2 parameters, which are
  *      inferred automatically from the size of the input arrays.
  * \return
- *      The interpolated value or zero when <tt>Extrapolate=false</tt>tt> and
+ *      The interpolated value or zero when <tt>Extrapolate=false</tt> and
  *      <tt>(x,y)</tt> lies outside of the node range
  */
 template <bool Extrapolate = false, typename Value>

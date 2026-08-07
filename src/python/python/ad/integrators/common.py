@@ -445,7 +445,7 @@ class ADIntegrator(mi.CppADIntegrator):
             A pre-seeded sample generator
 
         Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
+            Path depth of ``ray`` (typically set to zero). This is mainly useful
             for forward/backward differentiable rendering phases that need to
             obtain an incident radiance estimate. In this case, they may
             recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero
@@ -885,7 +885,7 @@ class PSIntegrator(ADIntegrator):
     def override_spp(self, integrator_spp: Optional[int], runtime_spp: int, sampler_spp: int):
         """
         Utility method to override the intergrator's spp value with the one
-        received at runtime in `render`/`render_backward`/`render_forward`.
+        received at runtime in `mitsuba.render`/``render_backward``/``render_forward``.
 
         Priority order:
         1. If the integrator's spp is explicitly disabled (set to 0), use 0
@@ -918,10 +918,10 @@ class PSIntegrator(ADIntegrator):
         Renders and accumulates the outputs of the primarily visible
         discontinuities, indirect discontinuities and continuous derivatives.
         It outputs an attached tensor which should subsequently be traversed by
-        a call to `dr.forward`/`dr.backward`/`dr.enqueue`/`dr.traverse`.
+        a call to ``dr.forward``/``dr.backward``/``dr.enqueue``/``dr.traverse``.
 
         Note: The continuous derivatives are only attached if
-        `radiative_backprop` is `False`. When using RB for the continuous
+        ``radiative_backprop`` is ``False``. When using RB for the continuous
         derivatives it should be manually added to the gradient obtained by
         traversing the result of this method.
         """
@@ -1158,7 +1158,7 @@ class PSIntegrator(ADIntegrator):
                                    wavelengths, active):
         """
         Sample the radiance difference of two rays that hit and miss the
-        silhouette point `ss.p` with direction `ss.d`.
+        silhouette point ``ss.p`` with direction ``ss.d``.
 
         Parameter ``scene`` (``mi.Scene``)
             Reference to the scene being rendered in a differentiable manner.
@@ -1193,7 +1193,7 @@ class PSIntegrator(ADIntegrator):
     def sample_importance(self, scene, sensor, ss, max_depth, sampler,
                           wavelengths, active):
         """
-        Sample the incident importance at the silhouette point `ss.p` with
+        Sample the incident importance at the silhouette point ``ss.p`` with
         direction `-ss.d`. If multiple connections to the sensor are valid, this
         method uses reservoir sampling to pick one.
 
@@ -1291,7 +1291,7 @@ class PSIntegrator(ADIntegrator):
         See ADIntegrator.sample() for a description of this function's purpose.
 
         Parameter ``depth`` (``mi.UInt32``):
-            Path depth of `ray` (typically set to zero). This is mainly useful
+            Path depth of ``ray`` (typically set to zero). This is mainly useful
             for forward/backward differentiable rendering phases that need to
             obtain an incident radiance estimate. In this case, they may
             recursively invoke ``sample(mode=dr.ADMode.Primal)`` with a nonzero

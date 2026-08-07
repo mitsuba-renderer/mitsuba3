@@ -496,7 +496,7 @@ class RayDataLoader:
     def next(self):
         """Get the next batch of pixel indices and corresponding target tensor.
 
-        This method reshuffles the pixel index buffer every `iter_shuffle`
+        This method reshuffles the pixel index buffer every ``iter_shuffle``
         iterations. It reuses and mutates the same flat sensor on every call.
         """
         counter = dr.opaque(mi.UInt32, self.counter)

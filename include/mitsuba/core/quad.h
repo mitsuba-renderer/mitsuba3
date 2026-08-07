@@ -20,7 +20,7 @@ NAMESPACE_BEGIN(quad)
  *     Desired number of evaluation points
  *
  * \return
- *     A tuple (nodes, weights) storing the nodes and weights of the
+ *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
@@ -105,7 +105,7 @@ std::pair<Float, Float> gauss_legendre(int n) {
  *     Desired number of evaluation points
  *
  * \return
- *     A tuple (nodes, weights) storing the nodes and weights of the
+ *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
@@ -178,10 +178,10 @@ std::pair<Float, Float> gauss_lobatto(int n) {
  * degree three or less.
  *
  * \param n
- *     Desired number of evaluation points. Must be an odd number bigger than 3.
+ *     Desired number of evaluation points. Must be an odd number, at least 3.
  *
  * \return
- *     A tuple (nodes, weights) storing the nodes and weights of the
+ *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>
@@ -226,10 +226,11 @@ std::pair<Float, Float> composite_simpson(int n) {
  * degree four or less.
  *
  * \param n
- *     Desired number of evaluation points. Must be an odd number bigger than 3.
+ *     Desired number of evaluation points. <tt>n - 1</tt> must be divisible
+ *     by 3, and n must be at least 4.
  *
  * \return
- *     A tuple (nodes, weights) storing the nodes and weights of the
+ *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
 template <typename Float>

@@ -48,40 +48,40 @@ template <typename Float, typename Shape>    struct PreliminaryIntersection;
 
 /// Shape type bit flags driving GPU intersection-function dispatch.
 enum class ShapeType : uint32_t {
-    /// Meshes (`ply`, `obj`, `serialized`)
+    /// Meshes (``ply``, ``obj``, ``serialized``)
     Mesh = 1u << 0,
 
     /// Rectangle: a particular type of mesh
     Rectangle = Mesh | (1u << 1), // Tagged with an extra bit
 
-    /// B-Spline curves (`bsplinecurve`)
+    /// B-Spline curves (``bsplinecurve``)
     BSplineCurve = 1u << 2,
 
-    /// Linear curves (`linearcurve`)
+    /// Linear curves (``linearcurve``)
     LinearCurve = 1u << 3,
 
-    /// Cylinders (`cylinder`)
+    /// Cylinders (``cylinder``)
     Cylinder = 1u << 4,
 
-    /// Disks (`disk`)
+    /// Disks (``disk``)
     Disk = 1u << 5,
 
-    /// SDF Grids (`sdfgrid`)
+    /// SDF Grids (``sdfgrid``)
     SDFGrid = 1u << 6,
 
-    /// Spheres (`sphere`)
+    /// Spheres (``sphere``)
     Sphere = 1u << 7,
 
-    /// Ellipsoids (`ellipsoids`)
+    /// Ellipsoids (``ellipsoids``)
     Ellipsoids = 1u << 8,
 
-    /// Ellipsoid meshes (`ellipsoidsmesh`)
+    /// Ellipsoid meshes (``ellipsoidsmesh``)
     EllipsoidsMesh = Mesh | (1u << 9), // Tagged with an extra bit
 
-    /// Instance (`instance`)
+    /// Instance (``instance``)
     Instance = 1u << 10,
 
-    /// ShapeGroup (`shapegroup`)
+    /// ShapeGroup (``shapegroup``)
     ShapeGroup = 1u << 11,
 
     /// Invalid for default initialization
@@ -155,7 +155,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 
 /**
  * \brief Imports the desired methods and fields by generating a sequence of
- * `using` declarations. This is useful when inheriting from template parents,
+ * ``using`` declarations. This is useful when inheriting from template parents,
  * since methods and fields must be explicitly made visible.
  *
  * For example,

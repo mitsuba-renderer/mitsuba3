@@ -11,11 +11,11 @@ NAMESPACE_BEGIN(mitsuba)
 #define MI_FILTER_RESOLUTION 31
 
 /**
- * \brief When resampling data to a different resolution using \ref
- * Resampler::resample(), this enumeration specifies how lookups
+ * \brief When resampling data to a different resolution using
+ * \ref Resampler::resample(), this enumeration specifies how lookups
  * <em>outside</em> of the input domain are handled.
  *
- * \see Resampler
+ * \see `Resampler`
  */
 enum class FilterBoundaryCondition {
     /// Clamp to the outermost sample position (default)
@@ -43,7 +43,7 @@ enum class FilterBoundaryCondition {
  *
  * Because image filters are generally too expensive to evaluate for each
  * sample, the implementation of this class internally precomputes an discrete
- * representation, whose resolution given by \ref MI_FILTER_RESOLUTION.
+ * representation, whose resolution given by ``MI_FILTER_RESOLUTION``.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB ReconstructionFilter
@@ -66,7 +66,7 @@ public:
     /// Check whether this is a box filter?
     bool is_box_filter() const;
 
-    /// Evaluate a discretized version of the filter (generally faster than 'eval')
+    /// Evaluate a discretized version of the filter (generally faster than \ref eval())
     MI_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!dr::is_jit_v<Float>) {
             UInt32 index = dr::minimum(UInt32(dr::abs(x * m_scale_factor)),
@@ -261,10 +261,10 @@ template <typename Scalar_> struct Resampler {
      *     Target array of samples
      * \param source_stride
      *     Stride of samples in the source array. A value
-     *     of '1' implies that they are densely packed.
+     *     of ``1`` implies that they are densely packed.
      * \param target_stride
-     *     Stride of samples in the source array. A value
-     *     of '1' implies that they are densely packed.
+     *     Stride of samples in the target array. A value
+     *     of ``1`` implies that they are densely packed.
      * \param channels
      *     Number of channels to be resampled
      */

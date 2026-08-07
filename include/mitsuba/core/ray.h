@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Simple n-dimensional ray segment data structure
  *
  * Along with the ray origin and direction, this data structure additionally
- * stores a maximum ray position \c maxt, a time value \c time as well a the
+ * stores a maximum ray position \c maxt, a time value \c time as well as the
  * wavelength information associated with the ray.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
@@ -39,7 +39,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Wavelength associated with the ray
     Wavelength wavelengths;
 
-    /// Construct a new ray (o, d) at time 'time'
+    /// Construct a new ray (o, d) at time ``time``
     Ray(const Point &o, const Vector &d, Float time,
         const Wavelength &wavelengths)
         : o(o), d(d), time(time), wavelengths(wavelengths) { }
@@ -94,7 +94,7 @@ struct RayDifferential : Ray<Point_, Spectrum_> {
     RayDifferential(const Base &ray)
         : Base(ray), o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {}
 
-    /// Construct a new ray (o, d) at time 'time'
+    /// Construct a new ray (o, d) at time ``time``
     RayDifferential(const Point &o_, const Vector &d_, Float time_ = (ScalarFloat) 0.f,
                     const Wavelength &wavelengths_ = Wavelength())
         : o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {

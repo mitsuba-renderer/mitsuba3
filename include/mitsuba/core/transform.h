@@ -86,7 +86,7 @@ struct Transform {
                          dr::transpose(inverse_transpose));
     }
 
-    /// Update the inverse transpose part following a modification to 'matrix'
+    /// Update the inverse transpose part following a modification to \ref matrix
     Transform update() {
         if constexpr (Affine) {
             using RotMatrix = dr::Matrix<Float, Size - 1>;
@@ -202,7 +202,7 @@ struct Transform {
         return Transform(result, inverse);
     }
 
-    /// Creates a transformation that converts from the standard basis to 'frame'
+    /// Creates a transformation that converts from the standard basis to ``frame``
     template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Value> &frame) {
         dr::Array<Scalar, 1> z(0);
@@ -217,7 +217,7 @@ struct Transform {
         return Transform(result, result);
     }
 
-    /// Creates a transformation that converts from 'frame' to the standard basis
+    /// Creates a transformation that converts from ``frame`` to the standard basis
     template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Value> &frame) {
         dr::Array<Scalar, 1> z(0);
@@ -406,9 +406,11 @@ struct Transform {
      *
      *  Projects vectors in camera space onto a plane at z=1:
      *
-     *  x_proj = x / z
-     *  y_proj = y / z
-     *  z_proj = (far * (z - near)) / (z * (far-near))
+     *  .. code-block:: python
+     *
+     *     x_proj = x / z
+     *     y_proj = y / z
+     *     z_proj = (far * (z - near)) / (z * (far-near))
      *
      *  Camera-space depths are not mapped linearly!
      *

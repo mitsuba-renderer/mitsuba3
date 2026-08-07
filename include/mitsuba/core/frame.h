@@ -191,9 +191,6 @@ std::ostream &operator<<(std::ostream &os, const Frame<Float> &f) {
  * \param dp_du
  *    Position derivative of the underlying parameterization with respect to
  *    the 'u' coordinate
- *
- * \param frame
- *    Used to return the computed frame
  */
 template <typename Normal3f, typename Vector3f,
           typename Float = dr::value_t<Normal3f>,

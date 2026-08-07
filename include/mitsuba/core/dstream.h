@@ -5,7 +5,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief \ref Stream implementation that never writes to disk, but keeps track
+/** \brief `Stream` implementation that never writes to disk, but keeps track
  * of the size of the content being written.
  * It can be used, for example, to measure the precise amount of memory needed
  * to store serialized content.

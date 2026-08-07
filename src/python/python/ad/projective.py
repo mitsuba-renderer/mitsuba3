@@ -58,7 +58,7 @@ class ProjectiveDetail():
                                             scene: mi.Scene,
                                             viewpoint: mi.Point3f,
                                             sample2: mi.Point2f,
-                                            active: mi.Mask) -> mi.SilhouetteSample3f:
+                                            active: mi.Bool) -> mi.SilhouetteSample3f:
         """
         Sample a primarily visible silhouette point as seen from the sensor.
         Returns a silhouette sample struct.
@@ -69,7 +69,7 @@ class ProjectiveDetail():
             self.primary_shape_distribution.sample_reuse_pmf(sample2.x, active)
 
         def sample_precomputed_silhouette(i: int, viewpoint: mi.Point3f,
-                sample2: mi.Point2f, shape_pmf: mi.Float, active: mi.Mask):
+                sample2: mi.Point2f, shape_pmf: mi.Float, active: mi.Bool):
             shape_distr = self.primary_distributions[i]
             shape_indices = self.primary_indices[i]
 
@@ -106,7 +106,7 @@ class ProjectiveDetail():
                         sensor: mi.Sensor,
                         ss: mi.SilhouetteSample3f) -> mi.Float:
         """
-        The silhouette sample `ss` stores (1) the sampling density in the scene
+        The silhouette sample ``ss`` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
         """
@@ -536,7 +536,7 @@ class ProjectiveDetail():
                                 sample: mi.Vector3f,
                                 sampler: mi.Sampler,
                                 preprocess: bool,
-                                active: mi.Mask = True):
+                                active: mi.Bool = True):
         """
         Evaluate the indirect discontinuous derivatives integral for a given
         sample point in boundary sample space.

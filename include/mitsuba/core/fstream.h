@@ -20,7 +20,7 @@ private:
     size_t m_gcount;
 };
 
-/** \brief Simple \ref Stream implementation backed-up by a file.
+/** \brief Simple `Stream` implementation backed-up by a file.
  *
  * The underlying file abstraction is ``std::fstream``, and so most
  * operations can be expected to behave similarly.
@@ -45,7 +45,7 @@ public:
      *
      * The file is opened in read-only or read/write mode as specified by \c mode.
      *
-     * Throws if trying to open a non-existing file in with write disabled.
+     * Throws if trying to open a non-existing file with write disabled.
      * Throws an exception if the file cannot be opened / created.
      */
     FileStream(const fs::path &p, EMode mode = ERead);
@@ -106,14 +106,14 @@ public:
 
     /** \brief Returns the size of the file.
      * \note After a write, the size may not be updated
-     * until a \ref flush is performed.
+     * until a \ref flush() is performed.
      */
     size_t size() const override;
 
     /// Flushes any buffered operation to the underlying file.
     void flush() override;
 
-    /// Whether the field was open in write-mode (and was not closed)
+    /// Whether the file was open in write-mode (and was not closed)
     bool can_write() const override { return m_mode != ERead && !is_closed(); }
 
     /// True except if the stream was closed.

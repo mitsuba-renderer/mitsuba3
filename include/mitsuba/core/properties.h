@@ -56,7 +56,7 @@ NAMESPACE_END(detail)
  * \code
  * // Iterate over all properties
  * for (const auto &prop : props) {
- *     std::cout << prop.name() << " = " << prop.type() << std::endl;
+ *     std::cout << prop.name() << " = " << property_type_name(prop.type()) << std::endl;
  * }
  *
  * // Iterate only over object properties
@@ -96,9 +96,9 @@ NAMESPACE_END(detail)
  * queried.
  *
  * Use the following methods to work with query tracking:
- * - was_queried(name): Check if a specific parameter was accessed
- * - unqueried(): Get a list of all parameters that were never accessed
- * - mark_queried(name): Manually mark a parameter as accessed
+ * - \ref was_queried(name): Check if a specific parameter was accessed
+ * - \ref unqueried(): Get a list of all parameters that were never accessed
+ * - \ref mark_queried(name): Manually mark a parameter as accessed
  *
  * This is particularly useful during plugin initialization to warn users about
  * potentially misspelled or unnecessary parameters in their scene descriptions.
@@ -171,7 +171,8 @@ public:
     };
 
     /// Represents an indirect dependence that has been resolved to a specific
-    /// element of ``ParserState::nodes`` (by the parser::transform_resolve_references pass)
+    /// element of \ref ParserState::nodes (by the
+    /// \ref parser::transform_resolve_references pass)
     struct ResolvedReference {
         ResolvedReference(size_t index) : m_index(index) { }
         size_t index() const { return m_index; }
@@ -275,12 +276,12 @@ public:
      * - Arithmetic types (``bool``, ``float``, ``double``, ``uint32_t``,
      *   ``int32_t``, ``uint64_t``, ``int64_t``, ``size_t``).
      *
-     * - Points/vectors (``ScalarPoint2f``, ``ScalarPoint3f``,
-     *   `ScalarVector2f``, or ``ScalarVector3f``).
+     * - Points/vectors (\ref ScalarPoint2f, \ref ScalarPoint3f,
+     *   \ref ScalarVector2f, or \ref ScalarVector3f).
      *
-     * - Tri-stimulus color values (``ScalarColor3f``).
+     * - Tri-stimulus color values (\ref ScalarColor3f).
      *
-     * - Affine transformations (``ScalarTransform3f``, ``ScalarTransform4f``)
+     * - Affine transformations (\ref ScalarTransform3f, \ref ScalarTransform4f)
      *
      * - Mitsuba object classes (``ref<BSDF>``, ``BSDF *``, etc.)
      *
@@ -378,8 +379,8 @@ public:
      * \brief Retrieve a texture parameter (internal method)
      *
      * This method exposes a low level interface for texture construction, in
-     * general \ref get_texture(), \ref get_emissive_texture(), and \ref
-     * get_unbounded_texture() are preferable.
+     * general \ref get_texture(), \ref get_emissive_texture(), and
+     * \ref get_unbounded_texture() are preferable.
      *
      * The method retrieves or construct a texture object (a subclass of
      * ``mitsuba::Texture<...>``).
@@ -392,20 +393,22 @@ public:
      *   - Monochromatic variants: Create ``uniform`` texture with the value.
      *   - RGB/spectral variants:
      *     - For reflectance spectra: Create ``uniform`` texture with the value.
-     *     - For emission spectra: Create ``d65`` texture with grayscale color.
+     *     - For emission spectra in spectral variants: Create ``d65``
+     *       texture with grayscale color.
+     *     - For emission spectra in RGB variants: Create ``srgb`` texture
+     *       with grayscale color.
      *
      * **Color Values (RGB triplets):**
      *   - Monochromatic variants: Compute luminance and create a
      *     ``uniform`` texture.
-     *   - RGB/spectral variants:
-     *     - For emission spectra: Create ``d65`` texture.
-     *     - For reflectance spectra: Create ``srgb`` texture.
+     *   - Emission spectra in spectral variants: Create ``d65`` texture.
+     *   - All other RGB/spectral variants: Create ``srgb`` texture.
      *
      * **Spectrum Values:**
      *   *Uniform spectrum (single value):*
      *     - RGB variants: For emission spectra, create ``srgb`` texture with a
      *       color that represents the RGB appearance of a uniform spectral
-     * emitter.
+     *       emitter.
      *     - All other cases: Create ``uniform`` texture.
      *
      *   *Wavelength-value pairs:*
@@ -487,7 +490,7 @@ public:
      *
      * This method allows storing arbitrary data types that cannot be represented
      * by the standard Properties types. The value is stored in a type-erased
-     * Any container and can be retrieved later using get_any<T>().
+     * Any container and can be retrieved later using ``get_any<T>()``.
      */
     template <typename T> void set_any(std::string_view name, T &&value) {
         set(name, Any(std::forward<T>(value)));
@@ -561,12 +564,12 @@ public:
     /**
      * \brief Try to retrieve a property value without implicit conversions
      *
-     * This method attempts to retrieve a property value of type T. Unlike get<T>(),
+     * This method attempts to retrieve a property value of type T. Unlike \ref get<T>(),
      * it returns a pointer to the stored value without performing any implicit
      * conversions. If the property doesn't exist, has a different type, or would
      * require conversion, it returns nullptr.
      *
-     * For Object-derived types, dynamic_cast is used to check type compatibility.
+     * For `Object`-derived types, dynamic_cast is used to check type compatibility.
      * The property is only marked as queried if retrieval succeeds.
      *
      * \tparam T The requested type
@@ -602,8 +605,7 @@ public:
      *
      * This hash is suitable for deduplication and ignores:
      * - The insertion order of properties
-     * - The 'id' field (which assigns a name to the object elsewhere)
-     * - Property names starting with '_arg_' (which are auto-generated)
+     * - The \ref id field (which assigns a name to the object elsewhere)
      *
      * The hash function is designed to work with the equality operator
      * for identifying equivalent Properties objects that can be merged
@@ -640,7 +642,7 @@ public:
     /// Return a range that only yields properties of the specified type
     filtered_range filter(Type type) const { return filtered_range(this, type); }
 
-    /// Return a range that only yields Object-type properties
+    /// Return a range that only yields `Object`-type properties
     filtered_range objects() const { return filter(Type::Object); }
 
     MI_EXPORT_LIB friend
@@ -780,7 +782,7 @@ public:
     /**
      * \brief Attempt to retrieve and cast an object property to a specific type
      *
-     * This method retrieves the property value if it's an Object type and
+     * This method retrieves the property value if it's an `Object` type and
      * attempts to dynamically cast it to the requested type T. The property
      * is only marked as queried if the cast succeeds.
      *

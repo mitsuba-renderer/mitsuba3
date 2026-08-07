@@ -27,7 +27,7 @@ NAMESPACE_BEGIN(mitsuba)
  * JIT-compiled to a single CUDA or LLVM kernel without any intermediate
  * synchronization steps.)
  *
- * The first class \c DiscreteDistribution2D generates samples proportional to
+ * The first class `DiscreteDistribution2D` generates samples proportional to
  * a <em>discrete</em> 2D function sampled on a regular grid by sampling the
  * marginal distribution to choose a row, then a conditional distribution to
  * choose a column. This is a very simple ingredient that can be used to build
@@ -52,8 +52,8 @@ NAMESPACE_BEGIN(mitsuba)
  * mapping with very little shear/distortion, but it has numerous
  * discontinuities that can be problematic for some applications.
  *
- * \c Marginal2D is similar to \c DiscreteDistribution2D, in that it samples the
- * marginal, then the conditional. In contrast to \c DiscreteDistribution2D,
+ * \c Marginal2D is similar to `DiscreteDistribution2D`, in that it samples the
+ * marginal, then the conditional. In contrast to `DiscreteDistribution2D`,
  * the mapping provides fractional outputs. In contrast to \c Hierarchical2D,
  * the mapping is guaranteed to not contain any discontinuities but tends to
  * have significant shear/distortion when the distribution contains isolated
@@ -61,8 +61,8 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * There are actually two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
  * discrete marginal/conditional distributions are used to select a bilinear
- * bilinear patch, followed by a continuous sampling step that chooses a
- * specific position inside the patch. When <tt>Continuous=true</tt>,
+ * patch, followed by a continuous sampling step that chooses a specific
+ * position inside the patch. When <tt>Continuous=true</tt>,
  * continuous marginal/conditional distributions are used instead, and the
  * second step is no longer needed. The latter scheme requires more computation
  * and memory accesses but produces an overall smoother mapping. The continuous
@@ -72,6 +72,15 @@ NAMESPACE_BEGIN(mitsuba)
  * =======================================================================
  */
 
+/**
+ * \brief Generates samples proportional to a *discrete* 2D function sampled on
+ * a regular grid
+ *
+ * Sampling proceeds by drawing from the marginal distribution to choose a row,
+ * then from a conditional distribution to choose a column. This is a very
+ * simple ingredient that can be used to build more advanced kinds of sampling
+ * schemes.
+ */
 template <typename Float_, size_t Dimension_ = 0>
 class DiscreteDistribution2D : drjit::TraversableBase {
 public:
@@ -364,8 +373,8 @@ public:
  * evaluating the distribution for in-between parameter values.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
- * class named Hierarchical2D0, Hierarchical2D1, and Hierarchical2D2 for data
- * that depends on 0, 1, and 2 parameters, respectively.
+ * class named `Hierarchical2D0` to `Hierarchical2D3` for data that depends
+ * on 0 to 3 parameters.
  */
 template <typename Float_, size_t Dimension_ = 0>
 class Hierarchical2D : public Distribution2D<Float_, Dimension_> {
@@ -396,7 +405,7 @@ public:
      * If \c enable_sampling is set to \c false, the implementation will not
      * construct the hierarchy needed for sample warping, which saves memory
      * in case this functionality is not needed (e.g. if only the interpolation
-     * in ``eval()`` is used). In this case, ``sample()`` and ``invert()``
+     * in \ref eval() is used). In this case, \ref sample() and \ref invert()
      * can still be called without triggering undefined behavior, but they
      * will not return meaningful results.
      */
@@ -624,7 +633,7 @@ public:
         };
     }
 
-    /// Inverse of the mapping implemented in ``sample()``
+    /// Inverse of the mapping implemented in \ref sample()
     std::pair<Point2f, Float> invert(Point2f sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {
@@ -869,15 +878,15 @@ protected:
  *
  * There are two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
  * discrete marginal/conditional distributions are used to select a bilinear
- * bilinear patch, followed by a continuous sampling step that chooses a
- * specific position inside the patch. When <tt>Continuous=true</tt>,
+ * patch, followed by a continuous sampling step that chooses a specific
+ * position inside the patch. When <tt>Continuous=true</tt>,
  * continuous marginal/conditional distributions are used instead, and the
  * second step is no longer needed. The latter scheme requires more computation
  * and memory accesses but produces an overall smoother mapping.
  *
  * \remark The Python API exposes explicitly instantiated versions of this
- * class named \c MarginalDiscrete2D0 to \c MarginalDiscrete2D3 and
- * \c MarginalContinuous2D0 to \c MarginalContinuous2D3 for data that depends
+ * class named `MarginalDiscrete2D0` to `MarginalDiscrete2D3` and
+ * `MarginalContinuous2D0` to `MarginalContinuous2D3` for data that depends
  * on 0 to 3 parameters.
  */
 template <typename Float_, size_t Dimension_ = 0, bool Continuous = false>
@@ -912,7 +921,7 @@ public:
      * If \c enable_sampling is set to \c false, the implementation will not
      * construct the cdf needed for sample warping, which saves memory in case
      * this functionality is not needed (e.g. if only the interpolation in
-     * ``eval()`` is used).
+     * \ref eval() is used).
      */
     Marginal2D(const ScalarFloat *data,
                const ScalarVector2u &size,
@@ -1052,7 +1061,7 @@ public:
             return sample_discrete(sample, param, active);
     }
 
-    /// Inverse of the mapping implemented in ``sample()``
+    /// Inverse of the mapping implemented in \ref sample()
     std::pair<Point2f, Float> invert(const Point2f &sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {

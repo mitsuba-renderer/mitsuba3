@@ -52,7 +52,7 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
      * \tparam Strict Set this parameter to \c true if the bounding
      *                sphere boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
+     * \remark In the Python bindings, the ``strict`` argument is a normal
      *         function parameter with default value \c False.
      */
     template <bool Strict = false>
@@ -63,7 +63,7 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
             return dr::squared_norm(p - center) <= dr::square(radius);
     }
 
-    /// Check if a ray intersects a bounding box
+    /// Check if a ray intersects the bounding sphere
     template <typename Ray>
     MI_INLINE auto ray_intersect(const Ray &ray) const {
         typename Ray::Vector o = ray.o - center;

@@ -74,7 +74,7 @@ public:
     /// Return whether the emitter parameters have changed
     bool dirty() const { return m_dirty; }
 
-    /// Modify the emitter's "dirty" flag
+    /// Modify the emitter's ``dirty`` flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
 
     /// This is both a class and the base of various Mitsuba plugins

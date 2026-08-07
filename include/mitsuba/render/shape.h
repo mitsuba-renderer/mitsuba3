@@ -40,25 +40,25 @@ enum class DiscontinuityFlags : uint32_t {
     //!              Encoding and projection flags
     // =============================================================
 
-    /* \brief Use spherical lune to encode segment direction
+    /** \brief Use spherical lune to encode segment direction
      *
      * This flag is only relevant for certain shape types.
      */
     DirectionLune = 0x4,
 
-    /* \brief Use spherical coordinates to encode segment direction
+    /** \brief Use spherical coordinates to encode segment direction
      *
      * This flag is only relevant for certain shape types.
      */
     DirectionSphere = 0x8,
 
-    /* \brief Project to an edge using a heuristic probability
+    /** \brief Project to an edge using a heuristic probability
      *
      * This flag only applies to triangle meshes.
      *
      * By default a projection operation on a mesh triangle would uniformly pick
      * one of its three edges. This flag modifies that operation such that each
-     * edge is weighted according to the angle it forms between the two adjadent
+     * edge is weighted according to the angle it forms between the two adjacent
      * faces.
      */
     HeuristicWalk = 0x10,
@@ -72,7 +72,7 @@ enum class DiscontinuityFlags : uint32_t {
 };
 MI_DECLARE_ENUM_OPERATORS(DiscontinuityFlags)
 
-/// Forward declaration for `SilhouetteSample`
+// Forward declaration for SilhouetteSample3f
 template <typename Float, typename Spectrum> class Shape;
 
 /**
@@ -99,7 +99,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     //! @{ \name Fields
     // =============================================================
 
-    /// Type of discontinuity (\ref DiscontinuityFlags)
+    /// Type of discontinuity (`DiscontinuityFlags`)
     UInt32 discontinuity_type;
 
     /// Direction of the boundary segment sample
@@ -114,7 +114,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /// Index of the shape in the scene (if applicable)
     UInt32 scene_index;
 
-    /// The set of \c DiscontinuityFlags that were used to generate this sample
+    /// The set of `DiscontinuityFlags` that were used to generate this sample
     UInt32 flags;
 
     /**
@@ -137,13 +137,13 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     /**
      * \brief Local-form boundary foreshortening term.
      *
-     * It stores `sin_phi_B` for perimeter silhouettes or the normal curvature
+     * It stores ``sin_phi_B`` for perimeter silhouettes or the normal curvature
      * for interior silhouettes.
      */
     Float foreshortening;
 
     /**
-     * \brief Offset along the boundary segment direction (`d`) to avoid
+     * \brief Offset along the boundary segment direction (``d``) to avoid
      * self-intersections.
      */
     Float offset;
@@ -167,10 +167,10 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     }
 
     /**
-     * \brief Spawn a ray on the silhouette point in the direction of \ref d
+     * \brief Spawn a ray on the silhouette point in the direction of ``d``
      *
-     * The ray origin is offset in the direction of the segment (\ref d) as well
-     * as in the direction of the silhouette normal (\ref n). Without this
+     * The ray origin is offset in the direction of the segment (``d``) as well
+     * as in the direction of the silhouette normal (``n``). Without this
      * offsetting, during a ray intersection, the ray could potentially find
      * an intersection point at its origin due to numerical instabilities in
      * the intersection routines.
@@ -197,12 +197,14 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  * acceleration data structures.
  *
  * Two types of attributes can be associated with a shape:
- * 1. Texture attributes (\c Shape::add_texture_attribute), which must be
- *    a \c Texture instance but can have arbitrary resolution. The UV
+ *
+ * 1. Texture attributes (\ref Shape::add_texture_attribute), which must be
+ *    a `Texture` instance but can have arbitrary resolution. The UV
  *    parametrization of the shape is used to look up texture attribute values.
- * 2. Mesh attributes (\c Mesh::add_attribute), which can only be added
+ *
+ * 2. Mesh attributes (\ref Mesh::add_attribute), which can only be added
  *    to mesh-type Shapes. They must be either per-vertex or per-face attributes,
- *    their name must start with "vertex_" (resp. "face_"), and their size
+ *    their name must start with ``vertex_`` (resp. ``face_``), and their size
  *    must match the number of vertices (resp. faces) of the mesh.
  *
  * Once registered, attributes are queried with the \c Shape::eval_attribute*
@@ -241,7 +243,7 @@ public:
      *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>
      *
      * \return
-     *     A \ref PositionSample instance describing the generated sample
+     *     A `PositionSample3f` instance describing the generated sample
      */
     virtual PositionSample3f sample_position(Float time, const Point2f &sample,
                                              Mask active = true) const;
@@ -283,7 +285,7 @@ public:
      *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>
      *
      * \return
-     *     A \ref DirectionSample instance describing the generated sample
+     *     A `DirectionSample3f` instance describing the generated sample
      */
     virtual DirectionSample3f sample_direction(const Interaction3f &it, const Point2f &sample,
                                                Mask active = true) const;
@@ -332,7 +334,7 @@ public:
      *
      * \param flags
      *      Flags to select the type of silhouettes to sample
-     *      from (see \ref DiscontinuityFlags).
+     *      from (see `DiscontinuityFlags`).
      *      Only one type of discontinuity can be sampled per call.
      *
      * \return
@@ -365,15 +367,15 @@ public:
      *
      * This method is only useful when using automatic differentiation. The
      * immediate/primal return value of this method is exactly equal to
-     * \`si.p\`.
+     * ``si.p``.
      *
-     * The input `si` does not need to be explicitly detached, it is done by the
+     * The input ``si`` does not need to be explicitly detached, it is done by the
      * method itself.
      *
      * If the shape cannot be differentiated, this method will return the
      * detached input point.
      *
-     * note:: The returned attached point is exactly the same as a point which
+     * \note The returned attached point is exactly the same as a point which
      * is computed by calling \ref compute_surface_interaction with the
      * \ref RayFlags::FollowShape flag.
      *
@@ -381,8 +383,9 @@ public:
      *      The surface point for which the function will be evaluated.
      *
      *      Not all fields of the object need to be filled. Only the
-     *      `prim_index`, `p` and `uv` fields are required. Certain shapes will
-     *      only use a subset of these.
+     *      \ref SurfaceInteraction::prim_index, \ref Interaction::p and
+     *      \ref SurfaceInteraction::uv fields are required. Certain shapes
+     *      will only use a subset of these.
      *
      * \return
      *      The same surface point as the input but attached (AD) to the shape's
@@ -395,9 +398,9 @@ public:
      * \brief Projects a point on the surface of the shape to its silhouette
      * as seen from a specified viewpoint.
      *
-     * This method only projects the `si.p` point within its primitive.
+     * This method only projects the ``si.p`` point within its primitive.
      *
-     * Not all of the fields of the \ref SilhouetteSample3f might be filled by
+     * Not all of the fields of the `SilhouetteSample3f` might be filled by
      * this method. Each shape will at the very least fill its return value with
      * enough information for it to be used by \ref invert_silhouette_sample.
      *
@@ -417,7 +420,7 @@ public:
      *      The surface point which will be projected.
      *
      * \param flags
-     *      Flags to select the type of \ref SilhouetteSample3f to generate from
+     *      Flags to select the type of `SilhouetteSample3f` to generate from
      *      the projection. Only one type of discontinuity can be used per call.
      *
      * \param sample
@@ -463,7 +466,7 @@ public:
 
     /**
      * \brief Samples a boundary segment on the shape's silhouette using
-     * precomputed information computed in \ref precompute_silhouette.
+     * precomputed information computed in \ref Shape::precompute_silhouette.
      *
      * This method is meant to be used for silhouettes that are shared between
      * all threads, as is the case for primarily visible derivatives.
@@ -476,7 +479,7 @@ public:
      *      information
      *
      * \param sample1
-     *      A sampled index from the return values of \ref precompute_silhouette
+     *      A sampled index from the return values of \ref Shape::precompute_silhouette
      *
      * \param sample2
             A uniformly distributed sample in <tt>[0,1]</tt>
@@ -531,9 +534,6 @@ public:
      *
      * \param ray
      *     The ray to be tested for an intersection
-     *
-     * \param prim_index
-     *     Index of the primitive to be intersected
      */
     virtual Mask ray_test(const Ray3f &ray, ScalarIndex prim_index = 0, Mask active = true) const;
 
@@ -541,7 +541,7 @@ public:
      * \brief Compute and return detailed information related to a surface interaction
      *
      * The implementation should at most compute the fields \c p, \c uv, \c n,
-     * \c sh_frame.n, \c dp_du, \c dp_dv, \c dn_du and \c dn_dv. The \c flags
+     * \c sh_frame.n, \c dp_du, \c dp_dv, \c dn_du and \c dn_dv. The \c ray_flags
      * parameter specifies which of those fields should be computed.
      *
      * The fields \c t, \c time, \c wavelengths, \c shape, \c prim_index, \c instance,
@@ -550,7 +550,7 @@ public:
      * \c duv_dx, and \c duv_dy are left uninitialized.
      *
      * Every call must be followed by \ref
-     * SurfaceInteraction::finalize_surface_interaction(), which implementations
+     * <tt>SurfaceInteraction::finalize_surface_interaction()</tt>, which implementations
      * rely on: it is what invalidates \c t on the inactive lanes, so they need
      * not mask it themselves.
      *
@@ -560,9 +560,6 @@ public:
      *      Data structure carrying information about the ray intersection
      * \param ray_flags
      *      Flags specifying which information should be computed
-     * \param recursion_depth
-     *      Integer specifying the recursion depth for nested virtual function
-     *      call to this method (e.g. used for instancing).
      * \return
      *      A data structure containing the detailed information
      */
@@ -581,7 +578,7 @@ public:
      * \param ray
      *     The ray to be tested for an intersection
      *
-     * \param flags
+     * \param ray_flags
      *     Describe how the detailed information should be computed
      */
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
@@ -661,7 +658,7 @@ public:
      *
      * This is extremely important to construct high-quality kd-trees. The
      * default implementation just takes the bounding box returned by
-     * \ref bbox(ScalarIndex index) and clips it to \a clip.
+     * \ref Shape::bbox and clips it to \c clip.
      */
     virtual ScalarBoundingBox3f bbox(ScalarIndex index,
                                      const ScalarBoundingBox3f &clip) const;
@@ -681,13 +678,13 @@ public:
      *
      * If an attribute with the same name already exists, it is replaced.
      *
-     * Note that \c Mesh shapes can additionally handle per-vertex
+     * Note that `Mesh` shapes can additionally handle per-vertex
      * and per-face attributes via the \c Mesh::add_attribute method.
      *
      * \param name
      *     Name of the attribute
      * \param texture
-     *     Texture to store. The dimensionality of the attribute
+     *     `Texture` to store. The dimensionality of the attribute
      *     is simply the channel count of the texture.
      */
     virtual void add_texture_attribute(std::string_view name, Texture *texture);
@@ -699,7 +696,7 @@ public:
     const Texture *texture_attribute(std::string_view name) const;
 
     /**
-     * \brief Remove a texture texture with the given \c name.
+     * \brief Remove a texture attribute with the given \c name.
      *
      * Throws an exception if the attribute was not registered.
      */
@@ -740,7 +737,7 @@ public:
     /**
      * \brief Monochromatic evaluation of a shape attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling).
      *
@@ -751,7 +748,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An scalar intensity or reflectance value
+     *     A scalar intensity or reflectance value
      */
     virtual Float eval_attribute_1(std::string_view name,
                                    const SurfaceInteraction3f &si,
@@ -760,7 +757,7 @@ public:
     /**
      * \brief Trichromatic evaluation of a shape attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from \ref eval_attribute() in that it provides raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling).
      *
@@ -822,7 +819,7 @@ public:
         return (st & ShapeType::Ellipsoids) | (st & ShapeType::EllipsoidsMesh);
     }
 
-    /// Returns the shape type \ref ShapeType of this shape
+    /// Returns the shape type `ShapeType` of this shape
     uint32_t shape_type() const { return (uint32_t) m_shape_type; }
 
     /// Is this shape a shape group?
@@ -841,13 +838,13 @@ public:
     /// Return the medium that lies on the exterior of this shape
     const Medium *exterior_medium(Mask /*unused*/ = true) const { return m_exterior_medium.get(); }
 
-    /// Return the shape's BSDF
+    /// Return the shape's `BSDF`
     const BSDF *bsdf(Mask /*unused*/ = true) const { return m_bsdf.get(); }
 
-    /// Return the shape's BSDF
+    /// Return the shape's `BSDF`
     BSDF *bsdf(Mask /*unused*/ = true) { return m_bsdf.get(); }
 
-    /// Set the shape's BSDF
+    /// Set the shape's `BSDF`
     virtual void set_bsdf(BSDF *bsdf);
 
     /// Is this shape also an area emitter?
@@ -929,7 +926,7 @@ public:
     // Mark that shape as an instance
     void mark_as_instance() { m_is_instance = true; }
 
-    /// The \c Scene and \c ShapeGroup class needs access to \c Shape::m_dirty
+    /// The `Scene` and \c ShapeGroup class needs access to \c Shape::m_dirty
     friend class Scene<Float, Spectrum>;
     friend class ShapeGroup<Float, Spectrum>;
 

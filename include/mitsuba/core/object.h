@@ -25,7 +25,7 @@ template <typename T> using ref = nanobind::ref<T>;
  * its usage in macros that appear before the full definition.
  */
 enum class ObjectType : uint32_t {
-    /// The default returned by Object subclasses
+    /// The default returned by `Object` subclasses
     Unknown,
 
     /// The top-level scene object. No subclasses exist
@@ -34,16 +34,16 @@ enum class ObjectType : uint32_t {
     /// A filter used to reconstruct/resample images
     ReconstructionFilter,
 
-    /// Carries out radiance measurements, subclasses \ref Sensor
+    /// Carries out radiance measurements, subclasses `Sensor`
     Sensor,
 
     /// Storage representation of the sensor
     Film,
 
-    /// Emits radiance, subclasses \ref Emitter
+    /// Emits radiance, subclasses `Emitter`
     Emitter,
 
-    /// Generates sample positions and directions, subclasses \ref Sampler
+    /// Generates sample positions and directions, subclasses `Sampler`
     Sampler,
 
     /// Denotes an arbitrary shape (including meshes)
@@ -64,7 +64,7 @@ enum class ObjectType : uint32_t {
     /// A phase function characterizing scattering in volumes
     PhaseFunction,
 
-    /// A rendering algorithm aka. Integrator
+    /// A rendering algorithm aka. `Integrator`
     Integrator
 };
 
@@ -117,7 +117,7 @@ public:
      *
      * \remark The default implementation does nothing.
      *
-     * \sa TraversalCallback
+     * \sa `TraversalCallback`
      */
     virtual void traverse(TraversalCallback *cb);
 
@@ -138,7 +138,7 @@ public:
      *
      * \remark The default implementation does nothing.
      *
-     * \sa TraversalCallback
+     * \sa `TraversalCallback`
      */
     virtual void parameters_changed(const std::vector<std::string> &/*keys*/ = {});
 
@@ -178,12 +178,12 @@ public:
 /**
  * \brief Runtime type information macro for Mitsuba classes
  *
- * This macro associates class name string with Object subclasses. This enables
+ * This macro associates class name string with `Object` subclasses. This enables
  * runtime identification and more helpful log messages.
  *
  * The macro generates:
- * - A static constexpr string `ClassName` providing the stringified class name
- * - An override of the virtual `class_name()` method from the Object base class
+ * - A static constexpr string ``ClassName`` providing the stringified class name
+ * - An override of the virtual \ref class_name() method from the `Object` base class
  *
  * Example:
  * \code
@@ -200,22 +200,22 @@ public:
 /**
  * \brief Macro for declaring plugin base classes with variant support
  *
- * This macro extends MI_DECLARE_CLASS() to provide additional metadata required
- * for Mitsuba's plugin base classes like (e.g., BSDF, Shape, Texture,
- * Integrator).
+ * This macro extends ``MI_DECLARE_CLASS()`` to provide additional metadata required
+ * for Mitsuba's plugin base classes like (e.g., `BSDF`, `Shape`, `Texture`,
+ * `Integrator`).
  *
  * The macro additionally generates:
  *
  * 1. A static constexpr string ``Variant`` identifying the variant name
  *    (e.g., ``scalar_rgb``, ``cuda_ad_rgb``).
  *
- * 2. A static constexpr string `Domain` identifying the plugin category.
+ * 2. A static constexpr string ``Domain`` identifying the plugin category.
  *
  * 3. A static constexpr ``Type`` member that provides the same information
- *    as an ObjectType enumeration value.
+ *    as an `ObjectType` enumeration value.
  *
- * 4. Overrides of the virtual `variant_name()` and ``type()`` method from the
- * Object base class.
+ * 4. Overrides of the virtual \ref variant_name() and ``type()`` method from the
+ * `Object` base class.
  */
 #define MI_DECLARE_PLUGIN_BASE_CLASS(Name)                                     \
     MI_DECLARE_CLASS(Name)                                                     \
@@ -240,7 +240,7 @@ namespace detail {
 /// Global to indicate that we are not currently in a class (used by the Logger)
 static constexpr const char *ClassName = nullptr;
 
-/// Turn an ObjectType enumeration value into string form
+/// Turn an `ObjectType` enumeration value into string form
 inline constexpr const char* object_type_name(ObjectType ot) {
     switch (ot) {
         case ObjectType::Scene: return "Scene";
@@ -270,12 +270,12 @@ inline constexpr const char* object_type_name(ObjectType ot) {
  * Template Pattern (CRTP) to access static members of the derived class.
  *
  * The derived class must provide:
- * - `static constexpr const char *Variant`: variant name string
- * - `static constexpr ObjectType Type`: object type enumeration value
- * - `static constexpr const char *Domain`: string that represents the plugin category
- * - `using UInt32 = ...`: type that indicates whether this is a JIT variant
+ * - ``static constexpr const char *Variant``: variant name string
+ * - ``static constexpr ObjectType Type``: object type enumeration value
+ * - ``static constexpr const char *Domain``: string that represents the plugin category
+ * - ``using UInt32 = ...``: type that indicates whether this is a JIT variant
  *
- * The `MI_DECLARE_PLUGIN_BASE_CLASS()` macro ensures that these attributes are present.
+ * The ``MI_DECLARE_PLUGIN_BASE_CLASS()`` macro ensures that these attributes are present.
  */
 template <typename Derived>
 class JitObject : public Object {
@@ -325,7 +325,7 @@ private:
 //                 Type declarations and macros for plugins
 // -----------------------------------------------------------------------------
 
-/// Represents a function that instantiate a plugin from a \ref Properties object
+/// Represents a function that instantiate a plugin from a `Properties` object
 using PluginInstantiateFn = ref<Object> (*)(void *payload, const Properties &);
 
 /// Represents a function that releases the resources of a plugin. It should only
@@ -390,11 +390,12 @@ MI_DECLARE_ENUM_OPERATORS(ParamFlags)
  *    discover all differentiable parameters in a scene (e.g., material
  *    properties, transformation matrices, emission values). These parameters
  *    can then be exposed to gradient-based optimizers for inverse rendering
- *    tasks, which in practice involves the ``SceneParameters`` Python class.
+ *    tasks, which in practice involves the \ref SceneParameters Python class.
  *
  * The callback receives information about each traversed object's parameters
- * through the \ref put() methods, which distinguish between regular parameters
- * and references to other scene objects that are handled recursively.
+ * through the \ref TraversalCallback::put() methods, which distinguish
+ * between regular parameters and references to other scene objects that are
+ * handled recursively.
  */
 class TraversalCallback {
 public:
@@ -414,7 +415,8 @@ public:
         put_value(name, &value, flags_val, typeid(T));
     }
 
-    /// Forward declaration for field<...> values that simultaneously store host+device values
+    // Forward declaration for field<...> values that simultaneously store
+    // host+device values
     template <typename DeviceType, typename HostType, typename SFINAE, typename Flags>
     void put(std::string_view name, field<DeviceType, HostType, SFINAE> &value, Flags flags);
 
@@ -427,7 +429,7 @@ protected:
                            uint32_t flags,
                            const std::type_info &type) = 0;
 
-    /// Actual implementation for Object references [To be provided by subclass]
+    /// Actual implementation for `Object` references [To be provided by subclass]
     virtual void put_object(std::string_view name,
                             Object *value,
                             uint32_t flags) = 0;

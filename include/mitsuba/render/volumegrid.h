@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Class to read and write 3D volume grids
  *
  * This class handles loading of volumes in the Mitsuba volume file format
- * Please see the documentation of gridvolume (grid3d.cpp) for the file format
+ * Please see the documentation of gridvolume (``grid3d.cpp``) for the file format
  * specification.
  */
 template <typename Float, typename Spectrum>
@@ -82,14 +82,14 @@ public:
             m_max_per_channel[i] = max[i];
     }
 
-    /// Return the number bytes of storage used per voxel
+    /// Return the number of bytes of storage used per voxel
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
 
     /// Return the volume grid size in bytes (excluding metadata)
     size_t buffer_size() const { return dr::prod(m_size) * bytes_per_voxel(); }
 
     /**
-     * Write an encoded form of the bitmap to a binary volume file
+     * Write an encoded form of the volume grid to a binary volume file
      *
      * \param path
      *    Target file name (expected to end in ".vol")

@@ -189,18 +189,18 @@ public:
      *
      * The default implementation throws an exception.
      *
-     * \param ref
+     * \param it
      *    A reference position somewhere within the scene.
      *
      * \param sample
      *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>.
      *
      * \return
-     *     A \ref DirectionSample instance describing the generated sample
+     *     A `DirectionSample3f` instance describing the generated sample
      *     along with a spectral importance weight.
      */
     virtual std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &ref,
+    sample_direction(const Interaction3f &it,
                      const Point2f &sample,
                      Mask active = true) const;
 
@@ -212,22 +212,26 @@ public:
      * emission/sensitivity profile contains a Dirac delta term (e.g. point or
      * directional emitters/sensors).
      *
+     * \param it
+     *    A 3D reference location within the scene, which may influence the
+     *    sampling process.
+     *
      * \param ds
      *    A direct sampling record, which specifies the query
      *    location.
      */
-    virtual Float pdf_direction(const Interaction3f &ref,
+    virtual Float pdf_direction(const Interaction3f &it,
                                 const DirectionSample3f &ds,
                                 Mask active = true) const;
 
     /**
-     * \brief Re-evaluate the incident direct radiance/importance of the \ref
-     * sample_direction() method.
+     * \brief Re-evaluate the incident direct radiance/importance of the
+     * \ref sample_direction() method.
      *
      * This function re-evaluates the incident direct radiance or importance
      * and sample probability due to the endpoint so that division by
-     * <tt>ds.pdf</tt> equals the sampling weight returned by \ref
-     * sample_direction(). This may appear redundant, and indeed such a
+     * <tt>ds.pdf</tt> equals the sampling weight returned by
+     * \ref sample_direction(). This may appear redundant, and indeed such a
      * function would not find use in "normal" rendering algorithms.
      *
      * However, the ability to re-evaluate the contribution of a generated
@@ -239,7 +243,7 @@ public:
      * a nonzero result in the case of emission profiles containing a Dirac
      * delta term (e.g. point or directional lights).
      *
-     * \param ref
+     * \param it
      *    A 3D reference location within the scene, which may influence the
      *    sampling process.
      *
@@ -250,7 +254,7 @@ public:
      *    The incident direct radiance/importance associated with the sample.
      */
     virtual Spectrum
-    eval_direction(const Interaction3f &ref,
+    eval_direction(const Interaction3f &it,
                    const DirectionSample3f &ds,
                    Mask active = true) const;
 
@@ -271,7 +275,7 @@ public:
      *     A uniformly distributed 2D point on the domain <tt>[0,1]^2</tt>.
      *
      * \return
-     *     A \ref PositionSample instance describing the generated sample
+     *     A `PositionSample3f` instance describing the generated sample
      *     along with an importance weight.
      */
     virtual std::pair<PositionSample3f, Float>
@@ -342,16 +346,16 @@ public:
     //! @{ \name Miscellaneous
     // =============================================================
 
-    /// Return the shape to which the emitter is currently attached
+    /// Return the `Shape` to which the emitter is currently attached
     Shape *shape() { return m_shape; }
 
-    /// Return the shape to which the emitter is currently attached (const version)
+    /// Return the `Shape` to which the emitter is currently attached (const version)
     const Shape *shape() const { return m_shape; }
 
-    /// Return a pointer to the medium that surrounds the emitter
+    /// Return a pointer to the `Medium` that surrounds the emitter
     Medium *medium() { return m_medium; }
 
-    /// Return a pointer to the medium that surrounds the emitter (const version)
+    /// Return a pointer to the `Medium` that surrounds the emitter (const version)
     const Medium *medium() const { return m_medium.get(); }
 
     /**
@@ -371,7 +375,7 @@ public:
      *
      * Various emitters that surround the scene (e.g. environment emitters)
      * must be informed about the scene dimensions to operate correctly.
-     * This function is invoked by the \ref Scene constructor.
+     * This function is invoked by the `Scene` constructor.
      */
     virtual void set_scene(const Scene *scene);
 

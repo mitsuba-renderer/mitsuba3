@@ -2,7 +2,7 @@ import drjit as dr
 
 def chi2(obs, exp, pool_threshold):
     '''
-    Pure-Python/numpy port of ``mitsuba::math::chi2()`` for backends that lack
+    Pure-Python/numpy port of `mitsuba.math.chi2` for backends that lack
     float64 (e.g. Metal). Cells with expected frequency below ``pool_threshold``
     are pooled into larger groups before contributing to the statistic.
 

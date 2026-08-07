@@ -40,9 +40,10 @@ MI_PY_EXPORT(sample_tea) {
 
     m.def("permute",
           permute<UInt32>,
-          "value"_a, "size"_a, "seed"_a, "rounds"_a = 4, D(permute));
+          "index"_a, "size"_a, "seed"_a, "rounds"_a = 4, D(permute));
 
     m.def("permute_kensler",
           permute_kensler<UInt32>,
-          "i"_a, "l"_a, "p"_a, "active"_a = true, D(permute_kensler));
+          "index"_a, "sample_count"_a, "seed"_a, "active"_a = true,
+          D(permute_kensler));
 }

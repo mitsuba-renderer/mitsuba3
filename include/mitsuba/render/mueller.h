@@ -132,7 +132,7 @@ MuellerMatrix<Float> left_circular_polarizer() {
 /**
 * \brief Constructs the Mueller matrix of a linear diattenuator, which
 * attenuates the electric field components at 0 and 90 degrees by
-* 'x' and 'y', * respectively.
+* ``x`` and ``y``, respectively.
 */
 template <typename Float>
 MuellerMatrix<Float> diattenuator(Float x, Float y) {
@@ -150,7 +150,7 @@ MuellerMatrix<Float> diattenuator(Float x, Float y) {
 
 /**
   * \brief Constructs the Mueller matrix of an ideal rotator, which performs a
-  * counter-clockwise rotation of the electric field by 'theta' radians (when
+  * counter-clockwise rotation of the electric field by ``theta`` radians (when
   * facing the light beam from the sensor side).
   *
   * To be more precise, it rotates the reference frame of the current Stokes
@@ -191,7 +191,7 @@ MuellerMatrix<Float> rotated_element(Float theta,
  *
  * \param eta
  *      Complex-valued relative refractive index of the interface. In the real
- *      case, a value greater than 1.0 case means that the surface normal
+ *      case, a value greater than 1.0 means that the surface normal
  *      points into the region of lower density.
  */
 template <typename Float, typename Eta>
@@ -278,7 +278,7 @@ MuellerMatrix<Float> specular_transmission(Float cos_theta_i, Float eta) {
  *
  * \return
  *      The (implicitly defined) reference coordinate system basis for the
- *      Stokes vector traveling along \ref forward.
+ *      Stokes vector traveling along \c forward.
  *
  */
 template <typename Vector3>
@@ -290,9 +290,9 @@ Vector3 stokes_basis(const Vector3 &forward) {
  * \brief Gives the Mueller matrix that aligns the reference frames (defined by
  * their respective basis vectors) of two collinear stokes vectors.
  *
- * If we have a stokes vector s_current expressed in 'basis_current', we can
- * re-interpret it as a stokes vector rotate_stokes_basis(..) * s1 that is
- * expressed in 'basis_target' instead.
+ * If we have a stokes vector s_current expressed in ``basis_current``, we can
+ * re-interpret it as a stokes vector ``rotate_stokes_basis(..) * s1`` that is
+ * expressed in ``basis_target`` instead.
  * For example: Horizontally polarized light [1,1,0,0] in a basis [1,0,0] can be
  * interpreted as +45˚ linear polarized light [1,0,1,0] by switching to a target
  * basis [0.707, -0.707, 0].
@@ -327,9 +327,9 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  * This version rotates the input/output frames independently.
  *
  * This operation is often used in polarized light transport when we have a
- * known Mueller matrix 'M' that operates from 'in_basis_current' to
- * 'out_basis_current' but instead want to re-express it as a Mueller matrix
- * that operates from 'in_basis_target' to 'out_basis_target'.
+ * known Mueller matrix ``M`` that operates from ``in_basis_current`` to
+ * ``out_basis_current`` but instead want to re-express it as a Mueller matrix
+ * that operates from ``in_basis_target`` to ``out_basis_target``.
  *
  * \param M
  *      The current Mueller matrix that operates from \c in_basis_current to \c out_basis_current.
@@ -344,7 +344,7 @@ MuellerMatrix rotate_stokes_basis(const Vector3 &forward,
  *      Target (normalized) input Stokes basis. Must be orthogonal to \c in_forward.
  *
  * \param out_forward
- *      Direction of travel for input Stokes vector (normalized)
+ *      Direction of travel for output Stokes vector (normalized)
  *
  * \param out_basis_current
  *      Current (normalized) output Stokes basis. Must be orthogonal to \c out_forward.
@@ -375,9 +375,9 @@ MuellerMatrix rotate_mueller_basis(const MuellerMatrix &M,
  * This version applies the same rotation to the input/output frames.
  *
  * This operation is often used in polarized light transport when we have a
- * known Mueller matrix 'M' that operates from 'basis_current' to
- * 'basis_current' but instead want to re-express it as a Mueller matrix that
- * operates from 'basis_target' to 'basis_target'.
+ * known Mueller matrix ``M`` that operates from ``basis_current`` to
+ * ``basis_current`` but instead want to re-express it as a Mueller matrix that
+ * operates from ``basis_target`` to ``basis_target``.
  *
  * \param M
  *      The current Mueller matrix that operates from \c basis_current to \c basis_current.

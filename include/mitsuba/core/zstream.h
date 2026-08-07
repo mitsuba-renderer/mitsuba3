@@ -24,8 +24,8 @@ class MI_EXPORT_LIB ZStream : public Stream {
 public:
 
     enum EStreamType {
-        EDeflateStream, /// A raw deflate stream
-        EGZipStream /// A gzip-compatible stream
+        EDeflateStream, ///< A raw deflate stream
+        EGZipStream ///< A gzip-compatible stream
     };
 
     using Stream::read;
@@ -94,7 +94,7 @@ public:
         Throw("seek(): unsupported in a ZLIB stream!");
     }
 
-    //// Unsupported. Always throws.
+    /// Unsupported. Always throws.
     void truncate(size_t) override {
         Throw("truncate(): unsupported in a ZLIB stream!");
     }

@@ -17,7 +17,7 @@ class PRBVolpathIntegrator(RBIntegrator):
     .. _integrator-prbvolpath:
 
     Path Replay Backpropagation Volumetric Integrator (:monosp:`prbvolpath`)
-    -------------------------------------------------------------------------
+    ------------------------------------------------------------------------
 
     .. pluginparameters::
 

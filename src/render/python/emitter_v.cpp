@@ -22,22 +22,22 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &ref,
+    sample_direction(const Interaction3f &it,
                      const Point2f &sample,
                      Mask active) const override {
-        NB_OVERRIDE_PURE(sample_direction, ref, sample, active);
+        NB_OVERRIDE_PURE(sample_direction, it, sample, active);
     }
 
-    Float pdf_direction(const Interaction3f &ref,
+    Float pdf_direction(const Interaction3f &it,
                         const DirectionSample3f &ds,
                         Mask active) const override {
-        NB_OVERRIDE_PURE(pdf_direction, ref, ds, active);
+        NB_OVERRIDE_PURE(pdf_direction, it, ds, active);
     }
 
-    Spectrum eval_direction(const Interaction3f &ref,
+    Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active)  const override {
-        NB_OVERRIDE_PURE(eval_direction, ref, ds, active);
+        NB_OVERRIDE_PURE(eval_direction, it, ds, active);
     }
 
     std::pair<PositionSample3f, Float>

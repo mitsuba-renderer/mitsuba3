@@ -10,7 +10,7 @@ class BasicPRBIntegrator(RBIntegrator):
     .. _integrator-prb_basic:
 
     Basic Path Replay Backpropagation (:monosp:`prb_basic`)
-    ---------------------------------------------------------
+    -------------------------------------------------------
 
     .. pluginparameters::
 
@@ -63,7 +63,7 @@ class BasicPRBIntegrator(RBIntegrator):
                **kwargs # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
         """
-        See ``ADIntegrator.sample()`` for a description of this interface and
+        See `ADIntegrator.sample` for a description of this interface and
         the role of the various parameters and return values.
         """
 

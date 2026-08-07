@@ -61,7 +61,7 @@ public:
      * \param develop
      *     If set to \c true, the implementation post-processes the data stored
      *     in <tt>sensor->film()</tt>, returning the resulting image as a
-     *     \ref TensorXf. Otherwise, it returns an empty tensor.
+     *     `TensorXf`. Otherwise, it returns an empty tensor.
      *
      * \param evaluate
      *     This parameter is only relevant for JIT variants of Mitsuba (LLVM,
@@ -107,10 +107,10 @@ public:
      * variance or visualize the region of influence of a scene parameter. It is
      * not particularly useful for simultaneous optimization of many parameters,
      * since multiple differentiation passes are needed to obtain separate
-     * derivatives for each scene parameter. See ``Integrator.render_backward()``
+     * derivatives for each scene parameter. See \ref render_backward()
      * for an efficient way of obtaining all parameter derivatives at once, or
      * simply use the ``mi.render()`` abstraction that hides both
-     * ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+     * \ref render_forward() and \ref render_backward() behind
      * a unified interface.
      *
      * Before calling this function, you must first enable gradient tracking and
@@ -140,7 +140,7 @@ public:
      *    also be a Python list/dict/object tree (DrJit will traverse it to find
      *    all parameters). Gradient tracking must be explicitly enabled for each of
      *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-     *    ``render_forward()`` will not do this for you). Furthermore,
+     *    \ref render_forward() will not do this for you). Furthermore,
      *    ``dr.set_grad(...)`` must be used to associate specific gradient values
      *    with each parameter.
      *
@@ -155,12 +155,12 @@ public:
      *    increasing sequence) if subsequent calls should produce statistically
      *    independent images (e.g. to de-correlate gradient-based optimization
      *    steps).
-
-    \param ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        differential rendering step. The value provided within the original
-        scene specification takes precedence if ``spp=0``.
-    */
+     *
+     * \param spp
+     *    Optional parameter to override the number of samples per pixel for the
+     *    differential rendering step. The value provided within the original
+     *    scene specification takes precedence if ``spp=0``.
+     */
     virtual TensorXf render_forward(Scene* scene,
                                     void* params,
                                     Sensor *sensor,
@@ -206,7 +206,7 @@ public:
      * typically done by invoking ``dr.enable_grad()`` on elements of the
      * ``SceneParameters`` data structure that can be obtained via a call
      * to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
-     * these parameters once ``render_backward()`` returns.
+     * these parameters once \ref render_backward() returns.
      *
      * Note the default implementation of this functionality relies on naive
      * automatic differentiation (AD), which records a computation graph of the
@@ -228,7 +228,7 @@ public:
      *    also be a Python list/dict/object tree (DrJit will traverse it to find
      *    all parameters). Gradient tracking must be explicitly enabled for each of
      *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-     *    ``render_backward()`` will not do this for you).
+     *    \ref render_backward() will not do this for you).
      *
      * \param grad_in
      *    Gradient image that should be back-propagated.
@@ -313,7 +313,7 @@ public:
      * \brief Traces a ray in the scene and returns the first intersection that
      * is not an area emitter.
      *
-     * This is a helper method for when the `hide_emitters` flag is set.
+     * This is a helper method for when the ``hide_emitters`` flag is set.
      *
      * \param scene
      *    The scene that the ray will intersect.
@@ -334,7 +334,7 @@ public:
      *    ``hide_emitters``). (Default: True)
      *
      * \return
-     *    The first intersection that is not an area emitter anlong the ``ray``.
+     *    The first intersection that is not an area emitter along the ``ray``.
      */
     PreliminaryIntersection3f skip_area_emitters(const Scene *scene,
                                                  const Ray3f &ray,
@@ -348,7 +348,7 @@ protected:
     Integrator(const Properties & props);
 
 protected:
-    /// Integrators should stop all work when this flag is set to true.
+    /// Integrators should stop all work when this flag is set to ``True``.
     bool m_stop;
 
     /**
@@ -406,28 +406,19 @@ public:
      *    If the ray is inside a medium, this parameter holds a pointer to that
      *    medium
      *
-     * \param aov
-     *    Integrators may return one or more arbitrary output variables (AOVs)
-     *    via this parameter. If \c nullptr is provided to this argument, no
-     *    AOVs should be returned. Otherwise, the caller guarantees that space
-     *    for at least <tt>aov_names().size()</tt> entries has been allocated.
-     *
      * \param active
      *    A mask that indicates which SIMD lanes are active
      *
      * \return
-     *    A pair containing a spectrum and a mask specifying whether a surface
-     *    or medium interaction was sampled. False mask entries indicate that
-     *    the ray "escaped" the scene, in which case the returned spectrum
-     *    contains the contribution of environment maps, if present. The mask
-     *    can be used to estimate a suitable alpha channel of a rendered image.
-     *
-     * \remark
-     *    In the Python bindings, this function returns the \c aov output
-     *    argument as an additional return value. In other words:
-     *    <pre>
-     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
-     *    </pre>
+     *    A tuple <tt>(spec, mask, aovs)</tt> where \c spec and \c mask specify the
+     *    sampled spectrum and whether a surface or medium interaction was
+     *    sampled. False mask entries indicate that the ray "escaped" the
+     *    scene, in which case the returned spectrum contains the
+     *    contribution of environment maps, if present. The mask can be used
+     *    to estimate a suitable alpha channel of a rendered image. \c aovs
+     *    is a list of one or more arbitrary output variables (AOVs)
+     *    returned by the integrator, with as many entries as
+     *    <tt>aov_names()</tt>.
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
@@ -492,7 +483,7 @@ protected:
 /** \brief Abstract integrator that performs *recursive* Monte Carlo sampling
  * starting from the sensor
  *
- * This class is almost identical to \ref SamplingIntegrator. It stores two
+ * This class is almost identical to `SamplingIntegrator`. It stores two
  * additional fields that are helpful for recursive Monte Carlo techniques:
  * the maximum path depth, and the depth at which the Russian Roulette path
  * termination technique should start to become active.

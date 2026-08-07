@@ -495,15 +495,11 @@ std::pair<wavelength_t<Spectrum>, Spectrum> sample_wavelength(Float sample) {
  * wavelength in nanometers and the measured value separated by a space.
  * Comments are allowed.
  *
- * \param path
+ * \param filename
  *     Path of the file to be read
- * \param wavelengths
- *     Array that will be loaded with the wavelengths stored in the file
- * \param values
- *     Array that will be loaded with the values stored in the file
  */
 template <typename Scalar>
-MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+MI_EXPORT_LIB void spectrum_from_file(const fs::path &filename,
                                       std::vector<Scalar> &wavelengths,
                                       std::vector<Scalar> &values);
 
@@ -512,7 +508,7 @@ MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
  *
  * The format is identical to that parsed by \ref spectrum_from_file().
  *
- * \param path
+ * \param filename
  *     Path to the file to be written to
  * \param wavelengths
  *     Array with the wavelengths to be stored in the file
@@ -520,7 +516,7 @@ MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
  *     Array with the values to be stored in the file
  */
 template <typename Scalar>
-MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+MI_EXPORT_LIB void spectrum_to_file(const fs::path &filename,
                                     const std::vector<Scalar> &wavelengths,
                                     const std::vector<Scalar> &values);
 

@@ -37,7 +37,7 @@ constexpr uint32_t FaceUVFlipped = 0x80000000u;
 /// Bit mask used to encode the BSDF index
 constexpr uint32_t FaceBSDFIndexMask = 0x7fffffffu;
 
-/// Content of the packed records of a \ref Mesh
+/// Content of the packed records of a `Mesh`
 enum class Layout : uint32_t {
     Positions = 0x0,  ///< Every vertex record carries positions
     Normals   = 0x1,  ///< Shading normals
@@ -154,7 +154,7 @@ frame_decode(const Vector<Value, 3> &p) {
 
 /**
  * \brief Helper data structure to efficiently construct and upload
- * the internal \ref Mesh data structure.
+ * the internal `Mesh` data structure.
  *
  * Loaders fill this structure on the host and pass it to
  * \ref Mesh::from_packed(PackedMesh &&), which uploads or adopts each
@@ -166,7 +166,7 @@ frame_decode(const Vector<Value, 3> &p) {
  * copy per buffer, or an in-place adoption on CPU backends.
  *
  * When ``position_count`` / ``normal_count`` are nonzero, they indicate the
- * size of the ``*_index`` maps (see \ref Mesh for details).
+ * size of the ``*_index`` maps (see `Mesh` for details).
  */
 struct MI_EXPORT_LIB PackedMesh {
     using ScalarPoint3f  = Point<float, 3>;
@@ -198,7 +198,7 @@ struct MI_EXPORT_LIB PackedMesh {
     /**
      * \brief Bake a placement and orientation into the mesh
      *
-     * Call this method to to apply a to-world transformation to any mesh data
+     * Call this method to apply a to-world transformation to any mesh data
      * that is subsequently filled via \ref set_face() and \ref set_vertex().
      * Mirroring transformations and \c flip_normals may also reverse the
      * winding order.
@@ -241,7 +241,7 @@ struct MI_EXPORT_LIB PackedMesh {
     /// Content of the vertex records
     Layout layout = Layout::Positions;
 
-    // Sizes of the vertex/face/position/normal arrays
+    /// Sizes of the vertex/face/position/normal arrays
     size_t vertex_count = 0, face_count = 0;
     size_t position_count = 0, normal_count = 0;
 
@@ -299,7 +299,7 @@ struct CornerAttribute {
  * indirection of \ref corner_index.
  *
  * \ref corner_to_packed_mesh() turns this description into the split-vertex
- * representation used by \ref Mesh.
+ * representation used by `Mesh`.
  */
 struct CornerMesh {
     /// Number of source vertices
@@ -355,14 +355,14 @@ struct CornerMesh {
 
 /**
  * \brief Convert a corner-indexed mesh description into a packed mesh
- * compatible with the internal representation of \ref Mesh
+ * compatible with the internal representation of `Mesh`
  *
  * This function triangulates polygonal faces and then welds the corners of
  * each source vertex: corners that agree on all per-corner data collapse
  * into a single vertex, while differing ones yield separate copies. The
  * generated ``position_index`` and ``normal_index`` maps record which of
  * these copies still share a position or a normal, so that seams do not
- * turn into geometric cuts (see the \ref Mesh documentation). Corners also
+ * turn into geometric cuts (see the `Mesh` documentation). Corners also
  * split when their triangles disagree on the orientation of the texture
  * parameterization, since such triangles cannot share a tangent frame.
  *
@@ -382,8 +382,8 @@ corner_to_packed_mesh(JitBackend backend, const CornerMesh &desc,
                       const PackedMesh::ScalarAffineTransform4f &to_world = {});
 
 /// Magic number and current version of the ``.serialized`` mesh encoding,
-/// whose reader and writer are \c SerializedMesh::load_v5() and \ref
-/// Mesh::write_serialized(Stream*). Keep the two in step.
+/// whose reader and writer are \c SerializedMesh::load_v5() and
+/// \c Mesh::write_serialized(Stream*). Keep the two in step.
 constexpr uint16_t SerializedMagic   = 0x041C;
 constexpr uint16_t SerializedVersion = 0x0005;
 

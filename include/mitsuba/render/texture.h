@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
  * unitless reflectance parameters (e.g. an albedo of a reflectance model).
  *
  * The spectrum can be evaluated at arbitrary (continuous) wavelengths, though
- * the underlying function it is not required to be smooth or even continuous.
+ * the underlying function is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Texture : public JitObject<Texture<Float, Spectrum>> {
@@ -89,8 +89,8 @@ public:
      * This function assumes that the texture is implemented as a mapping from
      * 2D UV positions to texture values, which is not necessarily true for all
      * textures (e.g. 3D noise functions, mesh attributes, etc.). For this
-     * reason, not every will plugin provide a specialized implementation, and
-     * the default implementation simply return the input sample (i.e. uniform
+     * reason, not every plugin will provide a specialized implementation, and
+     * the default implementation simply returns the input sample (i.e. uniform
      * sampling is used).
      *
      * \param sample
@@ -118,7 +118,7 @@ public:
      * \brief Monochromatic evaluation of the texture at the given surface
      * interaction
      *
-     * This function differs from \ref eval() in that it provided raw access to
+     * This function differs from \ref eval() in that it provides raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling). This is useful in parts of the renderer that
      * encode scalar quantities using textures, e.g. a height field.
@@ -127,7 +127,7 @@ public:
      *     An interaction record describing the associated surface position
      *
      * \return
-     *     An scalar intensity or reflectance value
+     *     A scalar intensity or reflectance value
      */
     virtual Float eval_1(const SurfaceInteraction3f &si,
                          Mask active = true) const;
@@ -149,7 +149,7 @@ public:
      * \brief Trichromatic evaluation of the texture at the given surface
      * interaction
      *
-     * This function differs from \ref eval() in that it provided raw access to
+     * This function differs from \ref eval() in that it provides raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling). This is useful in parts of the
      * renderer that encode 3D quantities using textures, e.g. a normal map.
@@ -158,14 +158,14 @@ public:
      *     An interaction record describing the associated surface position
      *
      * \return
-     *     An trichromatic intensity or reflectance value
+     *     A trichromatic intensity or reflectance value
      */
     virtual Color3f eval_3(const SurfaceInteraction3f &si,
                            Mask active = true) const;
 
     /**
      * Return the mean value of the spectrum over the support
-     * (MI_WAVELENGTH_MIN..MI_WAVELENGTH_MAX)
+     * (``MI_WAVELENGTH_MIN``..``MI_WAVELENGTH_MAX``)
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.

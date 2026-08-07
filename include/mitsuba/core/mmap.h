@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Basic cross-platform abstraction for memory mapped files
  *
  * \remark The Python API has one additional constructor
- * <tt>MemoryMappedFile(filename, array)<tt>, which creates a new
+ * <tt>MemoryMappedFile(filename, array)</tt>, which creates a new
  * file, maps it into memory, and copies the array contents.
  */
 class MI_EXPORT_LIB MemoryMappedFile : public Object {
@@ -35,7 +35,7 @@ public:
      * \brief Resize the memory-mapped file
      *
      * This involves remapping the file, which will
-     * generally change the pointer obtained via data()
+     * generally change the pointer obtained via \ref data()
      */
     void resize(size_t size);
 

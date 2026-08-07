@@ -10,8 +10,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Flags to determine which members of \ref SurfaceInteraction
- * should be computed when calling \ref compute_surface_interaction().
+ * \brief Flags to determine which members of `SurfaceInteraction3f`
+ * should be computed when calling \ref Shape::compute_surface_interaction().
  *
  * It also specifies differentiation behavior with respect to shape
  * parameters.
@@ -25,63 +25,66 @@ enum class RayFlags : uint32_t {
     /// Compute the distance, position and geometric normal (cannot be disabled)
     Minimal = 0x0,
 
-    /** \brief Additionally compute the UV coordinates (``uv``), position
-     * partials (``dp_du``, ``dp_dv``), shading frame (``sh_frame``), and the
-     * incident direction in the shading frame (``wi``).
+    /** \brief Additionally compute the UV coordinates
+     * (\ref SurfaceInteraction::uv), position partials
+     * (\ref SurfaceInteraction::dp_du, \ref SurfaceInteraction::dp_dv),
+     * shading frame (\ref SurfaceInteraction::sh_frame), and the incident
+     * direction in the shading frame (\ref SurfaceInteraction::wi).
      *
-     * This is also the default option selected by \ref Default.
+     * This is also the default option selected by `RayFlags::Default`.
      */
     Shading = 0x1,
 
-    /** \brief Additionally compute normal partial derivatives (``dn_du``,
-     * ``dn_dv``), which encode information about curvature.
+    /** \brief Additionally compute normal partial derivatives
+     * (\ref SurfaceInteraction::dn_du, \ref SurfaceInteraction::dn_dv), which
+     * encode information about curvature.
      *
-     * Depends on \ref Shading.
+     * Depends on `RayFlags::Shading`.
      */
     NormalPartials = 0x2,
 
-    /// The detail level requested by default, i.e. everything but \ref
-    /// NormalPartials
+    /// The detail level requested by default, i.e. everything but
+    /// `RayFlags::NormalPartials`
     Default = Shading,
 
-    /// Deprecated alias for \ref Shading
+    /// Deprecated alias for `RayFlags::Shading`
     All [[deprecated("Deprecated, change to RayFlags::Default.")]] = Shading,
 
     // =============================================================
     //!              Differentiability compute flags
     // =============================================================
 
-    /** \brief Track differentiable dependence of the \ref SurfaceInteraction
+    /** \brief Track differentiable dependence of the `SurfaceInteraction3f`
      * with respect to shape parameters.
      *
-     * By default (i.e., when neither \ref FollowShape nor \ref DetachShape is
-     * specified), intersections differentiably depend on both the ray
+     * By default (i.e., when neither FollowShape nor `RayFlags::DetachShape`
+     * is specified), intersections differentiably depend on both the ray
      * (``ray.o``, ``ray.d``) and shape parameters. They conceptually slide
      * along the surface as either the ray or the geometry moves.
      *
-     * With ``FollowShape``, the intersection is instead rigidly glued to the
+     * With \ref RayFlags::FollowShape, the intersection is instead rigidly glued to the
      * surface. The hit is first located non-differentiably, and the resulting
      * point is then differentiably re-evaluated using a local parameterization.
      * The point consequently moves along with and no longer tracks
      * infinitesimal changes of the ray. This is the same quantity that
-     * \ref Shape::differential_motion() returns.
+     * `Shape::differential_motion()` returns.
      *
-     * At most one of FollowShape or \ref DetachShape can be specified. The flag
-     * has no effect in non-differentiable variants.
+     * At most one of FollowShape or `RayFlags::DetachShape` can be specified.
+     * The flag has no effect in non-differentiable variants.
      */
     FollowShape = 0x4,
 
-    /** \brief Ignore the differentiable dependence of the \ref
-     * SurfaceInteraction on respect to shape parameters.
+    /** \brief Ignore the differentiable dependence of the
+     * `SurfaceInteraction3f` with respect to shape parameters.
      *
-     * With ``DetachShape``, the shape's parameters are detached before the
+     * With \ref RayFlags::DetachShape, the shape's parameters are detached before the
      * interaction is computed, which amounts to intersecting a differentiable
      * ray with a static surface. Derivatives then originate exclusively from
      * ``ray.o`` and ``ray.d``, and the hit point slides across a surface that
      * is held in place.
      *
-     * At most one of FollowShape or \ref DetachShape can be specified. The flag
-     * has no effect in non-differentiable variants.
+     * At most one of `RayFlags::FollowShape` or DetachShape can be specified.
+     * The flag has no effect in non-differentiable variants.
      */
     DetachShape = 0x8,
 };
@@ -90,7 +93,7 @@ MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
 // -----------------------------------------------------------------------------
 
-/// Generic surface interaction data structure
+/// Generic interaction data structure, shared by surface and medium interactions
 template <typename Float_, typename Spectrum_>
 struct Interaction {
     // =============================================================
@@ -121,7 +124,7 @@ struct Interaction {
     /// Position of the interaction in world coordinates
     Point3f p;
 
-    /// Geometric normal (only valid for \c SurfaceInteraction)
+    /// Geometric normal (only valid for `SurfaceInteraction3f`)
     Normal3f n;
 
     //! @}
@@ -235,7 +238,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \brief Is the shading frame left-handed?
      *
      * This bit denotes when a shape wants to set up a left-handed shading
-     * frame, e.g., on mehses with inverted UVs or instances with mirror
+     * frame, e.g., on meshes with inverted UVs or instances with mirror
      * transformation. This is important to correctly interpret normal maps.
      */
     Bool frame_flipped = false;
@@ -267,10 +270,12 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     /**
      * Construct from a position sample.
-     * Unavailable fields such as `wi` and the partial derivatives are left
+     * Unavailable fields such as \ref wi and the partial derivatives are left
      * uninitialized.
-     * The `shape` pointer is left uninitialized because we can't guarantee that
-     * the given \ref PositionSample::object points to a Shape instance.
+     * The \ref shape pointer is left uninitialized because `PositionSample3f`
+     * does not store a pointer to its originating object (unlike
+     * `DirectionSample3f::emitter`), so we can't guarantee that it
+     * corresponds to a `Shape` instance.
      */
     explicit SurfaceInteraction(const PositionSample3f &ps,
                                 const Wavelength &wavelengths)
@@ -330,7 +335,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * \brief Determine the target medium
      *
-     * When ``is_medium_transition()`` = \c true, determine the medium that
+     * When \ref is_medium_transition() = \c true, determine the medium that
      * contains the ``ray(this->p, d)``
      */
     MediumPtr target_medium(const Vector3f &d) const {
@@ -350,17 +355,17 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     /**
-     * \brief Returns the BSDF of the intersected shape.
+     * \brief Returns the `BSDF` of the intersected shape.
      *
      * The parameter \c ray must match the one used to create the interaction
      * record. This function computes texture coordinate partials if this is
      * required by the BSDF (e.g. for texture filtering).
      *
-     * Implementation in 'bsdf.h'
+     * Implementation in ``bsdf.h``
      */
     BSDFPtr bsdf(const RayDifferential3f &ray);
 
-    // Returns the BSDF of the intersected shape
+    /// Returns the `BSDF` of the intersected shape
     BSDFPtr bsdf() const { return shape->bsdf(); }
 
     /// Computes texture coordinate partials
@@ -402,20 +407,20 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \brief Converts a Mueller matrix defined in a local frame to world space
      *
      * A Mueller matrix operates from the (implicitly) defined frame
-     * stokes_basis(in_forward) to the frame stokes_basis(out_forward).
+     * ``stokes_basis(in_forward)`` to the frame ``stokes_basis(out_forward)``.
      * This method converts a Mueller matrix defined on directions in the local
      * frame to a Mueller matrix defined on world-space directions.
      *
      * This expands to a no-op in non-polarized modes.
      *
      * \param M_local
-     *      The Mueller matrix in local space, e.g. returned by a BSDF.
+     *      The Mueller matrix in local space, e.g. returned by a `BSDF`.
      *
      * \param in_forward_local
      *      Incident direction (along propagation direction of light),
      *      given in local frame coordinates.
      *
-     * \param wo_local
+     * \param out_forward_local
      *      Outgoing direction (along propagation direction of light),
      *      given in local frame coordinates.
      *
@@ -449,17 +454,20 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \brief Converts a Mueller matrix defined in world space to a local frame
      *
      * A Mueller matrix operates from the (implicitly) defined frame
-     * stokes_basis(in_forward) to the frame stokes_basis(out_forward).
+     * ``stokes_basis(in_forward)`` to the frame ``stokes_basis(out_forward)``.
      * This method converts a Mueller matrix defined on directions in
      * world-space to a Mueller matrix defined in the local frame.
      *
      * This expands to a no-op in non-polarized modes.
      *
-     * \param in_forward_local
+     * \param M_world
+     *      The Mueller matrix in world space.
+     *
+     * \param in_forward_world
      *      Incident direction (along propagation direction of light),
      *      given in world-space coordinates.
      *
-     * \param wo_local
+     * \param out_forward_world
      *      Outgoing direction (along propagation direction of light),
      *      given in world-space coordinates.
      *
@@ -505,17 +513,17 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * \brief Attach the motion of this interaction under the requested
      * differentiation mode
      *
-     * This function exists for use within implementations of \ref
-     * Shape::compute_surface_interaction(). It reads \c t, \c p and \c n and
+     * This function exists for use within implementations of
+     * `Shape::compute_surface_interaction()`. It reads \c t, \c p and \c n and
      * updates the AD state of \c t and \c p, so that their derivatives express
      * how the interaction point responds to a change of the scene parameters:
      * it either stays on the ray while the surface moves underneath it (the
-     * default), or follows the surface (\ref RayFlags::FollowShape).
-     * The case \ref RayFlags::DetachShape must be handled on the caller's end.
+     * default), or follows the surface (`RayFlags::FollowShape`).
+     * The case `RayFlags::DetachShape` must be handled on the caller's end.
      *
      * Shapes that recover their local coordinates from \c p need nothing
      * further. Those parameterized by \c pi.prim_uv must furthermore update it
-     * to match \ref p by projecting the (primal-zero) displacement ``p -
+     * to match \c p by projecting the (primal-zero) displacement ``p -
      * p_att`` onto the tangent basis and attaching it via \c dr::replace_grad.
      *
      * \param p_att
@@ -545,11 +553,12 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     /**
-     * \brief Fills uninitialized fields after a call to \ref Shape::compute_surface_interaction()
+     * \brief Fills uninitialized fields after a call to
+     * `Shape::compute_surface_interaction()`
      *
      * \param pi
      *      Preliminary intersection which was used to during the call to
-     *      \ref Shape::compute_surface_interaction()
+     *      `Shape::compute_surface_interaction()`
      * \param ray
      *      Ray associated with the ray intersection
      * \param ray_flags
@@ -683,12 +692,12 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         }
     }
 
-    /// Convert a local shading-space (defined by ``wi``) vector into world space
+    /// Convert a local shading-space (defined by \ref wi) vector into world space
     Vector3f to_world(const Vector3f &v) const {
         return sh_frame.to_world(v);
     }
 
-    /// Convert a world-space vector into local shading coordinates (defined by ``wi``)
+    /// Convert a world-space vector into local shading coordinates (defined by \ref wi)
     Vector3f to_local(const Vector3f &v) const {
         return sh_frame.to_local(v);
     }
@@ -706,9 +715,10 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 /**
  * \brief Stores preliminary information related to a ray intersection
  *
- * This data structure is used as return type for the \ref Shape::ray_intersect_preliminary
- * efficient ray intersection routine. It stores whether the shape is intersected by a
- * given ray, and cache preliminary information about the intersection if that is the case.
+ * This data structure is used as return type for the
+ * `Shape::ray_intersect_preliminary()` efficient ray intersection routine. It
+ * stores whether the shape is intersected by a given ray, and cache
+ * preliminary information about the intersection if that is the case.
  *
  * If the intersection is deemed relevant, detailed intersection information can later be
  * obtained via the  \ref compute_surface_interaction() method.

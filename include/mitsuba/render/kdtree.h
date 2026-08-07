@@ -39,7 +39,7 @@ NAMESPACE_BEGIN(detail)
  * temporarily hold index and edge event lists. When not implemented
  * properly, these allocations can become a critical bottleneck. The class
  * \ref OrderedChunkAllocator provides a specialized memory allocator,
- * which reserves memory in chunks of at least 512KiB (this number is
+ * which reserves memory in chunks of at least 5MiB (this number is
  * configurable). An important assumption made by the allocator is that
  * memory will be released in the exact same order in which it was
  * previously allocated. This makes it possible to create an implementation
@@ -342,7 +342,7 @@ NAMESPACE_END(detail)
  * usually the surface area heuristic (SAH), but other choices are possible as
  * well. The tree cost model must be passed as a template argument, which can
  * use a supplied bounding box and split candidate to compute approximate
- * probabilities of recursing into the left and right subrees during a typical
+ * probabilities of recursing into the left and right subtrees during a typical
  * kd-tree query operation. See \ref SurfaceAreaHeuristic3 for an example of
  * the interface that must be implemented.
  *
@@ -610,10 +610,10 @@ protected:
 protected:
     /// Enumeration representing the state of a classified primitive in the O(N log N) builder
     enum class PrimClassification : uint8_t {
-        Ignore = 0, /// Primitive was handled already, ignore from now on
-        Left   = 1, /// Primitive is left of the split plane
-        Right  = 2, /// Primitive is right of the split plane
-        Both   = 3  /// Primitive straddles the split plane
+        Ignore = 0, ///< Primitive was handled already, ignore from now on
+        Left   = 1, ///< Primitive is left of the split plane
+        Right  = 2, ///< Primitive is right of the split plane
+        Both   = 3  ///< Primitive straddles the split plane
     };
 
     /* ==================================================================== */
@@ -2465,25 +2465,25 @@ protected:
      * \brief Map an abstract \ref TShapeKDTree primitive index to a specific
      * shape managed by the \ref ShapeKDTree.
      *
-     * The function returns the shape index and updates the \a idx parameter to
-     * point to the primitive index (e.g. triangle ID) within the shape.
+     * The function returns the shape index and updates the \a index parameter
+     * to point to the primitive index (e.g. triangle ID) within the shape.
      */
-    MI_INLINE Index find_shape(Index &i) const {
-        Assert(i < primitive_count());
+    MI_INLINE Index find_shape(Index &index) const {
+        Assert(index < primitive_count());
 
         Index shape_index = math::find_interval<Index>(
             Size(m_primitive_map.size()),
             [&](Index k) DRJIT_INLINE_LAMBDA {
-                return m_primitive_map[k] <= i;
+                return m_primitive_map[k] <= index;
             }
         );
 
         Assert(shape_index < shape_count() &&
                m_primitive_map.size() == shape_count() + 1);
 
-        Assert(i >= m_primitive_map[shape_index]);
-        Assert(i <  m_primitive_map[shape_index + 1]);
-        i -= m_primitive_map[shape_index];
+        Assert(index >= m_primitive_map[shape_index]);
+        Assert(index <  m_primitive_map[shape_index + 1]);
+        index -= m_primitive_map[shape_index];
 
         return shape_index;
     }

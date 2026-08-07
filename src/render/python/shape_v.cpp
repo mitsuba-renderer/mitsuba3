@@ -366,36 +366,35 @@ All arrays must be C-contiguous. Index arrays are read in place and must
 hold 32-bit integers, signed or unsigned as the producer prefers. Float
 arrays of a different dtype arrive through a converting copy.
 
-Parameter ``positions``:
-    ``(vertex_count, 3)`` array of vertex positions (float32)
+Args:
+    positions: ``(vertex_count, 3)`` array of vertex positions (float32)
 
-Parameter ``corner_vertex``:
-    ``(record_count,)`` array naming the source vertex of each record
+    corner_vertex: ``(record_count,)`` array naming the source vertex of
+        each record
 
-Parameter ``corner_index``:
-    Optional ``(corner_count,)`` array mapping each face corner to a record.
-    Without it, records and face corners coincide.
+    corner_index: Optional ``(corner_count,)`` array mapping each face
+        corner to a record. Without it, records and face corners coincide.
 
-Parameter ``face_offsets``:
-    Optional ``(face_count + 1,)`` array of polygon offsets. Face ``i`` then
-    spans the corners ``[face_offsets[i], face_offsets[i + 1])`` and fans
-    into triangles around its first corner, which assumes convex polygons.
-    Without it, every three consecutive corners form a triangle.
+    face_offsets: Optional ``(face_count + 1,)`` array of polygon offsets.
+        Face ``i`` then spans the corners ``[face_offsets[i],
+        face_offsets[i + 1])`` and fans into triangles around its first
+        corner, which assumes convex polygons. Without it, every three
+        consecutive corners form a triangle.
 
-Parameter ``bsdf_index``:
-    Optional ``(face_count,)`` array of per-face material indices
+    bsdf_index: Optional ``(face_count,)`` array of per-face material
+        indices
 
-Parameter ``normals``:
-    Optional ``(record_count, 3)`` array of shading normals (float32), which
-    are normalized on the way in. Meshes using face normals ignore them,
-    and meshes without them receive generated smooth normals.
+    normals: Optional ``(record_count, 3)`` array of shading normals
+        (float32), which are normalized on the way in. Meshes using face
+        normals ignore them, and meshes without them receive generated
+        smooth normals.
 
-Parameter ``texcoords``:
-    Optional ``(record_count, 2)`` array of texture coordinates (float32)
+    texcoords: Optional ``(record_count, 2)`` array of texture coordinates
+        (float32)
 
-Parameter ``attrs``:
-    Optional custom attributes, mapping a name prefixed with ``vertex_`` to
-    a ``(record_count, dim)`` array of 1 to 4 channels (float32)
+    attrs: Optional custom attributes, mapping a name prefixed with
+        ``vertex_`` to a ``(record_count, dim)`` array of 1 to 4 channels
+        (float32)
 
 A mesh can be built only once: a second ``from_*`` call raises an exception;
 later mesh changes must go through the parameter interface instead.)doc";

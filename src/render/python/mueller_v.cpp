@@ -61,12 +61,14 @@ MI_PY_EXPORT(mueller) {
           "cos_theta_i"_a, "eta"_a, D(mueller, specular_transmission));
 
     m.def("stokes_basis", &mueller::stokes_basis<Vector3f>,
-          "w"_a, D(mueller, stokes_basis));
+          "forward"_a, D(mueller, stokes_basis));
 
     m.def("rotate_stokes_basis", &mueller::rotate_stokes_basis<Vector3f>,
-          "wi"_a, "basis_current"_a, "basis_target"_a, D(mueller, rotate_stokes_basis));
+          "forward"_a, "basis_current"_a, "basis_target"_a,
+          D(mueller, rotate_stokes_basis));
     m.def("rotate_stokes_basis_m", &mueller::rotate_stokes_basis<Vector3f, Float, MuellerMatrix<UnpolarizedSpectrum>>,
-          "wi"_a, "basis_current"_a, "basis_target"_a, D(mueller, rotate_stokes_basis));
+          "forward"_a, "basis_current"_a, "basis_target"_a,
+          D(mueller, rotate_stokes_basis));
 
     m.def("rotate_mueller_basis", &mueller::rotate_mueller_basis<Vector3f>,
           "M"_a, "in_forward"_a, "in_basis_current"_a, "in_basis_target"_a,

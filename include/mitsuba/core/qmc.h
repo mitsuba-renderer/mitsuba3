@@ -146,7 +146,7 @@ public:
     virtual std::string to_string() const override;
 private:
     /**
-     * \ref Compute the Faure permutations using dynamic programming
+     * \brief Compute the Faure permutations using dynamic programming
      *
      * For reference, see "Good permutations for extreme discrepancy"
      * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.

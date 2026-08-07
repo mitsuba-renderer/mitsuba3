@@ -496,7 +496,7 @@ protected:
     virtual Point2f get_sun_angles(const Float& time) const = 0;
 
     /**
-     * Getter sky radiance datasets for the given wavelengths and sun angles
+     * Getter for sky radiance datasets for the given wavelengths and sun angles
      * @param sun_theta The angle between the sun's direction and the z axis
      * @param channel_idx Indices of the queried channels
      * @param active Indicates which channels are valid indices
@@ -507,7 +507,7 @@ protected:
     get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
-     * Getter fot the probability of sampling the sky for a given sun position
+     * Getter for the probability of sampling the sky for a given sun position
      * @param sun_theta The angle between the sun's direction and the z axis
      * @param active Indicates active lanes
      * @return The probability of sampling the sky over the sun
@@ -543,7 +543,7 @@ protected:
     /**
      * This method should be used when the decision of hitting the sun was already made.
      * This avoids transforming coordinates to world space and making that decision a second
-     * time since numerical precision can cause discrepencies between the two decisions.
+     * time since numerical precision can cause discrepancies between the two decisions.
      * @param local_wo Shading direction in local space
      * @param wavelengths Wavelengths to evaluate
      * @param sun_angles Sun azimuth and elevation angles
@@ -658,9 +658,6 @@ protected:
     /**
      * \brief Evaluates the sun model for the given channel indices and angles
      *
-     * The template parameter is used to render the full 11 wavelengths at once
-     * in pre-computations
-     *
      * Based on the Hosek-Wilkie sun model
      * https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
      *
@@ -748,8 +745,6 @@ protected:
      * Only works for spectral mode since limb darkening is baked into the RGB
      * model
      *
-     * \tparam Spec
-     *      Spectral type to render (adapts the number of channels)
      * \param channel_idx_low
      *      Indices of the lower wavelengths
      * \param channel_idx_high
@@ -970,7 +965,7 @@ protected:
     /**
      * \brief Interpolates the given tensor on turbidity then albedo
      * @param dataset The original dataset from file
-     * @param albedo The albedo values for each channels
+     * @param albedo The albedo values for each channel
      * @param turbidity The turbidity value
      * @return The collapsed dataset interpolated linearly
      */
@@ -1014,7 +1009,7 @@ protected:
 
     /**
      * \brief Compute the elevation and azimuth of the sun as seen by an observer
-     * at \c location at the date and time specified in \c dateTime.
+     * at \c location at the date and time specified in \c date_time.
      *
      * \returns The pair containing the polar angle and the azimuth
      *
@@ -1130,7 +1125,7 @@ protected:
     /**
      * \brief Extract the albedo values for the required wavelengths/channels
      *
-     * \param albedo_tex Texture to extract the albedo from
+     * \param albedo_tex `Texture` to extract the albedo from
      * \return
      *      The buffer with the extracted albedo values for the needed wavelengths/channels
      */

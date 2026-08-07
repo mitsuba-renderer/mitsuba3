@@ -14,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * A \a sampler provides a convenient abstraction around methods that generate
  * uniform pseudo- or quasi-random points within a conceptual
- * infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves two
+ * infinite-dimensional unit hypercube \f$[0,1]^\infty\f$. This involves two
  * main operations: by querying successive component values of such an
  * infinite-dimensional point (\ref next_1d(), \ref next_2d()), or by
  * discarding the current point and generating another one (\ref advance()).
@@ -42,8 +42,8 @@ NAMESPACE_BEGIN(mitsuba)
  *
  *   1. The rendering algorithm invokes \ref set_samples_per_wavefront()
  *      if each rendering step is split into multiple passes (in which
- *      case fewer samples should be returned per \ref sample_1d()
- *      or \ref sample_2d() call).
+ *      case fewer samples should be returned per \ref next_1d()
+ *      or \ref next_2d() call).
  *
  *   2. The rendering algorithm then invokes \ref seed() to initialize the
  *      sampler state, and to inform the sampler of the wavefront size,

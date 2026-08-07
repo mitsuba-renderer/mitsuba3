@@ -60,10 +60,12 @@ MI_PY_EXPORT(SurfaceInteraction) {
             "wavelengths"_a, D(SurfaceInteraction, SurfaceInteraction))
         .def("to_world", &SurfaceInteraction3f::to_world, "v"_a, D(SurfaceInteraction, to_world))
         .def("to_local", &SurfaceInteraction3f::to_local, "v"_a, D(SurfaceInteraction, to_local))
-        .def("to_world_mueller", &SurfaceInteraction3f::to_world_mueller, "M_local"_a,
-            "wi_local"_a, "wo_local"_a, D(SurfaceInteraction, to_world_mueller))
-        .def("to_local_mueller", &SurfaceInteraction3f::to_local_mueller, "M_world"_a,
-            "wi_world"_a, "wo_world"_a, D(SurfaceInteraction, to_local_mueller))
+        .def("to_world_mueller", &SurfaceInteraction3f::to_world_mueller,
+            "M_local"_a, "in_forward_local"_a, "out_forward_local"_a,
+            D(SurfaceInteraction, to_world_mueller))
+        .def("to_local_mueller", &SurfaceInteraction3f::to_local_mueller,
+            "M_world"_a, "in_forward_world"_a, "out_forward_world"_a,
+            D(SurfaceInteraction, to_local_mueller))
         .def("emitter", &SurfaceInteraction3f::emitter, D(SurfaceInteraction, emitter),
             "scene"_a, "active"_a = true)
         .def("is_sensor", &SurfaceInteraction3f::is_sensor, D(SurfaceInteraction, is_sensor))

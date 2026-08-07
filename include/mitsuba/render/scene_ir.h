@@ -59,7 +59,7 @@ struct ShapeIR {
     /// always copies via \ref fill_aabbs).
     const void *aabb_buffer = nullptr;
 
-    /// Opaque context passed to the fill callbacks (the owning Shape).
+    /// Opaque context passed to the fill callbacks (the owning `Shape`).
     const void *ctx = nullptr;
 
     /// Stable per-shape storage index assigned by \ref SceneIRBuilder (OptiX

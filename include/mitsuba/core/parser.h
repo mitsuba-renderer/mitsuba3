@@ -15,7 +15,7 @@
  * 1. Parsing: \ref parse_file(), \ref parse_string(), \ref parse_dict() (the
  *    latter is in ``src/core/python/parser.cpp``). These functions are
  *    variant-independent and
- *    - convert XML/dict input into an intermediate representation (SceneNode).
+ *    - convert XML/dict input into an intermediate representation (`SceneNode`).
  *    - handle parameter substitution and file includes.
  *    - validate structure and capture metadata.
  *
@@ -108,7 +108,7 @@ struct MI_EXPORT_LIB SceneNode {
     /// (unused in the dict parser)
     ObjectType type = ObjectType::Unknown;
 
-    /// File index, identifies an entry of ParserState::files
+    /// File index, identifies an entry of ``ParserState::files``
     /// Used for error reporting to show which file contains this node
     /// (unused in the dict parser)
     uint32_t file_index = 0;
@@ -142,11 +142,11 @@ struct MI_EXPORT_LIB ParserState {
     std::vector<std::string> node_paths;
 
     /// List of files that were parsed while loading for error reporting.
-    /// Indexed by \ref SceneNode.file_index, unused in the dictionary parser
+    /// Indexed by ``SceneNode.file_index``, unused in the dictionary parser
     std::vector<fs::path> files;
 
-    /// Version number of each parsed file in \ref files. Used by
-    /// transform_upgrade() to apply appropriate upgrades per file
+    /// Version number of each parsed file in ``files``. Used by
+    /// ``transform_upgrade()`` to apply appropriate upgrades per file
     std::vector<util::Version> versions;
 
     /// Maps named nodes with an ``id`` attribute to their index in ``nodes``
@@ -154,7 +154,7 @@ struct MI_EXPORT_LIB ParserState {
     tsl::robin_map<std::string, size_t, std::hash<std::string_view>,
                    std::equal_to<>> id_to_index;
 
-    /// When parsing a file via parse_string(), this references the string
+    /// When parsing a file via ``parse_string()``, this references the string
     /// contents. Used to compute line information for error messages.
     std::string_view content;
 
@@ -201,7 +201,7 @@ struct MI_EXPORT_LIB ParserState {
  * This function loads an XML file and converts it to the intermediate
  * representation. It handles
  *
- * - File includes via <include> tags
+ * - File includes via ``<include>`` tags
  * - Parameter substitution using the provided parameter list
  * - Basic structural validation
  * - Source location tracking for error reporting
@@ -263,8 +263,8 @@ extern MI_EXPORT_LIB void transform_upgrade(const ParserConfig &config,
  * \brief Resolve named references and raise an error when detecting broken
  * links
  *
- * This transformation converts all (named) \ref Properties::Reference objects
- * into index-based \ref Properties::ResolvedReference references.
+ * This transformation converts all (named) `Properties.Reference` objects
+ * into index-based `Properties.ResolvedReference` references.
  *
  * This transformation is variant-independent.
  *
@@ -300,7 +300,7 @@ extern MI_EXPORT_LIB void transform_merge_equivalent(const ParserConfig &config,
  * \brief Adapt the scene description to merge geometry whenever possible
  *
  * This transformation moves all top-level geometry (i.e., occurring directly
- * within the <scene>) into a a shape plugin of type ``merge``.
+ * within the ``<scene>``) into a shape plugin of type ``merge``.
  *
  * When instantiated, this ``merge`` shape
  * - Collects compatible groups of mesh objects (i.e., with identical BSDF,
@@ -375,8 +375,8 @@ extern MI_EXPORT_LIB void transform_relocate(const ParserConfig &config,
  * graph in the following order:
  * 1. \ref transform_upgrade()
  * 2. \ref transform_resolve()
- * 3. \ref transform_merge_equivalent() (if config.merge_equivalent is enabled)
- * 4. \ref transform_merge_meshes() (if config.merge_meshes is enabled)
+ * 3. \ref transform_merge_equivalent() (if ``config.merge_equivalent`` is enabled)
+ * 4. \ref transform_merge_meshes() (if ``config.merge_meshes`` is enabled)
  *
  * \param config Parser configuration containing variant and other settings
  * \param state Parser state to transform (modified in-place)
@@ -388,7 +388,7 @@ extern MI_EXPORT_LIB void transform_all(const ParserConfig &config,
  * \brief Generate a human-readable file location string for error reporting
  *
  * Returns a string in the format "filename.xml:line:col" associated with a
- * given \ref SceneNode. In the case of the dictionary parser, it returns a
+ * given `SceneNode`. In the case of the dictionary parser, it returns a
  * period-separated string identifying the path to the object.
  *
  * \param state Parser state containing file information
@@ -404,7 +404,7 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * This final stage creates the actual scene objects from the intermediate
  * representation. It handles:
  *
- * - Plugin instantiation via the PluginManager
+ * - Plugin instantiation via the `PluginManager`
  * - Dependency ordering for correct instantiation order
  * - Parallel instantiation of independent objects (if enabled via
  *   ``config.parallel``)
@@ -413,8 +413,8 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * - Installing \ref ParserState::resolver as the global file resolver, so that
  *   plugins can locate the files referenced by the scene
  *
- * This function creates plugins with variant \ref ParserConfig::variant, using
- * parallelism if requested (\ref ParserConfig::parallel). It will usually
+ * This function creates plugins with variant ``ParserConfig::variant``, using
+ * parallelism if requested (``ParserConfig::parallel``). It will usually
  * return a single object but may also produce multiple return values if the
  * top-level object expands into sub-objects.
  *
@@ -455,7 +455,7 @@ extern MI_EXPORT_LIB void write_file(const ParserState &state,
 /**
  * \brief Convert scene data to an XML string
  *
- * Similar to write_file() but returns the XML content as a string
+ * Similar to ``write_file()`` but returns the XML content as a string
  * instead of writing to disk.
  *
  * \param state Parser state containing the scene graph
