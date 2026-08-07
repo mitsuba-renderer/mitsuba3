@@ -12,8 +12,6 @@ import mitsuba as mi
 from mitsuba.scalar_rgb.test.util import fresolver_append_path, \
     vertex_positions
 
-INVALID_DEDGE = 0xffffffff
-
 
 @fresolver_append_path
 def load_triangle():
@@ -145,7 +143,11 @@ def test04_primitive_silhouette_projection(variants_vec_rgb):
         "type": "ply",
         "filename": "resources/data/tests/ply/rectangle_uv.ply",
     })
-    mesh.directed_edges()
+
+    # Only differentiated shapes have a silhouette to project onto
+    params = mi.traverse(mesh)
+    dr.enable_grad(params['positions'])
+    params.update()
 
     u = dr.linspace(mi.Float, 1e-6, 1 - 1e-6, 10)
     uv = mi.Point2f(dr.meshgrid(u, u))
@@ -216,7 +218,7 @@ def test06_mesh_ptr_and_vcalls(variants_vec_rgb):
             assert sh.shape_type() == mi.ShapeType.Mesh
             assert dr.all(dr.gather(mi.MeshPtr, shapes, i) == as_mesh)
             assert as_mesh[0] == shapes[i] and as_mesh[0] == sh
-            sh.directed_edges()
+            sh.dedge()
         else:
             assert dr.all(dr.reinterpret_array(mi.UInt32, as_mesh) == 0)
             assert as_mesh[0] is None
@@ -246,12 +248,15 @@ def test06_mesh_ptr_and_vcalls(variants_vec_rgb):
     idx = mi.UInt32([0, 99, 1])
     getters = [
         lambda m, i, a: m.face_indices(i, active=a),
-        lambda m, i, a: m.edge_indices(i, i, active=a),
+        lambda m, i, a: m.dedge_indices(i, active=a),
         lambda m, i, a: m.vertex_position(i, active=a),
         lambda m, i, a: m.vertex_normal(i, active=a),
         lambda m, i, a: m.vertex_texcoord(i, active=a),
         lambda m, i, a: m.face_normal(i, active=a),
-        lambda m, i, a: m.opposite_dedge(i, active=a),
+        lambda m, i, a: m.dedge_opposite(i, active=a),
+        lambda m, i, a: m.dedge_vertex_edge(i, active=a),
+        lambda m, i, a: m.dedge_vertex_valence(i, active=a),
+        lambda m, i, a: m.dedge_vertex_flags(i, active=a),
     ]
     results = [g(meshes, idx, active) for g in getters]
     dr.schedule(*results)
@@ -276,26 +281,56 @@ def test06_mesh_ptr_and_vcalls(variants_vec_rgb):
                                shrink=True)) == 0
 
 
-@fresolver_append_path
-def test07_vcalls_partial_dedges(variants_vec_rgb):
-    """A vcall over a mix of meshes with and without half-edge adjacency is
-    well defined: the ones that lack it report every edge as a boundary."""
-    scene = mi.load_dict({
-        "type": "scene",
-        "mesh1": {
-            "type": "ply",
-            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
-        },
-        "mesh2": {
-            "type": "ply",
-            "filename": "resources/data/tests/ply/cbox_smallbox.ply",
-        },
-    })
+def strip_mesh(name="strip", n=5):
+    """A triangle strip with ``n`` faces, whose interior edges are paired."""
+    positions = np.float32([[i, i % 2, 0] for i in range(n + 2)])
+    faces = np.uint32([[i, i + 1, i + 2] if i % 2 == 0 else [i + 1, i, i + 2]
+                       for i in range(n)])
+    return mi.Mesh(name, mi.TensorXu32(faces), mi.TensorXf32(positions))
 
-    # Only the first mesh gets the structure, and the accessor must not build
-    # one for the second
-    scene.shapes()[0].directed_edges()
 
-    mesh_ptr = dr.gather(mi.MeshPtr, scene.shapes_dr(), mi.UInt32([0, 1, 0]))
-    result = mesh_ptr.opposite_dedge(mi.UInt32([2, 3, 2]))
-    assert dr.all(result == mi.UInt32([3, INVALID_DEDGE, 3]))
+def loose_mesh(name="loose", n=5):
+    """``n`` disconnected triangles: the same half-edge count as
+    ``strip_mesh(n)``, but every edge is a boundary."""
+    positions = np.float32([[t + (k == 1), k == 2, 0]
+                            for t in range(n) for k in range(3)])
+    faces = np.uint32(np.arange(3 * n).reshape(n, 3))
+    return mi.Mesh(name, mi.TensorXu32(faces), mi.TensorXf32(positions))
+
+
+@pytest.mark.parametrize("region", ["vcall", "loop"])
+def test07_dedge_built_in_symbolic_region(variants_vec_rgb, region):
+    """The adjacency is built on first use, even when that first use is traced
+    inside a symbolic region. Dr.Jit forbids evaluation there, so Mesh::dedge()
+    escapes it via dr::scoped_eval_scope."""
+    n_he = 15
+    e = dr.arange(mi.UInt32, n_he)
+    ref_strip = mi.UInt32(strip_mesh("ref_strip").dedge_opposite(e))
+    ref_loose = mi.UInt32(loose_mesh("ref_loose").dedge_opposite(e))
+    dr.eval(ref_strip, ref_loose)
+    assert dr.any(ref_strip != ref_loose)  # the two must be distinguishable
+
+    if region == "vcall":
+        # Two fresh meshes, so the call has to build both while it is recorded,
+        # and must keep the per-instance results apart
+        strip, loose = strip_mesh(), loose_mesh()
+        is_strip = (e % 2) == 0
+        ptr = dr.zeros(mi.MeshPtr, n_he)
+        dr.scatter(ptr, mi.MeshPtr(strip), dr.compress(is_strip))
+        dr.scatter(ptr, mi.MeshPtr(loose), dr.compress(~is_strip))
+        assert dr.all(ptr.dedge_opposite(e) ==
+                      dr.select(is_strip, ref_strip, ref_loose))
+    else:
+        @dr.syntax
+        def accumulate(mesh, n):
+            i, acc = mi.UInt32(0), mi.UInt32(0)
+            while i < n:
+                o = mesh.dedge_opposite(i)
+                acc += dr.select(o == mi.DirectedEdge.Invalid, mi.UInt32(0), o)
+                i += 1
+            return acc
+
+        want = dr.sum(dr.select(ref_strip == mi.DirectedEdge.Invalid,
+                                mi.UInt32(0), ref_strip))
+        assert dr.all(accumulate(strip_mesh(), mi.UInt32(n_he)) ==
+                      mi.UInt32(want))

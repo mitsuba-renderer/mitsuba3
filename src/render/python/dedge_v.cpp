@@ -13,8 +13,8 @@ MI_PY_EXPORT(DirectedEdge) {
     cls.attr("Invalid") = DirectedEdge::Invalid;
 
     cls.def(nb::init<const DynamicBuffer<UInt32> &, uint32_t,
-                     std::string_view>(),
-            "F"_a, "vertex_count"_a, "name"_a = "",
+                     std::string_view, bool>(),
+            "F"_a, "vertex_count"_a, "name"_a = "", "warn_defects"_a = true,
             D(DirectedEdge, DirectedEdge))
 
        .def_static("next", [](const UInt32 &e) { return DirectedEdge::next(e); },
@@ -34,16 +34,14 @@ MI_PY_EXPORT(DirectedEdge) {
             D(DirectedEdge, opposite))
        .def("vertex_edge", &DirectedEdge::vertex_edge,
             "v"_a, "active"_a = true, D(DirectedEdge, vertex_edge))
-       .def("valence",
-            nb::overload_cast<UInt32, Mask>(&DirectedEdge::valence, nb::const_),
-            "v"_a, "active"_a = true, D(DirectedEdge, valence))
+       .def("vertex_valence", &DirectedEdge::vertex_valence,
+            "v"_a, "active"_a = true, D(DirectedEdge, vertex_valence))
        .def("vertex_flags", &DirectedEdge::vertex_flags,
             "v"_a, "active"_a = true, D(DirectedEdge, vertex_flags))
 
        .def_method(DirectedEdge, E2E)
        .def_method(DirectedEdge, V2E)
-       .def("valence", nb::overload_cast<>(&DirectedEdge::valence, nb::const_),
-            D(DirectedEdge, valence, 2))
+       .def_method(DirectedEdge, valence)
        .def_method(DirectedEdge, flags)
        .def("flag_count", &DirectedEdge::flag_count, "flag"_a,
             D(DirectedEdge, flag_count));

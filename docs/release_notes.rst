@@ -41,6 +41,18 @@ Mitsuba 3.10.0
   - The directed edge adjacency data structure moved into a standalone
     ``mi.DirectedEdge`` class that a mesh builds on demand. The new class
     produces a richer representation while also improving build efficiency.
+    It is reachable through ``mesh.dedge()`` and, for use in vectorized calls,
+    through the ``dedge_opposite()``, ``dedge_vertex_edge()``,
+    ``dedge_vertex_valence()`` and ``dedge_vertex_flags()`` accessors.
+
+  - The adjacency and the silhouette sampling density are now built lazily,
+    the first time something asks for them, rather than eagerly whenever a
+    mesh with differentiable positions is updated. Renderers that differentiate
+    geometry without sampling silhouettes (e.g. ``prb``) no longer pay for
+    either. As a consequence, ``sample_silhouette()``,
+    ``invert_silhouette_sample()`` and ``primitive_silhouette_projection()``
+    return an empty result unless the mesh positions carry gradients;
+    previously they did so unless the adjacency happened to exist.
 
   ⚠️ **WARNING** ⚠️: This is an **API-breaking change**. Code that constructs
   meshes or touches mesh scene parameters must be updated as follows.
@@ -148,7 +160,9 @@ Mitsuba 3.10.0
     ``has_vertex_normals()``                     ``has_normals()``
     ``recompute_vertex_normals()``               ``recompute_normals()``
     ``mesh.merge(other)``                        ``mi.Mesh.merge(shapes)``
-    ``build_directed_edges()``                   ``directed_edges()``
+    ``build_directed_edges()``                   ``dedge()``
+    ``opposite_dedge(e)``                        ``dedge_opposite(e)``
+    ``edge_indices(f, i)``                       ``dedge_indices(3 * f + i)``
     ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 

@@ -258,9 +258,14 @@ public:
      *
      * \param name
      *     An optional name identifying the mesh in log messages.
+     *
+     * \param warn_defects
+     *     Report non-manifold or inconsistently wound input in a log message.
+     *     Counting the affected vertices requires a device-to-host transfer,
+     *     which callers building the structure implicitly may wish to avoid.
      */
     DirectedEdge(const IndexBuffer &F, uint32_t vertex_count,
-                 std::string_view name = "");
+                 std::string_view name = "", bool warn_defects = true);
 
     /// Return the next half-edge within the same face
     template <typename Index> static Index next(const Index &e) {
@@ -319,7 +324,7 @@ public:
      * This is the number of faces containing \c v. It excludes degenerate
      * faces with a repeated vertex index.
      */
-    MI_INLINE UInt32 valence(UInt32 v, Mask active = true) const {
+    MI_INLINE UInt32 vertex_valence(UInt32 v, Mask active = true) const {
         return dr::gather<UInt32>(m_valence, v, active);
     }
 
@@ -340,10 +345,13 @@ public:
     /// Per-vertex buffer of \ref VertexFlags bitmasks
     const IndexBuffer &flags() const { return m_flags; }
 
-    /// Number of vertices carrying the given single-bit flag
-    uint32_t flag_count(VertexFlags flag) const {
-        return m_flag_counts[dr::log2i((uint32_t) flag)];
-    }
+    /**
+     * \brief Number of vertices carrying the given single-bit flag
+     *
+     * The first call synchronizes with the device unless the constructor
+     * already counted the flags to report defects.
+     */
+    uint32_t flag_count(VertexFlags flag) const;
 
     std::string to_string() const override;
 
@@ -356,6 +364,9 @@ protected:
     /// Data-parallel builder used in JIT variants
     void build_jit(const IndexBuffer &F);
 
+    /// Populate \ref m_flag_counts, transferring them from the device
+    void count_flags() const;
+
 protected:
     uint32_t m_vertex_count = 0;
     uint32_t m_half_edge_count = 0;
@@ -364,7 +375,8 @@ protected:
     IndexBuffer m_E2E, m_V2E, m_valence, m_flags;
 
     /// Number of vertices carrying each of the four \ref VertexFlags
-    uint32_t m_flag_counts[4] { 0, 0, 0, 0 };
+    mutable uint32_t m_flag_counts[4] { 0, 0, 0, 0 };
+    mutable bool m_flag_counts_ready = false;
 
     MI_TRAVERSE_CB(Object, m_E2E, m_V2E, m_valence, m_flags)
 };

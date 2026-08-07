@@ -281,9 +281,9 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
        .def("face_indices", [](const Ptr m, UInt32 index, Mask active) {
                 return m->face_indices(index, active);
             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
-       .def("edge_indices", [](const Ptr m, UInt32 tri_index, UInt32 edge_index, Mask active) {
-                return m->edge_indices(tri_index, edge_index, active);
-            }, D(Mesh, edge_indices), "tri_index"_a, "edge_index"_a, "active"_a = true)
+       .def("dedge_indices", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_indices(index, active);
+            }, D(Mesh, dedge_indices), "index"_a, "active"_a = true)
        .def("vertex_position", [](const Ptr m, UInt32 index, Mask active) {
                 return Point3f(m->vertex_position(index, active));
             }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
@@ -296,9 +296,18 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
        .def("face_normal", [](const Ptr m, UInt32 index, Mask active) {
                 return m->face_normal(index, active);
             }, D(Mesh, face_normal), "index"_a, "active"_a = true)
-       .def("opposite_dedge", [](const Ptr m, UInt32 index, Mask active) {
-                return m->opposite_dedge(index, active);
-            }, D(Mesh, opposite_dedge), "index"_a, "active"_a = true)
+       .def("dedge_opposite", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_opposite(index, active);
+            }, D(Mesh, dedge_opposite), "index"_a, "active"_a = true)
+       .def("dedge_vertex_edge", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_edge(index, active);
+            }, D(Mesh, dedge_vertex_edge), "index"_a, "active"_a = true)
+       .def("dedge_vertex_valence", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_valence(index, active);
+            }, D(Mesh, dedge_vertex_valence), "index"_a, "active"_a = true)
+       .def("dedge_vertex_flags", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_flags(index, active);
+            }, D(Mesh, dedge_vertex_flags), "index"_a, "active"_a = true)
        .def("ray_intersect_triangle", [](const Ptr ptr, const UInt32 &index,
                                          const Ray3f &ray, Mask active) {
                 return ptr->ray_intersect_triangle(index, ray, active);
@@ -568,8 +577,8 @@ MI_PY_EXPORT(Shape) {
         .def("recompute_normals", &Mesh::recompute_normals,
              D(Mesh, recompute_normals))
         .def("transform", &Mesh::transform, "t"_a, D(Mesh, transform))
-        .def("directed_edges", &Mesh::directed_edges,
-             nb::rv_policy::reference_internal, D(Mesh, directed_edges))
+        .def("dedge", &Mesh::dedge,
+             nb::rv_policy::reference_internal, D(Mesh, dedge))
 
         .def("from_corners", &mesh_from_corners<Mesh>,
              "positions"_a, "corner_vertex"_a,

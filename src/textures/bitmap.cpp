@@ -964,7 +964,7 @@ protected:
         std::lock_guard<std::mutex> lock(m_mutex);
         if (!m_distr2d) {
             check_sampling_transform();
-            dr::scoped_disable_symbolic<Float> guard{};
+            dr::scoped_eval_scope<Float> guard;
             auto self = const_cast<BitmapTextureImpl *>(this);
             self->rebuild_internals(m_texture.tensor(), false, true);
         }

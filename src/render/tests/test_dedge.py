@@ -383,7 +383,7 @@ def test09_accessors(variants_all_rgb):
         assert dr.all(dedge.opposite(mi.UInt32(i)) == E2E[i])
     for v in range(V):
         assert dr.all(dedge.vertex_edge(mi.UInt32(v)) == V2E[v])
-        assert dr.all(dedge.valence(mi.UInt32(v)) == int(valence[v]))
+        assert dr.all(dedge.vertex_valence(mi.UInt32(v)) == int(valence[v]))
         # The apex carries the split ring, every other vertex the boundary
         expected = (mi.VertexFlags.NonManifoldVertex if v == 0
                     else mi.VertexFlags.Boundary)
@@ -407,36 +407,36 @@ def test10_mesh_lifetime(variants_all_rgb):
                    positions=np.float32([[0, 0, 0], [1, 0, 0],
                                          [1, 1, 0], [0, 1, 0]]))
 
-    # Before construction the JIT-facing accessor must not build anything
-    assert dr.all(mesh.opposite_dedge(mi.UInt32(2)) == I)
+    # The JIT-facing accessor builds the structure on first use
+    assert dr.all(mesh.dedge_opposite(mi.UInt32(2)) == 3)
 
-    dedge = mesh.directed_edges()
+    dedge = mesh.dedge()
     assert list(dedge.E2E()) == [I, I, 3, 2, I, I]
-    assert mesh.directed_edges() is dedge
-    assert dr.all(mesh.opposite_dedge(mi.UInt32(2)) == 3)
+    assert mesh.dedge() is dedge
 
     params = mi.traverse(mesh)
     params['positions'] = mi.TensorXf(np.float32([[0, 0, 0], [2, 0, 0],
                                                   [2, 2, 0], [0, 2, 0]]))
     params.update()
-    assert mesh.directed_edges() is dedge
+    assert mesh.dedge() is dedge
 
     params['positions'] = mi.TensorXf(np.float32([
         [0, 0, 0], [2, 0, 0], [2, 2, 0], [0, 2, 0], [3, 3, 0]
     ]))
     params.update()
     assert mesh.position_count() == 5
-    assert dr.all(mesh.opposite_dedge(mi.UInt32(2)) == I)
 
-    resized_dedge = mesh.directed_edges()
+    # A changed position count discards the cached instance
+    resized_dedge = mesh.dedge()
     assert resized_dedge is not dedge
     assert resized_dedge.vertex_count() == 5
     assert list(resized_dedge.V2E()) == [3, 1, 2, 5, I]
 
+    # ... and so does a changed topology
     params['faces'] = mi.TensorXu(np.uint32([[0, 1, 2], [2, 1, 3]]))
     params.update()
-    assert dr.all(mesh.opposite_dedge(mi.UInt32(2)) == I)
-    assert list(mesh.directed_edges().E2E()) == [I, 3, I, 1, I, I]
+    assert mesh.dedge() is not resized_dedge
+    assert list(mesh.dedge().E2E()) == [I, 3, I, 1, I, I]
 
 
 @fresolver_append_path
@@ -452,7 +452,7 @@ def test11_seamed_mesh(variants_all_rgb):
                       corner_vertex=np.uint32(tris).ravel(), texcoords=uv)
     assert mesh.vertex_count() == 12 and mesh.position_count() == 4
 
-    dedge = mesh.directed_edges()
+    dedge = mesh.dedge()
     assert dedge.vertex_count() == 4
     assert I not in list(dedge.E2E())
     assert dedge.flag_count(mi.VertexFlags.Boundary) == 0
@@ -464,11 +464,11 @@ def test12_frozen(variants_vec_rgb):
     mesh = mi.Mesh("quad", faces=[[0, 1, 2], [0, 2, 3]],
                    positions=np.float32([[0, 0, 0], [1, 0, 0],
                                          [1, 1, 0], [0, 1, 0]]))
-    mesh.directed_edges()
+    mesh.dedge()
 
     @dr.freeze
     def func(m, e):
-        return m.opposite_dedge(e)
+        return m.dedge_opposite(e)
 
     index = dr.arange(mi.UInt32, 6)
     expected = mi.UInt32([I, I, 3, 2, I, I])

@@ -10,7 +10,8 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT
 DirectedEdge<Float, Spectrum>::DirectedEdge(const IndexBuffer &F,
                                             uint32_t vertex_count,
-                                            std::string_view name)
+                                            std::string_view name,
+                                            bool warn_defects)
     : m_vertex_count(vertex_count),
       m_half_edge_count((uint32_t) F.size()), m_name(name) {
     if (m_half_edge_count % 3 != 0)
@@ -26,20 +27,10 @@ DirectedEdge<Float, Spectrum>::DirectedEdge(const IndexBuffer &F,
     else
         build_host(F);
 
-    // Tally flags
-    if constexpr (dr::is_jit_v<Float>) {
-        UInt32 counts = dr::zeros<UInt32>(4);
-        for (uint32_t i = 0; i < 4; ++i)
-            dr::scatter_reduce(ReduceOp::Add, counts, UInt32(1), UInt32(i),
-                               has_flag(m_flags, (VertexFlags) (1u << i)));
-        const IndexBuffer &host_counts = dr::migrate(counts, JitBackend::None);
-        dr::sync_thread();
-        for (uint32_t i = 0; i < 4; ++i)
-            m_flag_counts[i] = host_counts.data()[i];
-    } else {
-        for (uint32_t i = 0; i < 4; ++i)
-            m_flag_counts[i] = dr::count(has_flag(m_flags, (VertexFlags) (1u << i)))[0];
-    }
+    if (!warn_defects)
+        return;
+
+    count_flags();
 
     if (m_flag_counts[1] || m_flag_counts[2] || m_flag_counts[3])
         Log(Warn,
@@ -49,6 +40,33 @@ DirectedEdge<Float, Spectrum>::DirectedEdge(const IndexBuffer &F,
             "winding are left unpaired and treated as boundaries.",
             m_name.empty() ? std::string() : "\"" + m_name + "\"",
             m_flag_counts[1], m_flag_counts[2], m_flag_counts[3]);
+}
+
+MI_VARIANT void DirectedEdge<Float, Spectrum>::count_flags() const {
+    if (m_flag_counts_ready)
+        return;
+
+    if constexpr (dr::is_jit_v<Float>) {
+        UInt32 counts = dr::zeros<UInt32>(4);
+        for (uint32_t i = 0; i < 4; ++i)
+            dr::scatter_reduce(ReduceOp::Add, counts, UInt32(1), UInt32(i),
+                               has_flag(m_flags, (VertexFlags) (1u << i)));
+        IndexBuffer host_counts = dr::migrate(counts, JitBackend::None);
+        dr::sync_thread();
+        for (uint32_t i = 0; i < 4; ++i)
+            m_flag_counts[i] = host_counts.data()[i];
+    } else {
+        for (uint32_t i = 0; i < 4; ++i)
+            m_flag_counts[i] = dr::count(has_flag(m_flags, (VertexFlags) (1u << i)))[0];
+    }
+
+    m_flag_counts_ready = true;
+}
+
+MI_VARIANT uint32_t
+DirectedEdge<Float, Spectrum>::flag_count(VertexFlags flag) const {
+    count_flags();
+    return m_flag_counts[dr::log2i((uint32_t) flag)];
 }
 
 MI_VARIANT void DirectedEdge<Float, Spectrum>::build_host(const IndexBuffer &buffer) {
@@ -320,6 +338,7 @@ MI_VARIANT void DirectedEdge<Float, Spectrum>::build_jit(const IndexBuffer &F) {
 }
 
 MI_VARIANT std::string DirectedEdge<Float, Spectrum>::to_string() const {
+    count_flags();
     return tfm::format(
         "DirectedEdge[%sfaces=%u, vertices=%u, boundary=%u, "
         "non_manifold_edge=%u, non_manifold_vertex=%u, "

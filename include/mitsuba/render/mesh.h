@@ -416,7 +416,7 @@ public:
      *
      * This function returns \ref faces() re-indexed into surface position space,
      * i.e., the geometric topology of the mesh without UV/normal-related
-     * seams. It is used by features like \ref directed_edges() and the
+     * seams. It is used by features like \ref dedge() and the
      * mesh Laplacian in ``largesteps.py``.
      */
     TensorXu32 geometric_faces() const;
@@ -546,17 +546,22 @@ public:
     }
 
     /**
-     * Returns the vertex indices associated with edge \c edge_index (0..2)
-     * of triangle \c tri_index.
+     * \brief Returns the vertex indices of the directed edge \c index
+     *
+     * The three components are the source vertex, the target vertex, and the
+     * vertex opposing the edge within its face. They correspond to ``F[e]``,
+     * ``F[next(e)]``, and ``F[prev(e)]`` in the notation of \ref DirectedEdge.
      */
-    MI_INLINE Vector<UInt32, 2> edge_indices(UInt32 tri_index,
-                                             UInt32 edge_index,
-                                             Mask active = true) const {
-        UInt32 base = tri_index * MeshFaceStride;
-        return Vector<UInt32, 2>(
-            dr::gather<UInt32>(m_packed_faces, base + edge_index, active),
-            dr::gather<UInt32>(m_packed_faces, base + (edge_index + 1u) % 3u, active)
-        );
+    MI_INLINE Vector3u dedge_indices(UInt32 index, Mask active = true) const {
+        UInt32 base     = DirectedEdge::face(index) * MeshFaceStride,
+               source   = DirectedEdge::corner(index),
+               target   = dr::select(source == 2u, 0u, source + 1u),
+               opposing = dr::select(source == 0u, 2u, source - 1u);
+
+        return Vector3u(
+            dr::gather<UInt32>(m_packed_faces, base + source, active),
+            dr::gather<UInt32>(m_packed_faces, base + target, active),
+            dr::gather<UInt32>(m_packed_faces, base + opposing, active));
     }
 
     /// Returns the normal direction of a face with the given vertex positions
@@ -579,15 +584,30 @@ public:
     /**
      * Returns the opposite edge index associated with directed edge \c index
      *
-     * The function returns \c DirectedEdge::Invalid when the adjacency
-     * structure has not been built. It deliberately does not build it, so that
-     * a vectorized call over a set of meshes of which only some carry the
-     * structure remains well defined. Call \ref directed_edges() first.
+     * This is one of four accessors forwarding to the \ref DirectedEdge
+     * structure, which \ref dedge() builds on first use. A returned \c
+     * DirectedEdge::Invalid therefore always describes the topology, here the
+     * absence of a neighboring face.
      */
-    MI_INLINE UInt32 opposite_dedge(UInt32 index, Mask active = true) const {
-        if (!m_dedge)
-            return UInt32(DirectedEdge::Invalid);
-        return m_dedge->opposite(index, active);
+    MI_INLINE UInt32 dedge_opposite(UInt32 index, Mask active = true) const {
+        return dedge()->opposite(index, active);
+    }
+
+    /// Returns the canonical half-edge starting at vertex \c index
+    MI_INLINE UInt32 dedge_vertex_edge(UInt32 index, Mask active = true) const {
+        return dedge()->vertex_edge(index, active);
+    }
+
+    /// Returns the number of faces containing vertex \c index
+    MI_INLINE UInt32 dedge_vertex_valence(UInt32 index,
+                                          Mask active = true) const {
+        return dedge()->vertex_valence(index, active);
+    }
+
+    /// Returns the \ref VertexFlags bitmask of vertex \c index
+    MI_INLINE UInt32 dedge_vertex_flags(UInt32 index,
+                                        Mask active = true) const {
+        return dedge()->vertex_flags(index, active);
     }
 
     Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
@@ -702,17 +722,16 @@ public:
      * The data structure is built on demand and uses the geometric
      * connectivity specified by \ref geometric_faces() so that attribute
      * discontinuities do not introduce artificial geometric boundaries.
-     *
      * The result is immutable and invariant to changes in mesh positions,
      * normals and materials. The \ref Mesh class automatically deletes the
      * cached instance when the index buffer, the position index map, or the
      * position count changes.
      *
-     * The on-demand construction not lock a mutex to protect from concurrent
-     * calls to this function. This matches the expected usage (JIT variants),
-     * where a single thread orchestrates the parallel computation.
+     * The on-demand construction does not lock a mutex to protect from
+     * concurrent calls to this function. This matches the expected usage (JIT
+     * variants), where a single thread orchestrates the parallel computation.
      */
-    const DirectedEdge *directed_edges() const;
+    const DirectedEdge *dedge() const;
 
     /**
      * \brief Check the field views for consistency
@@ -980,16 +999,14 @@ protected:
     void build_pmf();
 
     /**
-     * \brief Precompute the set of edges that could contribute to the indirect
-     * discontinuous integral.
+     * \brief Return the sampling density over edges that could contribute to
+     * the indirect discontinuous integral
      *
-     * This method filters out any concave edges or flat surfaces.
-     *
-     * Internally, this method relies on the half-edge adjacency structure. A
-     * call to \ref directed_edges() before a call to this method is
-     * therefore necessary.
+     * The distribution excludes concave edges and flat surfaces. It depends on
+     * the vertex positions, so \ref refresh() discards it and this accessor
+     * rebuilds it on the next use.
      */
-    void build_indirect_silhouette_distribution();
+    const DiscreteDistribution<Float> &sil_dedge_pmf() const;
 
     /**
      * \brief Initialize the \c m_parameterization field for mapping UV
@@ -1239,11 +1256,11 @@ protected:
     IndexBuffer m_bsdf_index;
     TensorXf32 m_tangents;
 
-    /// Half-edge adjacency, null until \ref directed_edges() builds it
+    /// Half-edge adjacency, null until \ref dedge() builds it
     mutable ref<DirectedEdge> m_dedge;
 
-    /// Sampling density of silhouette (\ref build_indirect_silhouette_distribution)
-    DiscreteDistribution<Float> m_sil_dedge_pmf;
+    /// Sampling density of silhouette edges, null until \ref sil_dedge_pmf()
+    mutable DiscreteDistribution<Float> m_sil_dedge_pmf;
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     // Fast explicit access to data pointers for use with LLVM and Embree
@@ -1283,12 +1300,15 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
     DRJIT_CALL_METHOD(face_indices)
-    DRJIT_CALL_METHOD(edge_indices)
+    DRJIT_CALL_METHOD(dedge_indices)
     DRJIT_CALL_METHOD(vertex_position)
     DRJIT_CALL_METHOD(vertex_normal)
     DRJIT_CALL_METHOD(vertex_texcoord)
     DRJIT_CALL_METHOD(face_normal)
-    DRJIT_CALL_METHOD(opposite_dedge)
+    DRJIT_CALL_METHOD(dedge_opposite)
+    DRJIT_CALL_METHOD(dedge_vertex_edge)
+    DRJIT_CALL_METHOD(dedge_vertex_valence)
+    DRJIT_CALL_METHOD(dedge_vertex_flags)
     DRJIT_CALL_METHOD(ray_intersect_triangle)
 
     DRJIT_CALL_GETTER(vertex_count)

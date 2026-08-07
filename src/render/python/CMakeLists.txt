@@ -30,6 +30,7 @@ set(RENDER_PY_V_SRC
 set(RENDER_PY_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/emitter.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bsdf.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/dedge.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/shape.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/microfacet.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/interaction.cpp

@@ -3225,7 +3225,13 @@ Parameter ``vertex_count``:
     The number of mesh vertices.
 
 Parameter ``name``:
-    An optional name identifying the mesh in log messages.)doc";
+    An optional name identifying the mesh in log messages.
+
+Parameter ``warn_defects``:
+    Report non-manifold or inconsistently wound input in a log
+    message. Counting the affected vertices requires a device-to-host
+    transfer, which callers building the structure implicitly may wish
+    to avoid.)doc";
 
 static const char *__doc_mitsuba_DirectedEdge_E2E = R"doc(Per-half-edge buffer of opposites or Invalid entries)doc";
 
@@ -3239,9 +3245,15 @@ static const char *__doc_mitsuba_DirectedEdge_class_name = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectedEdge_corner = R"doc(Return the local corner index of the half-edge within its face)doc";
 
+static const char *__doc_mitsuba_DirectedEdge_count_flags = R"doc(Populate m_flag_counts, transferring them from the device)doc";
+
 static const char *__doc_mitsuba_DirectedEdge_face = R"doc(Return the index of the face containing the half-edge)doc";
 
-static const char *__doc_mitsuba_DirectedEdge_flag_count = R"doc(Number of vertices carrying the given single-bit flag)doc";
+static const char *__doc_mitsuba_DirectedEdge_flag_count =
+R"doc(Number of vertices carrying the given single-bit flag
+
+The first call synchronizes with the device unless the constructor
+already counted the flags to report defects.)doc";
 
 static const char *__doc_mitsuba_DirectedEdge_flags = R"doc(Per-vertex buffer of VertexFlags bitmasks)doc";
 
@@ -3252,6 +3264,8 @@ static const char *__doc_mitsuba_DirectedEdge_m_E2E = R"doc()doc";
 static const char *__doc_mitsuba_DirectedEdge_m_V2E = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectedEdge_m_flag_counts = R"doc(Number of vertices carrying each of the four VertexFlags)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_m_flag_counts_ready = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectedEdge_m_flags = R"doc()doc";
 
@@ -3280,13 +3294,7 @@ static const char *__doc_mitsuba_DirectedEdge_traverse_1_cb_ro = R"doc()doc";
 
 static const char *__doc_mitsuba_DirectedEdge_traverse_1_cb_rw = R"doc()doc";
 
-static const char *__doc_mitsuba_DirectedEdge_valence =
-R"doc(Return the valence of ``v``
-
-This is the number of faces containing ``v``. It excludes degenerate
-faces with a repeated vertex index.)doc";
-
-static const char *__doc_mitsuba_DirectedEdge_valence_2 = R"doc(Per-vertex buffer of valences, i.e. face counts)doc";
+static const char *__doc_mitsuba_DirectedEdge_valence = R"doc(Per-vertex buffer of valences, i.e. face counts)doc";
 
 static const char *__doc_mitsuba_DirectedEdge_vertex_count = R"doc(Number of vertices in the numbering used by the per-vertex outputs)doc";
 
@@ -3300,6 +3308,12 @@ or the smallest one overall when no such half-edge exists. It is the
 entry point of the vertex walk described in the class documentation.)doc";
 
 static const char *__doc_mitsuba_DirectedEdge_vertex_flags = R"doc(Return the bitmask of VertexFlags associated with vertex ``v``)doc";
+
+static const char *__doc_mitsuba_DirectedEdge_vertex_valence =
+R"doc(Return the valence of ``v``
+
+This is the number of faces containing ``v``. It excludes degenerate
+faces with a repeated vertex index.)doc";
 
 static const char *__doc_mitsuba_DirectionSample = R"doc()doc";
 
@@ -6215,16 +6229,6 @@ static const char *__doc_mitsuba_Mesh_bsdf_index =
 R"doc(Return the per-face BSDF index (size face_count()). An empty buffer
 stands for zeros, see has_face_bsdfs().)doc";
 
-static const char *__doc_mitsuba_Mesh_build_indirect_silhouette_distribution =
-R"doc(Precompute the set of edges that could contribute to the indirect
-discontinuous integral.
-
-This method filters out any concave edges or flat surfaces.
-
-Internally, this method relies on the half-edge adjacency structure. A
-call to directed_edges() before a call to this method is therefore
-necessary.)doc";
-
 static const char *__doc_mitsuba_Mesh_build_parameterization =
 R"doc(Initialize the ``m_parameterization`` field for mapping UV coordinates
 to positions
@@ -6254,28 +6258,53 @@ static const char *__doc_mitsuba_Mesh_compute_tangents =
 R"doc(Compute MikkTSpace shading tangents from the field views as a ``(V,
 3)`` tensor)doc";
 
+static const char *__doc_mitsuba_Mesh_dedge =
+R"doc(Return a data structure describing the half-edge adjacency
+
+This function returns a DirectedEdge data structure that enables
+geometric queries such as finding the triangle across an edge or
+traversing faces surrounding a vertex.
+
+The data structure is built on demand and uses the geometric
+connectivity specified by geometric_faces() so that attribute
+discontinuities do not introduce artificial geometric boundaries. The
+result is immutable and invariant to changes in mesh positions,
+normals and materials. The Mesh class automatically deletes the cached
+instance when the index buffer, the position index map, or the
+position count changes.
+
+The on-demand construction does not lock a mutex to protect from
+concurrent calls to this function. This matches the expected usage
+(JIT variants), where a single thread orchestrates the parallel
+computation.)doc";
+
+static const char *__doc_mitsuba_Mesh_dedge_indices =
+R"doc(Returns the vertex indices of the directed edge ``index``
+
+The three components are the source vertex, the target vertex, and the
+vertex opposing the edge within its face. They correspond to ``F[e]``,
+``F[next(e)]``, and ``F[prev(e)]`` in the notation of DirectedEdge.)doc";
+
+static const char *__doc_mitsuba_Mesh_dedge_opposite =
+R"doc(Returns the opposite edge index associated with directed edge
+``index``
+
+This is one of four accessors forwarding to the DirectedEdge
+structure, which dedge() builds on first use. A returned
+``DirectedEdge::Invalid`` therefore always describes the topology,
+here the absence of a neighboring face.)doc";
+
+static const char *__doc_mitsuba_Mesh_dedge_vertex_edge = R"doc(Returns the canonical half-edge starting at vertex ``index``)doc";
+
+static const char *__doc_mitsuba_Mesh_dedge_vertex_flags = R"doc(Returns the VertexFlags bitmask of vertex ``index``)doc";
+
+static const char *__doc_mitsuba_Mesh_dedge_vertex_valence = R"doc(Returns the number of faces containing vertex ``index``)doc";
+
 static const char *__doc_mitsuba_Mesh_describe = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_differential_motion = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_directed_edges =
-R"doc(Return the half-edge adjacency of the mesh, building it on demand
-
-The structure is built from geometric_faces(), so that the two sides
-of an attribute seam are adjacent instead of reading as mesh
-boundaries. It survives position, normal and material edits, and is
-discarded when the index buffer, the position index map, or the
-position count changes.
-
-This function performs no synchronization, which is fine in the
-expected usage (JIT variants), where a single thread orchestrates the
-parallel computation.)doc";
-
 static const char *__doc_mitsuba_Mesh_drop_views = R"doc(Release the field views and make the packed state authoritative)doc";
-
-static const char *__doc_mitsuba_Mesh_edge_indices =
-R"doc(Returns the vertex indices associated with edge ``edge_index`` (0..2)
-of triangle ``tri_index``.)doc";
 
 static const char *__doc_mitsuba_Mesh_ensure_pmf_built = R"doc()doc";
 
@@ -6436,8 +6465,8 @@ R"doc(Return an ``(F, 3)`` tensor encoding the geometric topology
 
 This function returns faces() re-indexed into surface position space,
 i.e., the geometric topology of the mesh without UV/normal-related
-seams. It is used by features like directed_edges() and the mesh
-Laplacian in ``largesteps.py``.)doc";
+seams. It is used by features like dedge() and the mesh Laplacian in
+``largesteps.py``.)doc";
 
 static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
 
@@ -6478,7 +6507,7 @@ static const char *__doc_mitsuba_Mesh_m_bsdf_index = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_built = R"doc(Set by the first successful build; construction is one-shot)doc";
 
-static const char *__doc_mitsuba_Mesh_m_dedge = R"doc(Half-edge adjacency, null until directed_edges() builds it)doc";
+static const char *__doc_mitsuba_Mesh_m_dedge = R"doc(Half-edge adjacency, null until dedge() builds it)doc";
 
 static const char *__doc_mitsuba_Mesh_m_face_count = R"doc()doc";
 
@@ -6528,9 +6557,7 @@ static const char *__doc_mitsuba_Mesh_m_positions = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_scene = R"doc(Pointer to the scene that owns this mesh)doc";
 
-static const char *__doc_mitsuba_Mesh_m_sil_dedge_pmf =
-R"doc(Sampling density of silhouette
-(build_indirect_silhouette_distribution))doc";
+static const char *__doc_mitsuba_Mesh_m_sil_dedge_pmf = R"doc(Sampling density of silhouette edges, null until sil_dedge_pmf())doc";
 
 static const char *__doc_mitsuba_Mesh_m_source_path = R"doc(Resolved path of the source file when the mesh was constructed)doc";
 
@@ -6590,15 +6617,6 @@ R"doc(Return the vertex index -> normal index map. An empty map encodes the
 identity.)doc";
 
 static const char *__doc_mitsuba_Mesh_normals = R"doc(Return the shading normal group values as an ``(N, 3)`` tensor)doc";
-
-static const char *__doc_mitsuba_Mesh_opposite_dedge =
-R"doc(Returns the opposite edge index associated with directed edge
-``index``
-
-The function returns ``DirectedEdge::Invalid`` when the adjacency
-structure has not been built. It deliberately does not build it, so
-that a vectorized call over a set of meshes of which only some carry
-the structure remains well defined. Call directed_edges() first.)doc";
 
 static const char *__doc_mitsuba_Mesh_pack =
 R"doc(Compile the field views into the packed records
@@ -6708,6 +6726,14 @@ static const char *__doc_mitsuba_Mesh_sample_silhouette = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_set_bsdf = R"doc(Set the shape's BSDF)doc";
 
 static const char *__doc_mitsuba_Mesh_set_scene = R"doc(//! @{ \name Miscellaneous)doc";
+
+static const char *__doc_mitsuba_Mesh_sil_dedge_pmf =
+R"doc(Return the sampling density over edges that could contribute to the
+indirect discontinuous integral
+
+The distribution excludes concave edges and flat surfaces. It depends
+on the vertex positions, so refresh() discards it and this accessor
+rebuilds it on the next use.)doc";
 
 static const char *__doc_mitsuba_Mesh_surface_area = R"doc()doc";
 
