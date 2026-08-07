@@ -317,7 +317,8 @@ MI_PY_EXPORT(Integrator) {
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
         .def_method(Integrator, aov_names)
-        .def_method(Integrator, skip_area_emitters);
+        .def_method(Integrator, skip_area_emitters, "scene"_a, "ray"_a,
+                    "coherent"_a = false, "active"_a = true);
 
     drjit::bind_traverse(cls);
 

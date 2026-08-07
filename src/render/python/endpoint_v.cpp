@@ -17,7 +17,7 @@ MI_PY_EXPORT(Endpoint) {
         .def_method(Endpoint, sample_direction, "it"_a, "sample"_a, "active"_a = true)
         .def_method(Endpoint, pdf_direction, "it"_a, "ds"_a, "active"_a = true)
         .def_method(Endpoint, eval_direction, "it"_a, "ds"_a, "active"_a = true)
-        .def_method(Endpoint, sample_position, "ref"_a, "ds"_a, "active"_a = true)
+        .def_method(Endpoint, sample_position, "time"_a, "sample"_a, "active"_a = true)
         .def_method(Endpoint, pdf_position, "ps"_a, "active"_a = true)
         .def_method(Endpoint, eval, "si"_a, "active"_a = true)
         .def_method(Endpoint, sample_wavelengths, "si"_a, "sample"_a, "active"_a = true)
