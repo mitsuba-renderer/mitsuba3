@@ -18,7 +18,7 @@ public:
      * \brief Construct a new progress reporter.
      * \param label
      *     An identifying name for the operation taking place (e.g. "Rendering")
-     * \param ptr
+     * \param payload
      *     Custom pointer payload to be delivered as part of progress messages
      */
     ProgressReporter(const std::string &label, void *payload = nullptr);

@@ -43,16 +43,16 @@ MI_PY_EXPORT(DiscreteDistribution) {
             .def_method(DiscreteDistribution, sum)
             .def("sample",
                 &DiscreteDistribution::sample,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample))
             .def("sample_pmf",
                 &DiscreteDistribution::sample_pmf,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
             .def("sample_reuse",
                 &DiscreteDistribution::sample_reuse,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
             .def("sample_reuse_pmf",
                 &DiscreteDistribution::sample_reuse_pmf,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
             .def_repr(DiscreteDistribution);
 
         drjit::bind_traverse(discrete_distr);
@@ -101,10 +101,10 @@ MI_PY_EXPORT(ContinuousDistribution) {
             .def_method(ContinuousDistribution, max)
             .def("sample",
                 &ContinuousDistribution::sample,
-                "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
+                "sample"_a, "active"_a = true, D(ContinuousDistribution, sample))
             .def("sample_pdf",
                 &ContinuousDistribution::sample_pdf,
-                "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
+                "sample"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
             .def_repr(ContinuousDistribution);
 
         drjit::bind_traverse(continuous_distr);
@@ -157,10 +157,11 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
             .def_method(IrregularContinuousDistribution, max)
             .def("sample",
                 &IrregularContinuousDistribution::sample,
-                "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
+                "sample"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
             .def("sample_pdf",
                 &IrregularContinuousDistribution::sample_pdf,
-                "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample_pdf))
+                "sample"_a, "active"_a = true,
+                D(IrregularContinuousDistribution, sample_pdf))
             .def_repr(IrregularContinuousDistribution);
 
         drjit::bind_traverse(irregular_distr);

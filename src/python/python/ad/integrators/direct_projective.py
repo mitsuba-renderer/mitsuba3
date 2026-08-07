@@ -18,8 +18,8 @@ class DirectProjectiveIntegrator(PSIntegrator):
        - |int|
        - Number of samples per pixel used to estimate the continuous
          derivatives. Unless it is zero, this parameter is overriden by the
-         `spp` argument of the `render()` method. If neither this parameter nor
-         the `spp` argument are defined, the `sample_count` of the film's
+         ``spp`` argument of the `mitsuba.render()` method. If neither this parameter nor
+         the ``spp`` argument are defined, the ``sample_count`` of the film's
          sampler will be used.
 
      * - sppp
@@ -27,17 +27,17 @@ class DirectProjectiveIntegrator(PSIntegrator):
        - Number of samples per pixel used to to estimate the gradients resulting
          from primary visibility changes (on the first segment of the light
          path: from the sensor to the first bounce) derivatives. Unless it is
-         zero, this parameter is overriden by the `spp` argument of the
-         `render()` method. If neither this parameter nor the `spp` argument are
-         defined, the `sample_count` of the film's sampler will be used.
+         zero, this parameter is overriden by the ``spp`` argument of the
+         `mitsuba.render()` method. If neither this parameter nor the ``spp`` argument are
+         defined, the ``sample_count`` of the film's sampler will be used.
 
      * - sppi
        - |int|
        - Number of samples per pixel used to to estimate the gradients resulting
          from indirect visibility changes  derivatives. Unless it is zero, this
-         parameter is overriden by the `spp` argument of the `render()` method.
-         If neither this parameter nor the `spp` argument are defined, the
-         `sample_count` of the film's sampler will be used.
+         parameter is overriden by the ``spp`` argument of the `mitsuba.render()` method.
+         If neither this parameter nor the ``spp`` argument are defined, the
+         ``sample_count`` of the film's sampler will be used.
 
      * - guiding
        - |string|
@@ -70,7 +70,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
     See the paper :cite:`Zhang2023Projective` for details on projective
     sampling, and guiding structures for indirect visibility discontinuities.
 
-    It is functionally equivalent with `prb_projective` when `max_depth` is set
+    It is functionally equivalent with ``prb_projective`` when ``max_depth`` is set
     to be 2.
 
     .. warning::
@@ -121,7 +121,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                **kwargs # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], Any]:
         """
-        See ``PSIntegrator.sample()`` for a description of this interface and
+        See `PSIntegrator.sample` for a description of this interface and
         the role of the various parameters and return values.
         """
         del depth, δL, state_in, kwargs  # Unused

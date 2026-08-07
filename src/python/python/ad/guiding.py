@@ -38,7 +38,7 @@ class GridDistr(BaseGuidingDistr):
         Parameter ``debug_logs``:
             Whether or not to print debug logs. If this is enabled, extra
             kernels will be launched and the messages will be printed with a
-            `Debug` log level.
+            ``Debug`` log level.
         """
         self.prod_reso = []
         self.unit_delta = []
@@ -56,7 +56,7 @@ class GridDistr(BaseGuidingDistr):
         """
         Returns the 3D cell index corresponding to the 1D input index.
 
-        With `index_array`=dr.arange(mi.UInt32, self.num_cells), the output
+        With ``index_array``=dr.arange(mi.UInt32, self.num_cells), the output
         array of this function is [[0, 0, 0], [0, 0, 1], ..., [Nx-1, Ny-1, Nz-1]].
         """
         index_array = mi.UInt32(index_array_)
@@ -161,7 +161,7 @@ class OcSpaceDistr(BaseGuidingDistr):
     def aabbs(buffer: mi.Float, node_idx: mi.UInt32):
         """
         Returns the front bottom left corner and back top right corner points
-        of the AABB with index `node_idx`.
+        of the AABB with index ``node_idx``.
         """
         idx = node_idx * 2
         aabb_min = dr.gather(mi.Point3f, buffer, idx)
@@ -185,7 +185,7 @@ class OcSpaceDistr(BaseGuidingDistr):
             node_idx: mi.UInt32
         ):
         """
-        Splits an AABB into 8 sub-nodes. The results are written to `buffer`.
+        Splits an AABB into 8 sub-nodes. The results are written to ``buffer``.
         """
 
         def write_aabb(aabb_min: mi.Point3f, aabb_max: mi.Point3f, offset: int):
@@ -215,7 +215,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
     def construct_octree(self, points, log=False):
         """
-        Octree construction/partitioning for the given `input` points.
+        Octree construction/partitioning for the given ``input`` points.
         """
 
         ###### OVERVIEW ######
@@ -404,7 +404,7 @@ class OcSpaceDistr(BaseGuidingDistr):
 
     def estimate_mass_in_leaves(self, aabb_min, aabb_max, seed, log:bool=False):
         """
-        Evaluates `extra_spc` random samples in each leaf to compute an average
+        Evaluates ``extra_spc`` random samples in each leaf to compute an average
         mass per leaf.
         """
         leaf_count = dr.width(aabb_min)

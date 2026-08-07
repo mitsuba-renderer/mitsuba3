@@ -18,7 +18,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * In scalar mode, image blocks represent independent rectangular image regions
  * that are simultaneously processed by worker threads. They are finally merged
- * into a master \ref ImageBlock controlled by the \ref Film instance via the
+ * into a master \ref ImageBlock controlled by the `Film` instance via the
  * \ref put_block() method. The smaller image blocks can include a border
  * region storing contributions that are slightly outside of the block, which
  * is required to correctly account for image reconstruction filters.
@@ -29,7 +29,7 @@ NAMESPACE_BEGIN(mitsuba)
  * In addition to receiving samples via the \ref put() method, the image block
  * can also be queried via the \ref read() method, in which case the
  * reconstruction filter is used to compute suitable interpolation weights.
- * This is feature is useful for differentiable rendering, where one needs to
+ * This feature is useful for differentiable rendering, where one needs to
  * evaluate the reverse-mode derivative of the \ref put() method.
  */
 
@@ -60,10 +60,10 @@ public:
      *
      * \param rfilter
      *    The desired reconstruction filter to be used in \ref read() and \ref
-     *    put(). A box filter will be used if when <tt>rfilter==nullptr</tt>.
+     *    put(). A box filter will be used if <tt>rfilter==nullptr</tt>.
      *
      * \param border
-     *    Should \c ImageBlock add an additional border region around around
+     *    Should \c ImageBlock add an additional border region around
      *    the image boundary to capture contributions to neighboring pixels
      *    caused by a nontrivial (non-box) reconstruction filter? This is
      *    mainly useful when a larger image is partitioned into smaller blocks
@@ -155,10 +155,10 @@ public:
      * \brief Accumulate a single sample or a wavefront of samples into the
      * image block.
      *
-     * \remark This variant of the put() function assumes that the ImageBlock
+     * \remark This variant of the \ref put() function assumes that the ImageBlock
      * has a standard layout, namely: \c RGB, potentially \c alpha, and a \c
      * weight channel. Use the other variant if the channel configuration
-     * deviations from this default.
+     * deviates from this default.
      *
      * \param pos
      *    Denotes the sample position in fractional pixel coordinates
@@ -245,7 +245,7 @@ public:
     /**\brief Set the current block offset.
      *
      * This corresponds to the offset from the top-left corner of a larger
-     * image (e.g. a Film) to the top-left corner of this ImageBlock instance.
+     * image (e.g. a `Film`) to the top-left corner of this ImageBlock instance.
      */
     void set_offset(const ScalarPoint2i &offset) { m_offset = offset; }
 

@@ -29,7 +29,7 @@ public:
 
     /**
      * \brief Set the global logger used by Mitsuba
-     * \deprecated Use mitsuba::set_logger() directly
+     * \deprecated Use ``mitsuba::set_logger()`` directly
      */
     [[deprecated]]
     static void set_logger(Logger *logger);

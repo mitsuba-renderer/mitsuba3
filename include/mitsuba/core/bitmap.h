@@ -26,7 +26,7 @@ public:
 
     /**
      * This enumeration lists all pixel format types supported
-     * by the \ref Bitmap class. This both determines the
+     * by the `Bitmap` class. This both determines the
      * number of channels, and how they should be interpreted
      */
     enum class PixelFormat {
@@ -42,10 +42,10 @@ public:
         /// RGB bitmap + alpha channel
         RGBA,
 
-        /// RGB bitmap + weight (used by \ref ImageBlock)
+        /// RGB bitmap + weight (used by `ImageBlock`)
         RGBW,
 
-        /// RGB bitmap + alpha channel + weight (used by \ref ImageBlock)
+        /// RGB bitmap + alpha channel + weight (used by `ImageBlock`)
         RGBAW,
 
         /// XYZ tristimulus bitmap
@@ -80,8 +80,8 @@ public:
          *
          * The following is supported:
          * <ul>
-         *   <li>Loading and saving of \ref Float16 / \ref Float32/ \ref
-         *   UInt32 bitmaps with all supported RGB/Luminance/Alpha combinations</li>
+         *   <li>Loading and saving of `Float16` / `Float32`/ `UInt32`
+         *   bitmaps with all supported RGB/Luminance/Alpha combinations</li>
          *   <li>Loading and saving of spectral bitmaps</li>
          *   <li>Loading and saving of XYZ tristimulus bitmaps</li>
          *   <li>Loading and saving of string-valued metadata fields</li>
@@ -101,7 +101,7 @@ public:
          *
          * The following is supported
          * <ul>
-         *   <li>Loading and saving of \ref Float32 - based RGB bitmaps</li>
+         *   <li>Loading and saving of `Float32` - based RGB bitmaps</li>
          * </ul>
          */
         RGBE,
@@ -111,7 +111,7 @@ public:
          *
          * The following is supported
          * <ul>
-         *   <li>Loading and saving of \ref Float32 - based Luminance or RGB bitmaps</li>
+         *   <li>Loading and saving of `Float32` - based Luminance or RGB bitmaps</li>
          * </ul>
          */
         PFM,
@@ -121,7 +121,7 @@ public:
          *
          * The following is supported
          * <ul>
-         *   <li>Loading and saving of \ref UInt8 and \ref UInt16 - based RGB bitmaps</li>
+         *   <li>Loading and saving of `UInt8` and `UInt16` - based RGB bitmaps</li>
          * </ul>
          */
         PPM,
@@ -160,7 +160,7 @@ public:
          * \brief Automatically detect the file format
          *
          * Note: this flag only applies when loading a file. In this case,
-         * the source stream must support the ``seek()`` operation.
+         * the source stream must support the \ref Stream::seek() operation.
          */
         Auto
     };
@@ -194,23 +194,19 @@ public:
      * \param component_format
      *    Specifies how the per-pixel components are encoded (e.g. unsigned 8
      *    bit integers or 32-bit floating point values). The component format
-     *    struct_type_v<Float> will be translated to the corresponding
-     *    compile-time precision type (Float32 or Float64).
+     *    ``struct_type_v<Float>`` will be translated to the corresponding
+     *    compile-time precision type (`Float32` or `Float64`).
      *
      * \param size
      *    Specifies the horizontal and vertical bitmap size in pixels
      *
      * \param channel_count
      *    Channel count of the image. This parameter is only required when
-     *    \c pixel_format = \ref PixelFormat::MultiChannel
+     *    ``pixel_format`` = `PixelFormat.MultiChannel`
      *
      * \param channel_names
      *    Channel names of the image. This parameter is optional, and only used
-     *    when \c pixel_format = \ref PixelFormat::MultiChannel
-     *
-     * \param data
-     *    External pointer to the image data. If set to \c nullptr, the
-     *    implementation will allocate memory itself.
+     *    when ``pixel_format`` = `PixelFormat.MultiChannel`
      */
     Bitmap(PixelFormat pixel_format,
            sj::Type component_format,
@@ -309,22 +305,22 @@ public:
     /// Specify whether the bitmap uses premultiplied alpha
     void set_premultiplied_alpha(bool value);
 
-    /// Return a \ref Properties object containing the image metadata
+    /// Return a `Properties` object containing the image metadata
     Properties &metadata() { return m_metadata; }
 
-    /// Return a \ref Properties object containing the image metadata (const version)
+    /// Return a `Properties` object containing the image metadata (const version)
     const Properties &metadata() const { return m_metadata; }
 
-    /// Set the a \ref Properties object containing the image metadata
+    /// Set the a `Properties` object containing the image metadata
     void set_metadata(const Properties &metadata) { m_metadata = metadata; }
 
     /// Clear the bitmap to zero
     void clear();
 
-    /// Return a \c Struct instance describing the contents of the bitmap (const version)
+    /// Return a `Struct` instance describing the contents of the bitmap (const version)
     const sj::Struct &struct_() const { return m_struct; }
 
-    /// Return a \c Struct instance describing the contents of the bitmap
+    /// Return a `Struct` instance describing the contents of the bitmap
     sj::Struct &struct_() { return m_struct; }
 
     /**
@@ -334,7 +330,7 @@ public:
      *    Target stream that will receive the encoded output
      *
      * \param format
-     *    Target file format (\ref OpenEXR, \ref PNG, etc.)
+     *    Target file format (`FileFormat.OpenEXR`, `FileFormat.PNG`, etc.)
      *    Detected from the filename by default.
      *
      * \param quality
@@ -364,7 +360,7 @@ public:
      *    Target file path on disk
      *
      * \param format
-     *    Target file format (\ref FileFormat::OpenEXR, \ref FileFormat::PNG, etc.)
+     *    Target file format (`FileFormat.OpenEXR`, `FileFormat.PNG`, etc.)
      *    Detected from the filename by default.
      *
      * \param quality
@@ -411,7 +407,7 @@ public:
      * \param rfilter
      *     A separable image reconstruction filter (default: 2-lobe Lanczos filter)
      *
-     * \param bch
+     * \param bc
      *     Horizontal and vertical boundary conditions (default: clamp)
      *
      * \param clamp
@@ -450,7 +446,7 @@ public:
      * \param rfilter
      *     A separable image reconstruction filter (default: 2-lobe Lanczos filter)
      *
-     * \param bch
+     * \param bc
      *     Horizontal and vertical boundary conditions (default: clamp)
      *
      * \param clamp
@@ -509,18 +505,16 @@ public:
      * the source and target bitmap, therefore it won't be affected by
      * any gamma-related transformations.
      *
-     * \remark This <tt>convert()</tt> variant usually returns a new
-     * bitmap instance. When the conversion would just involve copying
-     * the original bitmap, the function becomes a no-op and returns
-     * the current instance.
+     * \remark This <tt>convert()</tt> variant always returns a new
+     * bitmap instance.
      *
-     * \ref pixel_format
+     * \param pixel_format
      *      Specifies the desired pixel format
      *
-     * \ref component_format
+     * \param component_format
      *      Specifies the desired component format
      *
-     * \ref srgb_gamma
+     * \param srgb_gamma
      *      Specifies whether a sRGB gamma ramp should be applied to
      *      the output values.
      */
@@ -677,7 +671,7 @@ public:
  * Out-of-bounds regions are safely ignored. It is assumed that
  * <tt>source != target</tt>.
  *
- * The function supports `T` being a raw pointer or an arbitrary Dr.Jit array
+ * The function supports ``T`` being a raw pointer or an arbitrary Dr.Jit array
  * that can potentially live on the GPU and/or be differentiable.
  */
 template <typename T, typename ConstT>

@@ -109,7 +109,7 @@ MI_PY_EXPORT(Properties) {
         }, "Deprecated: use 'props.keys()' instead")
         .def("mark_queried",
              nb::overload_cast<std::string_view, bool>(&Properties::mark_queried, nb::const_),
-             "key"_a, "value"_a = true,
+             "name"_a, "value"_a = true,
              D(Properties, mark_queried))
         .def_method(Properties, was_queried)
         .def_method(Properties, plugin_name)

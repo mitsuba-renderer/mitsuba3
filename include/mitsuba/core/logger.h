@@ -11,19 +11,19 @@ NAMESPACE_BEGIN(mitsuba)
 
 /// Available Log message types
 enum LogLevel : int {
-    Trace = 0,   /// Trace message, for extremely verbose debugging
-    Debug = 100, /// Debug message, usually turned off
-    Info  = 200, /// More relevant debug / information message
-    Warn  = 300, /// Warning message
-    Error = 400  /// Error message, causes an exception to be thrown
+    Trace = 0,   ///< Trace message, for extremely verbose debugging
+    Debug = 100, ///< Debug message, usually turned off
+    Info  = 200, ///< More relevant debug / information message
+    Warn  = 300, ///< Warning message
+    Error = 400  ///< Error message, causes an exception to be thrown
 };
 
 /**
  * \brief Responsible for processing log messages
  *
- * Upon receiving a log message, the Logger class invokes a Formatter to
+ * Upon receiving a log message, the Logger class invokes a `Formatter` to
  * convert it into a human-readable form. Following that, it sends this
- * information to every registered Appender.
+ * information to every registered `Appender`.
  *
  * \ingroup libcore
  */
@@ -54,7 +54,7 @@ public:
      *      Log message
      *
      * \note This function is not exposed in the Python bindings.
-     *       Instead, please use \cc mitsuba.core.Log
+     *       Instead, please use \c mitsuba.Log
      */
     void log(LogLevel level, const char *cname, const char *fname,
              int line, std::string_view msg);

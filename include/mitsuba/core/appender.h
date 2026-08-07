@@ -45,7 +45,7 @@ public:
     MI_DECLARE_CLASS(Appender)
 };
 
-/** \brief %Appender implementation, which writes to an
+/** \brief `Appender` implementation, which writes to an
  * arbitrary C++ output stream
  */
 class MI_EXPORT_LIB StreamAppender : public Appender {

@@ -37,7 +37,7 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
 }
 
 /**
- * \brief Implementation of the Beckman and GGX / Trowbridge-Reitz microfacet
+ * \brief Implementation of the Beckmann and GGX / Trowbridge-Reitz microfacet
  * distributions and various useful sampling routines
  *
  * Based on the papers
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * \brief Create a microfacet distribution from a Property data
+     * \brief Create a microfacet distribution from a `Properties` data
      * structure
      */
     MicrofacetDistribution(const Properties &props,
@@ -229,7 +229,7 @@ public:
 
     /**
      * \brief Draw a sample from the microfacet normal distribution
-     *  and return the associated probability density
+     * and return the associated probability density
      *
      * \param wi
      *    The incident direction. Only used if

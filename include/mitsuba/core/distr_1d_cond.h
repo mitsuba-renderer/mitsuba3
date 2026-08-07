@@ -13,7 +13,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * \brief Conditional 1D irregular distribution
  *
- * Similarly to the irregular 1D distribution, this class represents a
+ * Similarly to `IrregularContinuousDistribution`, this class represents a
  * 1-dimensional irregular distribution. It differs in the fact that it has N-1
  * extra dimensions on which it is conditioned.
  *
@@ -152,16 +152,16 @@ public:
 
     /**
      * \brief Evaluate the unnormalized probability density function (PDF) at
-     * position \c pos, conditioned on \c cond.
+     * position \c x, conditioned on \c cond.
      *
-     * \param pos
+     * \param x
      *     Position where the PDF is evaluated.
      *
      * \param cond
      *     Array of values where the conditionals are evaluated.
      *
      * \return
-     *     The value of the PDF at position \c pos, conditioned on \c cond.
+     *     The value of the PDF at position \c x, conditioned on \c cond.
      */
     Value eval_pdf(Value pos, std::vector<Value> &cond,
                    Mask active = true) const {
@@ -175,16 +175,16 @@ public:
 
     /**
      * \brief Evaluate the normalized probability density function (PDF) at
-     * position \c pos, conditioned on \c cond.
+     * position \c x, conditioned on \c cond.
      *
-     * \param pos
+     * \param x
      *     Position where the PDF is evaluated.
      *
      * \param cond
      *     Array of values where the conditionals are evaluated.
      *
      * \return
-     *     The value of the normalized PDF at position \c pos, conditioned
+     *     The value of the normalized PDF at position \c x, conditioned
      *     on \c cond.
      */
     Value eval_pdf_normalized(Value pos, std::vector<Value> &cond,
@@ -210,9 +210,11 @@ public:
      *     Conditionals where the PDF is sampled.
      *
      * \return
-     *     A pair where the first element is the sampled position and the
-     *     second element the value of the normalized PDF at that position
-     *     conditioned on \c cond.
+     *     A tuple consisting of
+     *
+     *     1. the sampled position.
+     *     2. the normalized probability density of the sample, conditioned
+     *        on \c cond.
      */
     std::pair<Value, Value> sample_pdf(Value u, std::vector<Value> &cond,
                                        Mask active) const {
@@ -638,7 +640,7 @@ std::ostream &operator<<(std::ostream &os,
  * \brief Conditional 1D regular distribution.
  *
  *
- * Similar to the regular 1D distribution, but this class represents an
+ * Similar to `ContinuousDistribution`, but this class represents an
  * N-Dimensional regular one (with the extra conditional dimensions being also
  * regular).
  *

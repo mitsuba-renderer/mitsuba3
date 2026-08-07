@@ -31,7 +31,7 @@ public:
      * The sensor profile is a six-dimensional quantity that depends on time,
      * wavelength, surface position, and direction. This function takes a given
      * time value and five uniformly distributed samples on the interval [0, 1]
-     * and warps them so that the returned ray the profile. Any
+     * and warps them so that the returned ray follows the profile. Any
      * discrepancies between ideal and actual sampled profiles are absorbed into
      * a spectral importance weight that is returned along with the ray.
      *
@@ -103,10 +103,10 @@ public:
     /// Does the sampling technique require a sample for the aperture position?
     bool needs_aperture_sample() const { return m_needs_sample_3; }
 
-    /// Return the \ref Film instance associated with this sensor
+    /// Return the `Film` instance associated with this sensor
     Film *film() { return m_film; }
 
-    /// Return the \ref Film instance associated with this sensor (const)
+    /// Return the `Film` instance associated with this sensor (const)
     const Film *film() const { return m_film.get(); }
 
     /**
@@ -114,7 +114,7 @@ public:
      *
      * This is the \a root sampler, which will later be forked a number of times
      * to provide each participating worker thread with its own instance (see
-     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * \ref Sensor::sampler()). Therefore, this sampler should never be used for
      * anything except creating forks.
      */
     ref<Sampler> sampler() { return m_sampler; }
@@ -124,7 +124,7 @@ public:
      *
      * This is the \a root sampler, which will later be cloned a number of times
      * to provide each participating worker thread with its own instance (see
-     * \ref Scene::sampler()). Therefore, this sampler should never be used for
+     * \ref Sensor::sampler()). Therefore, this sampler should never be used for
      * anything except creating clones.
      */
     ref<const Sampler> sampler() const { return m_sampler.get(); }

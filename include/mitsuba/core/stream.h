@@ -26,7 +26,7 @@ NAMESPACE_END(detail)
  * value passed to \ref set_byte_order(). Whenever \ref host_byte_order()
  * and \ref byte_order() disagree, the endianness is swapped.
  *
- * \sa FileStream, MemoryStream, DummyStream
+ * \sa `FileStream`, `MemoryStream`, `DummyStream`
  */
 class MI_EXPORT_LIB Stream : public Object {
 
@@ -41,9 +41,9 @@ public:
 
     /// Defines the byte order (endianness) to use in this Stream
     enum EByteOrder {
-        EBigEndian = 0,                /// PowerPC, SPARC, Motorola 68K
-        ELittleEndian = 1,             /// x86, x86_64
-        ENetworkByteOrder = EBigEndian /// Network byte order (an alias for big endian)
+        EBigEndian = 0,                ///< PowerPC, SPARC, Motorola 68K
+        ELittleEndian = 1,             ///< x86, x86_64
+        ENetworkByteOrder = EBigEndian ///< Network byte order (an alias for big endian)
     };
 
     /**
@@ -274,9 +274,9 @@ template <typename T, std::enable_if_t<sizeof(T) == 8, int> = 0> T swap(const T 
 #endif
 }
 
-/** \brief The serialization_helper<T> implementations for new types should
+/** \brief The ``serialization_helper<T>`` implementations for new types should
  * in general be implemented as a series of calls to the lower-level
- * serialization_helper::{read,write} functions.
+ * ``serialization_helper::{read,write}`` functions.
  * This way, endianness swapping needs only be handled at the lowest level.
  */
 template <typename T, typename SFINAE> struct serialization_helper {

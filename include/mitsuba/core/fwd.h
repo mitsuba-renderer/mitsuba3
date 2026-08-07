@@ -430,7 +430,7 @@ extern "C" {
         }
 
 /**
- * \breif Macro, generating the implementation of the ``traverse_1_cb_rw``
+ * \brief Macro, generating the implementation of the ``traverse_1_cb_rw``
  *     method.
  *
  * The first argument should be the base class, from which the current class

@@ -125,7 +125,7 @@ public:
      * passed. If there is no extension, appends a '.' followed by the
      * replacement. If the path is empty, '.' or '..', the method does nothing.
      *
-     * Returns *this.
+     * Returns <tt>*this</tt>.
      */
     path& replace_extension(const path &replacement = path());
 
@@ -205,9 +205,8 @@ protected:
 /// Returns the current working directory (equivalent to getcwd)
 extern MI_EXPORT_LIB path current_path();
 
-/** \brief Returns an absolute path to the same location pointed by <tt>p</tt>,
- * relative to <tt>base</tt>.
- * \see http ://en.cppreference.com/w/cpp/experimental/fs/absolute)
+/** \brief Returns an absolute path to the same location pointed by <tt>p</tt>.
+ * \see http://en.cppreference.com/w/cpp/experimental/fs/absolute
  */
 extern MI_EXPORT_LIB path absolute(const path& p);
 

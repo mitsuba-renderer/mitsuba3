@@ -42,15 +42,15 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * ``e = 3*f + i``, where ``i`` is in ``{0, 1, 2}``. Their basic relationships
  * are:
  *
- * ```
- * next(e)             = 3*f + (i + 1) % 3
- * prev(e)             = 3*f + (i + 2) % 3
- * face(e)             = e / 3
- * corner(e)           = e % 3
- * source(e)           = F[e]
- * target(e)           = F[next(e)]
- * opposing_vertex(e)  = F[prev(e)]
- * ```
+ * .. code-block:: python
+ *
+ *    next(e)             = 3*f + (i + 1) % 3
+ *    prev(e)             = 3*f + (i + 2) % 3
+ *    face(e)             = e / 3
+ *    corner(e)           = e % 3
+ *    source(e)           = F[e]
+ *    target(e)           = F[next(e)]
+ *    opposing_vertex(e)  = F[prev(e)]
  *
  * Hence, \ref next() advances along the triangle's winding direction and
  * \ref prev() goes in the opposite direction; neither operation leaves the
@@ -89,22 +89,22 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * The following snippet obtains the two faces ``f0`` and ``f1`` that share
  * an interior manifold edge (which is the case when ``o != Invalid``).
  *
- * ```python
- * f0 = de.face(e)
- * o  = de.opposite(e)  # Load E2E[e]
- * f1 = de.face(o)
- * ```
+ * .. code-block:: python
+ *
+ *    f0 = de.face(e)
+ *    o  = de.opposite(e)  # Load E2E[e]
+ *    f1 = de.face(o)
  *
  * The two triangles share the edge endpoints ``v0`` and ``v1``. Each triangle
  * also has one vertex opposite the shared edge, denoted by ``c0`` and ``c1``.
  * These are obtained as follows:
  *
- * ```python
- * v0 = F[e]
- * v1 = F[de.next(e)]
- * c0 = F[de.prev(e)]
- * c1 = F[de.prev(o)]
- * ```
+ * .. code-block:: python
+ *
+ *    v0 = F[e]
+ *    v1 = F[de.next(e)]
+ *    c0 = F[de.prev(e)]
+ *    c1 = F[de.prev(o)]
  *
  * This local neighborhood is useful when computing cotangent weights,
  * curvature, etc.
@@ -115,22 +115,22 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * and advancing within the neighboring triangle walks around its source
  * vertex:
  *
- * ```
- * start = de.vertex_edge(v)  # Load V2E[v]
- * e, visited = start, 0
+ * .. code-block:: python
  *
- * while e != de.Invalid:
- *     visit_face(de.face(e))
- *     visited += 1
+ *    start = de.vertex_edge(v)  # Load V2E[v]
+ *    e, visited = start, 0
  *
- *     o = de.opposite(e)
- *     if o == de.Invalid:
- *         break
+ *    while e != de.Invalid:
+ *        visit_face(de.face(e))
+ *        visited += 1
  *
- *     e = de.next(o)
- *     if e == start:
- *         break
- * ```
+ *        o = de.opposite(e)
+ *        if o == de.Invalid:
+ *            break
+ *
+ *        e = de.next(o)
+ *        if e == start:
+ *            break
  *
  * A closed fan returns to ``start``. An open fan terminates at an unpaired
  * edge. For a manifold vertex, ``visited`` equals ``valence(v)``.
@@ -147,11 +147,11 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * The implementation only pairs half-edges when the result is unambiguous.
  * Whenever ``o = E2E[e]`` is not \ref Invalid, the following invariants hold:
  *
- * ```
- * E2E[o]     == e
- * F[o]       == F[next(e)]
- * F[next(o)] == F[e]
- * ```
+ * .. code-block:: python
+ *
+ *    E2E[o]     == e
+ *    F[o]       == F[next(e)]
+ *    F[next(o)] == F[e]
  *
  * These invariants remain true in the presence of boundaries and malformed
  * topology.
@@ -181,14 +181,14 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *
  * The following table summarizes the classification:
  *
- * ```
- * faces  winding    E2E entries  flags at both endpoints
- * -------------------------------------------------------
- * 1      -          Invalid      Boundary
- * 2      opposite   paired       none
- * 2      same       Invalid      Boundary | InconsistentOrientation
- * >= 3   any        Invalid      Boundary | NonManifoldEdge
- * ```
+ * .. code-block:: text
+ *
+ *    faces  winding    E2E entries  flags at both endpoints
+ *    -------------------------------------------------------
+ *    1      -          Invalid      Boundary
+ *    2      opposite   paired       none
+ *    2      same       Invalid      Boundary | InconsistentOrientation
+ *    >= 3   any        Invalid      Boundary | NonManifoldEdge
  *
  * A vertex accumulates the flags of all edges that touch it, so several
  * bits may be set at once. Test them individually using ``has_flag()``

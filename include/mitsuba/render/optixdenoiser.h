@@ -17,7 +17,7 @@ NAMESPACE_BEGIN(mitsuba)
  * directly with Mitsuba types and its conventions.
  *
  * The denoiser works best when applied to noisy renderings that were produced
- * with a \ref Film which used the `box` \ref ReconstructionFilter. With a
+ * with a `Film` which used the `box` `ReconstructionFilter`. With a
  * filter that spans multiple pixels, the denoiser might identify some local
  * variance as a feature of the scene and will not denoise it.
  */
@@ -65,7 +65,7 @@ public:
     ~OptixDenoiser();
 
     /**
-     * \brief Apply denoiser on inputs which are \ref TensorXf objects.
+     * \brief Apply denoiser on inputs which are `TensorXf` objects.
      *
      * \param noisy
      *      The noisy input. (tensor shape: (width, height, 3 | 4))
@@ -83,7 +83,7 @@ public:
      *      normals support. (tensor shape: (width, height, 3))
      *
      * \param to_sensor
-     *      A \ref Transform4f which is applied to the \c normals parameter
+     *      An `AffineTransform4f` which is applied to the \c normals parameter
      *      before denoising. This should be used to transform the normals into
      *      the correct coordinate frame.
      *      This parameter is optional, by default no transformation is
@@ -94,7 +94,7 @@ public:
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
      *      When this parameter is unknown, it can be set to a
-     *      zero-initialized TensorXf of the correct size and still produce
+     *      zero-initialized `TensorXf` of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with
      *      temporal denoising support. (tensor shape: (width, height, 2))
@@ -117,12 +117,12 @@ public:
                         const TensorXf &previous_denoised = TensorXf()) const;
 
     /**
-     * \brief Apply denoiser on inputs which are \ref Bitmap objects.
+     * \brief Apply denoiser on inputs which are `Bitmap` objects.
      *
      * \param noisy
      *      The noisy input. When passing additional information like albedo or
-     *      normals to the denoiser, this \ref Bitmap object must be a \ref
-     *      MultiChannel bitmap.
+     *      normals to the denoiser, this `Bitmap` object must use the
+     *      `PixelFormat.MultiChannel` pixel format.
      *
      * \param albedo_ch
      *      The name of the channel in the \c noisy parameter which contains
@@ -139,7 +139,7 @@ public:
      *      normals support.
      *
      * \param to_sensor
-     *      A \ref Transform4f which is applied to the \c normals parameter
+     *      An `AffineTransform4f` which is applied to the \c normals parameter
      *      before denoising. This should be used to transform the normals into
      *      the correct coordinate frame.
      *      This parameter is optional, by default no transformation is
@@ -151,7 +151,7 @@ public:
      *      the previous frame and the current one. It should capture the 2D
      *      motion of each individual pixel.
      *      When this parameter is unknown, it can be set to a
-     *      zero-initialized TensorXf of the correct size and still produce
+     *      zero-initialized `TensorXf` of the correct size and still produce
      *      convincing results.
      *      This parameter is optional unless the OptixDenoiser was built with
      *      temporal denoising support.
@@ -166,7 +166,7 @@ public:
      *
      * \param noisy_ch
      *      The name of the channel in the \c noisy parameter which contains
-     *      the shading normal information of the noisy rendering.
+     *      the noisy image to be denoised.
      *
      * \return The denoised input.
      */

@@ -74,8 +74,8 @@ public:
     /**
      * \brief Returns the number of channels stored in the volume
      *
-     *  When the channel count is zero, it indicates that the volume
-     *  does not support per-channel queries.
+     * When the channel count is zero, it indicates that the volume
+     * does not support per-channel queries.
      */
     uint32_t channel_count() const { return m_channel_count; }
 

@@ -138,7 +138,7 @@ public:
      * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -147,10 +147,10 @@ public:
      *     1. the discrete index associated with the sample, and
      *     2. the normalized probability value of the sample.
      */
-    std::pair<Index, Value> sample_pmf(Value value, Mask active = true) const {
+    std::pair<Index, Value> sample_pmf(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        Index index = sample(value, active);
+        Index index = this->sample(sample, active);
         return { index, eval_pmf_normalized(index) };
     }
 
@@ -158,10 +158,10 @@ public:
      * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * The original sample is value adjusted so that it can be reused as a
+     * The original sample is adjusted so that it can be reused as a
      * uniform variate.
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -171,25 +171,25 @@ public:
      *     2. the re-scaled sample value.
      */
     std::pair<Index, Value>
-    sample_reuse(Value value, Mask active = true) const {
+    sample_reuse(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        Index index = sample(value, active);
+        Index index = this->sample(sample, active);
 
         Value pmf = eval_pmf_normalized(index, active),
               cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
-        return { index, (value - cdf) / pmf };
+        return { index, (sample - cdf) / pmf };
     }
 
     /**
      * \brief Transform a uniformly distributed sample to the stored
      * distribution.
      *
-     * The original sample is value adjusted so that it can be reused as a
+     * The original sample is adjusted so that it can be reused as a
      * uniform variate.
      *
-     * \param value
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -200,17 +200,17 @@ public:
      *     3. the normalized probability value of the sample
      */
     std::tuple<Index, Value, Value>
-    sample_reuse_pmf(Value value, Mask active = true) const {
+    sample_reuse_pmf(Value sample, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
-        auto [index, pdf] = sample_pmf(value, active);
+        auto [index, pdf] = sample_pmf(sample, active);
 
         Value pmf = eval_pmf_normalized(index, active),
               cdf = eval_cdf_normalized(index - 1, active && index > 0);
 
         return {
             index,
-            (value - cdf) / pmf,
+            (sample - cdf) / pmf,
             pmf
         };
     }
@@ -357,7 +357,7 @@ public:
     /// \brief Return the original integral of PDF entries before normalization
     Float integral() const { return m_integral; }
 
-    /// \brief Return the normalization factor (i.e. the inverse of \ref sum())
+    /// \brief Return the normalization factor (i.e. the inverse of \ref integral())
     Float normalization() const { return m_normalization; }
 
     /// Return the number of discretizations
@@ -366,7 +366,7 @@ public:
     /// Is the distribution object empty/uninitialized?
     bool empty() const { return m_pdf.empty(); }
 
-    /// Evaluate the unnormalized probability mass function (PDF) at position \c x
+    /// Evaluate the unnormalized probability density function (PDF) at position \c x
     Value eval_pdf(Value x, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
@@ -384,7 +384,7 @@ public:
         return dr::fmadd(w0, y0, w1 * y1);
     }
 
-    /// Evaluate the normalized probability mass function (PDF) at position \c x
+    /// Evaluate the normalized probability density function (PDF) at position \c x
     Value eval_pdf_normalized(Value x, Mask active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -462,7 +462,7 @@ public:
      * \brief Transform a uniformly distributed sample to the stored
      * distribution
      *
-     * \param sample 
+     * \param sample
      *     A uniformly distributed sample on the interval [0, 1].
      *
      * \return
@@ -696,7 +696,7 @@ public:
     /// \brief Return the original integral of PDF entries before normalization
     Float integral() const { return m_integral; }
 
-    /// \brief Return the normalization factor (i.e. the inverse of \ref sum())
+    /// \brief Return the normalization factor (i.e. the inverse of \ref integral())
     Float normalization() const { return m_normalization; }
 
     /// Return the number of discretizations
@@ -711,7 +711,7 @@ public:
     /// Return the range of the distribution (const version)
     const ScalarVector2f &range() const { return m_range; }
 
-    /// Evaluate the unnormalized probability mass function (PDF) at position \c x
+    /// Evaluate the unnormalized probability density function (PDF) at position \c x
     Value eval_pdf(Value x, Mask active = true) const {
         MI_MASK_ARGUMENT(active);
 
@@ -736,7 +736,7 @@ public:
         return dr::select(active, dr::fmadd(x, y1 - y0, y0), 0.f);
     }
 
-    /// Evaluate the normalized probability mass function (PDF) at position \c x
+    /// Evaluate the normalized probability density function (PDF) at position \c x
     Value eval_pdf_normalized(Value x, Mask active) const {
         MI_MASK_ARGUMENT(active);
 

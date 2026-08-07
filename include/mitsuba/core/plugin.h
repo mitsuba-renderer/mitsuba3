@@ -38,7 +38,7 @@ public:
      *
      * \param release
      *     A callback that releases any (global) plugin state.
-     *     Will, e.g., be called by \ref PluginManager::reset().
+     *     Will, e.g., be called by ``PluginManager::release_all()``.
      *
      * \param payload
      *     An opaque pointer parameter that will be forwarded
@@ -51,7 +51,7 @@ public:
     /**
      * \brief Release registered plugins
      *
-     * This calls the \ref PluginInfo::release callback of all registered
+     * This calls the ``release`` callback of all registered
      * plugins, e.g., to enable garbage collection of classes in python. Note
      * dynamically loaded shared libraries of native plugins aren't unloaded
      * until the PluginManager class itself is destructed.
@@ -66,16 +66,8 @@ public:
      * returns the newly created object instance.
      *
      * \param props
-     *     A \ref Properties instance containing all information required to
+     *     A `Properties` instance containing all information required to
      *     find and construct the plugin.
-     *
-     * \param variant
-     *     The variant (e.g. 'scalar_rgb') of the plugin to instantiate
-     *
-     * \param type
-     *     The expected interface of the instantiated plugin. Mismatches
-     *     here will produce an error message. Pass `ObjectType::Unknown`
-     *     to disable this check.
      */
     ref<Object> create_object(const Properties &props,
                               std::string_view variant,
@@ -86,13 +78,13 @@ public:
      *
      * This template function wraps the ordinary <tt>create_object()</tt>
      * function defined above. It automatically infers variant and object
-     * type from the provided class 'T'.
+     * type from the provided class ``T``.
      */
     template <typename T> ref<T> create_object(const Properties &props) {
         return ref<T>((T *) create_object(props, T::Variant, T::Type).get());
     }
 
-    /// Get the type of a plugin by name, or return Object::Unknown if unknown.
+    /// Get the type of a plugin by name, or return \ref ObjectType::Unknown if unknown.
     ObjectType plugin_type(std::string_view name);
 
     MI_DECLARE_CLASS(PluginManager)

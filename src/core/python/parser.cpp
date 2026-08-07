@@ -491,17 +491,13 @@ MI_PY_EXPORT(parser) {
         "path"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
         R"doc(Load a Mitsuba scene or object from an XML file
 
-Parameter ``name``:
-    The XML scene description's filename
-
-Parameter ``parallel``:
-    Whether the loading should be executed on multiple threads in parallel
-
-Parameter ``optimize``:
-    Whether to enable optimizations like merging identical objects (default: True)
-
-Parameter ``kwargs``:
-    A dictionary of key value pairs that will replace any default parameters declared in the XML.
+Args:
+    path: The XML scene description's filename
+    parallel: Whether the loading should be executed on multiple threads in parallel
+    optimize: Whether to enable optimizations like merging identical objects
+        (default: True)
+    kwargs: A dictionary of key value pairs that will replace any default
+        parameters declared in the XML.
 
 )doc");
 
@@ -529,17 +525,13 @@ Parameter ``kwargs``:
         "value"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
         R"doc(Load a Mitsuba scene or object from an XML string
 
-Parameter ``value``:
-    The XML scene description as a string
-
-Parameter ``parallel``:
-    Whether the loading should be executed on multiple threads in parallel
-
-Parameter ``optimize``:
-    Whether to enable optimizations like merging identical objects (default: True)
-
-Parameter ``kwargs``:
-    A dictionary of key value pairs that will replace any default parameters declared in the XML.
+Args:
+    value: The XML scene description as a string
+    parallel: Whether the loading should be executed on multiple threads in parallel
+    optimize: Whether to enable optimizations like merging identical objects
+        (default: True)
+    kwargs: A dictionary of key value pairs that will replace any default
+        parameters declared in the XML.
 
 )doc");
 
@@ -567,14 +559,11 @@ Parameter ``kwargs``:
         "dict"_a, "parallel"_a=true, "optimize"_a=true,
         R"doc(Load a Mitsuba scene or object from an Python dictionary
 
-Parameter ``dict``:
-    Python dictionary containing the object description
-
-Parameter ``parallel``:
-    Whether the loading should be executed on multiple threads in parallel
-
-Parameter ``optimize``:
-    Whether to enable optimizations like merging identical objects (default: True)
+Args:
+    dict: Python dictionary containing the object description
+    parallel: Whether the loading should be executed on multiple threads in parallel
+    optimize: Whether to enable optimizations like merging identical objects
+        (default: True)
 
 )doc");
 }

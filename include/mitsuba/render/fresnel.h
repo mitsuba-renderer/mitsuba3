@@ -18,18 +18,20 @@ NAMESPACE_BEGIN(mitsuba)
  *      means that the surface normal is pointing into the region of lower
  *      density.
  *
- * \return A tuple (F, cos_theta_t, eta_it, eta_ti) consisting of
+ * \return A tuple ``(F, cos_theta_t, eta_it, eta_ti)`` where
  *
- *     F           Fresnel reflection coefficient.
+ *     - ``F`` is the Fresnel reflection coefficient.
  *
- *     cos_theta_t Cosine of the angle between the surface normal and the transmitted ray
+ *     - ``cos_theta_t`` is the cosine of the angle between the surface
+ *       normal and the transmitted ray.
  *
- *     eta_it      Relative index of refraction in the direction of travel.
+ *     - ``eta_it`` is the relative index of refraction in the direction of
+ *       travel.
  *
- *     eta_ti      Reciprocal of the relative index of refraction in the
- *                 direction of travel. This also happens to be equal to
- *                 the scale factor that must be applied to the X and Y
- *                 component of the refracted direction.
+ *     - ``eta_ti`` is the reciprocal of the relative index of refraction in
+ *       the direction of travel. This also happens to be equal to the scale
+ *       factor that must be applied to the X and Y component of the
+ *       refracted direction.
  */
 template <typename Float>
 std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
@@ -129,21 +131,24 @@ Float fresnel_conductor(Float cos_theta_i, dr::Complex<Float> eta) {
  *      A value greater than 1.0 case means that the surface normal
  *      points into the region of lower density.
  *
- * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
+ * \return A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
  *
- *     a_s         Perpendicularly polarized wave amplitude and phase shift.
+ *     - ``a_s`` is the perpendicularly polarized wave amplitude and phase
+ *       shift.
  *
- *     a_p         Parallel polarized wave amplitude and phase shift.
+ *     - ``a_p`` is the parallel polarized wave amplitude and phase shift.
  *
- *     cos_theta_t Cosine of the angle between the surface normal and the
- *                 transmitted ray. Zero in the case of total internal reflection.
+ *     - ``cos_theta_t`` is the cosine of the angle between the surface
+ *       normal and the transmitted ray. Zero in the case of total internal
+ *       reflection.
  *
- *     eta_it      Relative index of refraction in the direction of travel
+ *     - ``eta_it`` is the relative index of refraction in the direction of
+ *       travel.
  *
- *     eta_ti      Reciprocal of the relative index of refraction in the
- *                 direction of travel. This also happens to be equal to the
- *                 scale factor that must be applied to the X and Y component
- *                 of the refracted direction.
+ *     - ``eta_ti`` is the reciprocal of the relative index of refraction in
+ *       the direction of travel. This also happens to be equal to the scale
+ *       factor that must be applied to the X and Y component of the
+ *       refracted direction.
  */
 template <typename Float>
 std::tuple<dr::Complex<Float>, dr::Complex<Float>, Float, Float, Float>
@@ -205,22 +210,24 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
  *      case, a value greater than 1.0 case means that the surface normal
  *      points into the region of lower density.
  *
- * \return A tuple (a_s, a_p, cos_theta_t, eta_it, eta_ti) consisting of
+ * \return A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
  *
- *     a_s         Perpendicularly polarized wave amplitude and phase shift.
+ *     - ``a_s`` is the perpendicularly polarized wave amplitude and phase
+ *       shift.
  *
- *     a_p         Parallel polarized wave amplitude and phase shift.
+ *     - ``a_p`` is the parallel polarized wave amplitude and phase shift.
  *
- *     cos_theta_t Cosine of the angle between the surface normal and the
- *                 transmitted ray. Zero in the case of total internal reflection.
+ *     - ``cos_theta_t`` is the cosine of the angle between the surface
+ *       normal and the transmitted ray. Zero in the case of total internal
+ *       reflection.
  *
- *     eta_it      Relative index of refraction in the direction of travel
+ *     - ``eta_it`` is the relative index of refraction in the direction of
+ *       travel.
  *
- *     eta_ti      Reciprocal of the relative index of refraction in the
- *                 direction of travel. In the real-valued case, this
- *                 also happens to be equal to the scale factor that must
- *                 be applied to the X and Y component of the refracted
- *                 direction.
+ *     - ``eta_ti`` is the reciprocal of the relative index of refraction in
+ *       the direction of travel. In the real-valued case, this also happens
+ *       to be equal to the scale factor that must be applied to the X and Y
+ *       component of the refracted direction.
  */
 template <typename Float>
 std::tuple<dr::Complex<Float>, dr::Complex<Float>, Float, dr::Complex<Float>, dr::Complex<Float>>
@@ -286,8 +293,8 @@ Vector<Float, 3> reflect(const Vector<Float, 3> &wi, const Normal<Float, 3> &m) 
 /**
  * \brief Refraction in local coordinates
  *
- * The 'cos_theta_t' and 'eta_ti' parameters are given by the last two tuple
- * entries returned by the \ref fresnel and \ref fresnel_polarized functions.
+ * The 'cos_theta_t' and 'eta_ti' parameters correspond to entries of the
+ * tuple returned by the \ref fresnel and \ref fresnel_polarized functions.
  */
 template <typename Float>
 Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float eta_ti) {

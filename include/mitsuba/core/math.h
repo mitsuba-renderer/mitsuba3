@@ -208,27 +208,25 @@ template <typename T> T log2i_ceil(T value) {
  * is a user-specified predicate that monotonically decreases over this range
  * (i.e. max one \c true -> \c false transition).
  *
- * The predicate will be evaluated exactly <tt>floor(log2(size)) + 1<tt> times.
+ * The predicate will be evaluated exactly <tt>floor(log2(size)) + 1</tt> times.
  * Note that the template parameter \c Index is automatically inferred from the
  * supplied predicate, which takes an index or an index vector of type \c Index
  * as input argument and can (optionally) take a mask argument as well. In the
  * vectorized case, each vector lane can use different predicate.
  * When \c pred is \c false for all entries, the function returns \c 0, and
- * when it is \c true for all cases, it returns <tt>size-2<tt>.
+ * when it is \c true for all cases, it returns <tt>size-2</tt>.
  *
  * The main use case of this function is to locate an interval (i, i+1)
  * in an ordered list.
  *
- * \code
- * float my_list[] = { 1, 1.5f, 4.f, ... };
+ * .. code-block:: python
  *
- * UInt32 index = find_interval(
- *     sizeof(my_list) / sizeof(float),
- *     [](UInt32 index, dr::mask_t<UInt32> active) {
- *         return dr::gather<Float>(my_list, index, active) < x;
- *     }
- * );
- * \endcode
+ *    my_list = mi.Float(1, 1.5, 4, ...)
+ *
+ *    index = mi.math.find_interval(
+ *        len(my_list),
+ *        lambda index: dr.gather(mi.Float, my_list, index) < x
+ *    )
  */
 template <typename Index, typename Predicate>
 MI_INLINE Index find_interval(dr::scalar_t<Index> size,
@@ -310,7 +308,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
  * ``(obs-exp)^2 / exp`` for each element ``0, ..., n-1``.
  *
  * Minimum expected cell frequency. The Chi^2 test statistic is not useful when
- * when the expected frequency in a cell is low (e.g. less than 5), because
+ * the expected frequency in a cell is low (e.g. less than 5), because
  * normality assumptions break down in this case. Therefore, the implementation
  * will merge such low-frequency cells when they fall below the threshold
  * specified here. Specifically, low-valued cells with ``exp[i] < pool_threshold``

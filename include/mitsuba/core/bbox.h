@@ -14,10 +14,12 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * This class is parameterized by the underlying point data structure,
  * which permits the use of different scalar types and dimensionalities, e.g.
- * \code
- * BoundingBox<Point3i> integer_bbox(Point3i(0, 1, 3), Point3i(4, 5, 6));
- * BoundingBox<Point2d> double_bbox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
- * \endcode
+ *
+ * .. code-block:: python
+ *
+ *    bbox_3d = mi.BoundingBox3f(mi.Point3f(0, 1, 3), mi.Point3f(4, 5, 6))
+ *    bbox_2d = mi.ScalarBoundingBox2f(mi.ScalarPoint2f(0, 1),
+ *                                     mi.ScalarPoint2f(4, 5))
  *
  * \tparam T The underlying point data type (e.g. \c Point2d)
  */
@@ -65,9 +67,11 @@ template <typename Point_> struct BoundingBox {
      * \brief Check whether this is a valid bounding box
      *
      * A bounding box \c bbox is considered to be valid when
-     * \code
-     * bbox.min[i] <= bbox.max[i]
-     * \endcode
+     *
+     * .. code-block:: python
+     *
+     *    bbox.min[i] <= bbox.max[i]
+     *
      * holds for each component \c i.
      */
     Mask valid() const {
@@ -163,7 +167,7 @@ template <typename Point_> struct BoundingBox {
      * \tparam Strict Set this parameter to \c true if the bounding
      *                box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
+     * \remark In the Python bindings, the 'strict' argument is a normal
      *         function parameter with default value \c False.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
@@ -178,14 +182,15 @@ template <typename Point_> struct BoundingBox {
      * \brief Check whether a specified bounding box lies \a on or \a within
      * the current bounding box
      *
-     * Note that by definition, an 'invalid' bounding box (where min=\f$\infty\f$
-     * and max=\f$-\infty\f$) does not cover any space. Hence, this method will always
-     * return \a true when given such an argument.
+     * Note that by definition, an 'invalid' bounding box (where
+     * \c min = \f$\infty\f$ and \c max = \f$-\infty\f$) does not cover any
+     * space. Hence, this method will always return \a true when given such an
+     * argument.
      *
      * \tparam Strict Set this parameter to \c true if the bounding
      *                box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
+     * \remark In the Python bindings, the 'strict' argument is a normal
      *         function parameter with default value \c False.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
@@ -199,10 +204,10 @@ template <typename Point_> struct BoundingBox {
     /**
      * \brief Check two axis-aligned bounding boxes for possible overlap.
      *
-     * \param Strict Set this parameter to \c true if the bounding
-     *               box boundary should be excluded in the test
+     * \tparam Strict Set this parameter to \c true if the bounding
+     *                box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
+     * \remark In the Python bindings, the 'strict' argument is a normal
      *         function parameter with default value \c False.
      *
      * \return \c true If overlap was detected.
@@ -345,8 +350,8 @@ template <typename Point_> struct BoundingBox {
         return { c, dr::norm(c - max) };
     }
 
-    Point min; /// Component-wise minimum
-    Point max; /// Component-wise maximum
+    Point min; ///< Component-wise minimum
+    Point max; ///< Component-wise maximum
 
     DRJIT_TRAVERSE(BoundingBox, min, max);
 };

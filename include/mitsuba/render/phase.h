@@ -49,15 +49,16 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
     /// Sampler object
     Sampler *sampler = nullptr;
 
-    /*
+    /**
      * Bit mask for requested phase function component types to be
      * sampled/evaluated.
-     * The default value (equal to \ref PhaseFunctionFlags::All) enables all
-     * components.
+     * The default value (equal to \ref PhaseFunctionFlags::Isotropic |
+     * \ref PhaseFunctionFlags::Anisotropic | \ref PhaseFunctionFlags::Microflake)
+     * enables all components.
      */
     uint32_t type_mask = (uint32_t) 0x7u;
 
-    /*
+    /**
      * Integer value of requested phase function component index to be
      * sampled/evaluated.
      */
@@ -129,7 +130,7 @@ public:
      *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
      *     used to generate the sampled direction.
      *
-     * \return A sampled direction wo and its corresponding weight and PDF
+     * \return A sampled direction ``wo`` and its corresponding weight and PDF
      */
     virtual std::tuple<Vector3f, Spectrum, Float> sample(const PhaseFunctionContext &ctx,
                                                          const MediumInteraction3f &mi,
@@ -153,7 +154,7 @@ public:
      * \param wo
      *     An outgoing direction to evaluate.
      *
-     * \return The value and the sampling PDF of the phase function in direction wo
+     * \return The value and the sampling PDF of the phase function in direction ``wo``
      */
     virtual std::pair<Spectrum, Float> eval_pdf(const PhaseFunctionContext &ctx,
                                                 const MediumInteraction3f &mi,

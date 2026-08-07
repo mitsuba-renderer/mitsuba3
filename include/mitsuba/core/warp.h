@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
  * \brief Implements common warping techniques that map from the unit
  * square [0, 1]^2 to other domains such as spheres, hemispheres, etc.
  *
- * The main application of this class is to generate uniformly
+ * The main application of this namespace is to generate uniformly
  * distributed or weighted point sets in certain common target domains.
  */
 NAMESPACE_BEGIN(warp)
@@ -110,7 +110,7 @@ MI_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2
     return { (a + 1.f) * 0.5f, (b + 1.f) * 0.5f };
 }
 
-/// Density of \ref square_to_uniform_disk per unit area
+/// Density of \ref square_to_uniform_disk_concentric per unit area
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) {
     DRJIT_MARK_USED(p);
@@ -466,7 +466,7 @@ MI_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
  * \brief Importance sample a bilinear interpolant
  *
  * Given a bilinear interpolant on the unit square with corner values \c v00,
- * \c v10, \c v01, \c v11 (where \c v10 is the value at (x,y) == (0, 0)), warp
+ * \c v10, \c v01, \c v11 (where \c v00 is the value at (x,y) == (0, 0)), warp
  * a uniformly distributed input sample \c sample so that the resulting
  * probability distribution matches the linear interpolant.
  *
@@ -560,7 +560,7 @@ MI_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
 }
 
 /**
- * \brief Density of \ref square_to_uniform_cone per unit area.
+ * \brief Density of \ref square_to_uniform_cone with respect to solid angles.
  *
  * \param cos_cutoff Cosine of the cutoff angle
  */
@@ -604,7 +604,7 @@ MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 #endif
 }
 
-/// Inverse of the mapping \ref square_to_uniform_cone
+/// Inverse of the mapping \ref square_to_beckmann
 template <typename Value>
 MI_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
     Point<Value, 2> p(v.x(), v.y());
@@ -674,7 +674,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
     return result;
 }
 
-/// Inverse of the mapping \ref von_mises_fisher_to_square
+/// Inverse of the mapping \ref square_to_von_mises_fisher
 template <typename Value>
 MI_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
                                                       Value kappa) {
@@ -811,7 +811,7 @@ interval_to_tangent_direction(const Normal<Value, 3> &n, Value sample) {
     return frame.s * cos + frame.t * sin;
 }
 
-/// Inverse of \ref uniform_to_tangent_direction
+/// Inverse of \ref interval_to_tangent_direction
 template <typename Value>
 MI_INLINE Value tangent_direction_to_interval(const Normal<Value, 3> &n,
                                               const Vector<Value, 3> &d) {

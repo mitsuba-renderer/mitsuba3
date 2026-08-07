@@ -7,11 +7,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 template <typename Scalar>
-void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
+void spectrum_from_file(const fs::path &filename, std::vector<Scalar> &wavelengths,
                         std::vector<Scalar> &values) {
 
     auto fs = file_resolver();
-    fs::path file_path = fs->resolve(path);
+    fs::path file_path = fs->resolve(filename);
     if (!fs::exists(file_path))
         Log(Error, "\"%s\": file does not exist!", file_path);
 
@@ -55,11 +55,11 @@ void spectrum_from_file(const fs::path &path, std::vector<Scalar> &wavelengths,
 }
 
 template <typename Scalar>
-void spectrum_to_file(const fs::path &path, const std::vector<Scalar> &wavelengths,
+void spectrum_to_file(const fs::path &filename, const std::vector<Scalar> &wavelengths,
                       const std::vector<Scalar> &values) {
 
     auto fs = file_resolver();
-    fs::path file_path = fs->resolve(path);
+    fs::path file_path = fs->resolve(filename);
 
     if (wavelengths.size() != values.size())
         Log(Error, "Wavelengths size (%u) need to be equal to values size (%u)",
@@ -136,17 +136,17 @@ Color<Scalar, 3> spectrum_list_to_srgb(const std::vector<Scalar> &wavelengths,
 }
 
 /// Explicit instantiations
-template MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+template MI_EXPORT_LIB void spectrum_from_file(const fs::path &filename,
                                                std::vector<float> &wavelengths,
                                                std::vector<float> &values);
-template MI_EXPORT_LIB void spectrum_from_file(const fs::path &path,
+template MI_EXPORT_LIB void spectrum_from_file(const fs::path &filename,
                                                std::vector<double> &wavelengths,
                                                std::vector<double> &values);
 
-template MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+template MI_EXPORT_LIB void spectrum_to_file(const fs::path &filename,
                                              const std::vector<float> &wavelengths,
                                              const std::vector<float> &values);
-template MI_EXPORT_LIB void spectrum_to_file(const fs::path &path,
+template MI_EXPORT_LIB void spectrum_to_file(const fs::path &filename,
                                              const std::vector<double> &wavelengths,
                                              const std::vector<double> &values);
 

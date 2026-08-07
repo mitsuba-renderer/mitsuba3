@@ -56,7 +56,7 @@ std::ostream &operator<<(std::ostream &os, const SGGXPhaseFunctionParams<Float> 
  *
  * \param sh_frame
  *      Shading frame aligned with the incident direction,
- *      e.g. constructed as Frame3f(wi)
+ *      e.g. constructed as ``Frame3f(wi)``
  *
  * \param sample
  *      A uniformly distributed 2D sample

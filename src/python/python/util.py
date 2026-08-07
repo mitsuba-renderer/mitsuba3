@@ -161,7 +161,7 @@ class SceneParameters(Mapping):
         This method should rarely be called explicitly. The
         :py:class:`~mitsuba.SceneParameters` will detect most operations on
         its values and automatically flag them as dirty. A common exception to
-        the detection mechanism is the :py:meth:`~drjit.scatter` operation which
+        the detection mechanism is the :py:func:`~drjit.scatter` operation which
         needs an explicit call to :py:meth:`~mitsuba.SceneParameters.set_dirty()`.
         """
         value, _, node, flags = self.properties[key]
@@ -530,8 +530,9 @@ def render(scene: mi.Scene,
 
 def convert_to_bitmap(data, uint8_srgb=True):
     """
-    Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
-    the resulting bitmap should be translated to a uint8 sRGB bitmap.
+    Convert the RGB image in ``data`` to a `mitsuba.Bitmap`. ``uint8_srgb``
+    defines whether the resulting bitmap should be translated to a uint8 sRGB
+    bitmap.
     """
 
     if isinstance(data, mi.Bitmap):
@@ -549,7 +550,7 @@ def convert_to_bitmap(data, uint8_srgb=True):
 
 def write_bitmap(filename, data, write_async=True, quality=-1):
     """
-    Write the RGB image in `data` to a PNG/EXR/.. file.
+    Write the RGB image in ``data`` to a PNG/EXR/.. file.
     """
     uint8_srgb = filename.endswith('.png') or \
                  filename.endswith('.jpg') or \

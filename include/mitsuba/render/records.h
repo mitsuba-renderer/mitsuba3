@@ -101,7 +101,7 @@ struct PositionSample {
  * uses the same data structures and strategies, which are referred to as
  * <em>direct sampling</em>.
  *
- * This record inherits all fields from \ref PositionSample and extends it with
+ * This record inherits all fields from `PositionSample3f` and extends it with
  * two useful quantities that are cached so that they don't need to be
  * recomputed: the unit direction and distance from the reference position to
  * the sampled point.
@@ -139,7 +139,7 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
       *
       * In some uses of this record, sampling a position also involves choosing
       * one of several objects (shapes, emitters, ..) on which the position
-      * lies. In that case, the \c object attribute stores a pointer to this
+      * lies. In that case, the \c emitter attribute stores a pointer to this
       * object.
       */
     EmitterPtr emitter = nullptr;
@@ -156,15 +156,15 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      * the density of a surface position with respect to a given reference
      * position.
      *
-     * Direction 's' is set so that it points from the reference surface to
-     * the intersected surface, as required when using e.g. the \ref Endpoint
+     * Direction ``d`` is set so that it points from the reference surface to
+     * the intersected surface, as required when using e.g. the `Endpoint`
      * interface to compute PDF values.
      *
      * \param scene
      *     Pointer to the scene, which is needed to extract information
      *     about the environment emitter (if applicable)
      *
-     * \param it
+     * \param si
      *     Surface interaction
      *
      * \param ref

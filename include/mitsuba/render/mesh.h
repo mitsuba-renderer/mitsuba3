@@ -32,16 +32,16 @@ NAMESPACE_BEGIN(mitsuba)
  * class can also store and interpolate arbitrary user-provided data with 1 to
  * 4 dimensions.
  *
- * Constructing a mesh involves two steps: the ``Mesh()`` constructor to create
+ * Constructing a mesh involves two steps: the \ref Mesh() constructor to create
  * an empty mesh followed by a call to one of \ref from_fields() (for indexed
  * triangle data), \ref from_corners() (for corner-indexed data from 3D
- * modeling tools like Blender or interchange formats like OBJ), or \ref
- * from_packed() (for packed data explained below). There is also a
+ * modeling tools like Blender or interchange formats like OBJ), or
+ * \ref from_packed() (for packed data explained below). There is also a
  * ``Mesh(name, faces, positions, ...)`` convenience constructor that
  * directly calls \ref from_fields(). Subsequent changes to the mesh data go
  * through the parameter interface described below, or through one of the
- * dedicated methods \ref transform(), \ref add_attribute() and \ref
- * remove_attribute().
+ * dedicated methods \ref transform(), \ref add_attribute() and
+ * \ref remove_attribute().
  *
  * Interpolation makes mesh attributes vary smoothly along the surface, but
  * many meshes in practice also need deliberate *discontinuities*:
@@ -56,7 +56,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * - Tangents follow the texture parameterization and inherit its seams.
  *
- * The ``Mesh`` class uses an indexed representation that expresses such a jump
+ * The \ref Mesh class uses an indexed representation that expresses such a jump
  * by splitting a vertex, so that the faces on either side can reference
  * separate copies with their own values. However, splitting alone is not
  * sufficient because it turns seams into geometric cuts that have undesirable
@@ -68,19 +68,19 @@ NAMESPACE_BEGIN(mitsuba)
  * attribute at the coarsest level at which it is constant. A mesh with ``F``
  * faces and ``V`` vertices consists of ``P`` surface positions and ``N``
  * normal groups, where each level subdivides the previous one (``P <= N <=
- * V``). In particular, the ``Mesh`` exposes the following set of arrays:
+ * V``). In particular, the \ref Mesh exposes the following set of arrays:
  *
- * ```
- * Name              Type          Shape     Range     Optional
- * ------------------------------------------------------------
- * faces             TensorXu32    (F, 3)    [0, V)
- * position_index    UInt32 array  V         [0, P)       x
- * normal_index      UInt32 array  V         [0, N)       x
- * positions         TensorXf32    (P, 3)
- * normals           TensorXf32    (N, 3)                 x
- * texcoords         TensorXf32    (V, 2)                 x
- * bsdf_index        UInt32 array  F         [0, B)       x
- * ```
+ * .. code-block:: text
+ *
+ *    Name              Type          Shape     Range     Optional
+ *    ------------------------------------------------------------
+ *    faces             TensorXu32    (F, 3)    [0, V)
+ *    position_index    UInt32 array  V         [0, P)       x
+ *    normal_index      UInt32 array  V         [0, N)       x
+ *    positions         TensorXf32    (P, 3)
+ *    normals           TensorXf32    (N, 3)                 x
+ *    texcoords         TensorXf32    (V, 2)                 x
+ *    bsdf_index        UInt32 array  F         [0, B)       x
  *
  * The fields have the following roles:
  *
@@ -105,18 +105,18 @@ NAMESPACE_BEGIN(mitsuba)
  * Texture coordinates and tangents vary *per vertex*. For example,
  * reading the UV coordinate for corner ``c`` of face ``f`` involves
  *
- * ```
- * vertex_idx = faces[f][c]
- * texcoord   = texcoords[vertex_idx]
- * ```
+ * .. code-block:: python
+ *
+ *    vertex_idx = faces[f][c]
+ *    texcoord   = texcoords[vertex_idx]
  *
  * Positions and normals require one further indirection
  *
- * ```
- * vertex_idx   = faces[f][c]
- * position_idx = position_index[vertex_idx] if len(position_index) > 0 else vertex_idx
- * position     = positions[position_idx]
- * ```
+ * .. code-block:: python
+ *
+ *    vertex_idx   = faces[f][c]
+ *    position_idx = position_index[vertex_idx] if len(position_index) > 0 else vertex_idx
+ *    position     = positions[position_idx]
  *
  * and analogously for normals through ``normal_index``.
  *
@@ -130,9 +130,9 @@ NAMESPACE_BEGIN(mitsuba)
  * can be written. Custom mesh attributes appear as further ``vertex_*`` and
  * ``face_*`` entries with 1 to 4 channels. The mesh size (i.e., the number of
  * faces or vertices) may be changed as well. Following a change to the
- * parameters, call ``update()``, which will validate the size of all fields,
- * and refresh dependent state (bounding box, sampling tables, tangents,
- * acceleration structures).
+ * parameters, call \ref Object::parameters_changed(), which will validate the
+ * size of all fields, and refresh dependent state (bounding box, sampling
+ * tables, tangents, acceleration structures).
  *
  * ## Packed layout
  *
@@ -140,11 +140,11 @@ NAMESPACE_BEGIN(mitsuba)
  * efficient in a ray tracer, since it involves several indirections and
  * data spread out over many different buffers.
  *
- * To address this, the ``Mesh`` class internally encodes data into a *packed*
+ * To address this, the \ref Mesh class internally encodes data into a *packed*
  * layout, which uses 16 bytes per face and 32 bytes per vertex (plus custom
  * attributes). This is an implementation detail that is only exposed through
- * \ref from_packed() and the low-level \ref packed_vertices(), \ref
- * packed_face() and \ref packed_vertex() accessors. Access to the per-field
+ * \ref from_packed() and the low-level \ref packed_vertices(),
+ * ``packed_face()`` and ``packed_vertex()`` accessors. Access to the per-field
  * representation explained earlier implicitly reconstructs it from the packed
  * state.
  *
@@ -158,8 +158,8 @@ NAMESPACE_BEGIN(mitsuba)
  * The face winding order defines the orientation of the surface. In
  * particular, the geometric normal of a face follows from the right hand rule
  * applied to its positions. Shading normals are expected to lie in the same
- * hemisphere, and the ``Mesh`` class preserves this invariant by potentially
- * changing the winding order depending on Shape parameters like ``flip_normals``,
+ * hemisphere, and the \ref Mesh class preserves this invariant by potentially
+ * changing the winding order depending on `Shape` parameters like ``flip_normals``,
  * ``to_world``, and subsequent transformations via \ref transform().
  */
 template <typename Float, typename Spectrum>
@@ -191,8 +191,8 @@ public:
 
     /** \brief Create an empty mesh
      *
-     * The resulting object is not ready for use. You must call \ref
-     * from_fields(), \ref from_corners() or \ref from_packed() to
+     * The resulting object is not ready for use. You must call
+     * \ref from_fields(), \ref from_corners() or \ref from_packed() to
      * initialize its storage.
      */
     Mesh(const Properties &props = Properties());
@@ -200,10 +200,10 @@ public:
     /** \brief Create an empty mesh
      *
      * Analogous to the previous constructor, except that attributes
-     * are specified manually and not through a \ref Properties object.
+     * are specified manually and not through a `Properties` object.
      *
-     * The resulting object is not ready for use. You must call \ref
-     * from_fields(), \ref from_corners() or \ref from_packed() to
+     * The resulting object is not ready for use. You must call
+     * \ref from_fields(), \ref from_corners() or \ref from_packed() to
      * initialize its storage.
      */
     Mesh(std::string_view name,
@@ -327,10 +327,6 @@ public:
      * \param normal_count
      *     Number of normal groups. Only needed when ``normal_index`` is
      *     nonempty.
-     *
-     * \param bbox
-     *     Optional precomputed bounding box, which skips the bounding box
-     *     reduction
      */
     void from_packed(Layout layout,
                      const TensorXu32 &packed_faces,
@@ -344,16 +340,16 @@ public:
     /**
      * \brief Build the mesh from host-side staging data
      *
-     * The \ref PackedMesh data structure can be used to incrementally build
+     * The ``PackedMesh`` data structure can be used to incrementally build
      * a packed mesh in a device-shared staging buffer while validating
-     * inputs. This method then consumes the resulting \ref PackedMesh and
+     * inputs. This method then consumes the resulting ``PackedMesh`` and
      * efficiently blits it to the target device. A mesh can be built only
      * once: a second ``from_*`` call raises an exception; later mesh
      * changes must go through the parameter interface.
      *
      * Any transformations (e.g. ``flip_normals``, ``to_world`` parameters)
      * should already have been baked into the packed mesh data by the caller.
-     * (The \ref PackedMesh class provides an API for this.)
+     * (The ``PackedMesh`` class provides an API for this.)
      */
     void from_packed(PackedMesh &&data);
 
@@ -431,7 +427,7 @@ public:
     TensorXu32 geometric_faces() const;
 
     /// Return the per-face BSDF index (size \ref face_count()). An empty
-    /// buffer stands for zeros, see \ref has_face_bsdfs().
+    /// buffer stands for zeros, see ``has_face_bsdfs()``.
     const IndexBuffer &bsdf_index() const {
         ensure_views();
         return m_bsdf_index;
@@ -509,8 +505,8 @@ public:
     /** \brief Returns the world-space position of the vertex with index
      * \c index
      *
-     * The index type is generic because the host-side kd-tree paths (\ref
-     * bbox(ScalarIndex) and \ref ray_intersect_triangle_scalar()) read
+     * The index type is generic because the host-side kd-tree paths
+     * (``bbox()`` and ``ray_intersect_triangle_scalar()``) read
      * vertices one at a time with a plain \c uint32_t, while the packet
      * variants of \ref ray_intersect_triangle() pass a \c dr::Packet.
      */
@@ -657,10 +653,10 @@ public:
     //! @{ \name Packed record layout
     // =========================================================================
 
-    /// One packed vertex record, as returned by \ref packed_vertex()
+    /// One packed vertex record, as returned by ``packed_vertex()``
     using PackedVertex = dr::Array<Float32, MeshVertexStride>;
 
-    /// One packed face record, as returned by \ref packed_face()
+    /// One packed face record, as returned by ``packed_face()``
     template <typename Index = UInt32>
     using PackedFace = Vector<dr::uint32_array_t<Index>, MeshFaceStride>;
 
@@ -674,7 +670,7 @@ public:
     /// Return the packed per-vertex buffer
     FloatBuffer& packed_vertices() { return m_packed_vertices; }
 
-    /// Const variant of \ref packed_vertices.
+    /// Const variant of \ref packed_vertices().
     const FloatBuffer& packed_vertices() const { return m_packed_vertices; }
 
     /// Returns the packed face record of triangle \c index
@@ -724,7 +720,7 @@ public:
 
     /** \brief Return a data structure describing the half-edge adjacency
      *
-     * This function returns a \ref DirectedEdge data structure that enables
+     * This function returns a `DirectedEdge` data structure that enables
      * geometric queries such as finding the triangle across an edge or
      * traversing faces surrounding a vertex.
      *
@@ -732,7 +728,7 @@ public:
      * connectivity specified by \ref geometric_faces() so that attribute
      * discontinuities do not introduce artificial geometric boundaries.
      * The result is immutable and invariant to changes in mesh positions,
-     * normals and materials. The \ref Mesh class automatically deletes the
+     * normals and materials. The `Mesh` class automatically deletes the
      * cached instance when the index buffer, the position index map, or the
      * position count changes.
      *
@@ -791,7 +787,7 @@ public:
      *
      * Appends a single self-contained mesh segment at the current stream
      * position, without the trailing dictionary that indexes multiple
-     * meshes within one file; \ref write_serialized(const fs::path&)
+     * meshes within one file; \ref write_serialized()
      * adds it. Segments of several meshes may be concatenated by calling
      * this method repeatedly, recording the byte offsets, and appending
      * one ``uint64`` offset per mesh followed by a ``uint32`` mesh count.
@@ -818,10 +814,14 @@ public:
      * \param ray
      *    The ray segment to be used for the intersection query.
      * \return
-     *    Returns an ordered tuple <tt>(valid, t, uv)</tt>, where \c valid
-     *    indicates whether an intersection was found, \c t contains the
-     *    distance from the ray origin to the intersection point, and \c uv
-     *    contains the first two barycentric coordinates.
+     *    A tuple <tt>(valid, t, uv)</tt> where
+     *
+     *    - \c valid indicates whether an intersection was found.
+     *
+     *    - \c t contains the distance from the ray origin to the
+     *      intersection point.
+     *
+     *    - \c uv contains the first two barycentric coordinates.
      */
     template <typename T, typename Ray3>
     std::tuple<dr::mask_t<T>, T, Point<T, 2>>
@@ -904,7 +904,7 @@ public:
     //! @{ \name Shape interface implementation
     // =========================================================================
 
-    /// Set the shape's BSDF
+    /// Set the shape's `BSDF`
     void set_bsdf(BSDF *bsdf) override;
 
     ScalarBoundingBox3f bbox() const override;
@@ -1003,7 +1003,7 @@ protected:
      * Computes the surface area and sets up \c m_area_pmf.
      *
      * Emitter and sensor meshes sample positions during rendering, so
-     * \ref refresh() builds their table eagerly.
+     * ``refresh()`` builds their table eagerly.
      */
     void build_pmf();
 
@@ -1026,7 +1026,7 @@ protected:
      */
     void build_parameterization();
 
-    /// Does a spatially varying emitter require \ref m_parameterization?
+    /// Does a spatially varying emitter require \c m_parameterization?
     bool needs_parameterization() const;
 
     // Ensures that the sampling table are ready.
@@ -1050,7 +1050,7 @@ protected:
      *
      * The orientation of each face's UV triangle reverses along with it, so
      * the packed tangent frames are updated to match. The caller is
-     * responsible for the subsequent \ref refresh().
+     * responsible for the subsequent ``refresh()``.
      */
     void flip_winding();
 
@@ -1062,11 +1062,11 @@ protected:
      * shading normals (when \c regenerate_normals is set, discarding the
      * current values while preserving their grouping) and MikkTSpace
      * tangents (when the attached material consumes them), writes both
-     * packed buffers in a single pass, and ends in \ref refresh().
+     * packed buffers in a single pass, and ends in ``refresh()``.
      *
      * The \c flip_normals flag turns the surface inside out as the records
      * are written, which \ref from_fields() uses to bake the property of
-     * the same name. See \ref validate_impl() for \c updating.
+     * the same name. See ``validate_impl()`` for \c updating.
      */
     void pack(bool regenerate_normals, bool flip_normals = false,
               bool updating = false);
@@ -1074,8 +1074,8 @@ protected:
     /**
      * \brief Implementation of \ref validate()
      *
-     * When \c updating is set, the mesh is checking a \ref
-     * parameters_changed() batch, and shape mismatches also report how to
+     * When \c updating is set, the mesh is checking a
+     * \ref Object::parameters_changed() batch, and shape mismatches also report how to
      * rewrite the offending field.
      */
     void validate_impl(bool check_bounds, bool updating) const;
@@ -1090,7 +1090,7 @@ protected:
      * meshes, refreshes the raw data pointers, marks the scene
      * acceleration structure dirty, and rebinds the field views unless
      * they are dormant. The directed edge structure is not touched here:
-     * it is expensive and purely topological, so \ref parameters_changed()
+     * it is expensive and purely topological, so \ref Object::parameters_changed()
      * clears it only when a topology write occurs.
      */
     void refresh(const ScalarBoundingBox3f *bbox = nullptr);
@@ -1130,11 +1130,14 @@ protected:
      * \param p2
      *    Third vertex position of the triangle
      * \return
-     *    Returns an ordered tuple <tt>(mask, u, v, t)</tt>, where \c mask
-     *    indicates whether an intersection was found, \c t contains the
-     *    distance from the ray origin to the intersection point, and \c u and
-     *    \c v contains the first two components of the intersection in
-     *    barycentric coordinates
+     *    A tuple <tt>(t, uv, mask)</tt> where
+     *
+     *    - \c t contains the distance from the ray origin to the
+     *      intersection point.
+     *
+     *    - \c uv contains the first two barycentric coordinates.
+     *
+     *    - \c mask indicates whether an intersection was found.
      */
     template <typename T, typename Ray3>
     std::tuple<T, Point<T, 2>, dr::mask_t<T>>
@@ -1281,12 +1284,12 @@ protected:
     /// as this provides stable references.
     std::map<std::string, MeshAttribute, std::less<>> m_mesh_attributes;
 
-    // Surface area distribution -- generated on demand when \ref
+    // Surface area distribution -- generated on demand when
     // prepare_area_pmf() is first called.
     DiscreteDistribution<Float> m_area_pmf;
     std::mutex m_mutex;
 
-    /// Optional: used in eval_parameterization()
+    /// Optional: used in \ref eval_parameterization()
     ref<Scene<Float, Spectrum>> m_parameterization;
 
     /// Pointer to the scene that owns this mesh

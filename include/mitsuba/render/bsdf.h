@@ -26,7 +26,7 @@ enum class TransportMode : uint32_t {
  * that are implemented in a BSDF instance.
  *
  * They are also useful for picking out individual components, e.g., by setting
- * combinations in \ref BSDFContext::type_mask.
+ * combinations in `BSDFContext::type_mask`.
  */
 enum class BSDFFlags : uint32_t {
     // =============================================================
@@ -135,7 +135,7 @@ MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
  * evaluation and sampling to a subset of lobes in a multi-lobe BSDF model.
  *
  * The \ref BSDFContext data structure encodes these preferences and is
- * supplied to most \ref BSDF methods.
+ * supplied to most `BSDF` methods.
  */
 struct MI_EXPORT_LIB BSDFContext {
     // =============================================================
@@ -145,9 +145,9 @@ struct MI_EXPORT_LIB BSDFContext {
     /// Transported mode (radiance or importance)
     TransportMode mode = TransportMode::Radiance;
 
-    /*
+    /**
      * Bit mask for requested BSDF component types to be sampled/evaluated
-     * The default value (equal to \ref BSDFFlags::All) enables all components.
+     * The default value (equal to `BSDFFlags::All`) enables all components.
      */
     uint32_t type_mask = (uint32_t) 0x1FFu;
 
@@ -208,10 +208,10 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     /// Relative index of refraction in the sampled direction
     Float eta;
 
-    /// Stores the component type that was sampled by \ref BSDF::sample()
+    /// Stores the component type that was sampled by `BSDF::sample()`
     UInt32 sampled_type;
 
-    /// Stores the component index that was sampled by \ref BSDF::sample()
+    /// Stores the component index that was sampled by `BSDF::sample()`
     UInt32 sampled_component;
 
     //! @}
@@ -264,11 +264,11 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * respect to a reference coordinate system for the incident and outgoing
  * direction. The convention used here is that these coordinate systems are
  * given by <tt>coordinate_system(wi)</tt> and <tt>coordinate_system(wo)</tt>,
- * where 'wi' and 'wo' are the incident and outgoing direction in local
+ * where ``wi`` and ``wo`` are the incident and outgoing direction in local
  * coordinates.
  *
- * \sa mitsuba.BSDFContext
- * \sa mitsuba.BSDFSample3f
+ * \sa `mitsuba.BSDFContext`
+ * \sa `mitsuba.BSDFSample3f`
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
@@ -309,15 +309,16 @@ public:
      *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
      *     used to generate the sampled direction.
      *
-     * \return A pair (bs, value) consisting of
+     * \return A tuple ``(bs, value)`` where
      *
-     *     bs:    Sampling record, indicating the sampled direction, PDF values
-     *            and other information. The contents are undefined if sampling
-     *            failed.
+     *     - ``bs`` is the sampling record, indicating the sampled direction,
+     *       PDF values and other information. The contents are undefined if
+     *       sampling failed.
      *
-     *     value: The BSDF value divided by the probability (multiplied by the
-     *            cosine foreshortening factor when a non-delta component is
-     *            sampled). A zero spectrum indicates that sampling failed.
+     *     - ``value`` is the BSDF value divided by the probability
+     *       (multiplied by the cosine foreshortening factor when a non-delta
+     *       component is sampled). A zero spectrum indicates that sampling
+     *       failed.
      */
     virtual std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx,
@@ -333,7 +334,7 @@ public:
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
      * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
-     * components are supported: calling ``eval()`` on a perfectly specular
+     * components are supported: calling \ref eval() on a perfectly specular
      * material will return zero.
      *
      * Note that the incident direction does not need to be explicitly
@@ -362,10 +363,10 @@ public:
      *
      * This method provides access to the probability density that would result
      * when supplying the same BSDF context and surface interaction data
-     * structures to the \ref sample() method. It correctly handles changes in
+     * structures to the `sample()` method. It correctly handles changes in
      * probability when only a subset of the components is chosen for sampling
-     * (this can be done using the \ref BSDFContext::component and \ref
-     * BSDFContext::type_mask fields).
+     * (this can be done using the `BSDFContext::component` and
+     * `BSDFContext::type_mask` fields).
      *
      * Note that the incident direction does not need to be explicitly
      * specified. It is obtained from the field <tt>si.wi</tt>.
@@ -395,15 +396,15 @@ public:
      * Based on the information in the supplied query context \c ctx, this
      * method will either evaluate the entire BSDF or query individual
      * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
-     * components are supported: calling ``eval()`` on a perfectly specular
+     * components are supported: calling \ref eval() on a perfectly specular
      * material will return zero.
      *
      * This method provides access to the probability density that would result
      * when supplying the same BSDF context and surface interaction data
-     * structures to the \ref sample() method. It correctly handles changes in
+     * structures to the `sample()` method. It correctly handles changes in
      * probability when only a subset of the components is chosen for sampling
-     * (this can be done using the \ref BSDFContext::component and \ref
-     * BSDFContext::type_mask fields).
+     * (this can be done using the `BSDFContext::component` and
+     * `BSDFContext::type_mask` fields).
      *
      * Note that the incident direction does not need to be explicitly
      * specified. It is obtained from the field <tt>si.wi</tt>.
@@ -430,11 +431,11 @@ public:
      * solid angle of sampling the given direction \c wo and importance sample
      * the BSDF model.
      *
-     * This is simply a wrapper around two separate function calls to eval_pdf()
-     * and sample(). This function exists to reduce the number of virtual
-     * function calls, which has some performance benefits on highly vectorized
-     * JIT variants of the renderer. (A ~20% performance improvement for the
-     * basic path tracer on CUDA)
+     * This is simply a wrapper around two separate function calls to
+     * \ref eval_pdf() and \ref sample(). This function exists to reduce the
+     * number of virtual function calls, which has some performance benefits
+     * on highly vectorized JIT variants of the renderer. (A ~20% performance
+     * improvement for the basic path tracer on CUDA)
      *
      * \param ctx
      *     A context data structure describing which lobes to evaluate,
@@ -468,9 +469,9 @@ public:
     /**
      * \brief Evaluate un-scattered transmission component of the BSDF
      *
-     * This method will evaluate the un-scattered transmission (\ref
-     * BSDFFlags::Null) of the BSDF for light arriving from direction \c w.
-     * The default implementation returns zero.
+     * This method will evaluate the un-scattered transmission
+     * (`BSDFFlags::Null`) of the BSDF for light arriving from direction
+     * <tt>si.wi</tt>. The default implementation returns zero.
      *
      * \param si
      *     A surface interaction data structure describing the underlying
@@ -511,7 +512,7 @@ public:
     /**
      * \brief Monochromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from `eval_attribute()` in that it provided raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling).
      *
@@ -522,7 +523,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An scalar intensity or reflectance value
+     *     A scalar intensity or reflectance value
      */
     virtual Float eval_attribute_1(const std::string &name,
                                    const SurfaceInteraction3f &si,
@@ -531,7 +532,7 @@ public:
     /**
      * \brief Trichromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provided raw access to
+     * This function differs from `eval_attribute()` in that it provided raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling).
      *
@@ -542,7 +543,7 @@ public:
      *     Surface interaction associated with the query
      *
      * \return
-     *     An trichromatic intensity or reflectance value
+     *     A trichromatic intensity or reflectance value
      */
     virtual Color3f eval_attribute_3(const std::string &name,
                                      const SurfaceInteraction3f &si,
@@ -589,8 +590,8 @@ public:
                                               Mask active = true) const;
 
     /**
-     * \brief Returns the shading frame accounting for any pertubations that may 
-     * performed by the BSDF during evaluation.
+     * \brief Returns the shading frame accounting for any perturbations that may
+     * be performed by the BSDF during evaluation.
      *
      * \param si
      *     Surface interaction associated with the query

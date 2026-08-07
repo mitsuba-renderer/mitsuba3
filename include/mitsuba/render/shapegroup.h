@@ -42,7 +42,7 @@ public:
 
     ScalarSize effective_primitive_count() const override { return 0; }
 
-    /// Returns a union of ShapeType flags denoting what is present in the ShapeGroup
+    /// Returns a union of `ShapeType` flags denoting what is present in the ShapeGroup
     uint32_t shape_types() const { return m_shape_types; }
 
     void traverse(TraversalCallback *callback) override;

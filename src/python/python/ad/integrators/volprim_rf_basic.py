@@ -10,7 +10,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
     .. _integrator-volprim_rf_basic:
 
     Basic Volumetric Primitive Radiance Field Integrator (:monosp:`volprim_rf_basic`)
-    ------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------
 
     .. pluginparameters::
 

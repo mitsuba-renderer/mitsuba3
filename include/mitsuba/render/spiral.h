@@ -15,7 +15,7 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * \brief Generates a spiral of blocks to be rendered.
  *
- * \author Adam Arbree
+ * Adam Arbree
  * Aug 25, 2005
  * RayTracer.java
  * Used with permission.
