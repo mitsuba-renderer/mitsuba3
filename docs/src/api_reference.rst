@@ -12,13 +12,15 @@ API reference
 Overview
 --------
 
-This API reference documentation was automatically generated using the `Autodoc
-<https://www.sphinx-doc.org/en/master/usage/extensions/autodoc.html>`_ Sphinx
-extension.
+This reference is generated from Mitsuba's type stubs, which ship inside the
+``mitsuba`` wheel. It therefore describes the Python API exactly as a type
+checker or an editor sees it: real signatures, generic ``drjit.auto`` types
+rather than whichever backend a particular build used, and one entry per
+overload.
 
-Autodoc automatically processes the documentation of Mitsuba's Python bindings,
-hence all C++ function and class signatures are documented through their Python
-counterparts. Mitsuba's bindings mimic the C++ API as closely as possible,
-hence this documentation should still prove valuable even for C++ developers.
+Mitsuba's bindings mirror the C++ API closely, so this should be useful to a
+C++ developer as well. Where the two differ -- a C++ out-parameter that the
+binding returns instead, or a template parameter that has no Python
+counterpart -- the Python behaviour is what is documented here.
 
-.. include:: generated/mitsuba_api.rst
+.. include:: ../generated/api/toctree.txt
