@@ -2,5 +2,6 @@ from .util import traverse, SceneParameters, render, cornell_box, variant_contex
 from . import chi2
 from . import ad
 from . import math_py
+from . import plugins
 from . import testing
 from . import tensor_io
