@@ -110,21 +110,19 @@ class LargeSteps():
         Coincident vertex coordinates are fused so that duplicates
         introduced by e.g. UV seams or face normals cannot drift apart
         during optimization. Meshes that store a vertex -> surface point
-        map should use :py:meth:`from_mesh`, which relies on that stored
+        map should use `from_mesh`, which relies on that stored
         topology instead of value comparisons.
 
-        Parameter ``verts`` (``mitsuba.TensorXf``):
-            ``(V, 3)`` tensor of vertex coordinates (the ``positions``
-            scene parameter).
+        Args:
+            verts: ``(V, 3)`` tensor of vertex coordinates (the ``positions``
+                scene parameter).
 
-        Parameter ``faces`` (``mitsuba.TensorXu``):
-            ``(F, 3)`` tensor of face indices (the ``faces`` scene
-            parameter).
+            faces: ``(F, 3)`` tensor of face indices (the ``faces`` scene
+                parameter).
 
-        Parameter ``lambda_`` (``float``):
-            The hyper parameter λ. This controls how much gradients are diffused
-            on the surface. this value should increase with the tesselation of
-            the mesh.
+            lambda_: The hyper parameter λ. This controls how much gradients
+                are diffused on the surface. this value should increase with
+                the tesselation of the mesh.
         """
         import numpy as np
 
@@ -175,11 +173,12 @@ class LargeSteps():
         This method typically only needs to be called once per mesh, to obtain
         the latent variable before optimization.
 
-        Parameter ``v`` (``mitsuba.TensorXf``):
-            ``(V, 3)`` tensor of vertex coordinates, such as the ``positions``
-            scene parameter (also accepts a ``Point3f`` or a flat array).
+        Args:
+            v: ``(V, 3)`` tensor of vertex coordinates, such as the
+                ``positions`` scene parameter (also accepts a ``Point3f`` or
+                a flat array).
 
-        Returns ``mitsuba.TensorXf``:
+        Returns:
             ``(N, 3)`` tensor holding the differential form of ``v``, where
             ``N`` is the number of vertices after fusing duplicates.
         """
@@ -202,11 +201,11 @@ class LargeSteps():
         This method is typically called at each iteration of the optimization,
         to update the mesh coordinates before rendering.
 
-        Parameter ``u`` (``mitsuba.TensorXf``):
-            ``(N, 3)`` tensor holding the differential form of ``v`` (also
-            accepts a ``Point3f`` or a flat array).
+        Args:
+            u: ``(N, 3)`` tensor holding the differential form of ``v`` (also
+                accepts a ``Point3f`` or a flat array).
 
-        Returns ``mitsuba.TensorXf``:
+        Returns:
             ``(V, 3)`` tensor of vertex coordinates, ready to be assigned
             back to the ``positions`` scene parameter.
         """

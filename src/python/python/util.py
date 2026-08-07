@@ -202,10 +202,11 @@ class SceneParameters(Mapping):
         element is the node itself. The second element is the set of keys that
         the node is being updated for.
 
-        Parameter ``values`` (``dict``):
-            Optional dictionary-like object containing a set of keys and values
-            to be used to overwrite scene parameters. This operation will happen
-            before propagating the update further into the scene internal state.
+        Args:
+            values: Optional dictionary-like object containing a set of keys
+                and values to be used to overwrite scene parameters. This
+                operation will happen before propagating the update further
+                into the scene internal state.
         """
         if values is not None:
             for k, v in values.items():
@@ -240,10 +241,10 @@ class SceneParameters(Mapping):
         Reduce the size of the dictionary by only keeping elements,
         whose keys are defined by 'keys'.
 
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be kept. Regex are supported to define
-            a subset of parameters at once. If set to ``None``, all differentiable
-            scene parameters will be loaded.
+        Args:
+            keys: Specifies which parameters should be kept. Regex are
+                supported to define a subset of parameters at once. If set to
+                ``None``, all differentiable scene parameters will be loaded.
         """
         if type(keys) is not list:
             keys = [keys]
@@ -410,7 +411,7 @@ def render(scene: mi.Scene,
     ``dr.backward()``).
 
     Under the hood, the differentiation operation will be intercepted and routed
-    to ``Integrator.render_forward()`` or ``Integrator.render_backward()``,
+    to `mitsuba.SamplingIntegrator.render_forward` or `mitsuba.SamplingIntegrator.render_backward`,
     which evaluate the derivative using either naive AD or a more specialized
     differential simulation.
 
@@ -424,54 +425,51 @@ def render(scene: mi.Scene,
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
-    Parameter ``scene`` (``mi.Scene``):
-        Reference to the scene being rendered in a differentiable manner.
+    Args:
+        scene: Reference to the scene being rendered in a differentiable
+            manner.
 
-    Parameter ``params``:
-       An optional container of scene parameters that should receive gradients.
-       This argument isn't optional when computing forward mode derivatives. It
-       should be an instance of type ``mi.SceneParameters`` obtained via
-       ``mi.traverse()``. Gradient tracking must be explicitly enabled on these
-       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
-       must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired. When the scene parameters are
-       derived from other variables that have gradient tracking enabled,
-       gradient values should be propagated to the scene parameters by calling
-       ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling this
-       function.
+        params: An optional container of scene parameters that should receive
+            gradients. This argument isn't optional when computing forward
+            mode derivatives. It should be an instance of type
+            `mitsuba.SceneParameters` obtained via `mitsuba.traverse()`.
+            Gradient tracking must be explicitly enabled on these parameters
+            using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+            ``render()`` will not do this for you). Furthermore,
+            ``dr.set_grad(...)`` must be used to associate specific gradient
+            values with parameters if forward mode derivatives are desired.
+            When the scene parameters are derived from other variables that
+            have gradient tracking enabled, gradient values should be
+            propagated to the scene parameters by calling
+            ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling
+            this function.
 
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
+        sensor: Specify a sensor or a (sensor index) to render the scene from
+            a different viewpoint. By default, the first sensor within the
+            scene description (index 0) will take precedence.
 
-    Parameter ``integrator`` (``mi.Integrator``):
-        Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description will
-        be used.
+        integrator: Optional parameter to override the rendering technique to
+            be used. By default, the integrator specified in the original
+            scene description will be used.
 
-    Parameter ``seed`` (``mi.UInt32``)
-        This parameter controls the initialization of the random number
-        generator during the primal rendering step. It is crucial that you
-        specify different seeds (e.g., an increasing sequence) if subsequent
-        calls should produce statistically independent images (e.g. to
-        de-correlate gradient-based optimization steps).
+        seed: This parameter controls the initialization of the random
+            number generator during the primal rendering step. It is crucial
+            that you specify different seeds (e.g., an increasing sequence)
+            if subsequent calls should produce statistically independent
+            images (e.g. to de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad`` (``mi.UInt32``)
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation will
-        automatically compute a suitable value from the primal ``seed``.
+        seed_grad: This parameter is analogous to the ``seed`` parameter but
+            targets the differential simulation phase. If not specified, the
+            implementation will automatically compute a suitable value from
+            the primal ``seed``.
 
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        primal rendering step. The value provided within the original scene
-        specification takes precedence if ``spp=0``.
+        spp: Optional parameter to override the number of samples per pixel
+            for the primal rendering step. The value provided within the
+            original scene specification takes precedence if ``spp=0``.
 
-    Parameter ``spp_grad`` (``int``):
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation will
-        copy the value from ``spp``.
+        spp_grad: This parameter is analogous to the ``seed`` parameter but
+            targets the differential simulation phase. If not specified, the
+            implementation will copy the value from ``spp``.
     """
 
     if params is not None and not isinstance(params, mi.SceneParameters):

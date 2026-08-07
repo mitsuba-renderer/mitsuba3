@@ -26,19 +26,18 @@ class GridDistr(BaseGuidingDistr):
 
     def __init__(self, resolution, clamp_mass_thres, scale_mass=0., debug_logs=False) -> None:
         """
-        Parameter ``resolution``:
-            Grid resolution
+        Args:
+            resolution: Grid resolution.
 
-        Parameter ``clamp_mass_thres``:
-            Threshold value below which points' mass will be clamped to 0
+            clamp_mass_thres: Threshold value below which points' mass will
+                be clamped to 0.
 
-        Parameter ``scale_mass``:
-            Scale sample's contribution by performing a power transformation
+            scale_mass: Scale sample's contribution by performing a power
+                transformation.
 
-        Parameter ``debug_logs``:
-            Whether or not to print debug logs. If this is enabled, extra
-            kernels will be launched and the messages will be printed with a
-            ``Debug`` log level.
+            debug_logs: Whether or not to print debug logs. If this is
+                enabled, extra kernels will be launched and the messages will
+                be printed with a ``Debug`` log level.
         """
         self.prod_reso = []
         self.unit_delta = []
@@ -56,7 +55,7 @@ class GridDistr(BaseGuidingDistr):
         """
         Returns the 3D cell index corresponding to the 1D input index.
 
-        With ``index_array``=dr.arange(mi.UInt32, self.num_cells), the output
+        With ``index_array`` = dr.arange(mi.UInt32, self.num_cells), the output
         array of this function is [[0, 0, 0], [0, 0, 1], ..., [Nx-1, Ny-1, Nz-1]].
         """
         index_array = mi.UInt32(index_array_)

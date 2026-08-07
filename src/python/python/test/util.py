@@ -97,20 +97,20 @@ def check_vectorization(kernel, arg_dims = [], width = 125, atol=1e-6,
     Helper routine which compares evaluations of the vectorized and
     non-vectorized version of a kernel using available variants (e.g. LLVM, CUDA).
 
-    Parameter ``kernel`` (function):
-        Function to be evaluated. It's arguments should be annotated if
-        ``arg_dims`` is not specified. A kernel can return any drjit supported array
-        types (e.g. Float, Vector3f, ...) or a tuple of such arrays.
+    Args:
+        kernel: Function to be evaluated. It's arguments should be annotated
+            if ``arg_dims`` is not specified. A kernel can return any drjit
+            supported array types (e.g. Float, Vector3f, ...) or a tuple of
+            such arrays.
 
-    Parameter ``arg_dims`` (list(int)):
-        Dimensionalities of the function arguments. If not specified, those will be
-        deduced from the function argument annotations (if available).
+        arg_dims: Dimensionalities of the function arguments. If not
+            specified, those will be deduced from the function argument
+            annotations (if available).
 
-    Parameter ``width`` (int):
-       Number of elements to be evaluated at a time for the vectorized call.
+        width: Number of elements to be evaluated at a time for the
+            vectorized call.
 
-    Parameter ``atol`` (float):
-       Absolute tolerance for the comparison of the returned values.
+        atol: Absolute tolerance for the comparison of the returned values.
     """
     import numpy as np
     import mitsuba as mi
@@ -188,7 +188,7 @@ def quad_corners(seam=False):
     """
     Corner-indexed description of a unit quad in the z=0 plane: two
     triangles (0,1,2) and (0,2,3), returned as a ``(positions,
-    corner_vertex, uv)`` triple for ``Mesh.from_corners()``. With ``seam``,
+    corner_vertex, uv)`` triple for `mitsuba.Mesh.from_corners`. With ``seam``,
     the second triangle's UVs jump to a separate island along the diagonal.
     """
     import numpy as np
@@ -206,10 +206,10 @@ def quad_corners(seam=False):
 def seam_quad_fields():
     """
     The quad from ``quad_corners(seam=True)``, written out by hand in the
-    form that ``Mesh.from_fields()`` takes: the two vertices on the seam
+    form that `mitsuba.Mesh.from_fields` takes: the two vertices on the seam
     appear twice (6 vertices, 4 positions), and ``position_index`` says
     which position each vertex sits on. Kept independent of the corner
-    welder so that ``from_fields()`` tests do not rely on it. Returns
+    welder so that `mitsuba.Mesh.from_fields` tests do not rely on it. Returns
     ``(positions, faces, position_index, uv)``.
     """
     import numpy as np
@@ -221,7 +221,7 @@ def seam_quad_fields():
 
 
 def seam_quad():
-    """The mesh described by ``seam_quad_fields()``: 4 surface points, 6
+    """The mesh described by `seam_quad_fields`: 4 surface points, 6
     vertices, faces (0,1,2)/(0,2,3) in surface point space"""
     import mitsuba as mi
     coarse, faces, pidx, uv = seam_quad_fields()
