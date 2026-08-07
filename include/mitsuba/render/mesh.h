@@ -9,6 +9,7 @@
 #include <mitsuba/core/properties.h>
 #include <unordered_map>
 #include <mutex>
+#include <vector>
 #include <drjit/dynamic.h>
 #include <drjit/array_traverse.h>
 
@@ -222,6 +223,9 @@ public:
 
     /// Merge two meshes into one
     ref<Mesh> merge(const Mesh *other) const;
+
+    /// Merge a batch of compatible meshes into a single mesh
+    static ref<Mesh> merge(const std::vector<ref<Mesh>> &meshes);
 
     /// Compute smooth vertex normals and replace the current normal values
     void recompute_vertex_normals();
