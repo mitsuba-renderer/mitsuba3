@@ -222,7 +222,7 @@ MI_PY_EXPORT(Properties) {
                 return nb::borrow(def_val);
         },
         "key"_a, "def_value"_a = nb::none(),
-        D(Properties, get))
+        D(Properties, get, 2))
         .def("__contains__", [](const Properties& p, std::string_view key) {
             return p.has_property(key);
         })

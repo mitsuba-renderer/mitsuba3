@@ -122,7 +122,7 @@ MI_PY_EXPORT(warp) {
 
     m.def("square_to_uniform_cone",
           warp::square_to_uniform_cone<Float>,
-          "v"_a, "cos_cutoff"_a, D(warp, square_to_uniform_cone));
+          "sample"_a, "cos_cutoff"_a, D(warp, square_to_uniform_cone));
 
     m.def("uniform_cone_to_square",
           warp::uniform_cone_to_square<Float>,

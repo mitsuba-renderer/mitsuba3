@@ -14,11 +14,11 @@ MI_PY_EXPORT(ArgParser) {
         .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::string &, bool))
              &ArgParser::add, "prefix"_a, "extra"_a = false,
              nb::rv_policy::reference_internal,
-             D(ArgParser, add, 2))
+             D(ArgParser, add))
         .def("add", (const ArgParser::Arg * (ArgParser::*) (const std::vector<std::string> &, bool))
              &ArgParser::add, "prefixes"_a, "extra"_a = false,
              nb::rv_policy::reference_internal,
-             D(ArgParser, add))
+             D(ArgParser, add, 2))
         .def("parse", [](ArgParser &a, std::vector<std::string> args) {
                 std::unique_ptr<const char *[]> args_(new const char *[args.size()]);
                 for (size_t i = 0; i<args.size(); ++i)
