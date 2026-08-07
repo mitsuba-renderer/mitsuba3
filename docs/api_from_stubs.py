@@ -307,12 +307,15 @@ def generate(pkg_dir: str, out_dir: str) -> None:
 def find_stub_dir() -> str | None:
     """Locate the directory holding ``mitsuba/*.pyi``.
 
-    Prefers an installed ``mitsuba`` (what a documentation build gets from the
-    wheel) and falls back to a local build tree.
+    Prefers a local build tree, so that a developer documents the code at
+    hand, and falls back to an installed ``mitsuba`` for a documentation
+    build that only has the wheel.
     """
-    return sas.find_stub_dir('mitsuba', extra_candidates=[
-        os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                     '..', 'build', 'python', 'mitsuba')])
+    build = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                         '..', 'build', 'python', 'mitsuba')
+    if os.path.exists(os.path.join(build, '__init__.pyi')):
+        return os.path.normpath(build)
+    return sas.find_stub_dir('mitsuba')
 
 
 if __name__ == '__main__':

@@ -136,9 +136,9 @@ language = 'en'
 exclude_patterns = ['.build',
                     'release.rst',
                     'src/plugin_reference/section_*.rst',
-                    'docs_api/*',
                     'generated/*.rst',
                     'src/generated/*_api.rst',
+                    'src/generated/api/*',
                     '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
@@ -549,6 +549,20 @@ def custom_step(app):
     if not os.path.exists(build_dir):
         os.mkdir(build_dir)
     generate_plugin_doc.generate(build_dir)
+
+    # The API reference is rendered from the type stubs
+    try:
+        import api_from_stubs
+    except ImportError as e:
+        print('conf.py: %s, skipping the API reference. Install the '
+              'packages listed in docs/requirements.txt.' % e)
+        return
+    stub_dir = api_from_stubs.find_stub_dir()
+    if stub_dir:
+        api_from_stubs.generate(stub_dir, os.path.join(build_dir, 'api'))
+    else:
+        print('conf.py: no Mitsuba type stubs found, skipping the API '
+              'reference. Install mitsuba, or build it locally.')
 
 
 # -- Register event callbacks ----------------------------------------------

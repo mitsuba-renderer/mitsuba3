@@ -471,14 +471,6 @@ if (NOT SKBUILD)
         COMMENT "Building HTML documentation with Sphinx"
         USES_TERMINAL)
 
-    set(SPHINX_INPUT_DIR_API  "${CMAKE_CURRENT_SOURCE_DIR}/docs/docs_api")
-    set(SPHINX_OUTPUT_DIR_API "${CMAKE_CURRENT_BINARY_DIR}/html_api")
-
-    add_custom_target(mkdoc-api
-        ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR_API}" "${SPHINX_OUTPUT_DIR_API}"
-        COMMENT "Building HTML documentation with Sphinx"
-        DEPENDS mitsuba-copy-python-src
-        USES_TERMINAL)
   endif()
 endif()
 
