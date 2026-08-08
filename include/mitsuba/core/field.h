@@ -11,11 +11,11 @@ namespace dr = drjit;
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Convenience wrapper to simultaneously instantiate a host and a device
+ * Convenience wrapper to simultaneously instantiate a host and a device
  * version of a type
  *
  * This class implements a simple wrapper that replicates instance attributes
- * on the host and device. This is only relevant when \c DeviceType is a
+ * on the host and device. This is only relevant when ``DeviceType`` is a
  * JIT-compiled Dr.Jit array (when compiling the renderer in CUDA/LLVM mode).
  *
  * Why is this needed? Mitsuba plugins represent their internal state using

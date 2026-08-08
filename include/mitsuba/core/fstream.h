@@ -20,7 +20,8 @@ private:
     size_t m_gcount;
 };
 
-/** \brief Simple `Stream` implementation backed-up by a file.
+/**
+ * Simple `Stream` implementation backed-up by a file.
  *
  * The underlying file abstraction is ``std::fstream``, and so most
  * operations can be expected to behave similarly.
@@ -41,9 +42,10 @@ public:
     using Stream::read;
     using Stream::write;
 
-    /** \brief Constructs a new FileStream by opening the file pointed by <tt>p</tt>.
+    /**
+     * Constructs a new FileStream by opening the file pointed by ``p``.
      *
-     * The file is opened in read-only or read/write mode as specified by \c mode.
+     * The file is opened in read-only or read/write mode as specified by ``mode``.
      *
      * Throws if trying to open a non-existing file with write disabled.
      * Throws an exception if the file cannot be opened / created.
@@ -53,7 +55,8 @@ public:
     /// Destructor
     ~FileStream();
 
-    /** \brief Closes the stream and the underlying file.
+    /**
+     * Closes the stream and the underlying file.
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
@@ -79,13 +82,13 @@ public:
     // standard file stream, avoiding having to deal with portability.
     // =========================================================================
     /**
-     * \brief Reads a specified amount of data from the stream.
+     * Reads a specified amount of data from the stream.
      * Throws an exception when the stream ended prematurely.
      */
     void read(void *p, size_t size) override;
 
     /**
-     * \brief Writes a specified amount of data into the stream.
+     * Writes a specified amount of data into the stream.
      * Throws an exception when not all data could be written.
      */
     void write(const void *p, size_t size) override;
@@ -93,9 +96,10 @@ public:
     /// Seeks to a position inside the stream. May throw if the resulting state is invalid.
     void seek(size_t pos) override;
 
-    /** \brief Truncates the file to a given size.
+    /**
+     * Truncates the file to a given size.
      * Automatically flushes the stream before truncating the file.
-     * The position is updated to <tt>min(old_position, size)</tt>.
+     * The position is updated to ``min(old_position, size)``.
      *
      * Throws an exception if in read-only mode.
      */
@@ -104,9 +108,12 @@ public:
     /// Gets the current position inside the file
     size_t tell() const override;
 
-    /** \brief Returns the size of the file.
-     * \note After a write, the size may not be updated
-     * until a \ref flush() is performed.
+    /**
+     * Returns the size of the file.
+     *
+     * Note:
+     *     After a write, the size may not be updated
+     *     until a `flush()` is performed.
      */
     size_t size() const override;
 

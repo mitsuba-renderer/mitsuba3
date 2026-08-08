@@ -102,11 +102,15 @@ struct DateTimeRecord {
     Int32 year, month, day;
     Float hour = 0.f, minute = 0.f, second = 0.f;
 
-    /** Calculate difference in days between the current Julian Day
+    /**
+     * Calculate difference in days between the current Julian Day
      *  and JD 2451545.0, which is noon 1 January 2000 Universal Time
      *
-     *  \param timezone (Float) Timezone to use for conversion
-     *  \return The elapsed time in julian days since New Year of 2000.
+     * Args:
+     *     timezone: (Float) Timezone to use for conversion
+     *
+     * Returns:
+     *     The elapsed time in julian days since New Year of 2000.
      */
     Float to_elapsed_julian_date(const Float& timezone) const {
         // Calculate time of the day in UT decimal hours
@@ -490,52 +494,83 @@ protected:
 
     /**
      * Getter for the sun angles at the given time
-     * @param time Time value in [0, 1]
-     * @return The sun azimuth and elevation angle
+     *
+     * Args:
+     *     time: Time value in [0, 1]
+     *
+     * Returns:
+     *     The sun azimuth and elevation angle
      */
     virtual Point2f get_sun_angles(const Float& time) const = 0;
 
     /**
      * Getter for sky radiance datasets for the given wavelengths and sun angles
-     * @param sun_theta The angle between the sun's direction and the z axis
-     * @param channel_idx Indices of the queried channels
-     * @param active Indicates which channels are valid indices
-     * @return The sky mean radiance dataset and the sky parameters
-     *         for the Wilkie-Hosek 2012 sky model
+     *
+     * Args:
+     *     sun_theta: The angle between the sun's direction and the z axis
+     *
+     *     channel_idx: Indices of the queried channels
+     *
+     *     active: Indicates which channels are valid indices
+     *
+     * Returns:
+     *     The sky mean radiance dataset and the sky parameters
+     *     for the Wilkie-Hosek 2012 sky model
      */
     virtual std::pair<SkyRadData, SkyParamsData>
     get_sky_datasets(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Getter for the probability of sampling the sky for a given sun position
-     * @param sun_theta The angle between the sun's direction and the z axis
-     * @param active Indicates active lanes
-     * @return The probability of sampling the sky over the sun
+     *
+     * Args:
+     *     sun_theta: The angle between the sun's direction and the z axis
+     *
+     *     active: Indicates active lanes
+     *
+     * Returns:
+     *     The probability of sampling the sky over the sun
      */
     virtual Float get_sky_sampling_weight(const Float& sun_theta, const Mask& active) const = 0;
 
     /**
      * Getter for the sun's irradiance at a given sun elevation and wavelengths
-     * @param sun_theta The angle between the sun's direction and the z axis
-     * @param channel_idx The indices of the queried channels
-     * @param active Indicates active lanes
-     * @return The sun irradiance for the given conditions
+     *
+     * Args:
+     *     sun_theta: The angle between the sun's direction and the z axis
+     *
+     *     channel_idx: The indices of the queried channels
+     *
+     *     active: Indicates active lanes
+     *
+     * Returns:
+     *     The sun irradiance for the given conditions
      */
     virtual USpec get_sun_irradiance(const Float& sun_theta, const USpecUInt32& channel_idx, const USpecMask& active) const = 0;
 
     /**
      * Extracts the sampling weights for the mixed pdf
-     * @param sun_theta The angle between the sun's direction and the z axis
-     * @param active Indicates active lanes
-     * @return The parameters associated with the mixed pdf sampling of the given elevation
+     *
+     * Args:
+     *     sun_theta: The angle between the sun's direction and the z axis
+     *
+     *     active: Indicates active lanes
+     *
+     * Returns:
+     *     The parameters associated with the mixed pdf sampling of the given elevation
      */
     virtual SamplingWeights get_sampling_weights(const Float& sun_theta, const Mask& active) const = 0;
 
     /**
      * Samples wavelengths and evaluates the associated weights
-     * @param sample Floating point value in [0, 1] to sample the wavelengths
-     * @param active Indicates active lanes
-     * @return The chosen wavelengths and their inverse pdf
+     *
+     * Args:
+     *     sample: Floating point value in [0, 1] to sample the wavelengths
+     *
+     *     active: Indicates active lanes
+     *
+     * Returns:
+     *     The chosen wavelengths and their inverse pdf
      */
     virtual std::pair<Wavelength, Spectrum>
     sample_wlgth(const Float& sample, Mask active) const = 0;
@@ -544,12 +579,20 @@ protected:
      * This method should be used when the decision of hitting the sun was already made.
      * This avoids transforming coordinates to world space and making that decision a second
      * time since numerical precision can cause discrepancies between the two decisions.
-     * @param local_wo Shading direction in local space
-     * @param wavelengths Wavelengths to evaluate
-     * @param sun_angles Sun azimuth and elevation angles
-     * @param hit_sun Indicates if the sun was hit
-     * @param active Indicates active lanes
-     * @return The radiance for the given conditions
+     *
+     * Args:
+     *     local_wo: Shading direction in local space
+     *
+     *     wavelengths: Wavelengths to evaluate
+     *
+     *     sun_angles: Sun azimuth and elevation angles
+     *
+     *     hit_sun: Indicates if the sun was hit
+     *
+     *     active: Indicates active lanes
+     *
+     * Returns:
+     *     The radiance for the given conditions
      */
     Spectrum eval(const Vector3f& local_wo, const Wavelength& wavelengths, const Point2f& sun_angles, Mask hit_sun, Mask active) const {
         const Vector3f sun_dir = sph_to_dir(sun_angles.x(), sun_angles.y());
@@ -624,20 +667,22 @@ protected:
     }
 
     /**
-     * \brief Evaluate the sky model for the given channel indices and angles
+     * Evaluate the sky model for the given channel indices and angles
      *
      * Based on the Hosek-Wilkie skylight model
      * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
      *
-     * @param cos_theta
-     *      Cosine of the angle between the z-axis (up) and the viewing direction
-     * @param gamma
-     *      Angle between the sun and the viewing direction
-     * @param sky_params
-     *      Sky parameters for the model
-     * @param sky_radiance
-     *      Sky radiance for the model
-     * @return Indirect sun illumination
+     * Args:
+     *     cos_theta: Cosine of the angle between the z-axis (up) and the viewing direction
+     *
+     *     gamma: Angle between the sun and the viewing direction
+     *
+     *     sky_params: Sky parameters for the model
+     *
+     *     sky_radiance: Sky radiance for the model
+     *
+     * Returns:
+     *     Indirect sun illumination
      */
     USpec eval_sky(const Float &cos_theta, const Float &gamma,
                   const SkyParamsData &sky_params, const SkyRadData &sky_radiance) const {
@@ -656,22 +701,24 @@ protected:
     }
 
     /**
-     * \brief Evaluates the sun model for the given channel indices and angles
+     * Evaluates the sun model for the given channel indices and angles
      *
      * Based on the Hosek-Wilkie sun model
      * https://cgg.mff.cuni.cz/publications/adding-a-solar-radiance-function-to-the-hosek-wilkie-skylight-model/
      *
-     * \param channel_idx
-     *       Indices of the channels to render
-     * \param sun_theta
-     *       Elevation angle of the sun
-     * \param cos_theta
-     *       Cosine of the angle between the z-axis (up) and the viewing direction
-     * \param gamma
-     *       Angle between the sun and the viewing direction
-     * \param active
-     *       Mask for the active lanes and channel indices
-     * \return Direct sun illumination
+     * Args:
+     *     channel_idx: Indices of the channels to render
+     *
+     *     sun_theta: Elevation angle of the sun
+     *
+     *     cos_theta: Cosine of the angle between the z-axis (up) and the viewing direction
+     *
+     *     gamma: Angle between the sun and the viewing direction
+     *
+     *     active: Mask for the active lanes and channel indices
+     *
+     * Returns:
+     *     Direct sun illumination
      */
     USpec eval_sun(const USpecUInt32 &channel_idx,
                    const Float &sun_theta,
@@ -740,24 +787,25 @@ protected:
 
 
     /**
-     * \brief Computes the limb darkening of the sun for a given gamma.
+     * Computes the limb darkening of the sun for a given gamma.
      *
      * Only works for spectral mode since limb darkening is baked into the RGB
      * model
      *
-     * \param channel_idx_low
-     *      Indices of the lower wavelengths
-     * \param channel_idx_high
-     *      Indices of the upper wavelengths
-     * \param lerp_f
-     *      Linear interpolation factor for wavelength
-     * \param gamma
-     *      Angle between the sun's center and the viewing ray
-     * \param active
-     *      Indicates if the channel indices are valid and that the sun was hit
-     * \return
-     *      The spectral values of limb darkening to apply to the sun's
-     *      radiance by multiplication
+     * Args:
+     *     channel_idx_low: Indices of the lower wavelengths
+     *
+     *     channel_idx_high: Indices of the upper wavelengths
+     *
+     *     lerp_f: Linear interpolation factor for wavelength
+     *
+     *     gamma: Angle between the sun's center and the viewing ray
+     *
+     *     active: Indicates if the channel indices are valid and that the sun was hit
+     *
+     * Returns:
+     *     The spectral values of limb darkening to apply to the sun's
+     *     radiance by multiplication
      */
     USpec compute_sun_ld(const USpecUInt32 &channel_idx_low,
                         const USpecUInt32 &channel_idx_high,
@@ -887,11 +935,15 @@ protected:
 
 
     /**
-     * \brief Samples the sun from a uniform cone with the given sample
+     * Samples the sun from a uniform cone with the given sample
      *
-     * \param sample Sample to generate the sun ray
-     * \param sun_angles Azimuth and elevation angles of the sun
-     * \return The sampled sun direction
+     * Args:
+     *     sample: Sample to generate the sun ray
+     *
+     *     sun_angles: Azimuth and elevation angles of the sun
+     *
+     * Returns:
+     *     The sampled sun direction
      */
     Vector3f sample_sun(const Point2f& sample, const Point2f& sun_angles) const {
         return Frame3f(sph_to_dir(sun_angles.x(), sun_angles.y())).to_world(
@@ -902,11 +954,17 @@ protected:
     /**
      * Computes the PDFs of the sky and sun for the given local direction
      *
-     * \param local_dir Local direction in the sky
-     * \param sun_angles Azimuth and elevation angles of the sun
-     * \param hit_sun Indicates if the sun's intersection should be tested
-     * \param active Mask for the active lanes
-     * \return The sky and sun PDFs
+     * Args:
+     *     local_dir: Local direction in the sky
+     *
+     *     sun_angles: Azimuth and elevation angles of the sun
+     *
+     *     hit_sun: Indicates if the sun's intersection should be tested
+     *
+     *     active: Mask for the active lanes
+     *
+     * Returns:
+     *     The sky and sun PDFs
      */
     std::pair<Float, Float> compute_pdfs(const Vector3f &local_dir,
                                          const Point2f &sun_angles,
@@ -943,8 +1001,12 @@ protected:
 
     /**
      * Scaling factor to keep sun irradiance constant across aperture angles
-     * @param custom_half_aperture Half aperture angle used
-     * @return The appropriate scaling factor
+     *
+     * Args:
+     *     custom_half_aperture: Half aperture angle used
+     *
+     * Returns:
+     *     The appropriate scaling factor
      */
     MI_INLINE Float get_area_ratio(const Float &custom_half_aperture) const {
         return (1.f - dr::cos(ScalarFloat(SUN_HALF_APERTURE))) /
@@ -953,21 +1015,33 @@ protected:
 
     /**
      * Computes the gaussian cdf for the given parameters
-     * @param mu Gaussian average
-     * @param sigma Gaussian standard deviation
-     * @param x Point to evaluate the CDF at
-     * @return The cdf value of the given point
+     *
+     * Args:
+     *     mu: Gaussian average
+     *
+     *     sigma: Gaussian standard deviation
+     *
+     *     x: Point to evaluate the CDF at
+     *
+     * Returns:
+     *     The cdf value of the given point
      */
     MI_INLINE Point2f gaussian_cdf(const Point2f &mu, const Point2f &sigma, const ScalarPoint2f &x) const {
         return 0.5f * (1 + dr::erf(dr::InvSqrtTwo<Float> * (x - mu) / sigma));
     }
 
     /**
-     * \brief Interpolates the given tensor on turbidity then albedo
-     * @param dataset The original dataset from file
-     * @param albedo The albedo values for each channel
-     * @param turbidity The turbidity value
-     * @return The collapsed dataset interpolated linearly
+     * Interpolates the given tensor on turbidity then albedo
+     *
+     * Args:
+     *     dataset: The original dataset from file
+     *
+     *     albedo: The albedo values for each channel
+     *
+     *     turbidity: The turbidity value
+     *
+     * Returns:
+     *     The collapsed dataset interpolated linearly
      */
     TensorXf bilinear_interp(const TensorXf& dataset,
         const FloatStorage& albedo, const Float& turbidity) const {
@@ -991,12 +1065,13 @@ protected:
 
 
    /**
-    * \brief Computes the cosine of the angle made between the sun's radius and the viewing direction
+    * Computes the cosine of the angle made between the sun's radius and the viewing direction
     *
-    * \param gamma
-    *      Angle between the sun's center and the viewing direction
-    * \return
-    *      The cosine of the angle between the sun's radius and the viewing direction
+    * Args:
+    *     gamma: Angle between the sun's center and the viewing direction
+    *
+    * Returns:
+    *     The cosine of the angle between the sun's radius and the viewing direction
     */
     MI_INLINE Float sun_cos_psi(const Float& gamma) const {
         const Float sol_rad_sin = dr::sin(m_sun_half_aperture),
@@ -1008,14 +1083,15 @@ protected:
     }
 
     /**
-     * \brief Compute the elevation and azimuth of the sun as seen by an observer
-     * at \c location at the date and time specified in \c date_time.
+     * Compute the elevation and azimuth of the sun as seen by an observer
+     * at ``location`` at the date and time specified in ``date_time``.
      *
-     * \returns The pair containing the polar angle and the azimuth
+     * Returns:
+     *     The pair containing the polar angle and the azimuth
      *
-     * Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
-     * Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
-     * in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
+     *     Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
+     *     Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
+     *     in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
      */
     std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
                                             const LocationRecord<Float> &location) const {
@@ -1111,10 +1187,17 @@ protected:
 
     /**
      * Loads a tensor from the given tensor file
-     * @tparam FileTensor Tensor and type stored in the file
-     * @param tensor_file File wrapper
-     * @param tensor_name Name of the tensor to extract
-     * @return The queried tensor
+     *
+     * Args:
+     *     tensor_file: File wrapper
+     *
+     *     tensor_name: Name of the tensor to extract
+     *
+     * Template Args:
+     *     FileTensor: Tensor and type stored in the file
+     *
+     * Returns:
+     *     The queried tensor
      */
     template <typename FileTensor>
     TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) const {
@@ -1123,11 +1206,13 @@ protected:
     }
 
     /**
-     * \brief Extract the albedo values for the required wavelengths/channels
+     * Extract the albedo values for the required wavelengths/channels
      *
-     * \param albedo_tex `Texture` to extract the albedo from
-     * \return
-     *      The buffer with the extracted albedo values for the needed wavelengths/channels
+     * Args:
+     *     albedo_tex: `Texture` to extract the albedo from
+     *
+     * Returns:
+     *     The buffer with the extracted albedo values for the needed wavelengths/channels
      */
     FloatStorage extract_albedo(const ref<Texture>& albedo_tex) const {
         FloatStorage albedo = dr::zeros<FloatStorage>(CHANNEL_COUNT);

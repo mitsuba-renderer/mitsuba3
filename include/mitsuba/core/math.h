@@ -154,7 +154,7 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
 // -----------------------------------------------------------------------
 
 /**
- * \brief Compare the difference in ULPs between a reference value and another
+ * Compare the difference in ULPs between a reference value and another
  * given floating point number
  */
 template <typename T> T ulpdiff(T ref, T val) {
@@ -199,20 +199,20 @@ template <typename T> T log2i_ceil(T value) {
 }
 
 /**
- * \brief Find an interval in an ordered set
+ * Find an interval in an ordered set
  *
- * This function performs a binary search to find an index \c i such that
- * <tt>pred(i)</tt> is \c true and <tt>pred(i+1)</tt> is \c false, where \c pred
+ * This function performs a binary search to find an index ``i`` such that
+ * ``pred(i)`` is ``True`` and ``pred(i+1)`` is ``False``, where ``pred``
  * is a user-specified predicate that monotonically decreases over this range
- * (i.e. max one \c true -> \c false transition).
+ * (i.e. max one ``True`` -> ``False`` transition).
  *
- * The predicate will be evaluated exactly <tt>floor(log2(size)) + 1</tt> times.
- * Note that the template parameter \c Index is automatically inferred from the
- * supplied predicate, which takes an index or an index vector of type \c Index
+ * The predicate will be evaluated exactly ``floor(log2(size)) + 1`` times.
+ * Note that the template parameter ``Index`` is automatically inferred from the
+ * supplied predicate, which takes an index or an index vector of type ``Index``
  * as input argument and can (optionally) take a mask argument as well. In the
  * vectorized case, each vector lane can use different predicate.
- * When \c pred is \c false for all entries, the function returns \c 0, and
- * when it is \c true for all cases, it returns <tt>size-2</tt>.
+ * When ``pred`` is ``False`` for all entries, the function returns ``0``, and
+ * when it is ``True`` for all cases, it returns ``size-2``.
  *
  * The main use case of this function is to locate an interval (i, i+1)
  * in an ordered list.
@@ -233,7 +233,7 @@ MI_INLINE Index find_interval(dr::scalar_t<Index> size,
 }
 
 /**
- * \brief This function computes a suitable middle point for use in the \ref bisect() function
+ * This function computes a suitable middle point for use in the ``bisect()`` function
  *
  * To mitigate the issue of varying density of floating point numbers on the
  * number line, the floats are reinterpreted as unsigned integers. As long as
@@ -269,15 +269,15 @@ Scalar middle(Scalar left, Scalar right) {
 }
 
 /**
- * \brief Bisect a floating point interval given a predicate function
+ * Bisect a floating point interval given a predicate function
  *
- * This function takes an interval [\c left, \c right] and a predicate \c pred
- * as inputs. It assumes that <tt>pred(left)==true</tt> and
- * <tt>pred(right)==false</tt>. It also assumes that there is a single floating
- * point number \c t such that \c pred is \c true for all values in the range
- * [\c left, \c t] and \c false for all values in the range (\c t, \c right].
+ * This function takes an interval [``left``, ``right``] and a predicate ``pred``
+ * as inputs. It assumes that ``pred(left)==true`` and
+ * ``pred(right)==false``. It also assumes that there is a single floating
+ * point number ``t`` such that ``pred`` is ``True`` for all values in the range
+ * [``left``, ``t``] and ``False`` for all values in the range (``t``, ``right``].
  *
- * The bisection search then finds and returns \c t by repeatedly splitting the
+ * The bisection search then finds and returns ``t`` by repeatedly splitting the
  * input interval. The number of iterations is roughly bounded by the number of
  * bits of the underlying floating point representation.
  */
@@ -298,7 +298,7 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
 }
 
 /**
- * \brief Compute the Chi^2 statistic and degrees of freedom of the given
+ * Compute the Chi^2 statistic and degrees of freedom of the given
  * arrays while pooling low-valued entries together
  *
  * Given a list of observations counts (``obs[i]``) and expected observation
@@ -315,7 +315,6 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
  *
  * The function returns the statistic value, degrees of freedom, below-threshold
  * entries and resulting number of pooled regions.
- *
  */
 template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
 chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
@@ -348,8 +347,10 @@ chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
 }
 
 /**
- * \brief Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
- * \return \c true if a solution could be found
+ * Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
+ *
+ * Returns:
+ *     ``True`` if a solution could be found
  */
 template <typename Value>
 MI_INLINE std::tuple<dr::mask_t<Value>, Value, Value>
@@ -410,11 +411,11 @@ DRJIT_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index
 }
 
 /**
- * \brief Map a uniformly distributed sample to an array of samples with shifts
+ * Map a uniformly distributed sample to an array of samples with shifts
  *
- * Given a floating point value \c x on the interval <tt>[0, 1]</tt> return a
- * floating point array with values <tt>[x, x+offset, x+2*offset, ...]</tt>,
- * where \c offset is the reciprocal of the array size. Entries that become
+ * Given a floating point value ``x`` on the interval ``[0, 1]`` return a
+ * floating point array with values ``[x, x+offset, x+2*offset, ...]``,
+ * where ``offset`` is the reciprocal of the array size. Entries that become
  * greater than 1.0 wrap around to the other side of the unit interval.
  *
  * This operation is useful to implement a type of correlated stratification in

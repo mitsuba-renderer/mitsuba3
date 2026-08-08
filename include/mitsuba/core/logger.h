@@ -19,13 +19,11 @@ enum LogLevel : int {
 };
 
 /**
- * \brief Responsible for processing log messages
+ * Responsible for processing log messages
  *
  * Upon receiving a log message, the Logger class invokes a `Formatter` to
  * convert it into a human-readable form. Following that, it sends this
  * information to every registered `Appender`.
- *
- * \ingroup libcore
  */
 class MI_EXPORT_LIB Logger : public Object {
 public:
@@ -36,47 +34,40 @@ public:
     ~Logger();
 
     /**
-     * \brief Process a log message
+     * Process a log message
      *
-     * \param level
-     *     Log level of the message
+     * Args:
+     *     level: Log level of the message
      *
-     * \param cname
-     *     Name of the class (if present)
+     *     cname: Name of the class (if present)
      *
-     * \param fname
-     *      Source filename
+     *     fname: Source filename
      *
-     * \param line
-     *      Source line number
+     *     line: Source line number
      *
-     * \param msg
-     *      Log message
+     *     msg: Log message
      *
-     * \note This function is not exposed in the Python bindings.
-     *       Instead, please use \c mitsuba.Log
+     * Note:
+     *     This function is not exposed in the Python bindings.
+     *     Instead, please use `Log`
      */
     void log(LogLevel level, const char *cname, const char *fname,
              int line, std::string_view msg);
 
     /**
-     * \brief Process a progress message
+     * Process a progress message
      *
-     * \param progress
-     *     Percentage value in [0, 100]
+     * Args:
+     *     progress: Percentage value in [0, 100]
      *
-     * \param name
-     *     Title of the progress message
+     *     name: Title of the progress message
      *
-     * \param formatted
-     *     Formatted string representation of the message
+     *     formatted: Formatted string representation of the message
      *
-     * \param eta
-     *     Estimated time until 100% is reached.
+     *     eta: Estimated time until 100% is reached.
      *
-     * \param ptr
-     *     Custom pointer payload. This is used to express the
-     *     context of a progress message.
+     *     ptr: Custom pointer payload. This is used to express the
+     *         context of a progress message.
      */
     void log_progress(float progress, std::string_view name,
         std::string_view formatted, std::string_view eta,
@@ -86,11 +77,11 @@ public:
     void set_log_level(LogLevel level);
 
     /**
-     * \brief Set the error log level (this level and anything above will throw
+     * Set the error log level (this level and anything above will throw
      * exceptions).
      *
      * The value provided here can be used for instance to turn warnings into
-     * errors. But \a level must always be less than \ref Error, i.e. it isn't
+     * errors. But *level* must always be less than ``Error``, i.e. it isn't
      * possible to cause errors not to throw an exception.
      */
     void set_error_level(LogLevel level);
@@ -129,7 +120,7 @@ public:
     const Formatter *formatter() const;
 
     /**
-     * \brief Return the contents of the log file as a string
+     * Return the contents of the log file as a string
      *
      * Throws a runtime exception upon failure
      */
@@ -200,7 +191,7 @@ NAMESPACE_END(detail)
             "%s:%i (" explanation ")", #cond, __FILE__, __LINE__); \
     } while (0)
 
-/// Expose both of the above macros using overloading, i.e. <tt>Assert(cond)</tt> or <tt>Assert(cond, explanation)</tt>
+/// Expose both of the above macros using overloading, i.e. ``Assert(cond)`` or ``Assert(cond, explanation)``
 #define Assert(...) MI_EXPAND(MI_EXPAND(MI_CAT(MI_ASSERT, \
                 MI_VA_SIZE(__VA_ARGS__)))(__VA_ARGS__))
 #else

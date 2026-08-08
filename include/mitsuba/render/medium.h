@@ -33,28 +33,32 @@ public:
                                 Mask active = true) const = 0;
 
     /**
-     * \brief Sample a free-flight distance in the medium.
+     * Sample a free-flight distance in the medium.
      *
      * This function samples a (tentative) free-flight distance according to an
      * exponential transmittance. It is then up to the integrator to then decide
      * whether the `MediumInteraction3f` corresponds to a real or null scattering
      * event.
      *
-     * \param ray      Ray, along which a distance should be sampled
-     * \param sample   A uniformly distributed random sample
-     * \param channel  The channel according to which we will sample the
-     * free-flight distance. This argument is only used when rendering in RGB
-     * modes.
+     * Args:
+     *     ray: Ray, along which a distance should be sampled
      *
-     * \return         This method returns a `MediumInteraction3f`.
-     *                 The MediumInteraction will always be valid,
-     *                 except if the ray missed the Medium's bounding box.
+     *     sample: A uniformly distributed random sample
+     *
+     *     channel: The channel according to which we will sample the
+     *         free-flight distance. This argument is only used when rendering in RGB
+     *         modes.
+     *
+     * Returns:
+     *     This method returns a `MediumInteraction3f`.
+     *     The MediumInteraction will always be valid,
+     *     except if the ray missed the Medium's bounding box.
      */
     MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
                                            UInt32 channel, Mask active) const;
 
     /**
-     * \brief Compute the transmittance and PDF
+     * Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain
      * free-flight distance The returned PDF takes into account if a medium
@@ -65,8 +69,8 @@ public:
      * fact that the free-flight distance sampling distribution can depend on
      * the wavelength.
      *
-     * \return   This method returns a pair of ``(Transmittance, PDF)``.
-     *
+     * Returns:
+     *     This method returns a pair of ``(Transmittance, PDF)``.
      */
     std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     transmittance_eval_pdf(const MediumInteraction3f &mi,

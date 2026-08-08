@@ -38,7 +38,7 @@ NAMESPACE_BEGIN(detail)
  * During kd-tree construction, large amounts of memory are required to
  * temporarily hold index and edge event lists. When not implemented
  * properly, these allocations can become a critical bottleneck. The class
- * \ref OrderedChunkAllocator provides a specialized memory allocator,
+ * ``OrderedChunkAllocator`` provides a specialized memory allocator,
  * which reserves memory in chunks of at least 5MiB (this number is
  * configurable). An important assumption made by the allocator is that
  * memory will be released in the exact same order in which it was
@@ -58,7 +58,7 @@ public:
     }
 
     /**
-     * \brief Request a block of memory from the allocator
+     * Request a block of memory from the allocator
      *
      * Walks through the list of chunks to find one with enough
      * free memory. If no chunk could be found, a new one is created.
@@ -105,7 +105,7 @@ public:
     }
 
     /**
-     * \brief Shrink the size of the last allocated chunk
+     * Shrink the size of the last allocated chunk
      */
     template <typename T> void shrink_allocation(T *ptr_, size_t new_size) {
         auto ptr = reinterpret_cast<uint8_t *>(ptr_);
@@ -309,29 +309,29 @@ NAMESPACE_END(detail)
 
 
 /**
- * \brief Optimized KD-tree acceleration data structure for n-dimensional
+ * Optimized KD-tree acceleration data structure for n-dimensional
  * (n<=4) shapes and various queries involving them.
  *
- * Note that this class mainly concerns itself with primitives that cover <em>a
- * region</em> of space. For point data, other implementations will be more
+ * Note that this class mainly concerns itself with primitives that cover *a
+ * region* of space. For point data, other implementations will be more
  * suitable. The most important application in Mitsuba is the fast construction
- * of high-quality trees for ray tracing. See the class \ref ShapeKDTree for
+ * of high-quality trees for ray tracing. See the class ``ShapeKDTree`` for
  * this specialization.
  *
  * The code in this class is a fully generic kd-tree implementation, which can
  * theoretically support any kind of shape. However, subclasses still need to
  * provide the following signatures for a functional implementation:
  *
- * \code
- * /// Return the total number of primitives
- * Size primitive_count() const;
+ * .. code-block:: c++
  *
- * /// Return the axis-aligned bounding box of a certain primitive
- * BoundingBox bbox(Index primIdx) const;
+ *     /// Return the total number of primitives
+ *     Size primitive_count() const;
  *
- * /// Return the bounding box of a primitive when clipped to another bounding box
- * BoundingBox bbox(Index primIdx, const BoundingBox &aabb) const;
- * \endcode
+ *     /// Return the axis-aligned bounding box of a certain primitive
+ *     BoundingBox bbox(Index primIdx) const;
+ *
+ *     /// Return the bounding box of a primitive when clipped to another bounding box
+ *     BoundingBox bbox(Index primIdx, const BoundingBox &aabb) const;
  *
  * This class follows the "Curiously recurring template" design pattern so that
  * the above functions can be inlined (in particular, no virtual calls will be
@@ -343,7 +343,7 @@ NAMESPACE_END(detail)
  * well. The tree cost model must be passed as a template argument, which can
  * use a supplied bounding box and split candidate to compute approximate
  * probabilities of recursing into the left and right subtrees during a typical
- * kd-tree query operation. See \ref SurfaceAreaHeuristic3 for an example of
+ * kd-tree query operation. See ``SurfaceAreaHeuristic3`` for an example of
  * the interface that must be implemented.
  *
  * The kd-tree construction algorithm creates 'perfect split' trees as outlined
@@ -351,12 +351,12 @@ NAMESPACE_END(detail)
  * in O(N log N)" by Ingo Wald and Vlastimil Havran. This works even when the
  * tree is not meant to be used for ray tracing. For polygonal meshes, the
  * involved Sutherland-Hodgman iterations can be quite expensive in terms of
- * the overall construction time. The \ref set_clip_primitives() method can be
+ * the overall construction time. The ``set_clip_primitives()`` method can be
  * used to deactivate perfect splits at the cost of a lower-quality tree.
  *
  * Because the O(N log N) construction algorithm tends to cause many incoherent
  * memory accesses and does not parallelize particularly well, a different
- * method known as <em>Min-Max Binning</em> is used for the top levels of the
+ * method known as *Min-Max Binning* is used for the top levels of the
  * tree. Min-Max-binning is an approximation to the O(N log N) approach, which
  * works extremely well at the top of the tree (i.e. when there are many
  * elements). This algorithm realized as a series of efficient parallel sweeps
@@ -421,38 +421,38 @@ public:
     void set_retract_bad_splits(bool retract) { m_retract_bad_splits = retract; }
 
     /**
-     * \brief Return the number of bad refines allowed to happen
+     * Return the number of bad refines allowed to happen
      * in succession before a leaf node will be created.
      */
     Size max_bad_refines() const { return m_max_bad_refines; }
 
     /**
-     * \brief Set the number of bad refines allowed to happen
+     * Set the number of bad refines allowed to happen
      * in succession before a leaf node will be created.
      */
     void set_max_bad_refines(Size value) { m_max_bad_refines = value; }
 
     /**
-     * \brief Return the number of primitives, at which recursion will
+     * Return the number of primitives, at which recursion will
      * stop when building the tree.
      */
     Size stop_primitives() const { return m_stop_primitives; }
 
     /**
-     * \brief Set the number of primitives, at which recursion will
+     * Set the number of primitives, at which recursion will
      * stop when building the tree.
      */
     void set_stop_primitives(Size value) { m_stop_primitives = value; }
 
     /**
-     * \brief Return the number of primitives, at which the builder will switch
+     * Return the number of primitives, at which the builder will switch
      * from (approximate) Min-Max binning to the accurate O(n log n)
      * optimization method.
      */
     Size exact_primitive_threshold() const { return m_exact_prim_threshold; }
 
     /**
-     * \brief Specify the number of primitives, at which the builder will
+     * Specify the number of primitives, at which the builder will
      * switch from (approximate) Min-Max binning to the accurate O(n log n)
      * optimization method.
      */
@@ -525,9 +525,9 @@ protected:
         } data;
 
         /**
-         * \brief Initialize a leaf kd-tree node.
+         * Initialize a leaf kd-tree node.
          *
-         * Returns \c false if the offset or number of primitives is so large
+         * Returns ``False`` if the offset or number of primitives is so large
          * that it can't be represented
          */
         bool set_leaf_node(size_t prim_offset, size_t prim_count) {
@@ -542,9 +542,9 @@ protected:
         }
 
         /**
-         * \brief Initialize an interior kd-tree node.
+         * Initialize an interior kd-tree node.
          *
-         * Returns \c false if the offset or number of primitives is so large
+         * Returns ``False`` if the offset or number of primitives is so large
          * that it can't be represented
          */
         bool set_inner_node(Index axis, Scalar split, size_t left_offset) {
@@ -621,7 +621,7 @@ protected:
     /* ==================================================================== */
 
     /**
-     * \brief Compact storage for primitive classification
+     * Compact storage for primitive classification
      *
      * When classifying primitives with respect to a split plane, a data structure
      * is needed to hold the tertiary result of this operation. This class
@@ -727,7 +727,7 @@ protected:
     };
 
     /**
-     * \brief Describes the beginning or end of a primitive under orthogonal
+     * Describes the beginning or end of a primitive under orthogonal
      * projection onto different axes
      */
     struct EdgeEvent {
@@ -792,7 +792,7 @@ protected:
                   sizeof(EdgeEvent), "EdgeEvent has an unexpected size!");
 
     /**
-     * \brief Min-max binning data structure with parallel binning & partitioning steps
+     * Min-max binning data structure with parallel binning & partitioning steps
      *
      * See
      *   "Highly Parallel Fast KD-tree Construction for Interactive Ray Tracing of
@@ -971,7 +971,7 @@ protected:
         };
 
         /**
-         * \brief Given a suitable split candidate, compute tight bounding
+         * Given a suitable split candidate, compute tight bounding
          * boxes for the left and right subtrees and return associated
          * primitive lists.
          */
@@ -1068,7 +1068,7 @@ protected:
 
 
     /**
-     * \brief Build task for building subtrees in parallel
+     * Build task for building subtrees in parallel
      *
      * This class is responsible for building a subtree of the final kd-tree.
      * It recursively spawns new tasks for its respective subtrees to enable
@@ -2049,7 +2049,7 @@ public:
     }
 
     /**
-     * \brief Return the query cost used by the tree construction heuristic
+     * Return the query cost used by the tree construction heuristic
      *
      * (This is the average cost for testing a shape against a kd-tree query)
      */
@@ -2059,13 +2059,13 @@ public:
     Float traversal_cost() const { return m_traversal_cost; }
 
     /**
-     * \brief Return the bonus factor for empty space used by the
+     * Return the bonus factor for empty space used by the
      * tree construction heuristic
      */
     Float empty_space_bonus() const { return m_empty_space_bonus; }
 
     /**
-     * \brief Initialize the surface area heuristic with the bounds of
+     * Initialize the surface area heuristic with the bounds of
      * a parent node
      *
      * Precomputes some information so that traversal probabilities
@@ -2083,15 +2083,15 @@ public:
         m_temp1 = dr::fmadd(m_temp2, bbox.max, m_temp1);
     }
 
-    /// \brief Evaluate the cost of a leaf node
+    /// Evaluate the cost of a leaf node
     Float leaf_cost(Size nelem) const {
         return m_query_cost * nelem;
     }
 
     /**
-     * \brief Evaluate the surface area heuristic
+     * Evaluate the surface area heuristic
      *
-     * Given a split on axis \a axis at position \a split, compute the
+     * Given a split on axis *axis* at position *split*, compute the
      * probability of traversing the left and right child during a typical
      * query operation. In the case of the surface area heuristic, this is
      * simply the ratio of surface areas.
@@ -2157,13 +2157,13 @@ public:
     using Base::m_index_count;
     using Base::m_node_count;
 
-    /// Create an empty kd-tree and take build-related parameters from \c props.
+    /// Create an empty kd-tree and take build-related parameters from ``props``.
     ShapeKDTree(const Properties &props);
 
     /// Clear the kd-tree (build-related parameters remain)
     void clear();
 
-    /// Register a new shape with the kd-tree (to be called before \ref build())
+    /// Register a new shape with the kd-tree (to be called before ``build()``)
     void add_shape(Shape *shape);
 
     /// Build the kd-tree
@@ -2462,10 +2462,10 @@ public:
     MI_DECLARE_CLASS(ShapeKDTree)
 protected:
     /**
-     * \brief Map an abstract \ref TShapeKDTree primitive index to a specific
-     * shape managed by the \ref ShapeKDTree.
+     * Map an abstract ``TShapeKDTree`` primitive index to a specific
+     * shape managed by the ``ShapeKDTree``.
      *
-     * The function returns the shape index and updates the \a index parameter
+     * The function returns the shape index and updates the *index* parameter
      * to point to the primitive index (e.g. triangle ID) within the shape.
      */
     MI_INLINE Index find_shape(Index &index) const {
@@ -2489,7 +2489,7 @@ protected:
     }
 
     /**
-     * \brief Check whether a primitive is intersected by the given ray.
+     * Check whether a primitive is intersected by the given ray.
      *
      * Some temporary space is supplied to store data that can later be used to
      * create a detailed intersection record.

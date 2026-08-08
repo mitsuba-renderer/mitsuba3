@@ -4,22 +4,22 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(quad)
 
 /**
- * \brief Computes the nodes and weights of a Gauss-Legendre quadrature
+ * Computes the nodes and weights of a Gauss-Legendre quadrature
  * (aka "Gaussian quadrature") rule with the given number of evaluations.
  *
- * Integration is over the interval \f$[-1, 1]\f$. Gauss-Legendre quadrature
+ * Integration is over the interval :math:`[-1, 1]`. Gauss-Legendre quadrature
  * maximizes the order of exactly integrable polynomials achieves this up to
- * degree \f$2n-1\f$ (where \f$n\f$ is the number of function evaluations).
+ * degree :math:`2n-1` (where :math:`n` is the number of function evaluations).
  *
- * This method is numerically well-behaved until about \f$n=200\f$
+ * This method is numerically well-behaved until about :math:`n=200`
  * and then becomes progressively less accurate. It is generally not a
  * good idea to go much higher---in any case, a composite or
- * adaptive integration scheme will be superior for large \f$n\f$.
+ * adaptive integration scheme will be superior for large :math:`n`.
  *
- * \param n
- *     Desired number of evaluation points
+ * Args:
+ *     n: Desired number of evaluation points
  *
- * \return
+ * Returns:
  *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
@@ -86,25 +86,25 @@ std::pair<Float, Float> gauss_legendre(int n) {
 }
 
 /**
- * \brief Computes the nodes and weights of a Gauss-Lobatto quadrature
+ * Computes the nodes and weights of a Gauss-Lobatto quadrature
  * rule with the given number of evaluations.
  *
- * Integration is over the interval \f$[-1, 1]\f$. Gauss-Lobatto quadrature
+ * Integration is over the interval :math:`[-1, 1]`. Gauss-Lobatto quadrature
  * is preferable to Gauss-Legendre quadrature whenever the endpoints of the
  * integration domain should explicitly be included. It maximizes the order
  * of exactly integrable polynomials subject to this constraint and achieves
- * this up to degree \f$2n-3\f$ (where \f$n\f$ is the number of function
+ * this up to degree :math:`2n-3` (where :math:`n` is the number of function
  * evaluations).
  *
- * This method is numerically well-behaved until about \f$n=200\f$
+ * This method is numerically well-behaved until about :math:`n=200`
  * and then becomes progressively less accurate. It is generally not a
  * good idea to go much higher---in any case, a composite or
- * adaptive integration scheme will be superior for large \f$n\f$.
+ * adaptive integration scheme will be superior for large :math:`n`.
  *
- * \param n
- *     Desired number of evaluation points
+ * Args:
+ *     n: Desired number of evaluation points
  *
- * \return
+ * Returns:
  *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
@@ -169,18 +169,18 @@ std::pair<Float, Float> gauss_lobatto(int n) {
 }
 
 /**
- * \brief Computes the nodes and weights of a composite Simpson quadrature
+ * Computes the nodes and weights of a composite Simpson quadrature
  * rule with the given number of evaluations.
  *
- * Integration is over the interval \f$[-1, 1]\f$, which will be split into
- * \f$(n-1) / 2\f$ sub-intervals with overlapping endpoints. A 3-point
+ * Integration is over the interval :math:`[-1, 1]`, which will be split into
+ * :math:`(n-1) / 2` sub-intervals with overlapping endpoints. A 3-point
  * Simpson rule is applied per interval, which is exact for polynomials of
  * degree three or less.
  *
- * \param n
- *     Desired number of evaluation points. Must be an odd number, at least 3.
+ * Args:
+ *     n: Desired number of evaluation points. Must be an odd number, at least 3.
  *
- * \return
+ * Returns:
  *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
@@ -217,19 +217,19 @@ std::pair<Float, Float> composite_simpson(int n) {
 }
 
 /**
- * \brief Computes the nodes and weights of a composite Simpson 3/8 quadrature
+ * Computes the nodes and weights of a composite Simpson 3/8 quadrature
  * rule with the given number of evaluations.
  *
- * Integration is over the interval \f$[-1, 1]\f$, which will be split into
- * \f$(n-1) / 3\f$ sub-intervals with overlapping endpoints. A 4-point
+ * Integration is over the interval :math:`[-1, 1]`, which will be split into
+ * :math:`(n-1) / 3` sub-intervals with overlapping endpoints. A 4-point
  * Simpson rule is applied per interval, which is exact for polynomials of
  * degree four or less.
  *
- * \param n
- *     Desired number of evaluation points. <tt>n - 1</tt> must be divisible
- *     by 3, and n must be at least 4.
+ * Args:
+ *     n: Desired number of evaluation points. ``n - 1`` must be divisible
+ *         by 3, and n must be at least 4.
  *
- * \return
+ * Returns:
  *     A tuple ``(nodes, weights)`` storing the nodes and weights of the
  *     quadrature rule.
  */
@@ -268,13 +268,13 @@ std::pair<Float, Float> composite_simpson_38(int n) {
 }
 
 /**
- * \brief Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
+ * Computes the Chebyshev nodes, i.e. the roots of the Chebyshev
  * polynomials of the first kind
  *
- * The output array contains positions on the interval \f$[-1, 1]\f$.
+ * The output array contains positions on the interval :math:`[-1, 1]`.
  *
- * \param n
- *     Desired number of points
+ * Args:
+ *     n: Desired number of points
  */
 template <typename Float> Float chebyshev(int n) {
     using ScalarFloat = dr::scalar_t<Float>;

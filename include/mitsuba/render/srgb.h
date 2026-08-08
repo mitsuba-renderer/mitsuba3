@@ -36,8 +36,12 @@ MI_INLINE dr::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
 
 /**
  * Look up the model coefficients for a sRGB color value
- * @param  c An sRGB color value where all components are in [0, 1].
- * @return   Coefficients for use with \ref srgb_model_eval
+ *
+ * Args:
+ *     c: An sRGB color value where all components are in [0, 1].
+ *
+ * Returns:
+ *     Coefficients for use with `srgb_model_eval`
  */
 MI_EXPORT_LIB dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
 

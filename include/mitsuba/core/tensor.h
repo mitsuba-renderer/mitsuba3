@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Simple exchange format for tensor data of arbitrary rank and size
+ * Simple exchange format for tensor data of arbitrary rank and size
  *
  * This class provides convenient memory-mapped read-only access to tensor
  * data, usually exported from NumPy.

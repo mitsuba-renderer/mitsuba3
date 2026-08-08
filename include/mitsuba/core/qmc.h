@@ -10,7 +10,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Efficient implementation of a radical inverse function with prime
+ * Efficient implementation of a radical inverse function with prime
  * bases including scrambled versions.
  *
  * This class is used to implement Halton and Hammersley sequences for QMC
@@ -19,17 +19,16 @@ NAMESPACE_BEGIN(mitsuba)
 class MI_EXPORT_LIB RadicalInverse : public Object {
 public:
     /**
-     * \brief Precompute data structures that are used to evaluate the radical
+     * Precompute data structures that are used to evaluate the radical
      * inverse and scrambled radical inverse function
      *
-     * \param max_base
-     *    Sets the value of the largest prime number base. The default
-     *    interval [2, 8161] contains exactly 1024 prime bases.
+     * Args:
+     *     max_base: Sets the value of the largest prime number base. The default
+     *         interval [2, 8161] contains exactly 1024 prime bases.
      *
-     * \param scramble
-     *    Selects the desired permutation type, where <tt>-1</tt> denotes the
-     *    Faure permutations; any other number causes a pseudorandom permutation
-     *    to be built seeded by the value of \c scramble.
+     *     scramble: Selects the desired permutation type, where ``-1`` denotes the
+     *         Faure permutations; any other number causes a pseudorandom permutation
+     *         to be built seeded by the value of ``scramble``.
      */
     RadicalInverse(size_t max_base = 8161, int scramble = -1);
 
@@ -40,7 +39,7 @@ public:
     size_t bases() const { return m_base_count; }
 
     /**
-     * \brief Returns the n-th prime base used by the sequence
+     * Returns the n-th prime base used by the sequence
      *
      * These prime numbers are used as bases in the radical inverse
      * function implementation.
@@ -51,21 +50,20 @@ public:
     int scramble() const { return m_scramble; }
 
     /**
-     * \brief Calculate the value of the radical inverse function
+     * Calculate the value of the radical inverse function
      *
      * This function is used as a building block to construct Halton and Hammersley
      * sequences. Roughly, it computes a b-ary representation of the input value
-     * \c index, mirrors it along the decimal point, and returns the resulting
-     * fractional value. The implementation here uses prime numbers for \c b.
+     * ``index``, mirrors it along the decimal point, and returns the resulting
+     * fractional value. The implementation here uses prime numbers for ``b``.
      *
-     * \param base_index
-     *     Selects the n-th prime that is used as a base when computing the radical
-     *     inverse function (0 corresponds to 2, 1->3, 2->5, etc.). The value
-     *     specified here must be between 0 and 1023.
+     * Args:
+     *     base_index: Selects the n-th prime that is used as a base when computing the radical
+     *         inverse function (0 corresponds to 2, 1->3, 2->5, etc.). The value
+     *         specified here must be between 0 and 1023.
      *
-     * \param index
-     *     Denotes the index that should be mapped through the radical inverse
-     *     function
+     *     index: Denotes the index that should be mapped through the radical inverse
+     *         function
      */
     template <typename Float, typename UInt64 = dr::uint64_array_t<Float>>
     Float eval(size_t base_index, UInt64 index) const {
@@ -94,11 +92,11 @@ public:
     }
 
     /**
-     * \brief Calculate a scrambled radical inverse function
+     * Calculate a scrambled radical inverse function
      *
      * This function is used as a building block to construct permuted
      * Halton and Hammersley sequence variants. It works like the normal
-     * radical inverse function \ref eval(), except that every digit
+     * radical inverse function `eval()`, except that every digit
      * is run through an extra scrambling permutation.
      */
     template <typename Float, typename UInt64 = dr::uint64_array_t<Float>>
@@ -146,7 +144,7 @@ public:
     virtual std::string to_string() const override;
 private:
     /**
-     * \brief Compute the Faure permutations using dynamic programming
+     * Compute the Faure permutations using dynamic programming
      *
      * For reference, see "Good permutations for extreme discrepancy"
      * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.

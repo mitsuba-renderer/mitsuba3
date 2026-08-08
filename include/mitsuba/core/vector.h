@@ -136,12 +136,13 @@ template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(con
 }
 
 /**
- * \brief Converts a unit vector to its spherical coordinates parameterization
+ * Converts a unit vector to its spherical coordinates parameterization
  *
- * \param v
- *      Vector to convert
- * \return
- *      The polar and azimuthal angles respectively.
+ * Args:
+ *     v: Vector to convert
+ *
+ * Returns:
+ *     The polar and azimuthal angles respectively.
  */
 template <typename Value>
 MI_INLINE Point<Value, 2> dir_to_sph(const Vector<Value, 3> &v) {
@@ -149,14 +150,15 @@ MI_INLINE Point<Value, 2> dir_to_sph(const Vector<Value, 3> &v) {
 }
 
 /**
- * \brief Converts spherical coordinates to a cartesian vector
+ * Converts spherical coordinates to a cartesian vector
  *
- * \param theta
- *      The polar angle
- * \param phi
- *      The azimuth angle
- * \return
- *      Unit vector corresponding to the input angles
+ * Args:
+ *     theta: The polar angle
+ *
+ *     phi: The azimuth angle
+ *
+ * Returns:
+ *     Unit vector corresponding to the input angles
  */
 template <typename Value>
 MI_INLINE Vector<Value, 3> sph_to_dir(const Value &theta, const Value &phi) {

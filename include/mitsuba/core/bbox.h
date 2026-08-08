@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Generic n-dimensional bounding box data structure
+ * Generic n-dimensional bounding box data structure
  *
  * Maintains a minimum and maximum position along each dimension and provides
  * various convenience functions for querying and modifying them.
@@ -21,7 +21,8 @@ NAMESPACE_BEGIN(mitsuba)
  *    bbox_2d = mi.ScalarBoundingBox2f(mi.ScalarPoint2f(0, 1),
  *                                     mi.ScalarPoint2f(4, 5))
  *
- * \tparam T The underlying point data type (e.g. \c Point2d)
+ * Template Args:
+ *     T: The underlying point data type (e.g. ``Point2d``)
  */
 template <typename Point_> struct BoundingBox {
     static constexpr size_t Dimension = dr::size_v<Point_>;
@@ -33,10 +34,10 @@ template <typename Point_> struct BoundingBox {
     using Mask   = dr::mask_t<Value>;
 
     /**
-     * \brief Create a new invalid bounding box
+     * Create a new invalid bounding box
      *
      * Initializes the components of the minimum and maximum position to
-     * \f$\infty\f$ and \f$-\infty\f$, respectively.
+     * :math:`\infty` and :math:`-\infty`, respectively.
      */
     BoundingBox() { reset(); }
 
@@ -64,15 +65,15 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether this is a valid bounding box
+     * Check whether this is a valid bounding box
      *
-     * A bounding box \c bbox is considered to be valid when
+     * A bounding box ``bbox`` is considered to be valid when
      *
      * .. code-block:: python
      *
      *    bbox.min[i] <= bbox.max[i]
      *
-     * holds for each component \c i.
+     * holds for each component ``i``.
      */
     Mask valid() const {
         return dr::all(max >= min);
@@ -119,8 +120,10 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the bounding box extents
-     * \return <tt>max - min</tt>
+     * Calculate the bounding box extents
+     *
+     * Returns:
+     *     ``max - min``
      */
     Vector extents() const { return max - min; }
 
@@ -160,15 +163,18 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether a point lies \a on or \a inside the bounding box
+     * Check whether a point lies *on* or *inside* the bounding box
      *
-     * \param p The point to be tested
+     * Args:
+     *     p: The point to be tested
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result contains(const mitsuba::Point<T, Point::Size> &p) const {
@@ -179,19 +185,21 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether a specified bounding box lies \a on or \a within
+     * Check whether a specified bounding box lies *on* or *within*
      * the current bounding box
      *
      * Note that by definition, an 'invalid' bounding box (where
-     * \c min = \f$\infty\f$ and \c max = \f$-\infty\f$) does not cover any
-     * space. Hence, this method will always return \a true when given such an
+     * ``min`` = :math:`\infty` and ``max`` = :math:`-\infty`) does not cover any
+     * space. Hence, this method will always return *true* when given such an
      * argument.
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result contains(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -202,15 +210,18 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check two axis-aligned bounding boxes for possible overlap.
+     * Check two axis-aligned bounding boxes for possible overlap.
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Returns:
+     *     ``True`` If overlap was detected.
      *
-     * \return \c true If overlap was detected.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result overlaps(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -221,8 +232,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest squared distance between
-     * the axis-aligned bounding box and the point \c p.
+     * Calculate the shortest squared distance between
+     * the axis-aligned bounding box and the point ``p``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result squared_distance(const mitsuba::Point<T, Point::Size> &p) const {
@@ -230,8 +241,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest squared distance between
-     * the axis-aligned bounding box and \c bbox.
+     * Calculate the shortest squared distance between
+     * the axis-aligned bounding box and ``bbox``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result squared_distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -240,8 +251,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest distance between
-     * the axis-aligned bounding box and the point \c p.
+     * Calculate the shortest distance between
+     * the axis-aligned bounding box and the point ``p``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result distance(const mitsuba::Point<T, Point::Size> &p) const {
@@ -249,8 +260,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest distance between
-     * the axis-aligned bounding box and \c bbox.
+     * Calculate the shortest distance between
+     * the axis-aligned bounding box and ``bbox``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -258,10 +269,10 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Mark the bounding box as invalid.
+     * Mark the bounding box as invalid.
      *
      * This operation sets the components of the minimum
-     * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
+     * and maximum position to :math:`\infty` and :math:`-\infty`,
      * respectively.
      */
     void reset() {
@@ -299,9 +310,9 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check if a ray intersects a bounding box
+     * Check if a ray intersects a bounding box
      *
-     * Note that this function ignores the <tt>maxt</tt> value
+     * Note that this function ignores the ``maxt`` value
      * associated with the ray.
      */
     template <typename Ray>
@@ -358,10 +369,10 @@ template <typename Point_> struct BoundingBox {
 
 /// Compute the bounding box of an interleaved position buffer.
 ///
-/// \c data is interleaved with \c Stride scalars per element and the position
+/// ``data`` is interleaved with ``Stride`` scalars per element and the position
 /// at offsets 0, 1, 2.
 ///
-/// If \c RadiusOffset >= 0, each point is grown by the scalar at that offset.
+/// If ``RadiusOffset`` >= 0, each point is grown by the scalar at that offset.
 /// This is used by the curve shapes which pass curve control points to this
 /// function.
 ///

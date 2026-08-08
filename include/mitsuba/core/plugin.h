@@ -6,9 +6,9 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Plugin manager
+ * Plugin manager
  *
- * The plugin manager's main feature is the \ref create_object() function that
+ * The plugin manager's main feature is the `create_object()` function that
  * instantiates scene objects. To do its job, it loads external Mitsuba plugins
  * as needed.
  *
@@ -21,35 +21,31 @@ public:
     static PluginManager *instance() { return m_instance; }
 
     /**
-     * \brief Register a new plugin variant with the plugin manager
+     * Register a new plugin variant with the plugin manager
      *
      * Re-registering an already available (name, variant) pair is legal
      * and will release the previously registered variant.
      *
-     * \param name
-     *      The name of the plugin.
+     * Args:
+     *     name: The name of the plugin.
      *
-     * \param variant
-     *     The plugin variant (e.g., <tt>"scalar_rgb"</tt>). Separate
-     *     plugin variants must be registered independently.
+     *     variant: The plugin variant (e.g., ``"scalar_rgb"``). Separate
+     *         plugin variants must be registered independently.
      *
-     * \param instantiate
-     *     A callback that creates an instance of the plugin.
+     *     instantiate: A callback that creates an instance of the plugin.
      *
-     * \param release
-     *     A callback that releases any (global) plugin state.
-     *     Will, e.g., be called by ``PluginManager::release_all()``.
+     *     release: A callback that releases any (global) plugin state.
+     *         Will, e.g., be called by `PluginManager.release_all()`.
      *
-     * \param payload
-     *     An opaque pointer parameter that will be forwarded
-     *     to both \c instantiate and \c release.
+     *     payload: An opaque pointer parameter that will be forwarded
+     *         to both ``instantiate`` and ``release``.
      */
     void register_plugin(std::string_view name, std::string_view variant,
                          ObjectType type, PluginInstantiateFn instantiate,
                          PluginReleaseFn release, void *payload);
 
     /**
-     * \brief Release registered plugins
+     * Release registered plugins
      *
      * This calls the ``release`` callback of all registered
      * plugins, e.g., to enable garbage collection of classes in python. Note
@@ -59,24 +55,24 @@ public:
     void release_all();
 
     /**
-     * \brief Create a plugin object with the provided information
+     * Create a plugin object with the provided information
      *
      * This function potentially loads an external plugin module (if not
      * already present), creates an instance, verifies its type, and finally
      * returns the newly created object instance.
      *
-     * \param props
-     *     A `Properties` instance containing all information required to
-     *     find and construct the plugin.
+     * Args:
+     *     props: A `Properties` instance containing all information required to
+     *         find and construct the plugin.
      */
     ref<Object> create_object(const Properties &props,
                               std::string_view variant,
                               ObjectType type);
 
     /**
-     * \brief Create a plugin object with the provided information
+     * Create a plugin object with the provided information
      *
-     * This template function wraps the ordinary <tt>create_object()</tt>
+     * This template function wraps the ordinary ``create_object()``
      * function defined above. It automatically infers variant and object
      * type from the provided class ``T``.
      */
@@ -84,7 +80,7 @@ public:
         return ref<T>((T *) create_object(props, T::Variant, T::Type).get());
     }
 
-    /// Get the type of a plugin by name, or return \ref ObjectType::Unknown if unknown.
+    /// Get the type of a plugin by name, or return `ObjectType.Unknown` if unknown.
     ObjectType plugin_type(std::string_view name);
 
     MI_DECLARE_CLASS(PluginManager)

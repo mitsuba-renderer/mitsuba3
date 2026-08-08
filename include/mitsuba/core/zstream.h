@@ -15,7 +15,7 @@ constexpr size_t kZStreamBufferSize = 32768;
 NAMESPACE_END(detail)
 
 /**
- * \brief Transparent compression/decompression stream based on \c zlib.
+ * Transparent compression/decompression stream based on ``zlib``.
  *
  * This class transparently decompresses and compresses reads and writes
  * to a nested stream, respectively.
@@ -31,7 +31,8 @@ public:
     using Stream::read;
     using Stream::write;
 
-    /** \brief Creates a new compression stream with the given underlying stream.
+    /**
+     * Creates a new compression stream with the given underlying stream.
      * This new instance takes ownership of the child stream. The child stream
      * must outlive the ZStream.
      */
@@ -44,7 +45,8 @@ public:
     /// Returns a string representation
     std::string to_string() const override;
 
-    /** \brief Closes the stream, but not the underlying child stream.
+    /**
+     * Closes the stream, but not the underlying child stream.
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
@@ -72,14 +74,14 @@ public:
     // =========================================================================
 
     /**
-     * \brief Reads a specified amount of data from the stream, decompressing
+     * Reads a specified amount of data from the stream, decompressing
      * it first using ZLib.
      * Throws an exception when the stream ended prematurely.
      */
     void read(void *p, size_t size) override;
 
     /**
-     * \brief Writes a specified amount of data into the stream, compressing
+     * Writes a specified amount of data into the stream, compressing
      * it first using ZLib.
      * Throws an exception when not all data could be written.
      */

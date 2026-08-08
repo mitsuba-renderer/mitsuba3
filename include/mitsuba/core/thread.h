@@ -7,7 +7,7 @@ extern "C" { struct Task; };
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Dummy thread class for backward compatibility
+ * Dummy thread class for backward compatibility
  *
  * This class has been largely stripped down and only maintains essential
  * methods for file resolver and logger access, plus static initialization.
@@ -28,8 +28,10 @@ public:
     static Logger *logger();
 
     /**
-     * \brief Set the global logger used by Mitsuba
-     * \deprecated Use ``mitsuba::set_logger()`` directly
+     * Set the global logger used by Mitsuba
+     *
+     * Deprecated:
+     *     Use `set_logger()` directly
      */
     [[deprecated]]
     static void set_logger(Logger *logger);

@@ -398,7 +398,7 @@ extern "C" {
 #endif
 
 /**
- * \brief Macro, generating the implementation of the ``traverse_1_cb_ro``
+ * Macro, generating the implementation of the ``traverse_1_cb_ro``
  *     method.
  *
  * The first argument should be the base class, from which the current class
@@ -426,7 +426,7 @@ extern "C" {
         }
 
 /**
- * \brief Macro, generating the implementation of the ``traverse_1_cb_rw``
+ * Macro, generating the implementation of the ``traverse_1_cb_rw``
  *     method.
  *
  * The first argument should be the base class, from which the current class
@@ -453,7 +453,7 @@ extern "C" {
         }
 
 /**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ * Macro, generating the implementations of the ``traverse_1_cb_ro`` and
  *     ``traverse_1_cb_rw`` methods.
  *
  * The first argument should be the base class, from which the current class
@@ -471,7 +471,7 @@ public:                                                                        \
     MI_TRAVERSE_CB_RW(Base, __VA_ARGS__)
 
 /**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ * Macro, generating the implementations of the ``traverse_1_cb_ro`` and
  *     ``traverse_1_cb_rw`` methods.
  *
  * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the functions and
@@ -494,7 +494,7 @@ public:                                                                        \
             void *payload, drjit::detail::traverse_callback_rw fn) override;
 
 /**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
+ * Macro, generating the implementations of the ``traverse_1_cb_ro`` and
  *     ``traverse_1_cb_rw`` methods.
  *
  * In contrast to ``MI_TRAVERSE_CB``, this macro generates the implementations
