@@ -347,6 +347,8 @@ template <typename Point_> struct BoundingBox {
 
     Point min; /// Component-wise minimum
     Point max; /// Component-wise maximum
+
+    DRJIT_TRAVERSE(BoundingBox, min, max);
 };
 
 /// Compute the bounding box of an interleaved position buffer.
@@ -425,8 +427,8 @@ BoundingBox<Type> reduce_bbox(const StoredFloat &data, uint32_t count) {
 }
 
 /// Print a string representation of the bounding box
-template <typename Point>
-std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
+template <typename Stream, typename Point>
+Stream &operator<<(Stream &os, const BoundingBox<Point> &bbox) {
     os << "BoundingBox" << type_suffix<Point>();
     if (dr::all(!bbox.valid()))
         os << "[invalid]";
