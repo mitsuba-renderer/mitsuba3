@@ -48,7 +48,7 @@ enum class Layout : uint32_t {
 
 MI_DECLARE_ENUM_OPERATORS(Layout)
 
-/// Assemble the \ref Layout flags of the packed records
+/// Assemble the `Layout` flags of the packed records
 constexpr Layout make_layout(bool normals, bool texcoords,
                              bool tangents = false, bool face_bsdfs = false) {
     return (Layout) ((normals    ? (uint32_t) Layout::Normals   : 0u) |
@@ -58,21 +58,21 @@ constexpr Layout make_layout(bool normals, bool texcoords,
 }
 
 /**
- * \brief Identifies a set of mutually mergeable meshes
+ * Identifies a set of mutually mergeable meshes
  *
- * The fields are the state that \ref Mesh::merge() inherits from its first
+ * The fields are the state that `Mesh.merge()` inherits from its first
  * input, so a difference in any of them would misrepresent the remaining
- * inputs. Obtain the key of a mesh through \ref Mesh::merge_key().
+ * inputs. Obtain the key of a mesh through `Mesh.merge_key()`.
  */
 struct MergeKey {
     const Object *bsdf, *emitter, *sensor, *interior_medium, *exterior_medium;
 
     /**
-     * \brief Packed record layout, without the \c FaceBSDFs bit that a merge
+     * Packed record layout, without the ``FaceBSDFs`` bit that a merge
      * unions
      *
      * The face-normal setting needs no separate field, since a built mesh
-     * carries the \c Normals bit exactly when it shades with vertex normals.
+     * carries the ``Normals`` bit exactly when it shades with vertex normals.
      */
     Layout layout;
 
@@ -85,7 +85,7 @@ struct MergeKey {
     bool operator!=(const MergeKey &k) const { return !operator==(k); }
 };
 
-/// Hash function of a \ref MergeKey, for use with ``tsl::robin_map``
+/// Hash function of a ``MergeKey``, for use with ``tsl::robin_map``
 struct MergeKeyHasher {
     size_t operator()(const MergeKey &k) const {
         uint64_t h = (uint64_t) k.layout;
@@ -97,7 +97,7 @@ struct MergeKeyHasher {
 };
 
 /**
- * \brief Encode a unit normal \c n and a tangent \c s into three floats
+ * Encode a unit normal ``n`` and a tangent ``s`` into three floats
  *
  * Together with the (implied) bitangent, this is an element of ``SO(3)``,
  * which this function parameterizes using 3 parameters by stereographically
@@ -126,7 +126,7 @@ Vector<Value, 3> frame_encode(const Normal<Value, 3> &n,
            dr::mulsign(dr::rcp(1.f + dr::abs(w)), w);
 }
 
-/// Decode a frame produced by \ref frame_encode() into normal and tangent
+/// Decode a frame produced by `frame_encode()` into normal and tangent
 template <typename Value>
 std::pair<Normal<Value, 3>, Vector<Value, 3>>
 frame_decode(const Vector<Value, 3> &p) {
@@ -153,11 +153,11 @@ frame_decode(const Vector<Value, 3> &p) {
 }
 
 /**
- * \brief Helper data structure to efficiently construct and upload
+ * Helper data structure to efficiently construct and upload
  * the internal `Mesh` data structure.
  *
  * Loaders fill this structure on the host and pass it to
- * \ref Mesh::from_packed(PackedMesh &&), which uploads or adopts each
+ * `Mesh.from_packed`(PackedMesh &&), which uploads or adopts each
  * buffer exactly once.
  *
  * The constructor allocates staging memory of the flavor appropriate for
@@ -176,7 +176,7 @@ struct MI_EXPORT_LIB PackedMesh {
     using ScalarVector3u = Vector<uint32_t, 3>;
     using ScalarAffineTransform4f = AffineTransform<Point<float, 4>>;
 
-    /// Custom mesh attribute (see \ref Mesh::add_attribute()).
+    /// Custom mesh attribute (see `Mesh.add_attribute()`).
     struct Attribute {
         std::string name;
         size_t dim = 0;
@@ -196,25 +196,25 @@ struct MI_EXPORT_LIB PackedMesh {
     PackedMesh &operator=(const PackedMesh &) = delete;
 
     /**
-     * \brief Bake a placement and orientation into the mesh
+     * Bake a placement and orientation into the mesh
      *
      * Call this method to apply a to-world transformation to any mesh data
-     * that is subsequently filled via \ref set_face() and \ref set_vertex().
-     * Mirroring transformations and \c flip_normals may also reverse the
+     * that is subsequently filled via ``set_face()`` and ``set_vertex()``.
+     * Mirroring transformations and ``flip_normals`` may also reverse the
      * winding order.
      */
     void set_transform(const ScalarAffineTransform4f &to_world,
                        bool flip_normals = false);
 
     /**
-     * \brief Transform mesh data written so far
+     * Transform mesh data written so far
      *
-     * Producers that fill \ref PackedMesh directly without \ref set_vertex()
-     * and \ref set_face() should call this method at the end.
+     * Producers that fill ``PackedMesh`` directly without ``set_vertex()``
+     * and ``set_face()`` should call this method at the end.
      */
     void transform_records();
 
-    /// Write one vertex record and grow \ref bbox
+    /// Write one vertex record and grow `bbox`
     void set_vertex(size_t i, const ScalarPoint3f &p,
                     const ScalarNormal3f &n = { 0.f, 0.f, 0.f },
                     const ScalarVector2f &uv = { 0.f, 0.f });
@@ -225,11 +225,11 @@ struct MI_EXPORT_LIB PackedMesh {
                   uint32_t bsdf = 0);
 
     /**
-     * \brief Allocate a custom attribute and return a pointer to its buffer
+     * Allocate a custom attribute and return a pointer to its buffer
      *
      * The name must be prefixed ``vertex_`` or ``face_``. Spectral variants
      * turn 3-channel ``*color*`` attributes into sRGB upsampling
-     * coefficients while adopting the buffer. Clear \c upsample_srgb when
+     * coefficients while adopting the buffer. Clear ``upsample_srgb`` when
      * the producer already stores coefficients.
      */
     float *add_attribute(std::string_view name, size_t dim,
@@ -248,7 +248,7 @@ struct MI_EXPORT_LIB PackedMesh {
     /// Bounding box computed from the mesh positions
     BoundingBox<ScalarPoint3f> bbox;
 
-    /// Reverse the corner order of the face records? (\ref set_transform())
+    /// Reverse the corner order of the face records? (``set_transform()``)
     bool reverse_winding = false;
 
     drjit::unique_buffer<float>    vertices;
@@ -265,12 +265,12 @@ private:
 };
 
 /**
- * \brief Per-corner values of one attribute, see \ref CornerMesh
+ * Per-corner values of one attribute, see ``CornerMesh``
  *
  * ``data`` points to ``value_count x dim`` records. When ``indices`` is
- * null, the records align with the corner records of the \ref CornerMesh.
+ * null, the records align with the corner records of the ``CornerMesh``.
  * Otherwise, ``indices`` supplies one record index per corner record, and
- * \c UINT32_MAX marks a missing entry that resolves to zeros.
+ * ``UINT32_MAX`` marks a missing entry that resolves to zeros.
  */
 struct CornerAttribute {
     /// Attribute name, which custom attributes must prefix with ``vertex_``
@@ -283,22 +283,22 @@ struct CornerAttribute {
     const float *data = nullptr;
     size_t value_count = 0;
 
-    /// Optional indices into \c data (\ref CornerMesh::record_count entries)
+    /// Optional indices into ``data`` (``CornerMesh.record_count`` entries)
     const uint32_t *indices = nullptr;
 };
 
 /**
- * \brief Corner-indexed mesh description
+ * Corner-indexed mesh description
  *
  * Many DCC applications and file formats store positions per vertex, while
  * normals, texture coordinates and colors live per *face corner* so that
  * they can be discontinuous across edges. This structure is a non-owning
- * view of such data: \ref positions holds one entry per source vertex, the
- * faces are triangles or arbitrary polygons (\ref face_offsets), and the
+ * view of such data: `positions` holds one entry per source vertex, the
+ * faces are triangles or arbitrary polygons (``face_offsets``), and the
  * per-corner attributes are read either directly or through the record
- * indirection of \ref corner_index.
+ * indirection of ``corner_index``.
  *
- * \ref corner_to_packed_mesh() turns this description into the split-vertex
+ * ``corner_to_packed_mesh()`` turns this description into the split-vertex
  * representation used by `Mesh`.
  */
 struct CornerMesh {
@@ -312,15 +312,15 @@ struct CornerMesh {
     size_t corner_count = 0;
 
     /**
-     * \brief Optional map from face corner to corner record
+     * Optional map from face corner to corner record
      *
-     * When given (``corner_count`` entries), \ref corner_vertex and the
-     * \ref CornerAttribute records hold \ref record_count entries that
+     * When given (``corner_count`` entries), ``corner_vertex`` and the
+     * ``CornerAttribute`` records hold ``record_count`` entries that
      * corner ``c`` reads at ``corner_index[c]``, instead of one per corner.
      */
     const uint32_t *corner_index = nullptr;
 
-    /// Number of corner records. Zero implies a value of \ref corner_count.
+    /// Number of corner records. Zero implies a value of ``corner_count``.
     size_t record_count = 0;
 
     /// Vertex referenced by each corner record (``record_count`` entries)
@@ -330,9 +330,9 @@ struct CornerMesh {
     size_t face_count = 0;
 
     /**
-     * \brief Optional polygonal face topology (``face_count + 1`` entries)
+     * Optional polygonal face topology (``face_count + 1`` entries)
      *
-     * Face ``i`` spans corners <tt>[face_offsets[i], face_offsets[i+1])</tt>
+     * Face ``i`` spans corners ``[face_offsets[i], face_offsets[i+1])``
      * and fans into triangles. The array must be non-decreasing, start at 0,
      * and end at ``corner_count``. Null input implies pure triangles.
      */
@@ -354,7 +354,7 @@ struct CornerMesh {
 };
 
 /**
- * \brief Convert a corner-indexed mesh description into a packed mesh
+ * Convert a corner-indexed mesh description into a packed mesh
  * compatible with the internal representation of `Mesh`
  *
  * This function triangulates polygonal faces and then welds the corners of
@@ -372,7 +372,7 @@ struct CornerMesh {
  * ``name`` identifies the mesh in error messages. ``face_normals``
  * announces that the mesh will use per-face normals, in which case any
  * supplied shading normals are ignored. The ``flip_normals`` and ``to_world``
- * arguments are baked into the result, see \ref PackedMesh::set_transform().
+ * arguments are baked into the result, see ``PackedMesh.set_transform()``.
  */
 extern PackedMesh
 corner_to_packed_mesh(JitBackend backend, const CornerMesh &desc,
@@ -382,13 +382,13 @@ corner_to_packed_mesh(JitBackend backend, const CornerMesh &desc,
                       const PackedMesh::ScalarAffineTransform4f &to_world = {});
 
 /// Magic number and current version of the ``.serialized`` mesh encoding,
-/// whose reader and writer are \c SerializedMesh::load_v5() and
-/// \c Mesh::write_serialized(Stream*). Keep the two in step.
+/// whose reader and writer are ``SerializedMesh::load_v5()`` and
+/// ``Mesh::write_serialized(Stream*)``. Keep the two in step.
 constexpr uint16_t SerializedMagic   = 0x041C;
 constexpr uint16_t SerializedVersion = 0x0005;
 
 /// Flag word of a ``.serialized`` file. The low bits store the
-/// \ref Layout of the vertex records verbatim.
+/// `Layout` of the vertex records verbatim.
 enum class SerializedFlags : uint32_t {
     LayoutMask      = 0x000F,
     FaceNormals     = 0x0010,

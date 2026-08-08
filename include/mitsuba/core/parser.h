@@ -7,21 +7,20 @@
 #include <tsl/robin_map.h>
 
 /**
- * \brief Parser infrastructure for Mitsuba scene loading
+ * Parser infrastructure for Mitsuba scene loading
  *
  * This namespace implements a unified parser for loading scenes from XML files
  * or Python dictionaries. The parsing is split into 3 stages:
  *
- * 1. Parsing: \ref parse_file(), \ref parse_string(), \ref parse_dict() (the
+ * 1. Parsing: `parse_file()`, `parse_string()`, `parse_dict()` (the
  *    latter is in ``src/core/python/parser.cpp``). These functions are
  *    variant-independent and
  *    - convert XML/dict input into an intermediate representation (`SceneNode`).
  *    - handle parameter substitution and file includes.
  *    - validate structure and capture metadata.
  *
- * 2. Transformations: \ref transform_upgrade(), \ref
- *    transform_resolve(), \ref transform_merge_equivalent(),
- *    \ref transform_merge_meshes()
+ * 2. Transformations: `transform_upgrade()`, `transform_resolve()`, `transform_merge_equivalent()`,
+ *    `transform_merge_meshes()`
  *
  *    - ``upgrade``: adapts old scene formats to the latest version
  *      (variant-independent).
@@ -32,22 +31,21 @@
  *    - ``merge_equivalent``, ``merge_meshes``: merge equivalent/compatible
  *      plugin instantiations.
  *
- *    The convenience function \ref transform_all() applies the standard
+ *    The convenience function `transform_all()` applies the standard
  *    transformation pipeline in the correct order.
  *
- * 3. Instantiation: \ref instantiate(). This variant-specific function
+ * 3. Instantiation: `instantiate()`. This variant-specific function
  *    - creates actual Mitsuba objects from the intermediate representation.
  *    - handles object references and dependencies.
  *    - supports parallel instantiation for performance.
  *
  * The following additional functionality exists:
  *
- * 4. XML Export: \ref write_file(), \ref write_string() - convert the
+ * 4. XML Export: `write_file()`, `write_string()` - convert the
  *    intermediate representation back to XML format for debugging, format
  *    conversion, or saving programmatically generated scenes.
  *
- * 5. Utility transformations: \ref transform_reorder(), \ref
- *    transform_relocate() - optional transformations for improving XML
+ * 5. Utility transformations: `transform_reorder()`, `transform_relocate()` - optional transformations for improving XML
  *    readability and organizing scene assets.
  */
 
@@ -58,7 +56,7 @@ NAMESPACE_BEGIN(parser)
 using ParameterList = std::vector<std::pair<std::string, std::string>>;
 
 /**
- * \brief Configuration options for the parser
+ * Configuration options for the parser
  *
  * This structure contains various options that control parser behavior,
  * such as how to handle unused parameters and other validation settings.
@@ -94,12 +92,12 @@ struct ParserConfig {
 };
 
 /**
- * \brief Intermediate scene object representation
+ * Intermediate scene object representation
  *
  * This class stores information needed to instantiate a Mitsuba object at some
  * future point in time, including its plugin name and any parameters to be
- * supplied. The \ref parse_string and \ref parse_file functions below turn an
- * XML file or string into a sequence of \ref SceneNode instances that may
+ * supplied. The `parse_string` and `parse_file` functions below turn an
+ * XML file or string into a sequence of `SceneNode` instances that may
  * undergo further transformation before finally being instantiated.
  */
 struct MI_EXPORT_LIB SceneNode {
@@ -196,7 +194,7 @@ struct MI_EXPORT_LIB ParserState {
 };
 
 /**
- * \brief Parse a scene from an XML file and return the resulting parser state
+ * Parse a scene from an XML file and return the resulting parser state
  *
  * This function loads an XML file and converts it to the intermediate
  * representation. It handles
@@ -213,10 +211,15 @@ struct MI_EXPORT_LIB ParserState {
  * In Python, the substitutions are given as keyword arguments, as in
  * ``parse_file(config, filename, my_param='value')``.
  *
- * \param config Parser configuration options
- * \param filename Path to the XML file to load
- * \param params List of parameter substitutions to apply
- * \return Parser state containing the scene graph
+ * Args:
+ *     config: Parser configuration options
+ *
+ *     filename: Path to the XML file to load
+ *
+ *     params: List of parameter substitutions to apply
+ *
+ * Returns:
+ *     Parser state containing the scene graph
  */
 extern MI_EXPORT_LIB ParserState parse_file(
     const ParserConfig &config,
@@ -225,7 +228,7 @@ extern MI_EXPORT_LIB ParserState parse_file(
 );
 
 /**
- * \brief Parse a scene from an XML string and return the resulting parser state
+ * Parse a scene from an XML string and return the resulting parser state
  *
  * Similar to parse_file() but takes the XML content as a string. This function
  * is variant-independent.
@@ -233,10 +236,15 @@ extern MI_EXPORT_LIB ParserState parse_file(
  * In Python, the substitutions are given as keyword arguments, as in
  * ``parse_string(config, xml, my_param='value')``.
  *
- * \param config Parser configuration options
- * \param string XML content to parse
- * \param params List of parameter substitutions to apply
- * \return Parser state containing the scene graph
+ * Args:
+ *     config: Parser configuration options
+ *
+ *     string: XML content to parse
+ *
+ *     params: List of parameter substitutions to apply
+ *
+ * Returns:
+ *     Parser state containing the scene graph
  */
 extern MI_EXPORT_LIB ParserState parse_string(
     const ParserConfig &config,
@@ -245,7 +253,7 @@ extern MI_EXPORT_LIB ParserState parse_string(
 );
 
 /**
- * \brief Upgrade scene data to the latest version
+ * Upgrade scene data to the latest version
  *
  * This transformation updates older scene formats for compatibility with the
  * current Mitsuba version. It performs the following steps:
@@ -253,14 +261,16 @@ extern MI_EXPORT_LIB ParserState parse_string(
  * - Converting property names from camelCase to underscore_case (version < 2.0)
  * - Upgrading deprecated plugin names/parameters to newer equivalents
  *
- * \param config Parser configuration
- * \param state Parser state to modify in-place
+ * Args:
+ *     config: Parser configuration
+ *
+ *     state: Parser state to modify in-place
  */
 extern MI_EXPORT_LIB void transform_upgrade(const ParserConfig &config,
                                             ParserState &state);
 
 /**
- * \brief Resolve named references and raise an error when detecting broken
+ * Resolve named references and raise an error when detecting broken
  * links
  *
  * This transformation converts all (named) `Properties.Reference` objects
@@ -268,15 +278,19 @@ extern MI_EXPORT_LIB void transform_upgrade(const ParserConfig &config,
  *
  * This transformation is variant-independent.
  *
- * \param config Parser configuration
- * \param state Parser state to modify in-place
- * \throws std::runtime_error if a reference cannot be resolved
+ * Args:
+ *     config: Parser configuration
+ *
+ *     state: Parser state to modify in-place
+ *
+ * Raises:
+ *     std::runtime_error if a reference cannot be resolved
  */
 extern MI_EXPORT_LIB void transform_resolve(const ParserConfig &config,
                                             ParserState &state);
 
 /**
- * \brief Merge equivalent nodes to reduce memory usage and instantiation time
+ * Merge equivalent nodes to reduce memory usage and instantiation time
  *
  * This transformation identifies nodes with identical properties and merges
  * them. All references to duplicate nodes are updated to point to a single
@@ -290,14 +304,16 @@ extern MI_EXPORT_LIB void transform_resolve(const ParserConfig &config,
  * their equality cannot be reliably determined. Additionally, emitter and shape
  * nodes are excluded from merging to preserve their distinct identities.
  *
- * \param config Parser configuration
- * \param state Parser state to optimize (modified in-place)
+ * Args:
+ *     config: Parser configuration
+ *
+ *     state: Parser state to optimize (modified in-place)
  */
 extern MI_EXPORT_LIB void transform_merge_equivalent(const ParserConfig &config,
                                                      ParserState &state);
 
 /**
- * \brief Adapt the scene description to merge geometry whenever possible
+ * Adapt the scene description to merge geometry whenever possible
  *
  * This transformation moves all top-level geometry (i.e., occurring directly
  * within the ``<scene>``) into a shape plugin of type ``merge``.
@@ -308,14 +324,16 @@ extern MI_EXPORT_LIB void transform_merge_equivalent(const ParserConfig &config,
  * - Merges them into single mesh instances to reduce memory usage
  * - Preserves non-mesh shapes and meshes with unique attributes
  *
- * \param config Parser configuration (currently unused)
- * \param state Parser state to modify in-place
+ * Args:
+ *     config: Parser configuration (currently unused)
+ *
+ *     state: Parser state to modify in-place
  */
 extern MI_EXPORT_LIB void transform_merge_meshes(const ParserConfig &config,
                                                  ParserState &state);
 
 /**
- * \brief Reorder immediate children of scene nodes for better readability
+ * Reorder immediate children of scene nodes for better readability
  *
  * This transformation reorders the immediate children of scene nodes to follow
  * a logical grouping that improves XML readability. The ordering is:
@@ -335,17 +353,19 @@ extern MI_EXPORT_LIB void transform_merge_meshes(const ParserConfig &config,
  * This transformation only affects the ordering of immediate children of the
  * scene node. It does not recurse into nested structures.
  *
- * Note: This transformation is not included in \ref transform_all() and must
+ * Note: This transformation is not included in `transform_all()` and must
  * be called explicitly if desired.
  *
- * \param config Parser configuration (currently unused)
- * \param state Parser state containing the scene to reorder (modified in-place)
+ * Args:
+ *     config: Parser configuration (currently unused)
+ *
+ *     state: Parser state containing the scene to reorder (modified in-place)
  */
 extern MI_EXPORT_LIB void transform_reorder(const ParserConfig &config,
                                             ParserState &state);
 
 /**
- * \brief Relocate scene files to subfolders
+ * Relocate scene files to subfolders
  *
  * This transformation identifies file paths in the scene description and
  * relocates them to organized subfolders within the output directory,
@@ -357,49 +377,58 @@ extern MI_EXPORT_LIB void transform_reorder(const ParserConfig &config,
  * - Spectrum files → spectra/ subfolder
  * - Other files → assets/ subfolder
  *
- * Note: This transformation is not included in \ref transform_all() and must
+ * Note: This transformation is not included in `transform_all()` and must
  * be called explicitly if desired, typically before XML export.
  *
- * \param config Parser configuration (currently unused)
- * \param state Parser state containing the scene (modified in-place)
- * \param output_directory Base directory where files should be relocated
+ * Args:
+ *     config: Parser configuration (currently unused)
+ *
+ *     state: Parser state containing the scene (modified in-place)
+ *
+ *     output_directory: Base directory where files should be relocated
  */
 extern MI_EXPORT_LIB void transform_relocate(const ParserConfig &config,
                                              ParserState &state,
                                              const fs::path &output_directory);
 
 /**
- * \brief Apply all transformations in sequence
+ * Apply all transformations in sequence
  *
  * This convenience function applies all parser transformations to the scene
  * graph in the following order:
- * 1. \ref transform_upgrade()
- * 2. \ref transform_resolve()
- * 3. \ref transform_merge_equivalent() (if ``config.merge_equivalent`` is enabled)
- * 4. \ref transform_merge_meshes() (if ``config.merge_meshes`` is enabled)
+ * 1. `transform_upgrade()`
+ * 2. `transform_resolve()`
+ * 3. `transform_merge_equivalent()` (if ``config.merge_equivalent`` is enabled)
+ * 4. `transform_merge_meshes()` (if ``config.merge_meshes`` is enabled)
  *
- * \param config Parser configuration containing variant and other settings
- * \param state Parser state to transform (modified in-place)
+ * Args:
+ *     config: Parser configuration containing variant and other settings
+ *
+ *     state: Parser state to transform (modified in-place)
  */
 extern MI_EXPORT_LIB void transform_all(const ParserConfig &config,
                                         ParserState &state);
 
 /**
- * \brief Generate a human-readable file location string for error reporting
+ * Generate a human-readable file location string for error reporting
  *
  * Returns a string in the format "filename.xml:line:col" associated with a
  * given `SceneNode`. In the case of the dictionary parser, it returns a
  * period-separated string identifying the path to the object.
  *
- * \param state Parser state containing file information
- * \param node Scene node to locate
- * \return Human-readable location string
+ * Args:
+ *     state: Parser state containing file information
+ *
+ *     node: Scene node to locate
+ *
+ * Returns:
+ *     Human-readable location string
  */
 extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
                                                const SceneNode &node);
 
 /**
- * \brief Instantiate the parsed representation into concrete Mitsuba objects
+ * Instantiate the parsed representation into concrete Mitsuba objects
  *
  * This final stage creates the actual scene objects from the intermediate
  * representation. It handles:
@@ -409,8 +438,8 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * - Parallel instantiation of independent objects (if enabled via
  *   ``config.parallel``)
  * - Property validation and type checking
- * - Object expansion (\ref Object::expand())
- * - Installing \ref ParserState::resolver as the global file resolver, so that
+ * - Object expansion (`Object.expand()`)
+ * - Installing `ParserState.resolver` as the global file resolver, so that
  *   plugins can locate the files referenced by the scene
  *
  * This function creates plugins with variant ``ParserConfig::variant``, using
@@ -421,18 +450,20 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * In Python, this function returns the object itself when the input expands
  * into a single one, and a list of objects otherwise.
  *
- * \param config Parser configuration options including target variant and
- *        parallel flag
+ * Args:
+ *     config: Parser configuration options including target variant and
+ *         parallel flag
  *
- * \param state Parser state containing the scene graph
+ *     state: Parser state containing the scene graph
  *
- * \return Expanded top-level object
+ * Returns:
+ *     Expanded top-level object
  */
 extern MI_EXPORT_LIB std::vector<ref<Object>> instantiate(const ParserConfig &config,
                                                           ParserState &state);
 
 /**
- * \brief Write scene data back to XML file
+ * Write scene data back to XML file
  *
  * This function converts the intermediate representation into an XML format
  * and writes it to disk. Useful for:
@@ -440,27 +471,34 @@ extern MI_EXPORT_LIB std::vector<ref<Object>> instantiate(const ParserConfig &co
  * - Saving programmatically generated scenes
  * - Debugging the parser's intermediate representation
  *
- * \param state Parser state containing the scene graph
- * \param filename Path where the XML file should be written
- * \param add_section_headers Whether to add XML comment headers that group scene
- *        elements by category (e.g., "Materials", "Emitters", "Shapes"). These
- *        section headers improve readability and are particularly useful when the
- *        scene has been reorganized using the \ref transform_reorder() function,
- *        which groups related elements together
+ * Args:
+ *     state: Parser state containing the scene graph
+ *
+ *     filename: Path where the XML file should be written
+ *
+ *     add_section_headers: Whether to add XML comment headers that group scene
+ *         elements by category (e.g., "Materials", "Emitters", "Shapes"). These
+ *         section headers improve readability and are particularly useful when the
+ *         scene has been reorganized using the `transform_reorder()` function,
+ *         which groups related elements together
  */
 extern MI_EXPORT_LIB void write_file(const ParserState &state,
                                      const fs::path &filename,
                                      bool add_section_headers = false);
 
 /**
- * \brief Convert scene data to an XML string
+ * Convert scene data to an XML string
  *
  * Similar to ``write_file()`` but returns the XML content as a string
  * instead of writing to disk.
  *
- * \param state Parser state containing the scene graph
- * \param add_section_headers Whether to add section header comments for organization
- * \return XML representation of the scene
+ * Args:
+ *     state: Parser state containing the scene graph
+ *
+ *     add_section_headers: Whether to add section header comments for organization
+ *
+ * Returns:
+ *     XML representation of the scene
  */
 extern MI_EXPORT_LIB std::string write_string(const ParserState &state,
                                               bool add_section_headers = false);

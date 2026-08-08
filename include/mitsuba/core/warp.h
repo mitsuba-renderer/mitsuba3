@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Implements common warping techniques that map from the unit
+ * Implements common warping techniques that map from the unit
  * square [0, 1]^2 to other domains such as spheres, hemispheres, etc.
  *
  * The main application of this namespace is to generate uniformly
@@ -30,14 +30,14 @@ MI_INLINE Point<Value, 2> square_to_uniform_disk(const Point<Value, 2> &sample) 
     return { c * r, s * r };
 }
 
-/// Inverse of the mapping \ref square_to_uniform_disk
+/// Inverse of the mapping `square_to_uniform_disk`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_disk_to_square(const Point<Value, 2> &p) {
     Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>;
     return { dr::select(phi < 0.f, phi + 1.f, phi), dr::squared_norm(p) };
 }
 
-/// Density of \ref square_to_uniform_disk per unit area
+/// Density of `square_to_uniform_disk` per unit area
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_disk_pdf(const Point<Value, 2> &p) {
     DRJIT_MARK_USED(p);
@@ -89,7 +89,7 @@ MI_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2
     return { r * c, r * s };
 }
 
-/// Inverse of the mapping \ref square_to_uniform_disk_concentric
+/// Inverse of the mapping `square_to_uniform_disk_concentric`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2> &p) {
     using Mask = dr::mask_t<Value>;
@@ -110,7 +110,7 @@ MI_INLINE Point<Value, 2> uniform_disk_to_square_concentric(const Point<Value, 2
     return { (a + 1.f) * 0.5f, (b + 1.f) * 0.5f };
 }
 
-/// Density of \ref square_to_uniform_disk_concentric per unit area
+/// Density of `square_to_uniform_disk_concentric` per unit area
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) {
     DRJIT_MARK_USED(p);
@@ -123,7 +123,7 @@ MI_INLINE Value square_to_uniform_disk_concentric_pdf(const Point<Value, 2> &p) 
 // =======================================================================
 
 /**
- * \brief Low-distortion concentric square to square mapping (meant to be used
+ * Low-distortion concentric square to square mapping (meant to be used
  * in conjunction with another warping method that maps to the sphere)
  */
 template <typename Value> MI_INLINE Point<Value, 2>
@@ -155,14 +155,14 @@ MI_INLINE Point<Value, 2> square_to_uniform_triangle(const Point<Value, 2> &samp
     return { 1.f - t, t * sample.y() };
 }
 
-/// Inverse of the mapping \ref square_to_uniform_triangle
+/// Inverse of the mapping `square_to_uniform_triangle`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_triangle_to_square(const Point<Value, 2> &p) {
     Value t = 1.f - p.x();
     return Point<Value, 2>(1.f - t * t, p.y() / t);
 }
 
-/// Density of \ref square_to_uniform_triangle per unit area.
+/// Density of `square_to_uniform_triangle` per unit area.
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_triangle_pdf(const Point<Value, 2> &p) {
     if constexpr (TestDomain) {
@@ -205,7 +205,7 @@ Value tent_to_interval(const Value &value) {
     return 0.5f * (1.f + value * (2.f - dr::abs(value)));
 }
 
-/// Warp a uniformly distributed sample on [0, 1] to a nonuniform tent distribution with nodes <tt>{a, b, c}</tt>
+/// Warp a uniformly distributed sample on [0, 1] to a nonuniform tent distribution with nodes ``{a, b, c}``
 template <typename Value>
 Value interval_to_nonuniform_tent(const Value &a, const Value &b, const Value &c, const Value &sample_) {
     auto mask = (sample_ * (c - a) < b - a);
@@ -229,7 +229,7 @@ Point<Value, 2> tent_to_square(const Point<Value, 2> &p) {
     return tent_to_interval(p);
 }
 
-/// Density of \ref square_to_tent per unit area.
+/// Density of `square_to_tent` per unit area.
 template <typename Value>
 Value square_to_tent_pdf(const Point<Value, 2> &p_) {
     auto p = dr::abs(p_);
@@ -253,7 +253,7 @@ MI_INLINE Vector<Value, 3> square_to_uniform_sphere(const Point<Value, 2> &sampl
     return { r * c, r * s, z };
 }
 
-/// Inverse of the mapping \ref square_to_uniform_sphere
+/// Inverse of the mapping `square_to_uniform_sphere`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
     Value phi = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Value>;
@@ -263,7 +263,7 @@ MI_INLINE Point<Value, 2> uniform_sphere_to_square(const Vector<Value, 3> &p) {
     };
 }
 
-/// Density of \ref square_to_uniform_sphere() with respect to solid angles
+/// Density of `square_to_uniform_sphere()` with respect to solid angles
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
     DRJIT_MARK_USED(v);
@@ -277,10 +277,10 @@ MI_INLINE Value square_to_uniform_sphere_pdf(const Vector<Value, 3> &v) {
 // =======================================================================
 
 /**
-* \brief Uniformly sample a direction in the two spherical lunes defined by the
-* valid boundary directions of two touching faces defined by their normals
-* \c n1 and \c n2.
-*/
+ * Uniformly sample a direction in the two spherical lunes defined by the
+ * valid boundary directions of two touching faces defined by their normals
+ * ``n1`` and ``n2``.
+ */
 template <typename Value>
 MI_INLINE Vector<Value, 3>
 square_to_uniform_spherical_lune(const Point<Value, 2> &sample,
@@ -312,7 +312,7 @@ square_to_uniform_spherical_lune(const Point<Value, 2> &sample,
     return d;
 }
 
-/// Inverse of the mapping \ref square_to_uniform_spherical_lune
+/// Inverse of the mapping `square_to_uniform_spherical_lune`
 template <typename Value>
 MI_INLINE Point<Value, 2>
 uniform_spherical_lune_to_square(const Vector<Value, 3> &d,
@@ -351,7 +351,7 @@ uniform_spherical_lune_to_square(const Vector<Value, 3> &d,
     return sample;
 }
 
-/// Density of \ref square_to_uniform_spherical_lune() w.r.t. solid angles
+/// Density of `square_to_uniform_spherical_lune()` w.r.t. solid angles
 template <typename Value>
 MI_INLINE Value
 square_to_uniform_spherical_lune_pdf(const Vector<Value, 3> &d,
@@ -386,14 +386,14 @@ MI_INLINE Vector<Value, 3> square_to_uniform_hemisphere(const Point<Value, 2> &s
 #endif
 }
 
-/// Inverse of the mapping \ref square_to_uniform_hemisphere
+/// Inverse of the mapping `square_to_uniform_hemisphere`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_hemisphere_to_square(const Vector<Value, 3> &v) {
     Point<Value, 2> p(v.x(), v.y());
     return uniform_disk_to_square_concentric(p * dr::rsqrt(v.z() + 1.f));
 }
 
-/// Density of \ref square_to_uniform_hemisphere() with respect to solid angles
+/// Density of `square_to_uniform_hemisphere()` with respect to solid angles
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_hemisphere_pdf(const Vector<Value, 3> &v) {
     DRJIT_MARK_USED(v);
@@ -418,13 +418,13 @@ MI_INLINE Vector<Value, 3> square_to_cosine_hemisphere(const Point<Value, 2> &sa
     return { p.x(), p.y(), z };
 }
 
-/// Inverse of the mapping \ref square_to_cosine_hemisphere
+/// Inverse of the mapping `square_to_cosine_hemisphere`
 template <typename Value>
 MI_INLINE Point<Value, 2> cosine_hemisphere_to_square(const Vector<Value, 3> &v) {
     return uniform_disk_to_square_concentric(Point<Value, 2>(v.x(), v.y()));
 }
 
-/// Density of \ref square_to_cosine_hemisphere() with respect to solid angles
+/// Density of `square_to_cosine_hemisphere()` with respect to solid angles
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
     if constexpr (TestDomain)
@@ -435,11 +435,11 @@ MI_INLINE Value square_to_cosine_hemisphere_pdf(const Vector<Value, 3> &v) {
 }
 
 /**
- * \brief Importance sample a linear interpolant
+ * Importance sample a linear interpolant
  *
- * Given a linear interpolant on the unit interval with boundary values \c v0,
- * \c v1 (where \c v1 is the value at <tt>x=1</tt>), warp a uniformly
- * distributed input sample \c sample so that the resulting probability
+ * Given a linear interpolant on the unit interval with boundary values ``v0``,
+ * ``v1`` (where ``v1`` is the value at ``x=1``), warp a uniformly
+ * distributed input sample ``sample`` so that the resulting probability
  * distribution matches the linear interpolant.
  */
 template <typename Value>
@@ -451,7 +451,7 @@ MI_INLINE Value interval_to_linear(Value v0, Value v1, Value sample) {
     );
 }
 
-/// Inverse of \ref interval_to_linear
+/// Inverse of `interval_to_linear`
 template <typename Value>
 MI_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
     return dr::select(
@@ -462,15 +462,15 @@ MI_INLINE Value linear_to_interval(Value v0, Value v1, Value sample) {
 }
 
 /**
- * \brief Importance sample a bilinear interpolant
+ * Importance sample a bilinear interpolant
  *
- * Given a bilinear interpolant on the unit square with corner values \c v00,
- * \c v10, \c v01, \c v11 (where \c v00 is the value at (x,y) == (0, 0)), warp
- * a uniformly distributed input sample \c sample so that the resulting
+ * Given a bilinear interpolant on the unit square with corner values ``v00``,
+ * ``v10``, ``v01``, ``v11`` (where ``v00`` is the value at (x,y) == (0, 0)), warp
+ * a uniformly distributed input sample ``sample`` so that the resulting
  * probability distribution matches the linear interpolant.
  *
- * The implementation first samples the marginal distribution to obtain \c y,
- * followed by sampling the conditional distribution to obtain \c x.
+ * The implementation first samples the marginal distribution to obtain ``y``,
+ * followed by sampling the conditional distribution to obtain ``x``.
  *
  * Returns the sampled point and PDF for convenience.
  */
@@ -492,7 +492,7 @@ square_to_bilinear(Value v00, Value v10, Value v01, Value v11,
     return { sample, dr::lerp(c0, c1, sample.x()) };
 }
 
-/// Inverse of \ref square_to_bilinear
+/// Inverse of `square_to_bilinear`
 template <typename Value>
 MI_INLINE std::pair<Point<Value, 2>, Value>
 bilinear_to_square(Value v00, Value v10, Value v01, Value v11,
@@ -522,11 +522,13 @@ square_to_bilinear_pdf(Value v00, Value v10, Value v01, Value v11,
 // =======================================================================
 
 /**
- * \brief Uniformly sample a vector that lies within a given
+ * Uniformly sample a vector that lies within a given
  * cone of angles around the Z axis
  *
- * \param cos_cutoff Cosine of the cutoff angle
- * \param sample A uniformly distributed sample on \f$[0,1]^2\f$
+ * Args:
+ *     cos_cutoff: Cosine of the cutoff angle
+ *
+ *     sample: A uniformly distributed sample on :math:`[0,1]^2`
  */
 template <typename Value>
 MI_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample,
@@ -549,7 +551,7 @@ MI_INLINE Vector<Value, 3> square_to_uniform_cone(const Point<Value, 2> &sample,
 #endif
 }
 
-/// Inverse of the mapping \ref square_to_uniform_cone
+/// Inverse of the mapping `square_to_uniform_cone`
 template <typename Value>
 MI_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
                                                   const Value &cos_cutoff) {
@@ -559,9 +561,10 @@ MI_INLINE Point<Value, 2> uniform_cone_to_square(const Vector<Value, 3> &v,
 }
 
 /**
- * \brief Density of \ref square_to_uniform_cone with respect to solid angles.
+ * Density of `square_to_uniform_cone` with respect to solid angles.
  *
- * \param cos_cutoff Cosine of the cutoff angle
+ * Args:
+ *     cos_cutoff: Cosine of the cutoff angle
  */
 template <bool TestDomain = false, typename Value>
 MI_INLINE Value square_to_uniform_cone_pdf(const Vector<Value, 3> &v,
@@ -603,7 +606,7 @@ MI_INLINE Vector<Value, 3> square_to_beckmann(const Point<Value, 2> &sample,
 #endif
 }
 
-/// Inverse of the mapping \ref square_to_beckmann
+/// Inverse of the mapping `square_to_beckmann`
 template <typename Value>
 MI_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Value &alpha) {
     Point<Value, 2> p(v.x(), v.y());
@@ -616,7 +619,7 @@ MI_INLINE Point<Value, 2> beckmann_to_square(const Vector<Value, 3> &v, const Va
     return uniform_disk_to_square_concentric(p);
 }
 
-/// Probability density of \ref square_to_beckmann()
+/// Probability density of `square_to_beckmann()`
 template <typename Value>
 MI_INLINE Value square_to_beckmann_pdf(const Vector<Value, 3> &m,
                                         const Value &alpha) {
@@ -673,7 +676,7 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
     return result;
 }
 
-/// Inverse of the mapping \ref square_to_von_mises_fisher
+/// Inverse of the mapping `square_to_von_mises_fisher`
 template <typename Value>
 MI_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
                                                       Value kappa) {
@@ -694,7 +697,7 @@ MI_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
 #endif
 }
 
-/// Probability density of \ref square_to_von_mises_fisher()
+/// Probability density of `square_to_von_mises_fisher()`
 template <typename Value>
 MI_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
     /* Stable algorithm for evaluating the von Mises Fisher distribution
@@ -765,7 +768,7 @@ namespace detail {
     }
 }
 
-/// Probability density of \ref square_to_rough_fiber()
+/// Probability density of `square_to_rough_fiber()`
 template <typename Value, typename Vector3 = Vector<Value, 3>>
 Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent,
                                 Value kappa) {
@@ -809,7 +812,7 @@ interval_to_tangent_direction(const Normal<Value, 3> &n, Value sample) {
     return frame.s * cos + frame.t * sin;
 }
 
-/// Inverse of \ref interval_to_tangent_direction
+/// Inverse of `interval_to_tangent_direction`
 template <typename Value>
 MI_INLINE Value tangent_direction_to_interval(const Normal<Value, 3> &n,
                                               const Vector<Value, 3> &d) {

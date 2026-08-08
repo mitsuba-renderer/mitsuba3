@@ -7,18 +7,18 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Calculates the unpolarized Fresnel reflection coefficient
+ * Calculates the unpolarized Fresnel reflection coefficient
  * at a planar interface between two dielectrics
  *
- * \param cos_theta_i
- *      Cosine of the angle between the surface normal and the incident ray
+ * Args:
+ *     cos_theta_i: Cosine of the angle between the surface normal and the incident ray
  *
- * \param eta
- *      Relative refractive index of the interface. A value greater than 1.0
- *      means that the surface normal is pointing into the region of lower
- *      density.
+ *     eta: Relative refractive index of the interface. A value greater than 1.0
+ *         means that the surface normal is pointing into the region of lower
+ *         density.
  *
- * \return A tuple ``(F, cos_theta_t, eta_it, eta_ti)`` where
+ * Returns:
+ *     A tuple ``(F, cos_theta_t, eta_it, eta_ti)`` where
  *
  *     - ``F`` is the Fresnel reflection coefficient.
  *
@@ -73,22 +73,22 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
 }
 
 /**
- * \brief Calculates the unpolarized Fresnel reflection coefficient at a planar
+ * Calculates the unpolarized Fresnel reflection coefficient at a planar
  * interface of a conductor, i.e. a surface with a complex-valued relative index
  * of refraction
  *
- * \remark
- *      The implementation assumes that cos_theta_i > 0, i.e. light enters
- *      from *outside* of the conducting layer (generally a reasonable
- *      assumption unless very thin layers are being simulated)
+ * Args:
+ *     cos_theta_i: Cosine of the angle between the surface normal and the incident ray
  *
- * \param cos_theta_i
- *      Cosine of the angle between the surface normal and the incident ray
+ *     eta: Relative refractive index (complex-valued)
  *
- * \param eta
- *      Relative refractive index (complex-valued)
+ * Returns:
+ *     The unpolarized Fresnel reflection coefficient.
  *
- * \return The unpolarized Fresnel reflection coefficient.
+ * Note:
+ *     The implementation assumes that cos_theta_i > 0, i.e. light enters
+ *     from *outside* of the conducting layer (generally a reasonable
+ *     assumption unless very thin layers are being simulated)
  */
 
 template <typename Float>
@@ -119,19 +119,19 @@ Float fresnel_conductor(Float cos_theta_i, dr::Complex<Float> eta) {
 }
 
 /**
- * \brief Calculates the polarized Fresnel reflection coefficient at a planar
+ * Calculates the polarized Fresnel reflection coefficient at a planar
  * interface between two dielectrics. Returns complex values encoding the
  * amplitude and phase shift of the s- and p-polarized waves.
  *
- * \param cos_theta_i
- *      Cosine of the angle between the surface normal and the incident ray
+ * Args:
+ *     cos_theta_i: Cosine of the angle between the surface normal and the incident ray
  *
- * \param eta
- *      Real-valued relative refractive index of the interface.
- *      A value greater than 1.0 case means that the surface normal
- *      points into the region of lower density.
+ *     eta: Real-valued relative refractive index of the interface.
+ *         A value greater than 1.0 case means that the surface normal
+ *         points into the region of lower density.
  *
- * \return A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
+ * Returns:
+ *     A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
  *
  *     - ``a_s`` is the perpendicularly polarized wave amplitude and phase
  *       shift.
@@ -195,22 +195,22 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
 }
 
 /**
- * \brief Calculates the polarized Fresnel reflection coefficient at a planar
+ * Calculates the polarized Fresnel reflection coefficient at a planar
  * interface between two dielectrics or conductors. Returns complex values
  * encoding the amplitude and phase shift of the s- and p-polarized waves.
  *
  * This is the most general version, which subsumes all others (at the cost of
  * transcendental function evaluations in the complex-valued arithmetic)
  *
- * \param cos_theta_i
- *      Cosine of the angle between the surface normal and the incident ray
+ * Args:
+ *     cos_theta_i: Cosine of the angle between the surface normal and the incident ray
  *
- * \param eta
- *      Complex-valued relative refractive index of the interface. In the real
- *      case, a value greater than 1.0 case means that the surface normal
- *      points into the region of lower density.
+ *     eta: Complex-valued relative refractive index of the interface. In the real
+ *         case, a value greater than 1.0 case means that the surface normal
+ *         points into the region of lower density.
  *
- * \return A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
+ * Returns:
+ *     A tuple ``(a_s, a_p, cos_theta_t, eta_it, eta_ti)`` where
  *
  *     - ``a_s`` is the perpendicularly polarized wave amplitude and phase
  *       shift.
@@ -284,17 +284,17 @@ Vector<Float, 3> reflect(const Vector<Float, 3> &wi) {
     return Vector<Float, 3>(-wi.x(), -wi.y(), wi.z());
 }
 
-/// Reflect \c wi with respect to a given surface normal
+/// Reflect ``wi`` with respect to a given surface normal
 template <typename Float>
 Vector<Float, 3> reflect(const Vector<Float, 3> &wi, const Normal<Float, 3> &m) {
     return dr::fmsub(Vector<Float, 3>(m), 2.f * dr::dot(wi, m), wi);
 }
 
 /**
- * \brief Refraction in local coordinates
+ * Refraction in local coordinates
  *
  * The 'cos_theta_t' and 'eta_ti' parameters correspond to entries of the
- * tuple returned by the \ref fresnel and \ref fresnel_polarized functions.
+ * tuple returned by the `fresnel` and `fresnel_polarized` functions.
  */
 template <typename Float>
 Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float eta_ti) {
@@ -302,17 +302,17 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, Float cos_theta_t, Float et
 }
 
 /**
- * \brief Refract \c wi with respect to a given surface normal
+ * Refract ``wi`` with respect to a given surface normal
  *
- * \param wi
- *     Direction to refract
- * \param m
- *     Surface normal
- * \param cos_theta_t
- *     Cosine of the angle between the normal the transmitted
- *     ray, as computed e.g. by \ref fresnel.
- * \param eta_ti
- *     Relative index of refraction (transmitted / incident)
+ * Args:
+ *     wi: Direction to refract
+ *
+ *     m: Surface normal
+ *
+ *     cos_theta_t: Cosine of the angle between the normal the transmitted
+ *         ray, as computed e.g. by `fresnel`.
+ *
+ *     eta_ti: Relative index of refraction (transmitted / incident)
  */
 template <typename Float>
 Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, Float cos_theta_t,
@@ -321,15 +321,17 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, 
 }
 
 /**
- * \brief Computes the diffuse unpolarized Fresnel reflectance of a dielectric
+ * Computes the diffuse unpolarized Fresnel reflectance of a dielectric
  * material (sometimes referred to as "Fdr").
  *
  * This value quantifies what fraction of diffuse incident illumination
  * will, on average, be reflected at a dielectric material boundary
  *
- * \param eta
- *      Relative refraction coefficient
- * \return F, the unpolarized Fresnel coefficient.
+ * Args:
+ *     eta: Relative refraction coefficient
+ *
+ * Returns:
+ *     F, the unpolarized Fresnel coefficient.
  */
 template <typename Float>
 Float fresnel_diffuse_reflectance(Float eta) {

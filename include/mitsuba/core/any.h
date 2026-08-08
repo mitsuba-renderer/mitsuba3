@@ -7,16 +7,16 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Type-erased storage for arbitrary objects
+ * Type-erased storage for arbitrary objects
  *
- * This class resembles <tt>std::any</tt> but supports advanced customization by
- * exposing the underlying type-erased storage implementation \ref Any::Base.
+ * This class resembles ``std::any`` but supports advanced customization by
+ * exposing the underlying type-erased storage implementation ``Any.Base``.
  * The Mitsuba `Properties` class uses Any when it needs to store things
  * that aren't part of the supported set of property types, such as Dr.Jit
  * tensor objects or other specialized types. The main reason for using Any
- * (as opposed to the builtin <tt>std::any</tt>) is to enable seamless use in
- * Python bindings, which requires access to \ref Any::Base (see
- * <tt>src/core/python/any.cpp</tt> for what this entails).
+ * (as opposed to the builtin ``std::any``) is to enable seamless use in
+ * Python bindings, which requires access to ``Any.Base`` (see
+ * ``src/core/python/any.cpp`` for what this entails).
  *
  * Instances of this type are copyable with reference semantics. The class is
  * not thread-safe (i.e., it may not be copied concurrently).

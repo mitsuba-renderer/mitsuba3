@@ -6,7 +6,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Per-vertex boundary and defect flags reported by \ref DirectedEdge
+/// Per-vertex boundary and defect flags reported by `DirectedEdge`
 enum class VertexFlags : uint32_t {
     /// An edge incident to the vertex is unpaired
     Boundary = 0x1,
@@ -24,7 +24,7 @@ enum class VertexFlags : uint32_t {
 MI_DECLARE_ENUM_OPERATORS(VertexFlags)
 
 /**
- * \brief Immutable half-edge adjacency for an indexed triangle mesh
+ * Immutable half-edge adjacency for an indexed triangle mesh
  *
  * This class derives edge and vertex adjacency from a flat triangle index
  * buffer ``F`` using the directed-edge representation of Campagna et al. [1].
@@ -52,27 +52,27 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *    target(e)           = F[next(e)]
  *    opposing_vertex(e)  = F[prev(e)]
  *
- * Hence, \ref next() advances along the triangle's winding direction and
- * \ref prev() goes in the opposite direction; neither operation leaves the
+ * Hence, `next()` advances along the triangle's winding direction and
+ * `prev()` goes in the opposite direction; neither operation leaves the
  * triangle.
  *
  * The structure provides four principal arrays:
  *
- * * \ref E2E() maps each half-edge to the oppositely oriented half-edge of
- *   the adjacent triangle, or to \ref Invalid when the result is ambiguous.
+ * * `E2E()` maps each half-edge to the oppositely oriented half-edge of
+ *   the adjacent triangle, or to ``Invalid`` when the result is ambiguous.
  *
- * * \ref V2E() maps each vertex to a canonical outgoing half-edge, or to
- *   \ref Invalid when no triangle with three distinct indices contains it.
+ * * `V2E()` maps each vertex to a canonical outgoing half-edge, or to
+ *   ``Invalid`` when no triangle with three distinct indices contains it.
  *
- * * \ref valence() records how many triangles with three distinct indices
+ * * `valence()` records how many triangles with three distinct indices
  *   contain each vertex.
  *
- * * \ref flags() records per-vertex boundary and connectivity diagnostics.
+ * * `flags()` records per-vertex boundary and connectivity diagnostics.
  *
  * On a consistently oriented manifold triangle mesh, each interior edge is
  * shared by two triangles, which contribute oppositely oriented half-edges.
  * ``E2E`` pairs these half-edges. A boundary edge belongs to only one triangle,
- * and its half-edge maps to \ref Invalid.
+ * and its half-edge maps to ``Invalid``.
  *
  * ``V2E[v]`` provides a starting point for walking around vertex ``v``. For
  * an interior vertex, any outgoing half-edge would work; ``V2E[v]`` contains
@@ -80,7 +80,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * ``V2E[v] = next(b)``, where ``b`` is the incoming boundary half-edge.
  * Starting there, repeatedly applying ``e = next(opposite(e))`` visits the
  * complete fan of faces. The walk stops at the other boundary edge, where
- * ``opposite(e)`` is \ref Invalid.
+ * ``opposite(e)`` is ``Invalid``.
  *
  * The examples below use Python-style scalar pseudocode.
  *
@@ -111,7 +111,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *
  * **Example 2: traversing the faces around a vertex**
  *
- * Starting at \ref vertex_edge(), repeatedly crossing the current edge
+ * Starting at `vertex_edge()`, repeatedly crossing the current edge
  * and advancing within the neighboring triangle walks around its source
  * vertex:
  *
@@ -145,7 +145,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * **Robustness**
  *
  * The implementation only pairs half-edges when the result is unambiguous.
- * Whenever ``o = E2E[e]`` is not \ref Invalid, the following invariants hold:
+ * Whenever ``o = E2E[e]`` is not ``Invalid``, the following invariants hold:
  *
  * .. code-block:: python
  *
@@ -161,30 +161,29 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * On a well-formed mesh, every edge belongs to at most two triangles. An
  * interior edge is shared by two triangles with oppositely oriented
  * half-edges, which ``E2E`` pairs up. A boundary edge belongs to a single
- * triangle, and its half-edge maps to \ref Invalid. Both endpoints of such
- * an edge receive the \ref VertexFlags::Boundary flag. Triangles with
+ * triangle, and its half-edge maps to ``Invalid``. Both endpoints of such
+ * an edge receive the `VertexFlags.Boundary` flag. Triangles with
  * repeated vertex indices are ignored throughout (see below).
  *
  * Malformed input deviates from this picture in two ways. In both cases
  * there is no valid way to pair the involved half-edges, so all of them
  * remain unpaired and read as boundaries. The endpoints of the affected
- * edge receive \ref VertexFlags::Boundary and a flag identifying the
+ * edge receive `VertexFlags.Boundary` and a flag identifying the
  * defect:
  *
  * - When the two half-edges of a shared edge are oriented the same way,
  *   one triangle is wound backwards relative to the other. The endpoints
- *   receive \ref VertexFlags::InconsistentOrientation.
+ *   receive `VertexFlags.InconsistentOrientation`.
  *
  * - When three or more triangles share an edge (think of a fin attached to
  *   the edge of a box), no pair is preferable to the others. The endpoints
- *   receive \ref VertexFlags::NonManifoldEdge.
+ *   receive `VertexFlags.NonManifoldEdge`.
  *
  * The following table summarizes the classification:
  *
  * .. code-block:: text
  *
  *    faces  winding    E2E entries  flags at both endpoints
- *    -------------------------------------------------------
  *    1      -          Invalid      Boundary
  *    2      opposite   paired       none
  *    2      same       Invalid      Boundary | InconsistentOrientation
@@ -193,28 +192,28 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * A vertex accumulates the flags of all edges that touch it, so several
  * bits may be set at once. Test them individually using ``has_flag()``
  * rather than comparing the complete bitmask for equality. The remaining
- * flag, \ref VertexFlags::NonManifoldVertex, is not part of the edge
+ * flag, `VertexFlags.NonManifoldVertex`, is not part of the edge
  * classification and is explained next.
  *
  * **Disconnected fans around a vertex**
  *
- * \ref VertexFlags::NonManifoldVertex marks vertices where the walk of
- * Example 2 reaches fewer faces than \ref valence() reports. The
+ * `VertexFlags.NonManifoldVertex` marks vertices where the walk of
+ * Example 2 reaches fewer faces than `valence()` reports. The
  * typical case is a bowtie: two fans that touch only at their common apex.
  * Every edge of such a configuration may pair normally, and those pairings
  * are preserved. The defect is a property of the vertex, not of its edges.
- * \ref vertex_edge() selects a starting point in one of the fans, and the
+ * `vertex_edge()` selects a starting point in one of the fans, and the
  * walk covers only that fan.
  *
  * To enumerate every face around a non-manifold vertex, scan ``F`` for
  * half-edges with ``F[e] == v`` (again skipping triangles with repeated
- * indices) instead of walking from \ref vertex_edge().
+ * indices) instead of walking from `vertex_edge()`.
  *
  * **Triangles with repeated indices**
  *
  * A triangle such as ``(a, a, b)`` has no area and is ignored as a whole:
  * it keeps its slots in the half-edge numbering, but its three ``E2E``
- * entries are \ref Invalid, its half-edges never appear in \ref V2E(), and
+ * entries are ``Invalid``, its half-edges never appear in `V2E()`, and
  * it contributes no face counts or flags. The remaining triangles are
  * paired as if it did not exist.
  *
@@ -244,25 +243,22 @@ public:
     static constexpr uint32_t Invalid = (uint32_t) -1;
 
     /**
-     * \brief Build the adjacency structure of a triangle mesh
+     * Build the adjacency structure of a triangle mesh
      *
      * The caller must ensure that ``F[i] < vertex_count`` holds for all
      * provided indices. Violations cause undefined behavior.
      *
-     * \param F
-     *     A flat index buffer holding the three vertex indices of each
-     *     triangle face, in winding order. Its size must be a multiple of 3.
+     * Args:
+     *     F: A flat index buffer holding the three vertex indices of each
+     *         triangle face, in winding order. Its size must be a multiple of 3.
      *
-     * \param vertex_count
-     *     The number of mesh vertices.
+     *     vertex_count: The number of mesh vertices.
      *
-     * \param name
-     *     An optional name identifying the mesh in log messages.
+     *     name: An optional name identifying the mesh in log messages.
      *
-     * \param warn_defects
-     *     Report non-manifold or inconsistently wound input in a log message.
-     *     Counting the affected vertices requires a device-to-host transfer,
-     *     which callers building the structure implicitly may wish to avoid.
+     *     warn_defects: Report non-manifold or inconsistently wound input in a log message.
+     *         Counting the affected vertices requires a device-to-host transfer,
+     *         which callers building the structure implicitly may wish to avoid.
      */
     DirectedEdge(const IndexBuffer &F, uint32_t vertex_count,
                  std::string_view name = "", bool warn_defects = true);
@@ -297,7 +293,7 @@ public:
     const std::string &name() const { return m_name; }
 
     /**
-     * \brief Return the half-edge opposite to \c e, or \ref Invalid
+     * Return the half-edge opposite to ``e``, or ``Invalid``
      *
      * This accessor loads ``E2E[e]``.
      */
@@ -306,11 +302,11 @@ public:
     }
 
     /**
-     * \brief Return the canonical half-edge starting at \c v, or \ref Invalid
+     * Return the canonical half-edge starting at ``v``, or ``Invalid``
      *
      * This accessor loads ``V2E[v]``.
      *
-     * This is the smallest half-edge at \c v whose predecessor is unpaired, or
+     * This is the smallest half-edge at ``v`` whose predecessor is unpaired, or
      * the smallest one overall when no such half-edge exists. It is the entry
      * point of the vertex walk described in the class documentation.
      */
@@ -319,21 +315,21 @@ public:
     }
 
     /**
-     * \brief Return the valence of \c v
+     * Return the valence of ``v``
      *
-     * This is the number of faces containing \c v. It excludes degenerate
+     * This is the number of faces containing ``v``. It excludes degenerate
      * faces with a repeated vertex index.
      */
     MI_INLINE UInt32 vertex_valence(UInt32 v, Mask active = true) const {
         return dr::gather<UInt32>(m_valence, v, active);
     }
 
-    /// Return the bitmask of \ref VertexFlags associated with vertex \c v
+    /// Return the bitmask of `VertexFlags` associated with vertex ``v``
     MI_INLINE UInt32 vertex_flags(UInt32 v, Mask active = true) const {
         return dr::gather<UInt32>(m_flags, v, active);
     }
 
-    /// Per-half-edge buffer of opposites or \ref Invalid entries
+    /// Per-half-edge buffer of opposites or ``Invalid`` entries
     const IndexBuffer &E2E() const { return m_E2E; }
 
     /// Per-vertex buffer of canonical outgoing half-edges
@@ -342,11 +338,11 @@ public:
     /// Per-vertex buffer of valences, i.e. face counts
     const IndexBuffer &valence() const { return m_valence; }
 
-    /// Per-vertex buffer of \ref VertexFlags bitmasks
+    /// Per-vertex buffer of `VertexFlags` bitmasks
     const IndexBuffer &flags() const { return m_flags; }
 
     /**
-     * \brief Number of vertices carrying the given single-bit flag
+     * Number of vertices carrying the given single-bit flag
      *
      * The first call synchronizes with the device unless the constructor
      * already counted the flags to report defects.
@@ -364,7 +360,7 @@ protected:
     /// Data-parallel builder used in JIT variants
     void build_jit(const IndexBuffer &F);
 
-    /// Populate \ref m_flag_counts, transferring them from the device
+    /// Populate ``m_flag_counts``, transferring them from the device
     void count_flags() const;
 
 protected:
@@ -374,7 +370,7 @@ protected:
 
     IndexBuffer m_E2E, m_V2E, m_valence, m_flags;
 
-    /// Number of vertices carrying each of the four \ref VertexFlags
+    /// Number of vertices carrying each of the four `VertexFlags`
     mutable uint32_t m_flag_counts[4] { 0, 0, 0, 0 };
     mutable bool m_flag_counts_ready = false;
 

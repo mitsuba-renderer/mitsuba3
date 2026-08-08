@@ -37,7 +37,7 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
 }
 
 /**
- * \brief Implementation of the Beckmann and GGX / Trowbridge-Reitz microfacet
+ * Implementation of the Beckmann and GGX / Trowbridge-Reitz microfacet
  * distributions and various useful sampling routines
  *
  * Based on the papers
@@ -68,10 +68,10 @@ public:
     /**
      * Create an isotropic microfacet distribution of the specified type
      *
-     * \param type
-     *     The desired type of microfacet distribution
-     * \param alpha
-     *     The surface roughness
+     * Args:
+     *     type: The desired type of microfacet distribution
+     *
+     *     alpha: The surface roughness
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha, bool sample_visible = true)
         : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
@@ -82,12 +82,12 @@ public:
     /**
      * Create an anisotropic microfacet distribution of the specified type
      *
-     * \param type
-     *     The desired type of microfacet distribution
-     * \param alpha_u
-     *     The surface roughness in the tangent direction
-     * \param alpha_v
-     *     The surface roughness in the bitangent direction
+     * Args:
+     *     type: The desired type of microfacet distribution
+     *
+     *     alpha_u: The surface roughness in the tangent direction
+     *
+     *     alpha_v: The surface roughness in the bitangent direction
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
@@ -97,7 +97,7 @@ public:
     }
 
     /**
-     * \brief Create a microfacet distribution from a `Properties` data
+     * Create a microfacet distribution from a `Properties` data
      * structure
      */
     MicrofacetDistribution(const Properties &props,
@@ -177,10 +177,10 @@ public:
     }
 
     /**
-     * \brief Evaluate the microfacet distribution function
+     * Evaluate the microfacet distribution function
      *
-     * \param m
-     *     The microfacet normal
+     * Args:
+     *     m: The microfacet normal
      */
     Float eval(const Vector3f &m) const {
         Float alpha_uv = m_alpha_u * m_alpha_v,
@@ -207,14 +207,13 @@ public:
     }
 
     /**
-     * \brief Returns the density function associated with
-     * the \ref sample() function.
+     * Returns the density function associated with
+     * the `sample()` function.
      *
-     * \param wi
-     *     The incident direction (only relevant if visible normal sampling is used)
+     * Args:
+     *     wi: The incident direction (only relevant if visible normal sampling is used)
      *
-     * \param m
-     *     The microfacet normal
+     *     m: The microfacet normal
      */
     Float pdf(const Vector3f &wi, const Vector3f &m) const {
         Float result = eval(m);
@@ -228,18 +227,18 @@ public:
     }
 
     /**
-     * \brief Draw a sample from the microfacet normal distribution
+     * Draw a sample from the microfacet normal distribution
      * and return the associated probability density
      *
-     * \param wi
-     *    The incident direction. Only used if
-     *    visible normal sampling is enabled.
+     * Args:
+     *     wi: The incident direction. Only used if
+     *         visible normal sampling is enabled.
      *
-     * \param sample
-     *    A uniformly distributed 2D sample
+     *     sample: A uniformly distributed 2D sample
      *
-     * \return A tuple consisting of the sampled microfacet normal
-     *         and the associated solid angle density
+     * Returns:
+     *     A tuple consisting of the sampled microfacet normal
+     *     and the associated solid angle density
      */
     std::pair<Normal3f, Float> sample(const Vector3f &wi,
                                       const Point2f &sample) const {
@@ -331,12 +330,12 @@ public:
     }
 
     /**
-     * \brief Smith's shadowing-masking function for a single direction
+     * Smith's shadowing-masking function for a single direction
      *
-     * \param v
-     *     An arbitrary direction
-     * \param m
-     *     The microfacet normal
+     * Args:
+     *     v: An arbitrary direction
+     *
+     *     m: The microfacet normal
      */
     Float smith_g1(const Vector3f &v, const Vector3f &m) const {
         Float xy_alpha_2 = dr::square(m_alpha_u * v.x()) + dr::square(m_alpha_v * v.y()),
@@ -364,7 +363,7 @@ public:
         return result;
     }
 
-    /// \brief Visible normal sampling code for the alpha=1 case
+    /// Visible normal sampling code for the alpha=1 case
     Vector2f sample_visible_11(Float cos_theta_i, Point2f sample) const {
         if (m_type == MicrofacetType::Beckmann) {
             /* The original inversion routine from the paper contained
@@ -427,7 +426,7 @@ protected:
         m_alpha_v = dr::maximum(m_alpha_v, 1e-4f);
     }
 
-    /// Compute the squared 1D roughness along direction \c v
+    /// Compute the squared 1D roughness along direction ``v``
     Float project_roughness_2(const Vector3f &v) const {
         if (is_isotropic())
             return dr::square(m_alpha_u);

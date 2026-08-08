@@ -476,7 +476,7 @@ NAMESPACE_BEGIN(mitsuba)
 extern MI_EXPORT_LIB void optix_initialize();
 
 /**
- * \brief RAII wrapper which sets the CUDA context associated to the OptiX
+ * RAII wrapper which sets the CUDA context associated to the OptiX
  * context for the current scope.
  */
 struct scoped_optix_context {

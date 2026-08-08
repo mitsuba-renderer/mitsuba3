@@ -17,7 +17,7 @@
 struct OptixHitGroupData {
     /// Shape id in Dr.Jit's pointer registry
     uint32_t shape_registry_id;
-    /// Pointer to the memory region of `Shape` data (e.g. \c shapedata::SphereData)
+    /// Pointer to the memory region of `Shape` data (e.g. ``shapedata::SphereData``)
     void* data;
 };
 

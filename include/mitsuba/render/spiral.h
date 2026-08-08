@@ -13,14 +13,13 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Generates a spiral of blocks to be rendered.
+ * Generates a spiral of blocks to be rendered.
  *
  * Adam Arbree
  * Aug 25, 2005
  * RayTracer.java
  * Used with permission.
  * Copyright 2005 Program of Computer Graphics, Cornell University
- * \ingroup librender
  */
 class MI_EXPORT_LIB Spiral : public Object {
 public:
@@ -44,7 +43,7 @@ public:
     void reset();
 
     /**
-     * \brief Return the offset, size, and unique identifier of the next block.
+     * Return the offset, size, and unique identifier of the next block.
      *
      * A size of zero indicates that the spiral traversal is done.
      */

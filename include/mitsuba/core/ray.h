@@ -8,10 +8,10 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Simple n-dimensional ray segment data structure
+ * Simple n-dimensional ray segment data structure
  *
  * Along with the ray origin and direction, this data structure additionally
- * stores a maximum ray position \c maxt, a time value \c time as well as the
+ * stores a maximum ray position ``maxt``, a time value ``time`` as well as the
  * wavelength information associated with the ray.
  */
 template <typename Point_, typename Spectrum_> struct Ray {
@@ -76,7 +76,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
 };
 
 /**
- * \brief Ray differential -- enhances the basic ray class with
+ * Ray differential -- enhances the basic ray class with
  * offset rays for two adjacent pixels on the view plane
  */
 template <typename Point_, typename Spectrum_>

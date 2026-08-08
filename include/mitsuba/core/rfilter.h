@@ -11,11 +11,12 @@ NAMESPACE_BEGIN(mitsuba)
 #define MI_FILTER_RESOLUTION 31
 
 /**
- * \brief When resampling data to a different resolution using
- * \ref Resampler::resample(), this enumeration specifies how lookups
- * <em>outside</em> of the input domain are handled.
+ * When resampling data to a different resolution using
+ * `Resampler.resample()`, this enumeration specifies how lookups
+ * *outside* of the input domain are handled.
  *
- * \see `Resampler`
+ * See Also:
+ *     `Resampler`
  */
 enum class FilterBoundaryCondition {
     /// Clamp to the outermost sample position (default)
@@ -35,7 +36,7 @@ enum class FilterBoundaryCondition {
 };
 
 /**
- * \brief Generic interface to separable image reconstruction filters
+ * Generic interface to separable image reconstruction filters
  *
  * When resampling bitmaps or adding samples to a rendering in progress,
  * Mitsuba first convolves them with a image reconstruction filter. Various
@@ -66,7 +67,7 @@ public:
     /// Check whether this is a box filter?
     bool is_box_filter() const;
 
-    /// Evaluate a discretized version of the filter (generally faster than \ref eval())
+    /// Evaluate a discretized version of the filter (generally faster than `eval()`)
     MI_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!dr::is_jit_v<Float>) {
             UInt32 index = dr::minimum(UInt32(dr::abs(x * m_scale_factor)),
@@ -83,7 +84,7 @@ protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);
 
-    /// Mandatory initialization prior to calls to \ref eval_discretized()
+    /// Mandatory initialization prior to calls to `eval_discretized()`
     void init_discretization();
 
 protected:
@@ -93,10 +94,11 @@ protected:
 };
 
 /**
- * \brief Utility class for efficiently resampling discrete datasets to different resolutions
- * \tparam Scalar
- *      Denotes the underlying floating point data type (i.e. <tt>half</tt>, <tt>float</tt>,
- *      or <tt>double</tt>)
+ * Utility class for efficiently resampling discrete datasets to different resolutions
+ *
+ * Template Args:
+ *     Scalar: Denotes the underlying floating point data type (i.e. ``half``, ``float``,
+ *         or ``double``)
  */
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
@@ -104,16 +106,16 @@ template <typename Scalar_> struct Resampler {
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
-     * \brief Create a new Resampler object that transforms between the specified resolutions
+     * Create a new Resampler object that transforms between the specified resolutions
      *
      * This constructor precomputes all information needed to efficiently perform the
      * desired resampling operation. For that reason, it is most efficient if it can
      * be used repeatedly (e.g. to resample the equal-sized rows of a bitmap)
      *
-     * \param source_res
-     *      Source resolution
-     * \param target_res
-     *      Desired target resolution
+     * Args:
+     *     source_res: Source resolution
+     *
+     *     target_res: Desired target resolution
      */
     Resampler(const ReconstructionFilter *rfilter,
               uint32_t source_res, uint32_t target_res)
@@ -228,21 +230,21 @@ template <typename Scalar_> struct Resampler {
     uint32_t taps() const { return m_taps; }
 
     /**
-     * \brief Set the boundary condition that should be used when
+     * Set the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      *
-     * The default is \ref FilterBoundaryCondition::Clamp
+     * The default is `FilterBoundaryCondition.Clamp`
      */
     void set_boundary_condition(FilterBoundaryCondition bc) { m_bc = bc; }
 
     /**
-     * \brief Return the boundary condition that should be used when
+     * Return the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      */
     FilterBoundaryCondition boundary_condition() const { return m_bc; }
 
     /**
-     * \brief Returns the range to which resampled values will be clamped
+     * Returns the range to which resampled values will be clamped
      *
      * The default is -infinity to infinity (i.e. no clamping is used)
      */
@@ -252,21 +254,21 @@ template <typename Scalar_> struct Resampler {
     void set_clamp(const std::pair<Scalar, Scalar> &value) { m_clamp = value; }
 
     /**
-     * \brief Resample a multi-channel array and clamp the results
+     * Resample a multi-channel array and clamp the results
      * to a specified valid range
      *
-     * \param source
-     *     Source array of samples
-     * \param target
-     *     Target array of samples
-     * \param source_stride
-     *     Stride of samples in the source array. A value
-     *     of ``1`` implies that they are densely packed.
-     * \param target_stride
-     *     Stride of samples in the target array. A value
-     *     of ``1`` implies that they are densely packed.
-     * \param channels
-     *     Number of channels to be resampled
+     * Args:
+     *     source: Source array of samples
+     *
+     *     target: Target array of samples
+     *
+     *     source_stride: Stride of samples in the source array. A value
+     *         of ``1`` implies that they are densely packed.
+     *
+     *     target_stride: Stride of samples in the target array. A value
+     *         of ``1`` implies that they are densely packed.
+     *
+     *     channels: Number of channels to be resampled
      */
     void resample(const Scalar *source, uint32_t source_stride,
                   Scalar *target, uint32_t target_stride, uint32_t channels) const {

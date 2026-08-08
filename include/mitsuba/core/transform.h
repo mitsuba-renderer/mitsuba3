@@ -15,7 +15,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Unified homogeneous coordinate transformation
+ * Unified homogeneous coordinate transformation
  *
  * This class represents homogeneous coordinate transformations, i.e.,
  * composable mappings that include rotations, scaling, translations, and
@@ -84,7 +84,7 @@ struct Transform {
                          dr::transpose(inverse_transpose));
     }
 
-    /// Update the inverse transpose part following a modification to \ref matrix
+    /// Update the inverse transpose part following a modification to `matrix`
     Transform update() {
         if constexpr (Affine) {
             using RotMatrix = dr::Matrix<Float, Size - 1>;
@@ -151,11 +151,14 @@ struct Transform {
         return Transform(matrix, matrix);
     }
 
-    /** \brief Create an orthographic transformation, which maps Z to [0,1]
+    /**
+     * Create an orthographic transformation, which maps Z to [0,1]
      * and leaves the X and Y coordinates untouched.
      *
-     * \param near Near clipping plane
-     * \param far  Far clipping plane
+     * Args:
+     *     near: Near clipping plane
+     *
+     *     far: Far clipping plane
      */
     template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform orthographic(Float near_, Float far_) {
@@ -163,11 +166,15 @@ struct Transform {
                translate({ 0.f, 0.f, -near_ });
     }
 
-    /** \brief Create a look-at camera transformation
+    /**
+     * Create a look-at camera transformation
      *
-     * \param origin Camera position
-     * \param target Target vector
-     * \param up     Up vector
+     * Args:
+     *     origin: Camera position
+     *
+     *     target: Target vector
+     *
+     *     up: Up vector
      */
     template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform look_at(const mitsuba::Point<Float, 3> &origin,
@@ -231,9 +238,9 @@ struct Transform {
     }
 
     /**
-     * \brief Test for a scale component in each transform matrix by checking
-     * whether <tt>M . M^T == I</tt> (where <tt>M</tt> is the matrix in
-     * question and <tt>I</tt> is the identity).
+     * Test for a scale component in each transform matrix by checking
+     * whether ``M . M^T == I`` (where ``M`` is the matrix in
+     * question and ``I`` is the identity).
      */
     Mask has_scale() const {
         Mask mask(false);
@@ -250,10 +257,10 @@ struct Transform {
     }
 
     /**
-     * \brief Test whether the linear part is a similarity, i.e., a
+     * Test whether the linear part is a similarity, i.e., a
      * rotation/reflection, potentially with a uniform scale and translation.
      *
-     * The implementation checks whether <tt>M . M^T</tt> is a multiple of the
+     * The implementation checks whether ``M . M^T`` is a multiple of the
      * identity.
      */
     Mask is_similarity() const {
@@ -279,8 +286,10 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D vector
-     * \remark In the Python API, this maps to the \c @ operator
+     * Transform a 3D vector
+     *
+     * Note:
+     *     In the Python API, this maps to the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
@@ -297,8 +306,10 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D normal vector
-     * \remark In the Python API, one should use the \c @ operator
+     * Transform a 3D normal vector
+     *
+     * Note:
+     *     In the Python API, one should use the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
@@ -315,8 +326,10 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D point with or without perspective division
-     * \remark In the Python API, this maps to the \c @ operator
+     * Transform a 3D point with or without perspective division
+     *
+     * Note:
+     *     In the Python API, this maps to the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE mitsuba::Point<Expr, Size - 1> operator*(const mitsuba::Point<T, Size - 1> &arg) const {
@@ -399,7 +412,8 @@ struct Transform {
         }
     }
 
-    /** \brief Create a perspective transformation.
+    /**
+     * Create a perspective transformation.
      *   (Maps [near, far] to [0, 1])
      *
      *  Projects vectors in camera space onto a plane at z=1:
@@ -412,9 +426,12 @@ struct Transform {
      *
      *  Camera-space depths are not mapped linearly!
      *
-     * \param fov Field of view in degrees
-     * \param near Near clipping plane
-     * \param far  Far clipping plane
+     * Args:
+     *     fov: Field of view in degrees
+     *
+     *     near: Near clipping plane
+     *
+     *     far: Far clipping plane
      */
     template <size_t N = Size, dr::enable_if_t<N == 4 && !Affine> = 0>
     static Transform perspective(Float fov, Float near_, Float far_) {

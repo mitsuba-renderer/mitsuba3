@@ -76,22 +76,23 @@ NAMESPACE_BEGIN(spline)
 
 
 /**
- * \brief Compute the value of a cubic spline that is parameterized by the
+ * Compute the value of a cubic spline that is parameterized by the
  * function values and derivatives at the endpoints of the interval
- * <tt>[0, 1]</tt>.
+ * ``[0, 1]``.
  *
- * \param f0
- *      The function value at the left position
- * \param f1
- *      The function value at the right position
- * \param d0
- *      The function derivative at the left position
- * \param d1
- *      The function derivative at the right position
- * \param t
- *      The parameter variable
- * \return
- *      The interpolated function value at \c t
+ * Args:
+ *     f0: The function value at the left position
+ *
+ *     f1: The function value at the right position
+ *
+ *     d0: The function derivative at the left position
+ *
+ *     d1: The function derivative at the right position
+ *
+ *     t: The parameter variable
+ *
+ * Returns:
+ *     The interpolated function value at ``t``
  */
 template <typename Value>
 Value eval_spline(Value f0, Value f1, Value d0, Value d1, Value t) {
@@ -103,23 +104,24 @@ Value eval_spline(Value f0, Value f1, Value d0, Value d1, Value t) {
 }
 
 /**
- * \brief Compute the value and derivative of a cubic spline that is
+ * Compute the value and derivative of a cubic spline that is
  * parameterized by the function values and derivatives of the
- * interval <tt>[0, 1]</tt>.
+ * interval ``[0, 1]``.
  *
- * \param f0
- *      The function value at the left position
- * \param f1
- *      The function value at the right position
- * \param d0
- *      The function derivative at the left position
- * \param d1
- *      The function derivative at the right position
- * \param t
- *      The parameter variable
- * \return
- *      The interpolated function value and
- *      its derivative at \c t
+ * Args:
+ *     f0: The function value at the left position
+ *
+ *     f1: The function value at the right position
+ *
+ *     d0: The function derivative at the left position
+ *
+ *     d1: The function derivative at the right position
+ *
+ *     t: The parameter variable
+ *
+ * Returns:
+ *     The interpolated function value and
+ *     its derivative at ``t``
  */
 template <typename Value>
 std::pair<Value, Value> eval_spline_d(Value f0, Value f1, Value d0,
@@ -141,21 +143,22 @@ std::pair<Value, Value> eval_spline_d(Value f0, Value f1, Value d0,
 }
 
 /**
- * \brief Compute the definite integral and value of a cubic spline
+ * Compute the definite integral and value of a cubic spline
  * that is parameterized by the function values and derivatives of
- * the interval <tt>[0, 1]</tt>.
+ * the interval ``[0, 1]``.
  *
- * \param f0
- *      The function value at the left position
- * \param f1
- *      The function value at the right position
- * \param d0
- *      The function derivative at the left position
- * \param d1
- *      The function derivative at the right position
- * \return
- *      The definite integral and the interpolated
- *      function value at \c t
+ * Args:
+ *     f0: The function value at the left position
+ *
+ *     f1: The function value at the right position
+ *
+ *     d0: The function derivative at the left position
+ *
+ *     d1: The function derivative at the right position
+ *
+ * Returns:
+ *     The definite integral and the interpolated
+ *     function value at ``t``
  */
 template <typename Value>
 std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
@@ -181,32 +184,34 @@ std::pair<Value, Value> eval_spline_i(Value f0, Value f1, Value d0,
 }
 
 /**
- * \brief Evaluate a cubic spline interpolant of a \a uniformly sampled 1D function
+ * Evaluate a cubic spline interpolant of a *uniformly* sampled 1D function
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
  * segment.
  *
- * \tparam Extrapolate
- *      Extrapolate values when \c x is out of range? (default: \c false)
- * \param min
- *      Position of the first node
- * \param max
- *      Position of the last node
- * \param values
- *      Array containing \c size regularly spaced evaluations in the range [\c
- *      min, \c max] of the approximated function.
- * \param x
- *      Evaluation point
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
- * \remark
- *      The Python API provides a vectorized version which evaluates
- *      the function for many arguments \c x.
- * \return
- *      The interpolated value or zero when <tt>Extrapolate=false</tt>
- *      and \c x lies outside of [\c min, \c max]
+ * Args:
+ *     min: Position of the first node
+ *
+ *     max: Position of the last node
+ *
+ *     values: Array containing ``size`` regularly spaced evaluations in the range [``min``, ``max``] of the approximated function.
+ *
+ *     x: Evaluation point
+ *
+ * Template Args:
+ *     Extrapolate: Extrapolate values when ``x`` is out of range? (default: ``False``)
+ *
+ * Returns:
+ *     The interpolated value or zero when ``Extrapolate=false``
+ *     and ``x`` lies outside of [``min``, ``max``]
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
+ *
+ *     The Python API provides a vectorized version which evaluates
+ *     the function for many arguments ``x``.
  */
 template <bool Extrapolate = false, typename Value>
 Value eval_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, const dr::scalar_t<Value> *values_,
@@ -242,32 +247,34 @@ Value eval_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max, const dr::scalar
 }
 
 /**
- * \brief Evaluate a cubic spline interpolant of a \a non-uniformly sampled 1D function
+ * Evaluate a cubic spline interpolant of a *non-uniformly* sampled 1D function
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
  * segment.
  *
- * \tparam Extrapolate
- *      Extrapolate values when \c x is out of range? (default: \c false)
- * \param nodes
- *      Array containing \c size non-uniformly spaced values denoting positions
- *      the where the function to be interpolated was evaluated. They must be
- *      provided in \a increasing order.
- * \param values
- *      Array containing function evaluations matched to the entries of \c
- *      nodes.
- * \param x
- *      Evaluation point
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array
- * \remark
- *      The Python API provides a vectorized version which evaluates
- *      the function for many arguments \c x.
- * \return
- *      The interpolated value or zero when <tt>Extrapolate=false</tt>
- *      and \c x lies outside of [\c min, \c max]
+ * Args:
+ *     nodes: Array containing ``size`` non-uniformly spaced values denoting positions
+ *         the where the function to be interpolated was evaluated. They must be
+ *         provided in *increasing* order.
+ *
+ *     values: Array containing function evaluations matched to the entries of ``nodes``.
+ *
+ *     x: Evaluation point
+ *
+ * Template Args:
+ *     Extrapolate: Extrapolate values when ``x`` is out of range? (default: ``False``)
+ *
+ * Returns:
+ *     The interpolated value or zero when ``Extrapolate=false``
+ *     and ``x`` lies outside of [``min``, ``max``]
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array
+ *
+ *     The Python API provides a vectorized version which evaluates
+ *     the function for many arguments ``x``.
  */
 template <bool Extrapolate = false, typename Value>
 Value eval_1d(const dr::scalar_t<Value> *nodes_,
@@ -306,25 +313,26 @@ Value eval_1d(const dr::scalar_t<Value> *nodes_,
 }
 
 /**
- * \brief Computes a prefix sum of integrals over segments of a \a uniformly
+ * Computes a prefix sum of integrals over segments of a *uniformly*
  * sampled 1D Catmull-Rom spline interpolant
  *
  * This is useful for sampling spline segments as part of an importance
- * sampling scheme (in conjunction with \ref sample_1d)
+ * sampling scheme (in conjunction with `sample_1d`)
  *
- * \param min
- *      Position of the first node
- * \param max
- *      Position of the last node
-  * \param values
- *      Array containing \c size regularly spaced evaluations in the range
- *      [\c min, \c max] of the approximated function.
- * \return
- *      A list with \c size entries containing the prefix sum
+ * Args:
+ *     min: Position of the first node
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     max: Position of the last node
+ *
+ *     values: Array containing ``size`` regularly spaced evaluations in the range
+ *         [``min``, ``max``] of the approximated function.
+ *
+ * Returns:
+ *     A list with ``size`` entries containing the prefix sum
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 void integrate_1d(Value min, Value max, const Value *values,
@@ -343,25 +351,26 @@ void integrate_1d(Value min, Value max, const Value *values,
 }
 
 /**
- * \brief Computes a prefix sum of integrals over segments of a \a non-uniformly
+ * Computes a prefix sum of integrals over segments of a *non-uniformly*
  * sampled 1D Catmull-Rom spline interpolant
  *
  * This is useful for sampling spline segments as part of an importance
- * sampling scheme (in conjunction with \ref sample_1d)
+ * sampling scheme (in conjunction with `sample_1d`)
  *
- * \param nodes
- *      Array containing \c size non-uniformly spaced values denoting positions
- *      the where the function to be interpolated was evaluated. They must be
- *      provided in \a increasing order.
- * \param values
- *      Array containing function evaluations matched to the entries of
- *      \c nodes.
- * \return
- *      A list with \c size entries containing the prefix sum
+ * Args:
+ *     nodes: Array containing ``size`` non-uniformly spaced values denoting positions
+ *         the where the function to be interpolated was evaluated. They must be
+ *         provided in *increasing* order.
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     values: Array containing function evaluations matched to the entries of
+ *         ``nodes``.
+ *
+ * Returns:
+ *     A list with ``size`` entries containing the prefix sum
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 void integrate_1d(const Value *nodes, const Value *values,
@@ -379,26 +388,27 @@ void integrate_1d(const Value *nodes, const Value *values,
 }
 
 /**
- * \brief Invert a cubic spline interpolant of a \a uniformly sampled 1D function.
- * The spline interpolant must be <em>monotonically increasing</em>.
+ * Invert a cubic spline interpolant of a *uniformly* sampled 1D function.
+ * The spline interpolant must be *monotonically increasing*.
  *
- * \param min
- *      Position of the first node
- * \param max
- *      Position of the last node
- * \param values
- *      Array containing \c size regularly spaced evaluations in the range
- *      [\c min, \c max] of the approximated function.
- * \param y
- *      Input parameter for the inversion
- * \param eps
- *      Error tolerance (default: 1e-6f)
- * \return
- *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
+ * Args:
+ *     min: Position of the first node
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     max: Position of the last node
+ *
+ *     values: Array containing ``size`` regularly spaced evaluations in the range
+ *         [``min``, ``max``] of the approximated function.
+ *
+ *     y: Input parameter for the inversion
+ *
+ *     eps: Error tolerance (default: 1e-6f)
+ *
+ * Returns:
+ *     The spline parameter ``t`` such that ``eval_1d(..., t)=y``
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
@@ -475,26 +485,27 @@ Value invert_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
 }
 
 /**
- * \brief Invert a cubic spline interpolant of a \a non-uniformly sampled 1D function.
- * The spline interpolant must be <em>monotonically increasing</em>.
+ * Invert a cubic spline interpolant of a *non-uniformly* sampled 1D function.
+ * The spline interpolant must be *monotonically increasing*.
  *
- * \param nodes
- *      Array containing \c size non-uniformly spaced values denoting positions
- *      the where the function to be interpolated was evaluated. They must be
- *      provided in \a increasing order.
- * \param values
- *      Array containing function evaluations matched to the entries of
- *      \c nodes.
- * \param y
- *      Input parameter for the inversion
- * \param eps
- *      Error tolerance (default: 1e-6f)
- * \return
- *      The spline parameter \c t such that <tt>eval_1d(..., t)=y</tt>
+ * Args:
+ *     nodes: Array containing ``size`` non-uniformly spaced values denoting positions
+ *         the where the function to be interpolated was evaluated. They must be
+ *         provided in *increasing* order.
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     values: Array containing function evaluations matched to the entries of
+ *         ``nodes``.
+ *
+ *     y: Input parameter for the inversion
+ *
+ *     eps: Error tolerance (default: 1e-6f)
+ *
+ * Returns:
+ *     The spline parameter ``t`` such that ``eval_1d(..., t)=y``
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 Value invert_1d(const dr::scalar_t<Value> *nodes_,
@@ -573,32 +584,32 @@ Value invert_1d(const dr::scalar_t<Value> *nodes_,
 }
 
 /**
- * \brief Importance sample a segment of a \a uniformly sampled 1D Catmull-Rom
+ * Importance sample a segment of a *uniformly* sampled 1D Catmull-Rom
  * spline interpolant
  *
- * \param min
- *      Position of the first node
- * \param max
- *      Position of the last node
- * \param values
- *      Array containing \c size regularly spaced evaluations in the range [\c
- *      min, \c max] of the approximated function.
- * \param cdf
- *      Array containing a cumulative distribution function computed by
- *      \ref integrate_1d().
- * \param sample
- *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
- * \param eps
- *      Error tolerance (default: 1e-6f)
- * \return
- *      1. The sampled position
- *      2. The value of the spline evaluated at the sampled position
- *      3. The probability density at the sampled position (which only differs
- *         from item 2. when the function does not integrate to one)
+ * Args:
+ *     min: Position of the first node
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     max: Position of the last node
+ *
+ *     values: Array containing ``size`` regularly spaced evaluations in the range [``min``, ``max``] of the approximated function.
+ *
+ *     cdf: Array containing a cumulative distribution function computed by
+ *         `integrate_1d()`.
+ *
+ *     sample: A uniformly distributed random sample in the interval ``[0,1]``
+ *
+ *     eps: Error tolerance (default: 1e-6f)
+ *
+ * Returns:
+ *     1. The sampled position
+ *     2. The value of the spline evaluated at the sampled position
+ *     3. The probability density at the sampled position (which only differs
+ *        from item 2. when the function does not integrate to one)
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 std::tuple<Value, Value, Value>
@@ -680,32 +691,32 @@ sample_1d(dr::scalar_t<Value> min, dr::scalar_t<Value> max,
 }
 
 /**
- * \brief Importance sample a segment of a \a non-uniformly sampled 1D Catmull-Rom
+ * Importance sample a segment of a *non-uniformly* sampled 1D Catmull-Rom
  * spline interpolant
  *
- * \param nodes
- *      Array containing \c size non-uniformly spaced values denoting positions
- *      the where the function to be interpolated was evaluated. They must be
- *      provided in \a increasing order.
- * \param values
- *      Array containing function evaluations matched to the entries of \c
- *      nodes.
- * \param cdf
- *      Array containing a cumulative distribution function computed by
- *      \ref integrate_1d().
- * \param sample
- *      A uniformly distributed random sample in the interval <tt>[0,1]</tt>
- * \param eps
- *      Error tolerance (default: 1e-6f)
- * \return
- *      1. The sampled position
- *      2. The value of the spline evaluated at the sampled position
- *      3. The probability density at the sampled position (which only differs
- *         from item 2. when the function does not integrate to one)
+ * Args:
+ *     nodes: Array containing ``size`` non-uniformly spaced values denoting positions
+ *         the where the function to be interpolated was evaluated. They must be
+ *         provided in *increasing* order.
  *
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array.
+ *     values: Array containing function evaluations matched to the entries of ``nodes``.
+ *
+ *     cdf: Array containing a cumulative distribution function computed by
+ *         `integrate_1d()`.
+ *
+ *     sample: A uniformly distributed random sample in the interval ``[0,1]``
+ *
+ *     eps: Error tolerance (default: 1e-6f)
+ *
+ * Returns:
+ *     1. The sampled position
+ *     2. The value of the spline evaluated at the sampled position
+ *     3. The probability density at the sampled position (which only differs
+ *        from item 2. when the function does not integrate to one)
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array.
  */
 template <typename Value>
 std::tuple<Value, Value, Value>
@@ -785,31 +796,34 @@ sample_1d(const dr::scalar_t<Value> *nodes_,
 }
 
 /**
- * \brief Compute weights to perform a spline-interpolated lookup on a
- * \a uniformly sampled 1D function.
+ * Compute weights to perform a spline-interpolated lookup on a
+ * *uniformly* sampled 1D function.
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
  * segment. The resulting weights are identical those internally used by
- * \ref sample_1d().
+ * `sample_1d()`.
  *
- * \tparam Extrapolate
- *      Extrapolate values when \c x is out of range? (default: \c false)
- * \param min
- *      Position of the first node
- * \param max
- *      Position of the last node
- * \param size
- *      Denotes the number of function samples
- * \param x
- *      Evaluation point
- * \remark
- *      In the Python API, the \c offset and \c weights parameters are returned
- *      as the second and third elements of a triple.
- * \return
- *      A boolean set to \c true on success and \c false when <tt>Extrapolate=false</tt>
- *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
- *      associated with weights[0]
+ * Args:
+ *     min: Position of the first node
+ *
+ *     max: Position of the last node
+ *
+ *     size: Denotes the number of function samples
+ *
+ *     x: Evaluation point
+ *
+ * Template Args:
+ *     Extrapolate: Extrapolate values when ``x`` is out of range? (default: ``False``)
+ *
+ * Returns:
+ *     A boolean set to ``True`` on success and ``False`` when ``Extrapolate=false``
+ *     and ``x`` lies outside of [``min``, ``max``] and an offset into the function samples
+ *     associated with weights[0]
+ *
+ * Note:
+ *     In the Python API, the ``offset`` and ``weights`` parameters are returned
+ *     as the second and third elements of a triple.
  */
 template <bool Extrapolate = false,
           typename Value,
@@ -873,31 +887,34 @@ std::pair<Mask, Int32> eval_spline_weights(dr::scalar_t<Value> min,
 }
 
 /**
- * \brief Compute weights to perform a spline-interpolated lookup on a
- * \a non-uniformly sampled 1D function.
+ * Compute weights to perform a spline-interpolated lookup on a
+ * *non-uniformly* sampled 1D function.
  *
  * The implementation relies on Catmull-Rom splines, i.e. it uses finite
  * differences to approximate the derivatives at the endpoints of each spline
  * segment. The resulting weights are identical those internally used by
- * \ref sample_1d().
+ * `sample_1d()`.
  *
- * \tparam Extrapolate
- *      Extrapolate values when \c x is out of range? (default: \c false)
- * \param nodes
- *      Array containing \c size non-uniformly spaced values denoting positions
- *      the where the function to be interpolated was evaluated. They must be
- *      provided in \a increasing order.
- * \param x
- *      Evaluation point
- * \remark
- *      The Python API lacks the \c size parameter, which is inferred
- *      automatically from the size of the input array. The \c offset
- *      and \c weights parameters are returned as the second and third
- *      elements of a triple.
- * \return
- *      A boolean set to \c true on success and \c false when <tt>Extrapolate=false</tt>
- *      and \c x lies outside of [\c min, \c max] and an offset into the function samples
- *      associated with weights[0]
+ * Args:
+ *     nodes: Array containing ``size`` non-uniformly spaced values denoting positions
+ *         the where the function to be interpolated was evaluated. They must be
+ *         provided in *increasing* order.
+ *
+ *     x: Evaluation point
+ *
+ * Template Args:
+ *     Extrapolate: Extrapolate values when ``x`` is out of range? (default: ``False``)
+ *
+ * Returns:
+ *     A boolean set to ``True`` on success and ``False`` when ``Extrapolate=false``
+ *     and ``x`` lies outside of [``min``, ``max``] and an offset into the function samples
+ *     associated with weights[0]
+ *
+ * Note:
+ *     The Python API lacks the ``size`` parameter, which is inferred
+ *     automatically from the size of the input array. The ``offset``
+ *     and ``weights`` parameters are returned as the second and third
+ *     elements of a triple.
  */
 template <bool Extrapolate = false,
           typename Value,
@@ -979,37 +996,40 @@ std::pair<Mask, Int32> eval_spline_weights(const dr::scalar_t<Value>* nodes_,
 }
 
 /**
- * \brief Evaluate a cubic spline interpolant of a non-uniformly sampled 2D function
+ * Evaluate a cubic spline interpolant of a non-uniformly sampled 2D function
  *
  * This implementation relies on a tensor product of Catmull-Rom splines, i.e.
  * it uses finite differences to approximate the derivatives for each dimension
  * at the endpoints of spline patches.
  *
- * \tparam Extrapolate
- *      Extrapolate values when \c p is out of range? (default: \c false)
- * \param nodes1
- *      Arrays containing \c size1 non-uniformly spaced values denoting
- *      positions the where the function to be interpolated was evaluated
- *      on the \c X axis (in increasing order)
- * \param nodes2
- *      Arrays containing \c size2 non-uniformly spaced values denoting
- *      positions the where the function to be interpolated was evaluated
- *      on the \c Y axis (in increasing order)
- * \param values
- *      A 2D floating point array of <tt>size1*size2</tt> cells containing
- *      irregularly spaced evaluations of the function to be interpolated.
- *      Consecutive entries of this array correspond to increments in the \c X
- *      coordinate.
- * \param x
- *      \c X coordinate of the evaluation point
- * \param y
- *      \c Y coordinate of the evaluation point
- * \remark
- *      The Python API lacks the \c size1 and \c size2 parameters, which are
- *      inferred automatically from the size of the input arrays.
- * \return
- *      The interpolated value or zero when <tt>Extrapolate=false</tt> and
- *      <tt>(x,y)</tt> lies outside of the node range
+ * Args:
+ *     nodes1: Arrays containing ``size1`` non-uniformly spaced values denoting
+ *         positions the where the function to be interpolated was evaluated
+ *         on the ``X`` axis (in increasing order)
+ *
+ *     nodes2: Arrays containing ``size2`` non-uniformly spaced values denoting
+ *         positions the where the function to be interpolated was evaluated
+ *         on the ``Y`` axis (in increasing order)
+ *
+ *     values: A 2D floating point array of ``size1*size2`` cells containing
+ *         irregularly spaced evaluations of the function to be interpolated.
+ *         Consecutive entries of this array correspond to increments in the ``X``
+ *         coordinate.
+ *
+ *     x: ``X`` coordinate of the evaluation point
+ *
+ *     y: ``Y`` coordinate of the evaluation point
+ *
+ * Template Args:
+ *     Extrapolate: Extrapolate values when ``p`` is out of range? (default: ``False``)
+ *
+ * Returns:
+ *     The interpolated value or zero when ``Extrapolate=false`` and
+ *     ``(x,y)`` lies outside of the node range
+ *
+ * Note:
+ *     The Python API lacks the ``size1`` and ``size2`` parameters, which are
+ *     inferred automatically from the size of the input arrays.
  */
 template <bool Extrapolate = false, typename Value>
 Value eval_2d(const dr::scalar_t<Value> *nodes1_, uint32_t size1,

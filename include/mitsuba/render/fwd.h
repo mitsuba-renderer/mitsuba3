@@ -154,23 +154,23 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
 };
 
 /**
- * \brief Imports the desired methods and fields by generating a sequence of
+ * Imports the desired methods and fields by generating a sequence of
  * ``using`` declarations. This is useful when inheriting from template parents,
  * since methods and fields must be explicitly made visible.
  *
  * For example,
  *
- * \code
+ * .. code-block:: c++
+ *
  *     MI_IMPORT_BASE(BSDF, m_flags, m_components)
- * \endcode
  *
  * expands to
  *
- * \code
+ * .. code-block:: c++
+ *
  *     using Base = BSDF<Float, Spectrum>;
  *     using Base::m_flags;
  *     using Base::m_components;
- * \endcode
  */
 #define MI_IMPORT_BASE(Name, ...)                                                                  \
     using Base = Name<Float, Spectrum>;                                                            \

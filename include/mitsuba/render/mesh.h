@@ -21,7 +21,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Triangle mesh
+ * Triangle mesh
  *
  * This class represents indexed triangle meshes, in which each triangle
  * references three vertices that carry data like positions, shading normals,
@@ -32,16 +32,16 @@ NAMESPACE_BEGIN(mitsuba)
  * class can also store and interpolate arbitrary user-provided data with 1 to
  * 4 dimensions.
  *
- * Constructing a mesh involves two steps: the \ref Mesh() constructor to create
- * an empty mesh followed by a call to one of \ref from_fields() (for indexed
- * triangle data), \ref from_corners() (for corner-indexed data from 3D
+ * Constructing a mesh involves two steps: the `Mesh()` constructor to create
+ * an empty mesh followed by a call to one of `from_fields()` (for indexed
+ * triangle data), `from_corners()` (for corner-indexed data from 3D
  * modeling tools like Blender or interchange formats like OBJ), or
- * \ref from_packed() (for packed data explained below). There is also a
+ * `from_packed()` (for packed data explained below). There is also a
  * ``Mesh(name, faces, positions, ...)`` convenience constructor that
- * directly calls \ref from_fields(). Subsequent changes to the mesh data go
+ * directly calls `from_fields()`. Subsequent changes to the mesh data go
  * through the parameter interface described below, or through one of the
- * dedicated methods \ref transform(), \ref add_attribute() and
- * \ref remove_attribute().
+ * dedicated methods `transform()`, `add_attribute()` and
+ * `remove_attribute()`.
  *
  * Interpolation makes mesh attributes vary smoothly along the surface, but
  * many meshes in practice also need deliberate *discontinuities*:
@@ -56,7 +56,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * - Tangents follow the texture parameterization and inherit its seams.
  *
- * The \ref Mesh class uses an indexed representation that expresses such a jump
+ * The `Mesh` class uses an indexed representation that expresses such a jump
  * by splitting a vertex, so that the faces on either side can reference
  * separate copies with their own values. However, splitting alone is not
  * sufficient because it turns seams into geometric cuts that have undesirable
@@ -68,12 +68,11 @@ NAMESPACE_BEGIN(mitsuba)
  * attribute at the coarsest level at which it is constant. A mesh with ``F``
  * faces and ``V`` vertices consists of ``P`` surface positions and ``N``
  * normal groups, where each level subdivides the previous one (``P <= N <=
- * V``). In particular, the \ref Mesh exposes the following set of arrays:
+ * V``). In particular, the `Mesh` exposes the following set of arrays:
  *
  * .. code-block:: text
  *
  *    Name              Type          Shape     Range     Optional
- *    ------------------------------------------------------------
  *    faces             TensorXu32    (F, 3)    [0, V)
  *    position_index    UInt32 array  V         [0, P)       x
  *    normal_index      UInt32 array  V         [0, N)       x
@@ -126,11 +125,11 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * ## Parameter interface
  *
- * The mesh exposes the fields listed above via \ref traverse(), and all of them
+ * The mesh exposes the fields listed above via `traverse()`, and all of them
  * can be written. Custom mesh attributes appear as further ``vertex_*`` and
  * ``face_*`` entries with 1 to 4 channels. The mesh size (i.e., the number of
  * faces or vertices) may be changed as well. Following a change to the
- * parameters, call \ref Object::parameters_changed(), which will validate the
+ * parameters, call `Object.parameters_changed()`, which will validate the
  * size of all fields, and refresh dependent state (bounding box, sampling
  * tables, tangents, acceleration structures).
  *
@@ -140,10 +139,10 @@ NAMESPACE_BEGIN(mitsuba)
  * efficient in a ray tracer, since it involves several indirections and
  * data spread out over many different buffers.
  *
- * To address this, the \ref Mesh class internally encodes data into a *packed*
+ * To address this, the `Mesh` class internally encodes data into a *packed*
  * layout, which uses 16 bytes per face and 32 bytes per vertex (plus custom
  * attributes). This is an implementation detail that is only exposed through
- * \ref from_packed() and the low-level \ref packed_vertices(),
+ * `from_packed()` and the low-level `packed_vertices()`,
  * ``packed_face()`` and ``packed_vertex()`` accessors. Access to the per-field
  * representation explained earlier implicitly reconstructs it from the packed
  * state.
@@ -158,9 +157,9 @@ NAMESPACE_BEGIN(mitsuba)
  * The face winding order defines the orientation of the surface. In
  * particular, the geometric normal of a face follows from the right hand rule
  * applied to its positions. Shading normals are expected to lie in the same
- * hemisphere, and the \ref Mesh class preserves this invariant by potentially
+ * hemisphere, and the `Mesh` class preserves this invariant by potentially
  * changing the winding order depending on `Shape` parameters like ``flip_normals``,
- * ``to_world``, and subsequent transformations via \ref transform().
+ * ``to_world``, and subsequent transformations via `transform()`.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Mesh : public Shape<Float, Spectrum> {
@@ -189,31 +188,34 @@ public:
     // Constructors and destructor
     // =========================================================================
 
-    /** \brief Create an empty mesh
+    /**
+     * Create an empty mesh
      *
      * The resulting object is not ready for use. You must call
-     * \ref from_fields(), \ref from_corners() or \ref from_packed() to
+     * `from_fields()`, `from_corners()` or `from_packed()` to
      * initialize its storage.
      */
     Mesh(const Properties &props = Properties());
 
-    /** \brief Create an empty mesh
+    /**
+     * Create an empty mesh
      *
      * Analogous to the previous constructor, except that attributes
      * are specified manually and not through a `Properties` object.
      *
      * The resulting object is not ready for use. You must call
-     * \ref from_fields(), \ref from_corners() or \ref from_packed() to
+     * `from_fields()`, `from_corners()` or `from_packed()` to
      * initialize its storage.
      */
     Mesh(std::string_view name,
          bool face_normals = false,
          bool flip_normals = false);
 
-    /** \brief Create a mesh from a per-field representation
+    /**
+     * Create a mesh from a per-field representation
      *
      * Convenience constructor that chains the previous constructor and
-     * \ref from_fields(). See this function for details.
+     * `from_fields()`. See this function for details.
      */
     Mesh(std::string_view name,
          const TensorXu32 &faces,
@@ -233,7 +235,7 @@ public:
     // =========================================================================
 
     /**
-     * \brief Build the mesh from a per-field representation
+     * Build the mesh from a per-field representation
      *
      * This function initializes the mesh using device-resident field
      * tensors as explained in the Mesh class documentation. A mesh can be
@@ -241,7 +243,7 @@ public:
      * later mesh changes must go through the parameter interface instead.
      *
      * The function checks the tensor shapes for consistency but trusts that
-     * any specified indices are in-bounds (see \ref validate()).
+     * any specified indices are in-bounds (see `validate()`).
      *
      * In differentiable variants, derivatives will propagate between the
      * supplied tensors and the resulting mesh.
@@ -249,33 +251,27 @@ public:
      * On a mesh constructed with ``face_normals`` set, the ``normals`` and
      * ``normal_index`` parameters are silently ignored.
      *
-     * \param faces
-     *     ``(F, 3)`` tensor of vertex indices in ``[0, V)``
+     * Args:
+     *     faces: ``(F, 3)`` tensor of vertex indices in ``[0, V)``
      *
-     * \param positions
-     *     ``(P, 3)`` tensor of surface positions
+     *     positions: ``(P, 3)`` tensor of surface positions
      *
-     * \param normals
-     *     Optional ``(N, 3)`` tensor of shading normals, which must be of
-     *     unit length. When empty, smooth normals are derived from the
-     *     positions and regenerate after later position edits (unless the
-     *     mesh uses face normals).
+     *     normals: Optional ``(N, 3)`` tensor of shading normals, which must be of
+     *         unit length. When empty, smooth normals are derived from the
+     *         positions and regenerate after later position edits (unless the
+     *         mesh uses face normals).
      *
-     * \param texcoords
-     *     Optional ``(V, 2)`` tensor of texture coordinates
+     *     texcoords: Optional ``(V, 2)`` tensor of texture coordinates
      *
-     * \param position_index
-     *     Optional map from vertex index to surface position, in which case
-     *     ``positions`` has one entry per surface position rather than per
-     *     vertex. An empty map encodes the identity.
+     *     position_index: Optional map from vertex index to surface position, in which case
+     *         ``positions`` has one entry per surface position rather than per
+     *         vertex. An empty map encodes the identity.
      *
-     * \param normal_index
-     *     Optional map from vertex index to normal group. An empty map
-     *     encodes the identity, or the position map when the normal count
-     *     matches the surface position count.
+     *     normal_index: Optional map from vertex index to normal group. An empty map
+     *         encodes the identity, or the position map when the normal count
+     *         matches the surface position count.
      *
-     * \param bsdf_index
-     *     Optional per-face material index. An empty buffer stands for zeros.
+     *     bsdf_index: Optional per-face material index. An empty buffer stands for zeros.
      */
     void from_fields(const TensorXu32 &faces,
                      const TensorXf32 &positions,
@@ -286,7 +282,7 @@ public:
                      const IndexBuffer &bsdf_index = IndexBuffer());
 
     /**
-     * \brief Build the mesh from a packed representation
+     * Build the mesh from a packed representation
      *
      * This function initializes the mesh using device-resident tensors
      * that are already in the packed format that is internally used by
@@ -302,30 +298,24 @@ public:
      * The operation is differentiable in the sense that derivatives propagate
      * between function parameters and the resulting mesh state.
      *
-     * \param layout
-     *     Describes the content of the vertex records.
+     * Args:
+     *     layout: Describes the content of the vertex records.
      *
-     * \param packed_faces
-     *     ``(F, 4)`` tensor of packed face records
+     *     packed_faces: ``(F, 4)`` tensor of packed face records
      *
-     * \param packed_vertices
-     *     ``(V, 8)`` tensor of packed vertex records
+     *     packed_vertices: ``(V, 8)`` tensor of packed vertex records
      *
-     * \param position_index
-     *     Optional map from vertex index to surface position
+     *     position_index: Optional map from vertex index to surface position
      *
-     * \param normal_index
-     *     Optional map from vertex index to normal group. It may simply
-     *     alias ``position_index`` when the normals are stored at surface
-     *     position granularity.
+     *     normal_index: Optional map from vertex index to normal group. It may simply
+     *         alias ``position_index`` when the normals are stored at surface
+     *         position granularity.
      *
-     * \param position_count
-     *     Number of surface positions. Only needed when ``position_index``
-     *     is nonempty.
+     *     position_count: Number of surface positions. Only needed when ``position_index``
+     *         is nonempty.
      *
-     * \param normal_count
-     *     Number of normal groups. Only needed when ``normal_index`` is
-     *     nonempty.
+     *     normal_count: Number of normal groups. Only needed when ``normal_index`` is
+     *         nonempty.
      */
     void from_packed(Layout layout,
                      const TensorXu32 &packed_faces,
@@ -337,7 +327,7 @@ public:
                      const ScalarBoundingBox3f *bbox = nullptr);
 
     /**
-     * \brief Build the mesh from host-side staging data
+     * Build the mesh from host-side staging data
      *
      * The ``PackedMesh`` data structure can be used to incrementally build
      * a packed mesh in a device-shared staging buffer while validating
@@ -353,7 +343,7 @@ public:
     void from_packed(PackedMesh &&data);
 
     /**
-     * \brief Build the mesh from corner-indexed data
+     * Build the mesh from corner-indexed data
      *
      * A number of DCC applications and mesh formats store positions per
      * vertex but normals, UVs and colors per *face corner*, so that they
@@ -367,9 +357,9 @@ public:
     void from_corners(const CornerMesh &desc);
 
     /**
-     * \brief Return the compatibility key of this mesh
+     * Return the compatibility key of this mesh
      *
-     * The key collects the state that \ref merge() copies from its first
+     * The key collects the state that `merge()` copies from its first
      * input, which is the attachments (BSDF, emitter, sensor, media) and the
      * packed record layout. Meshes are mergeable when their keys agree and
      * none of them carries custom attributes.
@@ -377,9 +367,9 @@ public:
     MergeKey merge_key() const;
 
     /**
-     * \brief Merge several meshes into one
+     * Merge several meshes into one
      *
-     * All meshes must share the same \ref merge_key() and none of them may
+     * All meshes must share the same ``merge_key()`` and none of them may
      * carry custom attributes.
      *
      * The method raises an exception when called with incompatible inputs.
@@ -414,16 +404,16 @@ public:
     }
 
     /**
-     * \brief Return an ``(F, 3)`` tensor encoding the geometric topology
+     * Return an ``(F, 3)`` tensor encoding the geometric topology
      *
-     * This function returns \ref faces() re-indexed into surface position space,
+     * This function returns `faces()` re-indexed into surface position space,
      * i.e., the geometric topology of the mesh without UV/normal-related
-     * seams. It is used by features like \ref dedge() and the
+     * seams. It is used by features like `dedge()` and the
      * mesh Laplacian in ``largesteps.py``.
      */
     TensorXu32 geometric_faces() const;
 
-    /// Return the per-face BSDF index (size \ref face_count()). An empty
+    /// Return the per-face BSDF index (size `face_count()`). An empty
     /// buffer stands for zeros, see ``has_face_bsdfs()``.
     const IndexBuffer &bsdf_index() const {
         ensure_views();
@@ -497,13 +487,14 @@ public:
     // Geometry queries
     // =========================================================================
 
-    /** \brief Returns the world-space position of the vertex with index
-     * \c index
+    /**
+     * Returns the world-space position of the vertex with index
+     * ``index``
      *
      * The index type is generic because the host-side kd-tree paths
      * (``bbox()`` and ``ray_intersect_triangle_scalar()``) read
-     * vertices one at a time with a plain \c uint32_t, while the packet
-     * variants of \ref ray_intersect_triangle() pass a \c dr::Packet.
+     * vertices one at a time with a plain ``uint32_t``, while the packet
+     * variants of `ray_intersect_triangle()` pass a ``dr::Packet``.
      */
     template <typename Index>
     MI_INLINE auto vertex_position(Index index,
@@ -516,7 +507,7 @@ public:
             dr::gather<Value>(m_packed_vertices, base + 2u, active));
     }
 
-    /// Returns the normal direction of the vertex with index \c index
+    /// Returns the normal direction of the vertex with index ``index``
     MI_INLINE Normal<Float32, 3> vertex_normal(UInt32 index,
                                                Mask active = true) const {
         UInt32 base = index * MeshVertexStride + PackedFrameOffset;
@@ -527,7 +518,7 @@ public:
         return packs_tangent() ? frame_decode(f).first : Normal<Float32, 3>(f);
     }
 
-    /// Returns the UV texture coordinates of the vertex with index \c index
+    /// Returns the UV texture coordinates of the vertex with index ``index``
     MI_INLINE Point<Float32, 2> vertex_texcoord(UInt32 index,
                                                 Mask active = true) const {
         UInt32 base = index * MeshVertexStride + PackedTexcoordOffset;
@@ -536,7 +527,7 @@ public:
             dr::gather<Float32>(m_packed_vertices, base + 1u, active));
     }
 
-    /// Returns the vertex indices associated with triangle \c index
+    /// Returns the vertex indices associated with triangle ``index``
     template <typename Index>
     MI_INLINE auto face_indices(Index index,
                                 dr::mask_t<Index> active = true) const {
@@ -546,11 +537,11 @@ public:
     }
 
     /**
-     * \brief Returns the vertex indices of the directed edge \c index
+     * Returns the vertex indices of the directed edge ``index``
      *
      * The three components are the source vertex, the target vertex, and the
      * vertex opposing the edge within its face. They correspond to ``F[e]``,
-     * ``F[next(e)]``, and ``F[prev(e)]`` in the notation of \ref DirectedEdge.
+     * ``F[next(e)]``, and ``F[prev(e)]`` in the notation of `DirectedEdge`.
      */
     MI_INLINE Vector3u dedge_indices(UInt32 index, Mask active = true) const {
         UInt32 base     = DirectedEdge::face(index) * MeshFaceStride,
@@ -571,7 +562,7 @@ public:
         return dr::normalize(dr::cross(p1 - p0, p2 - p0));
     }
 
-    /// Returns the normal direction of the face with index \c index
+    /// Returns the normal direction of the face with index ``index``
     MI_INLINE Vector3f face_normal(UInt32 index, Mask active = true) const {
         Vector3u vi = face_indices(index, active);
         Vector3f p0 = vertex_position(vi[0], active),
@@ -582,29 +573,28 @@ public:
     }
 
     /**
-     * Returns the opposite edge index associated with directed edge \c index
+     * Returns the opposite edge index associated with directed edge ``index``
      *
-     * This is one of four accessors forwarding to the \ref DirectedEdge
-     * structure, which \ref dedge() builds on first use. A returned \c
-     * DirectedEdge::Invalid therefore always describes the topology, here the
+     * This is one of four accessors forwarding to the `DirectedEdge`
+     * structure, which `dedge()` builds on first use. A returned ``DirectedEdge::Invalid`` therefore always describes the topology, here the
      * absence of a neighboring face.
      */
     MI_INLINE UInt32 dedge_opposite(UInt32 index, Mask active = true) const {
         return dedge()->opposite(index, active);
     }
 
-    /// Returns the canonical half-edge starting at vertex \c index
+    /// Returns the canonical half-edge starting at vertex ``index``
     MI_INLINE UInt32 dedge_vertex_edge(UInt32 index, Mask active = true) const {
         return dedge()->vertex_edge(index, active);
     }
 
-    /// Returns the number of faces containing vertex \c index
+    /// Returns the number of faces containing vertex ``index``
     MI_INLINE UInt32 dedge_vertex_valence(UInt32 index,
                                           Mask active = true) const {
         return dedge()->vertex_valence(index, active);
     }
 
-    /// Returns the \ref VertexFlags bitmask of vertex \c index
+    /// Returns the `VertexFlags` bitmask of vertex ``index``
     MI_INLINE UInt32 dedge_vertex_flags(UInt32 index,
                                         Mask active = true) const {
         return dedge()->vertex_flags(index, active);
@@ -619,20 +609,20 @@ public:
     // Custom mesh attributes
     // =========================================================================
 
-    /// Return the mesh attribute \c name as a ``(rows, dim)`` tensor
+    /// Return the mesh attribute ``name`` as a ``(rows, dim)`` tensor
     const TensorXf32 &attribute(std::string_view name) const;
 
     /**
-     * \brief Add the mesh attribute \c name
+     * Add the mesh attribute ``name``
      *
      * The name must start with ``vertex_`` or ``face_``, which selects
      * the domain and hence the expected row count of the ``(rows, dim)``
-     * tensor \c values. Attributes may carry 1 to 4 dimensions.
+     * tensor ``values``. Attributes may carry 1 to 4 dimensions.
      */
     void add_attribute(std::string_view name, const TensorXf32 &values);
 
     /**
-     * Remove an attribute with the given \c name.
+     * Remove an attribute with the given ``name``.
      *
      * Affects both mesh and texture attributes.
      *
@@ -662,10 +652,10 @@ public:
     /// Return the packed per-vertex buffer
     FloatBuffer& packed_vertices() { return m_packed_vertices; }
 
-    /// Const variant of \ref packed_vertices().
+    /// Const variant of `packed_vertices()`.
     const FloatBuffer& packed_vertices() const { return m_packed_vertices; }
 
-    /// Returns the packed face record of triangle \c index
+    /// Returns the packed face record of triangle ``index``
     template <typename Index>
     MI_INLINE PackedFace<Index>
     packed_face(Index index, dr::mask_t<Index> active = true) const {
@@ -673,9 +663,9 @@ public:
     }
 
     /**
-     * \brief Returns the packed vertex data for vertex index \c index
+     * Returns the packed vertex data for vertex index ``index``
      *
-     * When \c detach is \c true, the read is detached from the AD graph.
+     * When ``detach`` is ``True``, the read is detached from the AD graph.
      */
     MI_INLINE PackedVertex packed_vertex(UInt32 index, Mask active = true,
                                          bool detach = false) const {
@@ -698,25 +688,26 @@ public:
     void recompute_normals();
 
     /**
-     * \brief Transform the mesh geometry in place
+     * Transform the mesh geometry in place
      *
-     * Maps positions and tangents through \c t and shading normals through its
-     * inverse transpose. A mirroring \c t additionally reverses the face
+     * Maps positions and tangents through ``t`` and shading normals through its
+     * inverse transpose. A mirroring ``t`` additionally reverses the face
      * winding, so that the geometric normals remain consistent with respect to
      * the shading normals. The method also refreshes dependent state (bounding
      * box, sampling tables, field views). In differentiable variants,
-     * derivatives propagate from \c t to the resulting mesh state.
+     * derivatives propagate from ``t`` to the resulting mesh state.
      */
     void transform(const AffineTransform4f &t);
 
-    /** \brief Return a data structure describing the half-edge adjacency
+    /**
+     * Return a data structure describing the half-edge adjacency
      *
      * This function returns a `DirectedEdge` data structure that enables
      * geometric queries such as finding the triangle across an edge or
      * traversing faces surrounding a vertex.
      *
      * The data structure is built on demand and uses the geometric
-     * connectivity specified by \ref geometric_faces() so that attribute
+     * connectivity specified by `geometric_faces()` so that attribute
      * discontinuities do not introduce artificial geometric boundaries.
      * The result is immutable and invariant to changes in mesh positions,
      * normals and materials. The `Mesh` class automatically deletes the
@@ -730,10 +721,10 @@ public:
     const DirectedEdge *dedge() const;
 
     /**
-     * \brief Check the field views for consistency
+     * Check the field views for consistency
      *
      * By default, this function cheaply checks tensor ranks and shapes of the
-     * mesh state for consistency. When \c check_bounds is set, the function
+     * mesh state for consistency. When ``check_bounds`` is set, the function
      * also verifies that every index is in range. This is relatively expensive
      * because it requires several device reductions.
      */
@@ -748,42 +739,42 @@ public:
     /**
      * Write the mesh to a binary PLY file
      *
-     * \param filename
-     *    Target file path on disk
+     * Args:
+     *     filename: Target file path on disk
      */
     void write_ply(const fs::path &filename) const;
 
     /**
      * Write the mesh encoded in binary PLY format to a stream
      *
-     * \param stream
-     *    Target stream that will receive the encoded output
+     * Args:
+     *     stream: Target stream that will receive the encoded output
      */
     void write_ply(Stream *stream) const;
 
     /**
-     * \brief Write the mesh to a ``.serialized`` file
+     * Write the mesh to a ``.serialized`` file
      *
      * This function writes the packed mesh state to an efficient
      * compressed file representation.
      *
-     * \param filename
-     *    Target file path on disk
+     * Args:
+     *     filename: Target file path on disk
      */
     void write_serialized(const fs::path &filename) const;
 
     /**
-     * \brief Write the mesh in ``.serialized`` encoding to a stream
+     * Write the mesh in ``.serialized`` encoding to a stream
      *
      * Appends a single self-contained mesh segment at the current stream
      * position, without the trailing dictionary that indexes multiple
-     * meshes within one file; \ref write_serialized()
+     * meshes within one file; `write_serialized()`
      * adds it. Segments of several meshes may be concatenated by calling
      * this method repeatedly, recording the byte offsets, and appending
      * one ``uint64`` offset per mesh followed by a ``uint32`` mesh count.
      *
-     * \param stream
-     *    Target stream that will receive the encoded output
+     * Args:
+     *     stream: Target stream that will receive the encoded output
      */
     void write_serialized(Stream *stream) const;
 
@@ -793,24 +784,26 @@ public:
     // Ray-triangle intersection
     // =========================================================================
 
-    /** \brief Ray-triangle intersection test
+    /**
+     * Ray-triangle intersection test
      *
      * Uses the algorithm by Moeller and Trumbore discussed at
-     * <tt>http://www.acm.org/jgt/papers/MollerTrumbore97/code.html</tt>.
+     * ``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
      *
-     * \param index
-     *    Index of the triangle to be intersected.
-     * \param ray
-     *    The ray segment to be used for the intersection query.
-     * \return
-     *    A tuple <tt>(valid, t, uv)</tt> where
+     * Args:
+     *     index: Index of the triangle to be intersected.
      *
-     *    - \c valid indicates whether an intersection was found.
+     *     ray: The ray segment to be used for the intersection query.
      *
-     *    - \c t contains the distance from the ray origin to the
-     *      intersection point.
+     * Returns:
+     *     A tuple ``(valid, t, uv)`` where
      *
-     *    - \c uv contains the first two barycentric coordinates.
+     *     - ``valid`` indicates whether an intersection was found.
+     *
+     *     - ``t`` contains the distance from the ray origin to the
+     *       intersection point.
+     *
+     *     - ``uv`` contains the first two barycentric coordinates.
      */
     template <typename T, typename Ray3>
     std::tuple<dr::mask_t<T>, T, Point<T, 2>>
@@ -984,9 +977,9 @@ public:
 
 protected:
     /**
-     * \brief Build the table for sampling the surface uniformly wrt. area
+     * Build the table for sampling the surface uniformly wrt. area
      *
-     * Computes the surface area and sets up \c m_area_pmf.
+     * Computes the surface area and sets up ``m_area_pmf``.
      *
      * Emitter and sensor meshes sample positions during rendering, so
      * ``refresh()`` builds their table eagerly.
@@ -994,25 +987,25 @@ protected:
     void build_pmf();
 
     /**
-     * \brief Return the sampling density over edges that could contribute to
+     * Return the sampling density over edges that could contribute to
      * the indirect discontinuous integral
      *
      * The distribution excludes concave edges and flat surfaces. It depends on
-     * the vertex positions, so \ref refresh() discards it and this accessor
+     * the vertex positions, so ``refresh()`` discards it and this accessor
      * rebuilds it on the next use.
      */
     const DiscreteDistribution<Float> &sil_dedge_pmf() const;
 
     /**
-     * \brief Initialize the \c m_parameterization field for mapping UV
+     * Initialize the ``m_parameterization`` field for mapping UV
      * coordinates to positions
      *
      * Internally, the function creates a nested scene to leverage optimized
-     * ray tracing functionality in \ref eval_parameterization()
+     * ray tracing functionality in `eval_parameterization()`
      */
     void build_parameterization();
 
-    /// Does a spatially varying emitter require \c m_parameterization?
+    /// Does a spatially varying emitter require ``m_parameterization?``
     bool needs_parameterization() const;
 
     // Ensures that the sampling table are ready.
@@ -1022,16 +1015,16 @@ protected:
     }
 
     /**
-     * \brief Does this mesh need tangents?
+     * Does this mesh need tangents?
      *
-     * True when the mesh can supply tangents (\ref has_tangents()) and the
-     * attached material declares \ref BSDFFlags::NeedsTangents. This is
-     * the layout that the next repack will write, see \ref packs_tangent().
+     * True when the mesh can supply tangents (`has_tangents()`) and the
+     * attached material declares `BSDFFlags.NeedsTangents`. This is
+     * the layout that the next repack will write, see `packs_tangent()`.
      */
     bool needs_tangents() const;
 
     /**
-     * \brief Reverse the corner order of every face, which flips the
+     * Reverse the corner order of every face, which flips the
      * geometric normals
      *
      * The orientation of each face's UV triangle reverses along with it, so
@@ -1041,42 +1034,42 @@ protected:
     void flip_winding();
 
     /**
-     * \brief Compile the field views into the packed records
+     * Compile the field views into the packed records
      *
      * This is the one mutation path of a built mesh. It validates the
      * views, derives the element counts and the vertex layout, generates
-     * shading normals (when \c regenerate_normals is set, discarding the
+     * shading normals (when ``regenerate_normals`` is set, discarding the
      * current values while preserving their grouping) and MikkTSpace
      * tangents (when the attached material consumes them), writes both
      * packed buffers in a single pass, and ends in ``refresh()``.
      *
-     * The \c flip_normals flag turns the surface inside out as the records
-     * are written, which \ref from_fields() uses to bake the property of
-     * the same name. See ``validate_impl()`` for \c updating.
+     * The ``flip_normals`` flag turns the surface inside out as the records
+     * are written, which `from_fields()` uses to bake the property of
+     * the same name. See ``validate_impl()`` for ``updating``.
      */
     void pack(bool regenerate_normals, bool flip_normals = false,
               bool updating = false);
 
     /**
-     * \brief Implementation of \ref validate()
+     * Implementation of `validate()`
      *
-     * When \c updating is set, the mesh is checking a
-     * \ref Object::parameters_changed() batch, and shape mismatches also report how to
+     * When ``updating`` is set, the mesh is checking a
+     * `Object.parameters_changed()` batch, and shape mismatches also report how to
      * rewrite the offending field.
      */
     void validate_impl(bool check_bounds, bool updating) const;
 
     /**
-     * \brief Regenerate everything downstream of the packed state
+     * Regenerate everything downstream of the packed state
      *
      * Every mutation ends with a call to this method. It rebuilds the
-     * bounding box (adopting \c bbox when given), the area sampling table
+     * bounding box (adopting ``bbox`` when given), the area sampling table
      * of emitter/sensor meshes, the UV parameterization of spatially
      * varying emitters, and the silhouette structures of gradient-enabled
      * meshes, refreshes the raw data pointers, marks the scene
      * acceleration structure dirty, and rebinds the field views unless
      * they are dormant. The directed edge structure is not touched here:
-     * it is expensive and purely topological, so \ref Object::parameters_changed()
+     * it is expensive and purely topological, so `Object.parameters_changed()`
      * clears it only when a topology write occurs.
      */
     void refresh(const ScalarBoundingBox3f *bbox = nullptr);
@@ -1101,29 +1094,31 @@ protected:
     /// ``(V, 3)`` tensor
     TensorXf32 compute_tangents() const;
 
-    /** \brief Moeller and Trumbore algorithm for computing ray-triangle
+    /**
+     * Moeller and Trumbore algorithm for computing ray-triangle
      * intersection
      *
      * Discussed at
-     * <tt>http://www.acm.org/jgt/papers/MollerTrumbore97/code.html</tt>.
+     * ``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
      *
-     * \param ray
-     *    The ray segment to be used for the intersection query.
-     * \param p0
-     *    First vertex position of the triangle
-     * \param p1
-     *    Second vertex position of the triangle
-     * \param p2
-     *    Third vertex position of the triangle
-     * \return
-     *    A tuple <tt>(t, uv, mask)</tt> where
+     * Args:
+     *     ray: The ray segment to be used for the intersection query.
      *
-     *    - \c t contains the distance from the ray origin to the
-     *      intersection point.
+     *     p0: First vertex position of the triangle
      *
-     *    - \c uv contains the first two barycentric coordinates.
+     *     p1: Second vertex position of the triangle
      *
-     *    - \c mask indicates whether an intersection was found.
+     *     p2: Third vertex position of the triangle
+     *
+     * Returns:
+     *     A tuple ``(t, uv, mask)`` where
+     *
+     *     - ``t`` contains the distance from the ray origin to the
+     *       intersection point.
+     *
+     *     - ``uv`` contains the first two barycentric coordinates.
+     *
+     *     - ``mask`` indicates whether an intersection was found.
      */
     template <typename T, typename Ray3>
     std::tuple<T, Point<T, 2>, dr::mask_t<T>>
@@ -1171,22 +1166,21 @@ protected:
         DRJIT_TRAVERSE(MeshAttribute, data);
     };
 
-    /// Does the attribute \c name live on the vertices rather than the faces?
+    /// Does the attribute ``name`` live on the vertices rather than the faces?
     static bool is_vertex_attribute(std::string_view name) {
         return string::starts_with(name, "vertex_");
     }
 
-    /// Do the records of the attribute \c name hold RGB2Spec upsampling coefficients?
+    /// Do the records of the attribute ``name`` hold RGB2Spec upsampling coefficients?
     static bool holds_rgb2spec_coeffs(std::string_view name, size_t dim);
 
-    /// Convert \c rows RGB triplets in place into RGB2Spec upsampling coefficients.
+    /// Convert ``rows`` RGB triplets in place into RGB2Spec upsampling coefficients.
     static void to_rgb2spec_coeffs(InputFloat *data, size_t rows);
 
     /**
-     * \brief Read the attribute \c attr at the interaction \c si
+     * Read the attribute ``attr`` at the interaction ``si``
      *
-     * With ``Raw``, the result holds the stored values (\c Float or \c
-     * Color3f). Otherwise, the read may perform variant-specific
+     * With ``Raw``, the result holds the stored values (``Float`` or ``Color3f``). Otherwise, the read may perform variant-specific
      * conversions (e.g., spectral upsampling)
      */
     template <uint32_t Size, bool Raw>
@@ -1195,10 +1189,10 @@ protected:
                                const SurfaceInteraction3f &si,
                                Mask active) const;
 
-    /// Return the mesh attribute \c name or NULL
+    /// Return the mesh attribute ``name`` or NULL
     const MeshAttribute *find_attribute(std::string_view name) const;
 
-    /// Shared body of \ref eval_attribute_1() and \ref eval_attribute_3()
+    /// Shared body of `eval_attribute_1()` and `eval_attribute_3()`
     template <uint32_t Size>
     auto eval_attribute_n(std::string_view name,
                           const SurfaceInteraction3f &si, Mask active) const;
@@ -1254,10 +1248,10 @@ protected:
     IndexBuffer m_bsdf_index;
     TensorXf32 m_tangents;
 
-    /// Half-edge adjacency, null until \ref dedge() builds it
+    /// Half-edge adjacency, null until `dedge()` builds it
     mutable ref<DirectedEdge> m_dedge;
 
-    /// Sampling density of silhouette edges, null until \ref sil_dedge_pmf()
+    /// Sampling density of silhouette edges, null until ``sil_dedge_pmf()``
     mutable DiscreteDistribution<Float> m_sil_dedge_pmf;
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
@@ -1275,7 +1269,7 @@ protected:
     DiscreteDistribution<Float> m_area_pmf;
     std::mutex m_mutex;
 
-    /// Optional: used in \ref eval_parameterization()
+    /// Optional: used in `eval_parameterization()`
     ref<Scene<Float, Spectrum>> m_parameterization;
 
     /// Pointer to the scene that owns this mesh

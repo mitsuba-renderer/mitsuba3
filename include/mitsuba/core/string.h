@@ -29,7 +29,7 @@ using ::operator<<;
 NAMESPACE_BEGIN(string)
 
 /**
- * \brief Locale-independent string to floating point conversion analogous
+ * Locale-independent string to floating point conversion analogous
  * to ``std::stof``. (implemented using Daniel Lemire's fast_float library.)
  *
  * Parses a floating point number in the range ``start``..``end``-1, skipping
@@ -49,7 +49,7 @@ extern template MI_EXPORT_LIB double parse_float<double>(
 
 
 /**
- * \brief Locale-independent string to floating point conversion analogous
+ * Locale-independent string to floating point conversion analogous
  * to ``std::stof``. (implemented using Daniel Lemire's fast_float library.)
  *
  * Throws an exception if the conversion is unsuccessful, or if the portion of
@@ -61,7 +61,7 @@ extern template MI_EXPORT_LIB float  stof<float>(std::string_view str);
 extern template MI_EXPORT_LIB double stof<double>(std::string_view str);
 
 /**
- * \brief Locale-independent string to floating point conversion analogous
+ * Locale-independent string to floating point conversion analogous
  * to ``std::strtof``. (implemented using Daniel Lemire's fast_float library.)
  *
  * On failure, ``endptr`` is set equal to ``s``.

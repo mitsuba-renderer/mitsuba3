@@ -53,14 +53,14 @@ struct MetalAccel {
     uint32_t scene_index = 0;
     /// Handle variable representing the Metal scene for @dr.freeze
     UInt64 accel_handle;
-    /// Per-instance recovery tables resolving \c pi.shape from a hit's
+    /// Per-instance recovery tables resolving ``pi.shape`` from a hit's
     /// (instance_id, geometry_id), built in scene_metal.inl.
     DynamicBuffer<UInt32> geom_shape_offsets;
     DynamicBuffer<UInt32> geom_shape_table;
 
 private:
-    /// Trace \c ray, writing eight result variable indices to \c out. With
-    /// \c shadow, an occlusion query writes only ``out[0]``.
+    /// Trace ``ray``, writing eight result variable indices to ``out``. With
+    /// ``shadow``, an occlusion query writes only ``out[0]``.
     void trace(const Ray3f &ray, Mask active, uint32_t out[8],
                bool shadow) const;
 };

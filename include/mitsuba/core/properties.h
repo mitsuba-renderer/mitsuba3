@@ -20,7 +20,8 @@ template <typename T> struct is_transform_3: std::false_type { };
 template <typename T> struct is_transform_3<AffineTransform<Point<T, 3>>> : std::true_type { };
 NAMESPACE_END(detail)
 
-/** \brief Associative container for passing configuration parameters to Mitsuba
+/**
+ * Associative container for passing configuration parameters to Mitsuba
  * plugins.
  *
  * When Mitsuba scene objects (BSDFs, textures, emitters, etc.) are
@@ -39,35 +40,35 @@ NAMESPACE_END(detail)
  *
  * ## Basic C++ Usage
  *
- * \code
- * Properties props("plugin_name");
+ * .. code-block:: c++
  *
- * // Write to 'props':
- * props.set("color_value", ScalarColor3f(0.1f, 0.2f, 0.3f));
- * props.set("my_bsdf", bsdf); // ref<BSDF> or BSDF*
+ *     Properties props("plugin_name");
  *
- * // Read from 'props':
- * ScalarColor3f value = props.get<ScalarColor3f>("color_value");
- * BSDF *bsdf = props.get<BSDF*>("my_bsdf");
- * \endcode
+ *     // Write to 'props':
+ *     props.set("color_value", ScalarColor3f(0.1f, 0.2f, 0.3f));
+ *     props.set("my_bsdf", bsdf); // ref<BSDF> or BSDF*
+ *
+ *     // Read from 'props':
+ *     ScalarColor3f value = props.get<ScalarColor3f>("color_value");
+ *     BSDF *bsdf = props.get<BSDF*>("my_bsdf");
  *
  * ## Iterating Over Properties
  *
- * \code
- * // Iterate over all properties
- * for (const auto &prop : props) {
- *     std::cout << prop.name() << " = " << property_type_name(prop.type()) << std::endl;
- * }
+ * .. code-block:: c++
  *
- * // Iterate only over object properties
- * for (const auto &prop : props.objects()) {
- *     if (BSDF *bsdf = prop.try_get<BSDF>()) {
- *         // Process BSDF object
- *     } else if (Texture *texture = prop.try_get<Texture>()) {
- *         // Process Texture object
+ *     // Iterate over all properties
+ *     for (const auto &prop : props) {
+ *         std::cout << prop.name() << " = " << property_type_name(prop.type()) << std::endl;
  *     }
- * }
- * \endcode
+ *
+ *     // Iterate only over object properties
+ *     for (const auto &prop : props.objects()) {
+ *         if (BSDF *bsdf = prop.try_get<BSDF>()) {
+ *             // Process BSDF object
+ *         } else if (Texture *texture = prop.try_get<Texture>()) {
+ *             // Process Texture object
+ *         }
+ *     }
  *
  * ## Iterator stability
  *
@@ -78,27 +79,27 @@ NAMESPACE_END(detail)
  *
  * In Python, Property instances implement a dictionary-like interface:
  *
- * \code
- * props = mi.Properties("plugin_name")
+ * .. code-block:: c++
  *
- * # Write to 'props':
- * props["color_value"] = mi.ScalarColor3f(0.1, 0.2, 0.3)
+ *     props = mi.Properties("plugin_name")
  *
- * for k, v in props.items():
- *    print(f'{k} = {v}')
- * \endcode
+ *     # Write to 'props':
+ *     props["color_value"] = mi.ScalarColor3f(0.1, 0.2, 0.3)
+ *
+ *     for k, v in props.items():
+ *        print(f'{k} = {v}')
  *
  * ## Query Tracking
  *
  * Each property stores a flag that tracks whether it has been accessed. This
  * helps detect configuration errors such as typos in parameter names or unused
- * parameters. The \ref get() function automatically marks parameters as
+ * parameters. The `get()` function automatically marks parameters as
  * queried.
  *
  * Use the following methods to work with query tracking:
- * - \ref was_queried(name): Check if a specific parameter was accessed
- * - \ref unqueried(): Get a list of all parameters that were never accessed
- * - \ref mark_queried(name): Manually mark a parameter as accessed
+ * - `was_queried`(name): Check if a specific parameter was accessed
+ * - `unqueried()`: Get a list of all parameters that were never accessed
+ * - `mark_queried`(name): Manually mark a parameter as accessed
  *
  * This is particularly useful during plugin initialization to warn users about
  * potentially misspelled or unnecessary parameters in their scene descriptions.
@@ -171,8 +172,8 @@ public:
     };
 
     /// Represents an indirect dependence that has been resolved to a specific
-    /// element of \ref ParserState::nodes (by the
-    /// \ref parser::transform_resolve_references pass)
+    /// element of `ParserState.nodes` (by the
+    /// ``parser.transform_resolve_references`` pass)
     struct ResolvedReference {
         ResolvedReference(size_t index) : m_index(index) { }
         size_t index() const { return m_index; }
@@ -263,11 +264,11 @@ public:
     void set_plugin_name(std::string_view name);
 
     /**
-     * \brief Retrieve a scalar parameter by name
+     * Retrieve a scalar parameter by name
      *
      * Look up the property ``name``. Raises an exception if the property cannot
      * be found, or when it has an incompatible type. Accessing the parameter
-     * automatically marks it as queried (see \ref was_queried).
+     * automatically marks it as queried (see `was_queried`).
      *
      * The template parameter ``T`` may refer to:
      *
@@ -276,12 +277,12 @@ public:
      * - Arithmetic types (``bool``, ``float``, ``double``, ``uint32_t``,
      *   ``int32_t``, ``uint64_t``, ``int64_t``, ``size_t``).
      *
-     * - Points/vectors (\ref ScalarPoint2f, \ref ScalarPoint3f,
-     *   \ref ScalarVector2f, or \ref ScalarVector3f).
+     * - Points/vectors (`ScalarPoint2f`, `ScalarPoint3f`,
+     *   `ScalarVector2f`, or `ScalarVector3f`).
      *
-     * - Tri-stimulus color values (\ref ScalarColor3f).
+     * - Tri-stimulus color values (`ScalarColor3f`).
      *
-     * - Affine transformations (\ref ScalarTransform3f, \ref ScalarTransform4f)
+     * - Affine transformations (`ScalarTransform3f`, `ScalarTransform4f`)
      *
      * - Mitsuba object classes (``ref<BSDF>``, ``BSDF *``, etc.)
      *
@@ -294,9 +295,9 @@ public:
     }
 
     /**
-     * \brief Retrieve a parameter (with default value)
+     * Retrieve a parameter (with default value)
      *
-     * Please see the \ref get() function above for details. The main difference
+     * Please see the `get()` function above for details. The main difference
      * of this overload is that it automatically substitutes a default value
      * ``def_val`` when the requested parameter cannot be found.
      * It function raises an error if current parameter value has an
@@ -310,13 +311,13 @@ public:
     }
 
     /**
-     * \brief Set a parameter value
+     * Set a parameter value
      *
      * When a parameter with a matching names is already present, the method
-     * raises an exception if \c raise_if_exists is set (the default).
+     * raises an exception if ``raise_if_exists`` is set (the default).
      * Otherwise, it replaces the parameter.
      *
-     * The parameter is initially marked as unqueried (see \ref was_queried).
+     * The parameter is initially marked as unqueried (see `was_queried`).
      */
     template <typename T>
     void set(std::string_view name, T &&value, bool raise_if_exists = true) {
@@ -376,11 +377,11 @@ public:
     }
 
     /**
-     * \brief Retrieve a texture parameter (internal method)
+     * Retrieve a texture parameter (internal method)
      *
      * This method exposes a low level interface for texture construction, in
-     * general \ref get_texture(), \ref get_emissive_texture(), and
-     * \ref get_unbounded_texture() are preferable.
+     * general `get_texture()`, `get_emissive_texture()`, and
+     * `get_unbounded_texture()` are preferable.
      *
      * The method retrieves or construct a texture object (a subclass of
      * ``mitsuba::Texture<...>``).
@@ -419,17 +420,15 @@ public:
      *       - Monochromatic: Extract luminance and create ``uniform`` texture.
      *       - RGB: Create a ``srgb`` texture with the computed color.
      *
-     * \param name
-     *     The property name to look up
+     * Args:
+     *     name: The property name to look up
      *
-     * \param emitter
-     *     Set to true when retrieving textures for emission spectra
+     *     emitter: Set to true when retrieving textures for emission spectra
      *
-     * \param unbounded
-     *     Set this parameter to true if the spectrum is not emissive but may
-     *     still exceed the [0,1] range. An example would be the real or
-     *     imaginary index of refraction. This is important when spectral
-     *     upsampling is involved.
+     *     unbounded: Set this parameter to true if the spectrum is not emissive but may
+     *         still exceed the [0,1] range. An example would be the real or
+     *         imaginary index of refraction. This is important when spectral
+     *         upsampling is involved.
      */
     ref<Object> get_texture_impl(std::string_view name,
                                  std::string_view variant,
@@ -445,7 +444,7 @@ public:
                                  double value) const;
 
     /**
-     * \brief Retrieve a volume parameter
+     * Retrieve a volume parameter
      *
      * This method retrieves a volume parameter, where ``T`` is a subclass of
      * ``mitsuba::Volume<...>``.
@@ -457,7 +456,7 @@ public:
     ref<T> get_volume(std::string_view name) const;
 
     /**
-     * \brief Retrieve a volume parameter with float default
+     * Retrieve a volume parameter with float default
      *
      * When the volume parameter doesn't exist, creates a constant volume
      * with the specified floating point value.
@@ -466,7 +465,7 @@ public:
     ref<T> get_volume(std::string_view name, Float def_val) const;
 
     /**
-     * \brief Retrieve an arbitrarily typed value for inter-plugin communication
+     * Retrieve an arbitrarily typed value for inter-plugin communication
      *
      * This method enables plugins to exchange custom types that are not
      * natively supported by the Properties system. It uses type-erased storage
@@ -486,7 +485,7 @@ public:
     }
 
     /**
-     * \brief Set an arbitrarily typed value for inter-plugin communication
+     * Set an arbitrarily typed value for inter-plugin communication
      *
      * This method allows storing arbitrary data types that cannot be represented
      * by the standard Properties types. The value is stored in a type-erased
@@ -499,42 +498,52 @@ public:
     /// Verify if a property with the specified name exists
     bool has_property(std::string_view name) const;
 
-    /** \brief Returns the type of an existing property.
+    /**
+     * Returns the type of an existing property.
      *
      * Raises an exception if the property does not exist.
      */
     Type type(std::string_view name) const;
 
     /**
-     * \brief Remove a property with the specified name
+     * Remove a property with the specified name
      *
-     * \return \c true upon success
+     * Returns:
+     *     ``True`` upon success
      */
     bool remove_property(std::string_view name);
 
     /**
-     * \brief Rename a property
+     * Rename a property
      *
      * Changes the name of an existing property while preserving its value and
      * queried status.
      *
-     * \param old_name The current name of the property
-     * \param new_name The new name for the property
-     * \return \c true upon success, \c false if the old property doesn't exist or new name already exists
+     * Args:
+     *     old_name: The current name of the property
+     *
+     *     new_name: The new name for the property
+     *
+     * Returns:
+     *     ``True`` upon success, ``False`` if the old property doesn't exist or new name already exists
      */
     bool rename_property(std::string_view old_name, std::string_view new_name);
 
     /**
-     * \brief Manually mark a certain property as queried
+     * Manually mark a certain property as queried
      *
-     * \param name The property name
-     * \param value Whether to mark as queried (true) or unqueried (false)
-     * \return \c true upon success
+     * Args:
+     *     name: The property name
+     *
+     *     value: Whether to mark as queried (true) or unqueried (false)
+     *
+     * Returns:
+     *     ``True`` upon success
      */
     bool mark_queried(std::string_view name, bool value = true) const;
 
     /**
-     * \brief Check if a certain property was queried
+     * Check if a certain property was queried
      *
      * Mitsuba assigns a queried bit with every parameter. Unqueried
      * parameters are detected to issue warnings, since this is usually
@@ -543,7 +552,7 @@ public:
     bool was_queried(std::string_view name) const;
 
     /**
-     * \brief Returns a unique identifier associated with this instance (or an empty string)
+     * Returns a unique identifier associated with this instance (or an empty string)
      *
      * The ID is used to enable named references by other plugins
      */
@@ -562,9 +571,9 @@ public:
     std::string as_string(std::string_view name, std::string_view def_val) const;
 
     /**
-     * \brief Try to retrieve a property value without implicit conversions
+     * Try to retrieve a property value without implicit conversions
      *
-     * This method attempts to retrieve a property value of type T. Unlike \ref get<T>(),
+     * This method attempts to retrieve a property value of type T. Unlike `get`<T>(),
      * it returns a pointer to the stored value without performing any implicit
      * conversions. If the property doesn't exist, has a different type, or would
      * require conversion, it returns nullptr.
@@ -572,9 +581,14 @@ public:
      * For `Object`-derived types, dynamic_cast is used to check type compatibility.
      * The property is only marked as queried if retrieval succeeds.
      *
-     * \tparam T The requested type
-     * \param name Property name
-     * \return Pointer to the value if successful, nullptr otherwise
+     * Args:
+     *     name: Property name
+     *
+     * Template Args:
+     *     T: The requested type
+     *
+     * Returns:
+     *     Pointer to the value if successful, nullptr otherwise
      */
     template <typename T>
     T* try_get(std::string_view name) const {
@@ -585,10 +599,10 @@ public:
     }
 
     /**
-     * \brief Merge another properties record into the current one.
+     * Merge another properties record into the current one.
      *
      * Existing properties will be overwritten with the values from
-     * <tt>props</tt> if they have the same name.
+     * ``props`` if they have the same name.
      */
     void merge(const Properties &props);
 
@@ -601,11 +615,11 @@ public:
     }
 
     /**
-     * \brief Compute a hash of the Properties object
+     * Compute a hash of the Properties object
      *
      * This hash is suitable for deduplication and ignores:
      * - The insertion order of properties
-     * - The \ref id field (which assigns a name to the object elsewhere)
+     * - The `id` field (which assigns a name to the object elsewhere)
      *
      * The hash function is designed to work with the equality operator
      * for identifying equivalent Properties objects that can be merged
@@ -649,22 +663,24 @@ public:
     std::ostream &operator<<(std::ostream &os, const Properties &p);
 protected:
     /**
-     * \brief Find the index of a property by name
+     * Find the index of a property by name
      *
-     * \return The index in the internal storage, or ``size_t(-1)`` if not found
+     * Returns:
+     *     The index in the internal storage, or ``size_t(-1)`` if not found
      */
     size_t key_index(std::string_view name) const noexcept;
 
     /**
-     * \brief Find the index of a property by name or raise an exception if the
+     * Find the index of a property by name or raise an exception if the
      * entry was not found.
      *
-     * \return The index in the internal storage
+     * Returns:
+     *     The index in the internal storage
      */
     size_t key_index_checked(std::string_view name) const;
 
     /**
-     * \brief Retrieve a scalar parameter by index
+     * Retrieve a scalar parameter by index
      *
      * This is the primary implementation. All type conversions and error
      * checking is done here. The name-based get() is a thin wrapper.
@@ -681,7 +697,7 @@ protected:
                                            const std::type_info &requested_type) const;
 
     /**
-     * \brief Mark a property as queried by its internal index
+     * Mark a property as queried by its internal index
      *
      * This method is used internally by the iterator to mark properties
      * as accessed only after successful type casting.
@@ -735,7 +751,7 @@ protected:
     }
 
     /**
-     * \brief Get or create a property entry by name
+     * Get or create a property entry by name
      *
      * This method looks up an existing property by name. If found and
      * raise_if_exists is true, it raises an exception. If not found,
@@ -780,14 +796,17 @@ public:
     }
 
     /**
-     * \brief Attempt to retrieve and cast an object property to a specific type
+     * Attempt to retrieve and cast an object property to a specific type
      *
      * This method retrieves the property value if it's an `Object` type and
      * attempts to dynamically cast it to the requested type T. The property
      * is only marked as queried if the cast succeeds.
      *
-     * \tparam T The target type (must be derived from Object)
-     * \return A pointer to the object of type T if successful, nullptr otherwise
+     * Template Args:
+     *     T: The target type (must be derived from Object)
+     *
+     * Returns:
+     *     A pointer to the object of type T if successful, nullptr otherwise
      */
     template <typename T>
     T* try_get() const {

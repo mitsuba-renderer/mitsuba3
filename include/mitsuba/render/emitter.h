@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 
 /**
- * \brief This list of flags is used to classify the different types of emitters.
+ * This list of flags is used to classify the different types of emitters.
  */
 enum class EmitterFlags : uint32_t {
     // =============================================================

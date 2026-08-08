@@ -73,7 +73,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 
 /**
- * \brief Generates samples proportional to a *discrete* 2D function sampled on
+ * Generates samples proportional to a *discrete* 2D function sampled on
  * a regular grid
  *
  * Sampling proceeds by drawing from the marginal distribution to choose a row,
@@ -97,7 +97,7 @@ public:
 
     /**
      * Construct a marginal sample warping scheme for floating point
-     * data of resolution \c size.
+     * data of resolution ``size``.
      */
     DiscreteDistribution2D(const ScalarFloat *data,
                            const ScalarVector2u &size)
@@ -140,7 +140,7 @@ public:
     }
 
     /**
-     * \brief Given a uniformly distributed 2D sample, draw a sample from the
+     * Given a uniformly distributed 2D sample, draw a sample from the
      * distribution
      *
      * Returns the integer position, the normalized probability value, and
@@ -347,34 +347,35 @@ public:
 };
 
 /**
- * \brief Implements a hierarchical sample warping scheme for 2D distributions
+ * Implements a hierarchical sample warping scheme for 2D distributions
  * with linear interpolation and an optional dependence on additional parameters
  *
  * This class takes a rectangular floating point array as input and constructs
  * internal data structures to efficiently map uniform variates from the unit
- * square <tt>[0, 1]^2</tt> to a function on <tt>[0, 1]^2</tt> that linearly
+ * square ``[0, 1]^2`` to a function on ``[0, 1]^2`` that linearly
  * interpolates the input array.
  *
- * The mapping is constructed from a sequence of <tt>log2(max(res))</tt>
- * hierarchical sample warping steps, where <tt>res</tt> is the input array
+ * The mapping is constructed from a sequence of ``log2(max(res))``
+ * hierarchical sample warping steps, where ``res`` is the input array
  * resolution. It is bijective and generally very well-behaved (i.e. low
  * distortion), which makes it a good choice for structured point sets such
  * as the Halton or Sobol sequence.
  *
- * The implementation also supports <em>conditional distributions</em>, i.e. 2D
+ * The implementation also supports *conditional distributions*, i.e. 2D
  * distributions that depend on an arbitrary number of parameters (indicated
- * via the \c Dimension template parameter).
+ * via the ``Dimension`` template parameter).
  *
- * In this case, the input array should have dimensions <tt>N0 x N1 x ... x Nn
- * x res.y() x res.x()</tt> (where the last dimension is contiguous in memory),
- * and the <tt>param_res</tt> should be set to <tt>{ N0, N1, ..., Nn }</tt>,
- * and <tt>param_values</tt> should contain the parameter values where the
+ * In this case, the input array should have dimensions ``N0 x N1 x ... x Nn
+ * x res.y() x res.x()`` (where the last dimension is contiguous in memory),
+ * and the ``param_res`` should be set to ``{ N0, N1, ..., Nn }``,
+ * and ``param_values`` should contain the parameter values where the
  * distribution is discretized. Linear interpolation is used when sampling or
  * evaluating the distribution for in-between parameter values.
  *
- * \remark The Python API exposes explicitly instantiated versions of this
- * class named `Hierarchical2D0` to `Hierarchical2D3` for data that depends
- * on 0 to 3 parameters.
+ * Note:
+ *     The Python API exposes explicitly instantiated versions of this
+ *     class named `Hierarchical2D0` to `Hierarchical2D3` for data that depends
+ *     on 0 to 3 parameters.
  */
 template <typename Float_, size_t Dimension_ = 0>
 class Hierarchical2D : public Distribution2D<Float_, Dimension_> {
@@ -392,20 +393,20 @@ public:
 
     /**
      * Construct a hierarchical sample warping scheme for floating point
-     * data of resolution \c size.
+     * data of resolution ``size``.
      *
-     * \c param_res and \c param_values are only needed for conditional
+     * ``param_res`` and ``param_values`` are only needed for conditional
      * distributions (see the text describing the Hierarchical2D class).
      *
-     * If \c normalize is set to \c false, the implementation will not
-     * re-scale the distribution so that it integrates to \c 1. It can
+     * If ``normalize`` is set to ``False``, the implementation will not
+     * re-scale the distribution so that it integrates to ``1``. It can
      * still be sampled (proportionally), but returned density values
      * will reflect the unnormalized values.
      *
-     * If \c enable_sampling is set to \c false, the implementation will not
+     * If ``enable_sampling`` is set to ``False``, the implementation will not
      * construct the hierarchy needed for sample warping, which saves memory
      * in case this functionality is not needed (e.g. if only the interpolation
-     * in \ref eval() is used). In this case, \ref sample() and \ref invert()
+     * in `eval()` is used). In this case, `sample()` and `invert()`
      * can still be called without triggering undefined behavior, but they
      * will not return meaningful results.
      */
@@ -553,8 +554,8 @@ public:
     }
 
     /**
-     * \brief Given a uniformly distributed 2D sample, draw a sample from the
-     * distribution (parameterized by \c param if applicable)
+     * Given a uniformly distributed 2D sample, draw a sample from the
+     * distribution (parameterized by ``param`` if applicable)
      *
      * Returns the warped sample and associated probability density.
      */
@@ -633,7 +634,7 @@ public:
         };
     }
 
-    /// Inverse of the mapping implemented in \ref sample()
+    /// Inverse of the mapping implemented in `sample()`
     std::pair<Point2f, Float> invert(Point2f sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {
@@ -710,8 +711,8 @@ public:
     }
 
     /**
-     * \brief Evaluate the density at position \c pos. The distribution is
-     * parameterized by \c param if applicable.
+     * Evaluate the density at position ``pos``. The distribution is
+     * parameterized by ``param`` if applicable.
      */
     Float eval(Point2f pos, const Float *param = nullptr,
                Mask active = true) const {
@@ -772,7 +773,7 @@ public:
     }
 
 protected:
-    /// Per-level layout descriptor into the unified \ref m_data buffer
+    /// Per-level layout descriptor into the unified ``m_data`` buffer
     struct Level {
         /// Horizontal resolution of the level
         uint32_t width;
@@ -780,11 +781,11 @@ protected:
         /// Number of elements per slice (width * height)
         uint32_t size;
 
-        /// Element offset of slice 0 within \ref m_data
+        /// Element offset of slice 0 within ``m_data``
         uint32_t offset;
 
         /**
-         * \brief Convert from 2D pixel coordinates to an index indicating how the
+         * Convert from 2D pixel coordinates to an index indicating how the
          * data is laid out in memory.
          *
          * The implementation stores 2x2 patches contiguously in memory so that
@@ -816,11 +817,11 @@ protected:
     }
 
     /**
-     * \brief Fetch the four corners of a 2x2 patch with a single packet gather,
+     * Fetch the four corners of a 2x2 patch with a single packet gather,
      * interpolating across parameter slices.
      *
-     * \c packet is the patch index (an element offset divided by four) and
-     * \c size is the per-slice element count of the level.
+     * ``packet`` is the patch index (an element offset divided by four) and
+     * ``size`` is the per-slice element count of the level.
      */
     template <size_t Dim = Dimension>
     MI_INLINE dr::Array<Float, 4> lookup_packet(UInt32 packet, uint32_t size,
@@ -843,7 +844,7 @@ protected:
     /// Unified storage buffer: level 0 (row-major) followed by the MIP hierarchy
     FloatStorage m_data;
 
-    /// Per-level layout descriptors into \ref m_data
+    /// Per-level layout descriptors into ``m_data``
     std::vector<Level> m_levels;
 
     /// Number of bilinear patches in the X/Y dimension - 1
@@ -853,41 +854,42 @@ protected:
 };
 
 /**
- * \brief Implements a marginal sample warping scheme for 2D distributions
+ * Implements a marginal sample warping scheme for 2D distributions
  * with linear interpolation and an optional dependence on additional parameters
  *
  * This class takes a rectangular floating point array as input and constructs
  * internal data structures to efficiently map uniform variates from the unit
- * square <tt>[0, 1]^2</tt> to a function on <tt>[0, 1]^2</tt> that linearly
+ * square ``[0, 1]^2`` to a function on ``[0, 1]^2`` that linearly
  * interpolates the input array.
  *
  * The mapping is constructed via the inversion method, which is applied to
  * a marginal distribution over rows, followed by a conditional distribution
  * over columns.
  *
- * The implementation also supports <em>conditional distributions</em>, i.e. 2D
+ * The implementation also supports *conditional distributions*, i.e. 2D
  * distributions that depend on an arbitrary number of parameters (indicated
- * via the \c Dimension template parameter).
+ * via the ``Dimension`` template parameter).
  *
- * In this case, the input array should have dimensions <tt>N0 x N1 x ... x Nn
- * x res.y() x res.x()</tt> (where the last dimension is contiguous in memory),
- * and the <tt>param_res</tt> should be set to <tt>{ N0, N1, ..., Nn }</tt>,
- * and <tt>param_values</tt> should contain the parameter values where the
+ * In this case, the input array should have dimensions ``N0 x N1 x ... x Nn
+ * x res.y() x res.x()`` (where the last dimension is contiguous in memory),
+ * and the ``param_res`` should be set to ``{ N0, N1, ..., Nn }``,
+ * and ``param_values`` should contain the parameter values where the
  * distribution is discretized. Linear interpolation is used when sampling or
  * evaluating the distribution for in-between parameter values.
  *
- * There are two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
+ * There are two variants of ``Marginal2D``: when ``Continuous=false``,
  * discrete marginal/conditional distributions are used to select a bilinear
  * patch, followed by a continuous sampling step that chooses a specific
- * position inside the patch. When <tt>Continuous=true</tt>,
+ * position inside the patch. When ``Continuous=true``,
  * continuous marginal/conditional distributions are used instead, and the
  * second step is no longer needed. The latter scheme requires more computation
  * and memory accesses but produces an overall smoother mapping.
  *
- * \remark The Python API exposes explicitly instantiated versions of this
- * class named `MarginalDiscrete2D0` to `MarginalDiscrete2D3` and
- * `MarginalContinuous2D0` to `MarginalContinuous2D3` for data that depends
- * on 0 to 3 parameters.
+ * Note:
+ *     The Python API exposes explicitly instantiated versions of this
+ *     class named `MarginalDiscrete2D0` to `MarginalDiscrete2D3` and
+ *     `MarginalContinuous2D0` to `MarginalContinuous2D3` for data that depends
+ *     on 0 to 3 parameters.
  */
 template <typename Float_, size_t Dimension_ = 0, bool Continuous = false>
 class Marginal2D : public Distribution2D<Float_, Dimension_> {
@@ -908,20 +910,20 @@ public:
 
     /**
      * Construct a marginal sample warping scheme for floating point
-     * data of resolution \c size.
+     * data of resolution ``size``.
      *
-     * \c param_res and \c param_values are only needed for conditional
+     * ``param_res`` and ``param_values`` are only needed for conditional
      * distributions (see the text describing the Marginal2D class).
      *
-     * If \c normalize is set to \c false, the implementation will not
-     * re-scale the distribution so that it integrates to \c 1. It can
+     * If ``normalize`` is set to ``False``, the implementation will not
+     * re-scale the distribution so that it integrates to ``1``. It can
      * still be sampled (proportionally), but returned density values
      * will reflect the unnormalized values.
      *
-     * If \c enable_sampling is set to \c false, the implementation will not
+     * If ``enable_sampling`` is set to ``False``, the implementation will not
      * construct the cdf needed for sample warping, which saves memory in case
      * this functionality is not needed (e.g. if only the interpolation in
-     * \ref eval() is used).
+     * `eval()` is used).
      */
     Marginal2D(const ScalarFloat *data,
                const ScalarVector2u &size,
@@ -1045,8 +1047,8 @@ public:
     }
 
     /**
-     * \brief Given a uniformly distributed 2D sample, draw a sample from the
-     * distribution (parameterized by \c param if applicable)
+     * Given a uniformly distributed 2D sample, draw a sample from the
+     * distribution (parameterized by ``param`` if applicable)
      *
      * Returns the warped sample and associated probability density.
      */
@@ -1061,7 +1063,7 @@ public:
             return sample_discrete(sample, param, active);
     }
 
-    /// Inverse of the mapping implemented in \ref sample()
+    /// Inverse of the mapping implemented in `sample()`
     std::pair<Point2f, Float> invert(const Point2f &sample,
                                      const Float *param = nullptr,
                                      Mask active = true) const {
@@ -1074,8 +1076,8 @@ public:
     }
 
     /**
-     * \brief Evaluate the density at position \c pos. The distribution is
-     * parameterized by \c param if applicable.
+     * Evaluate the density at position ``pos``. The distribution is
+     * parameterized by ``param`` if applicable.
      */
     Float eval(Point2f pos, const Float *param = nullptr,
                Mask active = true) const {

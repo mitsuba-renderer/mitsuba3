@@ -5,7 +5,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief `Stream` implementation that never writes to disk, but keeps track
+/**
+ * `Stream` implementation that never writes to disk, but keeps track
  * of the size of the content being written.
  * It can be used, for example, to measure the precise amount of memory needed
  * to store serialized content.
@@ -16,7 +17,8 @@ public:
 
     ~DummyStream() = default;
 
-    /** \brief Closes the stream.
+    /**
+     * Closes the stream.
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
@@ -47,7 +49,8 @@ public:
 private:
     /// Size of all data written to the stream
     size_t m_size;
-    /** \brief Current position in the "virtual" stream (even though nothing
+    /**
+     * Current position in the "virtual" stream (even though nothing
      * is ever written, we need to maintain consistent positioning).
      */
     size_t m_pos;
