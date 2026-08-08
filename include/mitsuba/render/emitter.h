@@ -33,14 +33,14 @@ enum class EmitterFlags : uint32_t {
     Surface              = 0x00008,
 
     // =============================================================
-    //!                   Other lobe attributes
+    //                    Other lobe attributes
     // =============================================================
 
     /// The emission depends on the UV coordinates
     SpatiallyVarying     = 0x00010,
 
     // =============================================================
-    //!                 Compound lobe attributes
+    //                  Compound lobe attributes
     // =============================================================
 
     /// Delta function in either position or direction
@@ -100,7 +100,7 @@ MI_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of emitters
+// Enables vectorized method calls on Dr.Jit arrays of emitters
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
@@ -119,5 +119,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     DRJIT_CALL_GETTER(sampling_weight)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

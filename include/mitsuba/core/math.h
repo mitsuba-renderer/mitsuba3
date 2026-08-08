@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(math)
 
 // -----------------------------------------------------------------------
-//! @{ \name Useful constants in various precisions
+// Useful constants in various precisions
 // -----------------------------------------------------------------------
 
 #if (MI_ENABLE_EMBREE)
@@ -22,11 +22,10 @@ template <typename T> constexpr auto RayEpsilon = dr::Epsilon<T> * 1500;
 template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
 template <typename T> constexpr auto ShapeEpsilon = RayEpsilon<T> / 80;
 
-//! @}
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-//! @{ \name Legendre functions
+// Legendre functions
 // -----------------------------------------------------------------------
 
 /// Evaluate the l-th Legendre polynomial using recurrence
@@ -148,11 +147,10 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
     }
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-//! @{ \name Miscellaneous mathematical helper functions
+// Miscellaneous mathematical helper functions
 // -----------------------------------------------------------------------
 
 /**
@@ -399,7 +397,6 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     return { valid_linear || valid_quadratic, x0, x1 };
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 template <typename Array, size_t... Index, typename Value = dr::value_t<Array>>

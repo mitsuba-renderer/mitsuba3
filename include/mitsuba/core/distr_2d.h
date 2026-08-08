@@ -17,8 +17,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** =======================================================================
- * @{ \name Data-driven warping techniques for two dimensions
+/*  =======================================================================
+ * Data-driven warping techniques for two dimensions
  *
  * This file provides three different approaches for importance sampling 2D
  * functions discretized on a regular grid. All functionality is written in a
@@ -1513,7 +1513,6 @@ protected:
     MI_TRAVERSE_CB(Base, m_data, m_marg_cdf, m_cond_cdf)
 };
 
-//! @}
 // =======================================================================
 
 NAMESPACE_END(mitsuba)

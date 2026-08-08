@@ -56,7 +56,7 @@ public:
     bool is_closed() const override { return m_child_stream && m_child_stream->is_closed(); };
 
     // =========================================================================
-    //! @{ \name Compression stream-specific features
+    // Compression stream-specific features
     // =========================================================================
 
     /// Returns the child stream of this compression stream
@@ -65,11 +65,10 @@ public:
     /// Returns the child stream of this compression stream
     Stream *child_stream() { return m_child_stream; }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Implementation of the Stream interface
+    // Implementation of the Stream interface
     // =========================================================================
 
     /**
@@ -121,7 +120,6 @@ public:
         return m_child_stream->can_read();
     }
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(ZStream)

@@ -94,7 +94,7 @@ public:
 
 
     // =========================================================================
-    //! @{ \name Default backwards and forwards differentiation
+    // Default backwards and forwards differentiation
     // =========================================================================
 
     /**
@@ -283,7 +283,6 @@ public:
                                spp);
     }
 
-    //! @}
     // =========================================================================
 
     /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
@@ -428,7 +427,7 @@ public:
                                              Mask active = true) const;
 
     // =========================================================================
-    //! @{ \name Integrator interface implementation
+    // Integrator interface implementation
     // =========================================================================
 
     TensorXf render(Scene *scene,
@@ -438,7 +437,6 @@ public:
                     bool develop = true,
                     bool evaluate = true) override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(SamplingIntegrator)
@@ -557,7 +555,7 @@ public:
                         ScalarFloat sample_scale) const = 0;
 
     // =========================================================================
-    //! @{ \name Integrator interface implementation
+    // Integrator interface implementation
     // =========================================================================
 
     TensorXf render(Scene *scene,
@@ -567,7 +565,6 @@ public:
                     bool develop = true,
                     bool evaluate = true) override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(AdjointIntegrator)

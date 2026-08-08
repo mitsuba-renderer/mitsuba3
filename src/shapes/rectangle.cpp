@@ -153,7 +153,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -241,11 +241,10 @@ public:
                dr::grad_enabled(m_to_world.value());
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -472,12 +471,11 @@ public:
         return ss;
     }
 
-    //! @}
     // =============================================================
 
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
@@ -561,7 +559,6 @@ public:
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

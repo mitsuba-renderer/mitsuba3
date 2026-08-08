@@ -553,7 +553,6 @@ public:
         return { ls.transmittance * emitter_val, dir_sample };
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

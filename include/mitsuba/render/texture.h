@@ -25,7 +25,7 @@ public:
     MI_IMPORT_TYPES()
 
     // =============================================================
-    //! @{ \name Standard sampling interface
+    // Standard sampling interface
     // =============================================================
 
     /**
@@ -107,11 +107,10 @@ public:
     /// Returns the probability per unit area of \ref sample_position()
     virtual Float pdf_position(const Point2f &p, Mask active = true) const;
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Specialized evaluation routines
+    // Specialized evaluation routines
     // =============================================================
 
     /**
@@ -207,7 +206,6 @@ public:
      */
     virtual ScalarFloat max() const;
 
-    //! @}
     // ======================================================================
 
     /// Does this texture evaluation depend on the UV coordinates
@@ -232,7 +230,7 @@ MI_EXTERN_CLASS(Texture)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of Textures
+// Enables vectorized method calls on Dr.Jit arrays of Textures
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)

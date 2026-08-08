@@ -19,7 +19,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float_, typename Spectrum_>
 struct PositionSample {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Float    = Float_;
@@ -27,11 +27,10 @@ struct PositionSample {
     MI_IMPORT_RENDER_BASIC_TYPES()
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Sampled position
@@ -59,11 +58,10 @@ struct PositionSample {
     /// Set if the sample was drawn from a degenerate (Dirac delta) distribution
     Mask delta;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Constructors, methods, etc.
+    // Constructors, methods, etc.
     // =============================================================
 
     /**
@@ -82,7 +80,6 @@ struct PositionSample {
                    Float time, Float pdf, Mask delta)
         : p(p), n(n), uv(uv), time(time), pdf(pdf), delta(delta) { }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(PositionSample, p, n, uv, time, pdf, delta)
@@ -109,7 +106,7 @@ struct PositionSample {
 template <typename Float_, typename Spectrum_>
 struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
@@ -121,11 +118,10 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
     using SurfaceInteraction3f = typename RenderAliases::SurfaceInteraction3f;
     using EmitterPtr           = typename RenderAliases::EmitterPtr;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Unit direction from the reference point to the target shape
@@ -144,11 +140,10 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
       */
     EmitterPtr emitter = nullptr;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Constructors, methods, etc.
+    // Constructors, methods, etc.
     // =============================================================
 
     /**
@@ -194,7 +189,6 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
         return drjit::masked(*this, array);
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(DirectionSample, p, n, uv, time, pdf, delta, d, dist, emitter)

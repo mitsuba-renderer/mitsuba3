@@ -113,7 +113,7 @@ MI_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit medium arrays
+// Enables vectorized method calls on Dr.Jit medium arrays
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
@@ -128,5 +128,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

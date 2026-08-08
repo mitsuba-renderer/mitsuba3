@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 namespace dr = drjit;
 
 // =============================================================
-//! @{ \name Forward declarations of Mitsuba classes/structs
+// Forward declarations of Mitsuba classes/structs
 // =============================================================
 
 class Object;
@@ -46,11 +46,10 @@ class ZStream;
 enum LogLevel : int;
 enum class ObjectType : uint32_t;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Common type aliases
+// Common type aliases
 // =============================================================
 
 template <typename Value, size_t Size>          struct Vector;
@@ -72,11 +71,10 @@ template <typename Float>                       struct ContinuousDistribution;
 template <typename Spectrum> using StokesVector  = dr::Array<Spectrum, 4>;
 template <typename Spectrum> using MuellerMatrix = dr::Matrix<Spectrum, 4>;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Buffer types
+// Buffer types
 // =============================================================
 
 template <typename Value,
@@ -85,11 +83,10 @@ template <typename Value,
 using DynamicBuffer =
     std::conditional_t<dr::is_dynamic_array_v<T>, T, dr::DynamicArray<T>>;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name CoreAliases struct
+// CoreAliases struct
 // =============================================================
 
 template <typename Float_> struct CoreAliases {
@@ -209,7 +206,6 @@ template <typename Float_> struct CoreAliases {
 
 };
 
-//! @}
 // =============================================================
 
 #define MI_VARIANT template <typename Float, typename Spectrum>
@@ -349,7 +345,7 @@ NAMESPACE_END(mitsuba)
 extern "C" {
 
 // =============================================================
-//! @{ \name Helper macros
+// Helper macros
 // =============================================================
 
 #define MI_DECLARE_ENUM_OPERATORS_IMPL(name, neq_expr)                         \
@@ -548,7 +544,6 @@ public:                                                                        \
                               });                                              \
         }
 
-//! @}
 // =============================================================
 
 };

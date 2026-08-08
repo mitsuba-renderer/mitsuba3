@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Sampler implementations
+// Sampler implementations
 // =======================================================================
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
@@ -116,11 +116,10 @@ Sampler<Float, Spectrum>::current_sample_index() const {
                      wavefront_sample_offsets);
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name PCG32Sampler implementations
+// PCG32Sampler implementations
 // =======================================================================
 
 MI_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
@@ -168,7 +167,6 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, d
     drjit::traverse_1_fn_rw(m_rng, payload, fn);
 }
 
-//! @}
 // =======================================================================
 
 MI_INSTANTIATE_CLASS(Sampler)

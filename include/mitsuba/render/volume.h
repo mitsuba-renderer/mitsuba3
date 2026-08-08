@@ -16,7 +16,7 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     // ======================================================================
-    //! @{ \name Volume interface
+    // Volume interface
     // ======================================================================
 
     /// Evaluate the volume at the given surface interaction, with color processing.
@@ -79,7 +79,6 @@ public:
      */
     uint32_t channel_count() const { return m_channel_count; }
 
-    //! @}
     // ======================================================================
 
     /// Returns a human-reable summary

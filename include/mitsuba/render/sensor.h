@@ -21,7 +21,7 @@ public:
     MI_IMPORT_BASE(Endpoint, sample_ray, m_needs_sample_3)
 
     // =============================================================
-    //! @{ \name Sensor-specific sampling functions
+    // Sensor-specific sampling functions
     // =============================================================
 
     /**
@@ -87,11 +87,10 @@ public:
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active = true) const override;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Additional query functions
+    // Additional query functions
     // =============================================================
 
     /// Return the time value of the shutter opening event
@@ -129,7 +128,6 @@ public:
      */
     ref<const Sampler> sampler() const { return m_sampler.get(); }
 
-    //! @}
     // =============================================================
 
     void traverse(TraversalCallback *cb) override {
@@ -163,7 +161,6 @@ protected:
     MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)
 };
 
-//! @}
 // -----------------------------------------------------------------------
 
 /**
@@ -223,7 +220,7 @@ protected:
 };
 
 // ========================================================================
-//! @{ \name Functionality common to perspective cameras, projectors, etc.
+// Functionality common to perspective cameras, projectors, etc.
 // ========================================================================
 
 /// Helper function to parse the field of view field of a camera
@@ -306,7 +303,6 @@ orthographic_projection(const Vector<int, 2> &film_size,
            AffineTransform4f::orthographic(near_clip, far_clip);
 }
 
-//! @}
 // ========================================================================
 
 MI_EXTERN_CLASS(Sensor)
@@ -314,7 +310,7 @@ MI_EXTERN_CLASS(ProjectiveCamera)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of sensors
+// Enables vectorized method calls on Dr.Jit arrays of sensors
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)

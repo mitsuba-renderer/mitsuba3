@@ -402,7 +402,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -860,11 +860,10 @@ public:
         return ss;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
@@ -1003,7 +1002,6 @@ public:
         return si;
     }
 
-    //! @}
     // =============================================================
 
     void describe(ShapeIR &g) const override {

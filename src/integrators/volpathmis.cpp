@@ -670,7 +670,6 @@ public:
         return weight;
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

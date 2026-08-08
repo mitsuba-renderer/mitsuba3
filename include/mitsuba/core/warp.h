@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(warp)
 
 // =======================================================================
-//! @{ \name Warping techniques that operate in the plane
+// Warping techniques that operate in the plane
 // =======================================================================
 
 template <typename Value>
@@ -238,11 +238,10 @@ Value square_to_tent_pdf(const Point<Value, 2> &p_) {
                       0.f);
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Warping techniques related to spheres and subsets
+// Warping techniques related to spheres and subsets
 // =======================================================================
 
 /// Uniformly sample a vector on the unit sphere with respect to solid angles
@@ -792,11 +791,10 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
     );
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Warping techniques for surface tangents
+// Warping techniques for surface tangents
 // =======================================================================
 
 /// Warp a uniformly distributed sample on [0, 1] to a direction in the tangent plane
@@ -824,7 +822,6 @@ MI_INLINE Value tangent_direction_to_interval(const Normal<Value, 3> &n,
     return t;
 }
 
-//! @}
 // =======================================================================
 
 NAMESPACE_END(warp)

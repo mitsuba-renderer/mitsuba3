@@ -40,7 +40,7 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
     MI_IMPORT_TYPES(Sampler);
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Transported mode (radiance or importance)
@@ -64,7 +64,6 @@ struct MI_EXPORT_LIB PhaseFunctionContext {
      */
     uint32_t component = (uint32_t) -1;
 
-    //! @}
     // =============================================================
 
     PhaseFunctionContext() = default;
@@ -205,7 +204,6 @@ public:
     /// Set type of phase function
     void set_flags(uint32_t flags) { m_flags = flags; }
 
-    //! @}
     // -----------------------------------------------------------------------
 
     MI_DECLARE_PLUGIN_BASE_CLASS(PhaseFunction)
@@ -235,14 +233,13 @@ std::ostream &operator<<(std::ostream &os, const PhaseFunctionContext<Float, Spe
     return os;
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(PhaseFunction)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized calls on Dr.Jit arrays of phase functions
+// Enables vectorized calls on Dr.Jit arrays of phase functions
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
@@ -254,5 +251,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::PhaseFunction)
     DRJIT_CALL_GETTER(component_count)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

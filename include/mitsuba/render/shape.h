@@ -24,7 +24,7 @@ NAMESPACE_BEGIN(mitsuba)
  */
 enum class DiscontinuityFlags : uint32_t {
     // =============================================================
-    //!                   Discontinuity types
+    //                    Discontinuity types
     // =============================================================
 
     /// No flags set (default value)
@@ -37,7 +37,7 @@ enum class DiscontinuityFlags : uint32_t {
     InteriorType = 0x2,
 
     // =============================================================
-    //!              Encoding and projection flags
+    //               Encoding and projection flags
     // =============================================================
 
     /** \brief Use spherical lune to encode segment direction
@@ -64,7 +64,7 @@ enum class DiscontinuityFlags : uint32_t {
     HeuristicWalk = 0x10,
 
     // =============================================================
-    //!                 Compound types
+    //                  Compound types
     // =============================================================
 
     /// All types of discontinuities
@@ -82,7 +82,7 @@ template <typename Float, typename Spectrum> class Shape;
 template <typename Float_, typename Spectrum_>
 struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
@@ -92,11 +92,10 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Type of discontinuity (`DiscontinuityFlags`)
@@ -148,11 +147,10 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
      */
     Float offset;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /// Partially initialize a boundary segment from a position sample
@@ -181,7 +179,6 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
         return Ray3f(p + o_offset, d, 0.f, wavelengths);
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(SilhouetteSample, p, n, uv, time, pdf, delta,
@@ -225,7 +222,7 @@ public:
     ~Shape();
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     /**
@@ -305,11 +302,10 @@ public:
     virtual Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                                 Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     // Return the silhouette discontinuity type(s) of this shape
@@ -493,11 +489,10 @@ public:
                                                              Float sample2,
                                                              Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     /**
@@ -585,11 +580,10 @@ public:
                                        uint32_t ray_flags = +RayFlags::Default,
                                        Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Packet versions of ray test/intersection routines
+    // Packet versions of ray test/intersection routines
     // =============================================================
     /**
      * \brief Scalar test for an intersection and return detailed information
@@ -630,11 +624,10 @@ public:
     MI_DECLARE_RAY_INTERSECT_PACKET(8)
     MI_DECLARE_RAY_INTERSECT_PACKET(16)
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Miscellaneous query routines
+    // Miscellaneous query routines
     // =============================================================
 
     /**
@@ -802,11 +795,10 @@ public:
                                                        uint32_t ray_flags = +RayFlags::Default,
                                                        Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Miscellaneous
+    // Miscellaneous
     // =============================================================
 
     /// Is this shape a triangle mesh?
@@ -935,7 +927,6 @@ public:
      */
     virtual bool parameters_grad_enabled() const;
 
-    //! @}
     // =============================================================
 
     MI_DECLARE_PLUGIN_BASE_CLASS(Shape)
@@ -979,7 +970,7 @@ protected:
 };
 
 // -----------------------------------------------------------------------
-//! @{ \name Misc implementations
+// Misc implementations
 // -----------------------------------------------------------------------
 
 template <typename Float, typename Spectrum>
@@ -1004,7 +995,6 @@ std::ostream &operator<<(std::ostream &os,
     return os;
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(Shape)
@@ -1063,7 +1053,7 @@ NAMESPACE_END(mitsuba)
     MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of shapes
+// Enables vectorized method calls on Dr.Jit arrays of shapes
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
@@ -1110,5 +1100,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
                                                exterior_medium() != nullptr; }
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

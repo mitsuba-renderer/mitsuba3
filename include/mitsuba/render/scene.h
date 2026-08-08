@@ -48,7 +48,7 @@ public:
     ~Scene();
 
     // =============================================================
-    //! @{ \name Ray tracing
+    // Ray tracing
     // =============================================================
 
     /**
@@ -464,11 +464,10 @@ public:
     SurfaceInteraction3f ray_intersect_naive(const Ray3f &ray,
                                              Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Emitter sampling interface
+    // Emitter sampling interface
     // =============================================================
 
     /**
@@ -633,11 +632,10 @@ public:
                                     const DirectionSample3f &ds,
                                     Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling interface
+    // Silhouette sampling interface
     // =============================================================
 
     /**
@@ -682,11 +680,10 @@ public:
     Point3f invert_silhouette_sample(const SilhouetteSample3f &ss,
                                      Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Accessors
+    // Accessors
     // =============================================================
 
     /// Return a bounding box surrounding the scene
@@ -732,7 +729,6 @@ public:
     /// Return the list of sensors as a Dr.Jit array
     const DynamicBuffer<SensorPtr> &sensors_dr() const { return m_sensors_dr; }
 
-    //! @}
     // =============================================================
 
     /// Traverse the scene graph and invoke the given callback for each object

@@ -74,7 +74,7 @@ public:
     const fs::path &path() const { return m_path; }
 
     // =========================================================================
-    //! @{ \name Implementation of the Stream interface
+    // Implementation of the Stream interface
     // Most methods can be delegated directly to the underlying
     // standard file stream, avoiding having to deal with portability.
     // =========================================================================
@@ -122,7 +122,6 @@ public:
     /// Returns a string representation
     std::string to_string() const override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(FileStream)

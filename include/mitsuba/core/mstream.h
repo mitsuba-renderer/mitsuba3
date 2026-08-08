@@ -51,7 +51,7 @@ public:
     bool is_closed() const override { return m_is_closed; };
 
     // =========================================================================
-    //! @{ \name Implementation of the Stream interface
+    // Implementation of the Stream interface
     // =========================================================================
 
     /**
@@ -116,7 +116,6 @@ public:
     /// Return the underlying raw byte array
     const uint8_t *raw_buffer() const { return m_data; }
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(MemoryStream)

@@ -28,7 +28,7 @@ public:
     virtual bool is_closed() const override;
 
     // =========================================================================
-    //! @{ \name Implementation of the Stream interface
+    // Implementation of the Stream interface
     // =========================================================================
 
     virtual void read(void *, size_t) override;
@@ -41,7 +41,6 @@ public:
     virtual bool can_write() const override;
     virtual bool can_read() const override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(DummyStream)
