@@ -239,7 +239,7 @@ public:
     void clear();
 
     // =============================================================
-    //! @{ \name Accessors
+    // Accessors
     // =============================================================
 
     /**\brief Set the current block offset.
@@ -306,7 +306,6 @@ public:
     /// Return the underlying image tensor (const version)
     const TensorXf &tensor() const;
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override;

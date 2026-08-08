@@ -31,7 +31,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Point_, bool Affine>
 struct Transform {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     static constexpr size_t Size = Point_::Size;
@@ -43,21 +43,19 @@ struct Transform {
     using Scalar  = dr::scalar_t<Float>;
     using Point   = Point_;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     Matrix matrix            = dr::identity<Matrix>();
     Matrix inverse_transpose = dr::identity<Matrix>();
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Constructors, methods, etc.
+    // Constructors, methods, etc.
     // =============================================================
 
     /// Initialize the transformation from the given matrix
@@ -485,7 +483,6 @@ struct Transform {
 
     DRJIT_STRUCT(Transform, matrix, inverse_transpose)
 
-    //! @}
     // =============================================================
 };
 

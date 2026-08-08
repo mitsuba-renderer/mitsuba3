@@ -73,7 +73,7 @@ public:
     virtual bool is_closed() const = 0;
 
     // =========================================================================
-    //! @{ \name Abstract methods that need to be implemented by subclasses
+    // Abstract methods that need to be implemented by subclasses
     // =========================================================================
 
     /**
@@ -124,11 +124,10 @@ public:
     /// Can we read from the stream?
     virtual bool can_read() const = 0;
 
-    /// @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Read and write values
+    // Read and write values
     // =========================================================================
 
     /**
@@ -191,11 +190,10 @@ public:
     /// Skip ahead by a given number of bytes
     void skip(size_t amount);
 
-    /// @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Endianness handling
+    // Endianness handling
     // =========================================================================
 
     /** \brief Sets the byte order to use in this stream.
@@ -221,7 +219,6 @@ public:
     static EByteOrder host_byte_order() { return m_host_byte_order; }
 
 
-    /// @}
     // =========================================================================
 
     MI_DECLARE_CLASS(Stream)

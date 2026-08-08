@@ -158,7 +158,7 @@ spectrum_list_to_srgb(const std::vector<double> &wavelengths,
                       const std::vector<double> &values, bool bounded, bool d65);
 
 // =======================================================================
-//! @{ \name CIE 1931 2 degree observer implementation
+// CIE 1931 2 degree observer implementation
 // =======================================================================
 using Float = float;
 
@@ -282,7 +282,6 @@ void color_management_static_shutdown() {
 #endif
 }
 
-//! @}
 // =======================================================================
 
 NAMESPACE_END(mitsuba)

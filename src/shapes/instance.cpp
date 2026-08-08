@@ -111,11 +111,10 @@ public:
         return m_shapegroup->primitive_count();
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
@@ -250,7 +249,6 @@ public:
         return si;
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

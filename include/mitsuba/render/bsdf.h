@@ -64,7 +64,7 @@ enum class BSDFFlags : uint32_t {
     Delta1DTransmission  = 0x00100,
 
     // =============================================================
-    //!                   Other lobe attributes
+    //                    Other lobe attributes
     // =============================================================
 
     /// The lobe is not invariant to rotation around the normal
@@ -90,7 +90,7 @@ enum class BSDFFlags : uint32_t {
     NormalMapped         = 0x40000,
 
     // =============================================================
-    //!                 Compound lobe attributes
+    //                  Compound lobe attributes
     // =============================================================
 
     /// Any reason the shading frame must carry a smooth tangent rather
@@ -139,7 +139,7 @@ MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
  */
 struct MI_EXPORT_LIB BSDFContext {
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Transported mode (radiance or importance)
@@ -154,7 +154,6 @@ struct MI_EXPORT_LIB BSDFContext {
     /// Integer value of requested BSDF component index to be sampled/evaluated.
     uint32_t component = (uint32_t) -1;
 
-    //! @}
     // =============================================================
 
     BSDFContext() = default;
@@ -186,17 +185,16 @@ struct MI_EXPORT_LIB BSDFContext {
 /// Data structure holding the result of BSDF sampling operations.
 template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Vector3f = Vector<Float, 3>;
     using UInt32   = dr::uint32_array_t<Float>;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Normalized outgoing direction in local coordinates
@@ -214,11 +212,10 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     /// Stores the component index that was sampled by `BSDF::sample()`
     UInt32 sampled_component;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /**
@@ -239,7 +236,6 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
           sampled_component(uint32_t(-1)) { }
 
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
@@ -550,7 +546,7 @@ public:
                                      Mask active = true) const;
 
     // -----------------------------------------------------------------------
-    //! @{ \name BSDF property accessors (components, flags, etc)
+    // BSDF property accessors (components, flags, etc)
     // -----------------------------------------------------------------------
 
     /// Flags for all components combined.
@@ -607,7 +603,6 @@ public:
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
-    //! @}
     // -----------------------------------------------------------------------
 
     MI_DECLARE_PLUGIN_BASE_CLASS(BSDF)
@@ -626,7 +621,7 @@ protected:
 };
 
 // -----------------------------------------------------------------------
-//! @{ \name Misc implementations
+// Misc implementations
 // -----------------------------------------------------------------------
 
 extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
@@ -658,14 +653,13 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
     return bsdf;
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of BSDFs
+// Enables vectorized method calls on Dr.Jit arrays of BSDFs
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
@@ -685,5 +679,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     auto needs_differentials() const { return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials); }
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

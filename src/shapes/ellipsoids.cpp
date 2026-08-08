@@ -217,11 +217,10 @@ public:
         );
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Sampling routines (not implemented!)
+    // Sampling routines (not implemented!)
     // =============================================================
 
     PositionSample3f sample_position(Float, const Point2f &, Mask) const override { return dr::zeros<PositionSample3f>(); }
@@ -234,11 +233,10 @@ public:
 
     SurfaceInteraction3f eval_parameterization(const Point2f &, uint32_t, Mask) const override { return dr::zeros<SurfaceInteraction3f>(); }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Attribute routines
+    // Attribute routines
     // =============================================================
 
     Mask has_attribute(std::string_view name, Mask active) const override {
@@ -281,11 +279,10 @@ public:
         }
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP, typename Ellipsoid>
@@ -511,7 +508,6 @@ public:
     }
 #endif
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

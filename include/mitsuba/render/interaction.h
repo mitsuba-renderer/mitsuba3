@@ -51,7 +51,7 @@ enum class RayFlags : uint32_t {
     All [[deprecated("Deprecated, change to RayFlags::Default.")]] = Shading,
 
     // =============================================================
-    //!              Differentiability compute flags
+    //               Differentiability compute flags
     // =============================================================
 
     /** \brief Track differentiable dependence of the `SurfaceInteraction3f`
@@ -97,7 +97,7 @@ MI_DECLARE_ENUM_OPERATORS(RayFlags)
 template <typename Float_, typename Spectrum_>
 struct Interaction {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Float    = Float_;
@@ -105,11 +105,10 @@ struct Interaction {
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Distance traveled along the ray
@@ -127,11 +126,10 @@ struct Interaction {
     /// Geometric normal (only valid for `SurfaceInteraction3f`)
     Normal3f n;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /// Constructor
@@ -175,7 +173,6 @@ struct Interaction {
                      wavelengths);
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n);
@@ -203,7 +200,7 @@ template <typename Float_, typename Spectrum_>
 struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Float    = Float_;
@@ -218,11 +215,10 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Index            = typename CoreAliases::UInt32;
     using PositionSample3f = typename RenderAliases::PositionSample3f;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Pointer to the associated shape
@@ -261,11 +257,10 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Stores a pointer to the parent instance (if applicable)
     ShapePtr instance = nullptr;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /**
@@ -617,7 +612,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         return dr::masked(*this, array);
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
@@ -632,7 +626,7 @@ template <typename Float_, typename Spectrum_>
 struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
     using Float    = Float_;
     using Spectrum = Spectrum_;
@@ -642,12 +636,11 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     // Make parent fields/functions visible
     MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
-    //! @}
     // =============================================================
 
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Pointer to the associated medium
@@ -664,11 +657,10 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     /// mint used when sampling the given distance ``t``
     Float mint;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /**
@@ -702,7 +694,6 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         return sh_frame.to_local(v);
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
@@ -727,7 +718,7 @@ template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {
 
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Float    = Float_;
@@ -739,11 +730,10 @@ struct PreliminaryIntersection {
     using Ray3f = typename Shape_::Ray3f;
     using Spectrum = typename Ray3f::Spectrum;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Whether the ray query found a hit. This mask already includes the
@@ -768,11 +758,10 @@ struct PreliminaryIntersection {
     /// Stores a pointer to the parent instance (if applicable)
     ShapePtr instance = nullptr;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /**
@@ -839,7 +828,6 @@ struct PreliminaryIntersection {
         }
     }
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(PreliminaryIntersection, valid, t, prim_uv, prim_index,

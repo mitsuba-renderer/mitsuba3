@@ -186,7 +186,7 @@ public:
     using typename Base::Index;
 
     // =========================================================================
-    //! @{ \name Constructors and destructor
+    // Constructors and destructor
     // =========================================================================
 
     /** \brief Create an empty mesh
@@ -226,11 +226,10 @@ public:
          bool face_normals = false,
          bool flip_normals = false);
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Mesh construction
+    // Mesh construction
     // =========================================================================
 
     /**
@@ -387,11 +386,10 @@ public:
      */
     static ref<Mesh> merge(const std::vector<Shape<Float, Spectrum> *> &shapes);
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Element counts
+    // Element counts
     // =========================================================================
 
     /// Return the total number of faces
@@ -403,11 +401,10 @@ public:
     /// Return the number of normal groups
     ScalarSize normal_count() const { return m_normal_count; }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Field state of the vertex and face data
+    // Field state of the vertex and face data
     // =========================================================================
 
     /// Return the vertex index triplets as an ``(F, 3)`` tensor
@@ -467,11 +464,10 @@ public:
     /// encodes the identity.
     const IndexBuffer &normal_index() const { return m_normal_index; }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Feature queries
+    // Feature queries
     // =========================================================================
 
     /// Does the mesh provide interpolated normals?
@@ -495,11 +491,10 @@ public:
     /// Does this mesh use face normals?
     bool has_face_normals() const { return m_face_normals; }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Geometry queries
+    // Geometry queries
     // =========================================================================
 
     /** \brief Returns the world-space position of the vertex with index
@@ -618,11 +613,10 @@ public:
     Point3f barycentric_coordinates(const SurfaceInteraction3f &si,
                                     Mask active = true) const;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Custom mesh attributes
+    // Custom mesh attributes
     // =========================================================================
 
     /// Return the mesh attribute \c name as a ``(rows, dim)`` tensor
@@ -646,11 +640,10 @@ public:
      */
     void remove_attribute(std::string_view name) override;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Packed record layout
+    // Packed record layout
     // =========================================================================
 
     /// One packed vertex record, as returned by ``packed_vertex()``
@@ -660,11 +653,10 @@ public:
     template <typename Index = UInt32>
     using PackedFace = Vector<dr::uint32_array_t<Index>, MeshFaceStride>;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Functions to access the packed vertex state
+    // Functions to access the packed vertex state
     // =========================================================================
 
     /// Return the packed per-vertex buffer
@@ -696,11 +688,10 @@ public:
             return dr::gather<PackedVertex>(m_packed_vertices, index, active);
     }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Recomputation of derived data
+    // Recomputation of derived data
     // =========================================================================
 
     /// (Re-) compute smooth interpolated normals from the positions
@@ -748,11 +739,10 @@ public:
      */
     void validate(bool check_bounds = false) const;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Serialization
+    // Serialization
     // =========================================================================
 
     /**
@@ -797,11 +787,10 @@ public:
      */
     void write_serialized(Stream *stream) const;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Ray-triangle intersection
+    // Ray-triangle intersection
     // =========================================================================
 
     /** \brief Ray-triangle intersection test
@@ -897,11 +886,10 @@ public:
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(8)
     MI_DECLARE_RAY_INTERSECT_TRI_PACKET(16)
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Shape interface implementation
+    // Shape interface implementation
     // =========================================================================
 
     /// Set the shape's `BSDF`
@@ -981,11 +969,10 @@ public:
     /// Return a human-readable string representation of the shape contents.
     std::string to_string() const override;
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Miscellaneous
+    // Miscellaneous
     // =========================================================================
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
@@ -993,7 +980,6 @@ public:
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;
 
-    //! @}
     // =========================================================================
 
 protected:
@@ -1307,7 +1293,7 @@ NAMESPACE_END(mitsuba)
 
 
 // -----------------------------------------------------------------------
-//! @{ \name Dr.Jit support for vectorized function calls
+// Dr.Jit support for vectorized function calls
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
@@ -1331,5 +1317,4 @@ DRJIT_CALL_TEMPLATE_INHERITED_BEGIN(mitsuba::Mesh, mitsuba::Shape)
     DRJIT_CALL_GETTER(has_face_normals)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

@@ -60,7 +60,7 @@ public:
     static constexpr ObjectType Type = ObjectType::Unknown; // Endpoint is not a concrete type
 
     // =============================================================
-    //! @{ \name Wavelength sampling interface
+    // Wavelength sampling interface
     // =============================================================
 
     /// Destructor
@@ -116,11 +116,10 @@ public:
     virtual Spectrum pdf_wavelengths(const Spectrum &wavelengths,
                                      Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray sampling interface
+    // Ray sampling interface
     // =============================================================
 
     /**
@@ -163,11 +162,10 @@ public:
     sample_ray(Float time, Float sample1, const Point2f &sample2,
                const Point2f &sample3, Mask active = true) const;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Direction sampling interface
+    // Direction sampling interface
     // =============================================================
 
     /**
@@ -259,7 +257,7 @@ public:
                    Mask active = true) const;
 
     // =============================================================
-    //! @{ \name Position sampling interface
+    // Position sampling interface
     // =============================================================
 
     /**
@@ -298,7 +296,7 @@ public:
                                Mask active = true) const;
 
     // =============================================================
-    //! @{ \name Other query functions
+    // Other query functions
     // =============================================================
 
     /**
@@ -338,12 +336,11 @@ public:
     bool needs_sample_3() const { return m_needs_sample_3; }
 
 
-    //! @}
     // =============================================================
 
 
     // =============================================================
-    //! @{ \name Miscellaneous
+    // Miscellaneous
     // =============================================================
 
     /// Return the `Shape` to which the emitter is currently attached
@@ -379,7 +376,6 @@ public:
      */
     virtual void set_scene(const Scene *scene);
 
-    //! @}
     // =============================================================
 
     void traverse(TraversalCallback *callback) override;

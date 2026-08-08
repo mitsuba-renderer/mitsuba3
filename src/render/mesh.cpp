@@ -1676,7 +1676,7 @@ MI_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
 }
 
 // =============================================================
-//! @{ \name Surface sampling routines
+// Surface sampling routines
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::PositionSample3f
@@ -1763,11 +1763,10 @@ MI_VARIANT Float Mesh<Float, Spectrum>::pdf_position(const PositionSample3f &, M
     return m_area_pmf.normalization();
 }
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Silhouette sampling routines and other utilities
+// Silhouette sampling routines and other utilities
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::SilhouetteSample3f
@@ -2237,11 +2236,10 @@ Mesh<Float, Spectrum>::sample_precomputed_silhouette(const Point3f &viewpoint,
     return ss;
 }
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Ray tracing routines
+// Ray tracing routines
 // =============================================================
 
 MI_VARIANT typename Mesh<Float, Spectrum>::Point3f
@@ -2457,11 +2455,10 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     return si;
 }
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Mesh attributes
+// Mesh attributes
 // =============================================================
 
 MI_VARIANT bool
@@ -2651,7 +2648,6 @@ Mesh<Float, Spectrum>::eval_attribute_3(std::string_view name,
     return eval_attribute_n<3>(name, si, active);
 }
 
-//! @}
 // =============================================================
 
 namespace {

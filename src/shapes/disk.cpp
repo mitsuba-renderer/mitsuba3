@@ -168,7 +168,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -221,11 +221,10 @@ public:
         return si;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -380,11 +379,10 @@ public:
         return ss;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>

@@ -8,7 +8,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Elementary vector, point, and normal data types
+// Elementary vector, point, and normal data types
 // =======================================================================
 
 template <typename Value_, size_t Size_>
@@ -77,11 +77,10 @@ auto operator+(const Point<T1, S1> &p1, const Vector<T2, S2> &v2) {
     return p1 + Point<T2, S2>(v2);
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Masking support for vector, point, and normal data types
+// Masking support for vector, point, and normal data types
 // =======================================================================
 
 template <typename Value_, size_t Size_>
@@ -111,7 +110,6 @@ struct Normal<dr::detail::MaskedArray<Value_>, Size_>
     Normal(const Base &b) : Base(b) { }
 };
 
-//! @}
 // =======================================================================
 
 /// Complete the set {a} to an orthonormal basis {a, b, c}

@@ -71,7 +71,7 @@ NAMESPACE_BEGIN(spline)
                                                      (x2 - x0), f1 - f0);
 
 // =======================================================================
-//! @{ \name Functions for evaluating and sampling cubic Catmull-Rom splines
+// Functions for evaluating and sampling cubic Catmull-Rom splines
 // =======================================================================
 
 
@@ -1061,7 +1061,6 @@ Value eval_2d(const dr::scalar_t<Value> *nodes1_, uint32_t size1,
 }
 
 // =======================================================================
-/*! @} */
 
 NAMESPACE_END(spline)
 NAMESPACE_END(mitsuba)

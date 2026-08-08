@@ -403,7 +403,6 @@ public:
         return result;
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

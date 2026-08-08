@@ -9,7 +9,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Data types for RGB data
+// Data types for RGB data
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 3>
@@ -37,11 +37,10 @@ struct Color : dr::StaticArrayImpl<Value_, Size_, false, Color<Value_, Size_>> {
     DRJIT_ARRAY_IMPORT(Color, Base)
 };
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Data types for spectral quantities with sampled wavelengths
+// Data types for spectral quantities with sampled wavelengths
 // =======================================================================
 
 template <typename Value_, size_t Size_ = 4>
@@ -95,11 +94,10 @@ template <typename T> auto depolarizer(const T &spectrum = T(1)) {
     }
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name Masking support for color and spectrum data types
+// Masking support for color and spectrum data types
 // =======================================================================
 
 template <typename Value_, size_t Size_>
@@ -120,7 +118,6 @@ struct Spectrum<dr::detail::MaskedArray<Value_>, Size_>
     Spectrum(const Base &b) : Base(b) { }
 };
 
-//! @}
 // =======================================================================
 
 #define MI_CIE_MIN           360.f

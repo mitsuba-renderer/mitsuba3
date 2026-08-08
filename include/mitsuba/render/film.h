@@ -143,7 +143,7 @@ public:
                                          bool border = false) = 0;
 
     // =============================================================
-    //! @{ \name Accessor functions
+    // Accessor functions
     // =============================================================
 
     /**
@@ -206,7 +206,6 @@ public:
     void traverse(TraversalCallback *callback) override;
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override;
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override;

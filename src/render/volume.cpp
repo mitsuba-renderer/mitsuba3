@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! Volume base implementation
+// Volume base implementation
 // =======================================================================
 
 MI_VARIANT Volume<Float, Spectrum>::Volume(const Properties &props)
