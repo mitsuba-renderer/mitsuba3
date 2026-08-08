@@ -178,8 +178,8 @@ public:
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
                 Float mis = dr::select(ds.delta, Float(1.f), mis_weight(
-                    ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf) * m_weight_lum);
-                result[active_e] += mis * bsdf_val * emitter_val;
+                    ds.pdf * m_frac_lum, bsdf_pdf * m_frac_bsdf));
+                result[active_e] += mis * bsdf_val * emitter_val * m_weight_lum;
             }
         }
 
