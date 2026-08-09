@@ -6002,6 +6002,39 @@ static const char *__doc_mitsuba_MemoryStream_write =
 R"doc(Writes a specified amount of data into the memory buffer. The capacity
 of the memory buffer is extended if necessary.)doc";
 
+static const char *__doc_mitsuba_MergeKey =
+R"doc(Identifies a set of mutually mergeable meshes
+
+The fields are the state that Mesh::merge() inherits from its first
+input, so a difference in any of them would misrepresent the remaining
+inputs. Obtain the key of a mesh through Mesh::merge_key().)doc";
+
+static const char *__doc_mitsuba_MergeKeyHasher = R"doc(Hash function of a MergeKey, for use with ``tsl::robin_map``)doc";
+
+static const char *__doc_mitsuba_MergeKeyHasher_operator_call = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_bsdf = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_emitter = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_exterior_medium = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_interior_medium = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_layout =
+R"doc(Packed record layout, without the ``FaceBSDFs`` bit that a merge
+unions
+
+The face-normal setting needs no separate field, since a built mesh
+carries the ``Normals`` bit exactly when it shades with vertex
+normals.)doc";
+
+static const char *__doc_mitsuba_MergeKey_operator_eq = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_MergeKey_sensor = R"doc()doc";
+
 static const char *__doc_mitsuba_Mesh = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_2 =
@@ -6570,11 +6603,18 @@ static const char *__doc_mitsuba_Mesh_m_vertex_count = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_merge =
 R"doc(Merge several meshes into one
 
-All meshes must be compatible and have identical attachments (BSDF,
-emitter, sensor, media), face-normal setting, vertex layout and
-tangent state. Custom attributes are not supported.
+All meshes must share the same merge_key() and none of them may carry
+custom attributes.
 
 The method raises an exception when called with incompatible inputs.)doc";
+
+static const char *__doc_mitsuba_Mesh_merge_key =
+R"doc(Return the compatibility key of this mesh
+
+The key collects the state that merge() copies from its first input,
+which is the attachments (BSDF, emitter, sensor, media) and the packed
+record layout. Meshes are mergeable when their keys agree and none of
+them carries custom attributes.)doc";
 
 static const char *__doc_mitsuba_Mesh_moeller_trumbore =
 R"doc(Moeller and Trumbore algorithm for computing ray-triangle intersection

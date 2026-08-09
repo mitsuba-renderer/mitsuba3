@@ -16,6 +16,7 @@
 #include <mitsuba/render/records.h>
 #include <drjit/util.h>
 #include <mitsuba/render/scene.h>
+#include <algorithm>
 #include <tuple>
 
 #if defined(MI_ENABLE_EMBREE)
@@ -1439,6 +1440,12 @@ Mesh<Float, Spectrum>::sil_dedge_pmf() const {
     return m_sil_dedge_pmf;
 }
 
+MI_VARIANT MergeKey Mesh<Float, Spectrum>::merge_key() const {
+    return { m_bsdf.get(), m_emitter.get(), m_sensor.get(),
+             m_interior_medium.get(), m_exterior_medium.get(),
+             (Layout) (m_layout & ~Layout::FaceBSDFs) };
+}
+
 MI_VARIANT
 ref<Mesh<Float, Spectrum>>
 Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes) {
@@ -1460,20 +1467,14 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
 
     // Metadata pass: check compatibility and compute the prefix offsets,
     // totals, bounding box, and name of the result
-    auto signature = [](const Mesh *m) {
-        return std::make_tuple(
-            m->emitter(), m->sensor(), m->bsdf(), m->interior_medium(),
-            m->exterior_medium(), m->has_normals(), m->has_texcoords(),
-            m->has_face_normals(), m->packs_tangent());
-    };
+    MergeKey key = first->merge_key();
 
     size_t V = 0, F = 0, P = 0, N = 0;
     bool any_pmap = false, any_nmap = false, any_bsdf = false;
     ScalarBoundingBox3f bbox;
-    std::string filename;
 
     for (const Mesh *m : meshes) {
-        if (signature(m) != signature(first) || m->has_mesh_attributes())
+        if (m->merge_key() != key || m->has_mesh_attributes())
             Throw("Mesh::merge(): the meshes are incompatible (%s and %s)!",
                   first->to_string(), m->to_string());
 
@@ -1483,10 +1484,25 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
         any_nmap |= m->m_normal_index.size() != 0;
         any_bsdf |= m->has_face_bsdfs();
         bbox.expand(m->m_bbox);
-        if (!filename.empty())
-            filename += " + ";
-        filename += m->m_filename;
     }
+
+    // Name the result after its inputs. A scene may merge many thousands of
+    // meshes, so list only the first few and summarize the rest.
+    constexpr size_t NameLimit = 4;
+    size_t named = std::min(meshes.size(), NameLimit),
+           extra = meshes.size() - named;
+
+    std::string filename = "Merged mesh (" + first->m_filename;
+    for (size_t i = 1; i < named; ++i) {
+        // Oxford comma, except when the list has only two entries
+        const char *sep = (i + 1 < named || extra) ? ", "
+                          : (named > 2)            ? ", and "
+                                                   : " and ";
+        filename += sep + meshes[i]->m_filename;
+    }
+    if (extra)
+        filename += tfm::format(", and %zu more", extra);
+    filename += ")";
 
     bool normals = first->has_normals();
     any_nmap &= normals;
@@ -1506,12 +1522,15 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
         if (nv == 0)
             continue;
 
+        // Opaque offsets keep the input-specific values out of the generated
+        // code, so that every input after the first hits the kernel cache
+        UInt32 voff = dr::opaque<UInt32>((uint32_t) vbase),
+               foff = dr::opaque<UInt32>((uint32_t) fbase);
+
         if constexpr (dr::is_jit_v<Float>) {
-            UInt32 voff = dr::opaque<UInt32>((uint32_t) vbase);
             dr::scatter(vertices, m->m_packed_vertices,
                         dr::arange<IndexBuffer>(nv * MeshVertexStride) +
-                            dr::opaque<UInt32>((uint32_t) (vbase *
-                                                           MeshVertexStride)),
+                            voff * MeshVertexStride,
                         true, ReduceMode::NoConflicts);
 
             if (nf > 0) {
@@ -1519,8 +1538,7 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
                 dr::scatter(faces,
                             dr::select((j & 3u) == 3u, m->m_packed_faces,
                                        m->m_packed_faces + voff),
-                            j + dr::opaque<UInt32>(
-                                    (uint32_t) (fbase * MeshFaceStride)),
+                            j + foff * MeshFaceStride,
                             true, ReduceMode::NoConflicts);
             }
         } else {
@@ -1543,8 +1561,7 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
                                         ? map
                                         : dr::arange<IndexBuffer>(nv);
                 dr::scatter(dst, local + dr::opaque<UInt32>((uint32_t) base),
-                            dr::arange<IndexBuffer>(nv) +
-                                dr::opaque<UInt32>((uint32_t) vbase),
+                            dr::arange<IndexBuffer>(nv) + voff,
                             true, ReduceMode::NoConflicts);
             } else {
                 ScalarIndex *d = dst.data() + vbase;
@@ -1558,6 +1575,10 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
             copy_map(pidx, m->m_position_index, pbase);
         if (any_nmap)
             copy_map(nidx, m->m_normal_index, nbase);
+
+        // Launch a kernel per mesh. Otherwise Dr.Jit will potentially fuses
+        // many writes into a single large kernel that will be slow to compile.
+        dr::eval(vertices, faces, pidx, nidx);
 
         vbase += nv; fbase += nf;
         pbase += m->m_position_count; nbase += m->m_normal_count;

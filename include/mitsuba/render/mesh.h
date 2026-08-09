@@ -372,11 +372,20 @@ public:
     void from_corners(const CornerMesh &desc);
 
     /**
+     * \brief Return the compatibility key of this mesh
+     *
+     * The key collects the state that \ref merge() copies from its first
+     * input, which is the attachments (BSDF, emitter, sensor, media) and the
+     * packed record layout. Meshes are mergeable when their keys agree and
+     * none of them carries custom attributes.
+     */
+    MergeKey merge_key() const;
+
+    /**
      * \brief Merge several meshes into one
      *
-     * All meshes must be compatible and have identical attachments (BSDF,
-     * emitter, sensor, media), face-normal setting, vertex layout and
-     * tangent state. Custom attributes are not supported.
+     * All meshes must share the same \ref merge_key() and none of them may
+     * carry custom attributes.
      *
      * The method raises an exception when called with incompatible inputs.
      */

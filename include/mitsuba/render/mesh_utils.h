@@ -7,6 +7,7 @@
 #include <mitsuba/core/transform.h>
 #include <drjit/quaternion.h>
 #include <drjit/unique_buffer.h>
+#include <drjit-core/hash.h>
 #include <cstddef>
 #include <cstdint>
 #include <string>
@@ -55,6 +56,45 @@ constexpr Layout make_layout(bool normals, bool texcoords,
                      (tangents   ? (uint32_t) Layout::Tangents  : 0u) |
                      (face_bsdfs ? (uint32_t) Layout::FaceBSDFs : 0u));
 }
+
+/**
+ * \brief Identifies a set of mutually mergeable meshes
+ *
+ * The fields are the state that \ref Mesh::merge() inherits from its first
+ * input, so a difference in any of them would misrepresent the remaining
+ * inputs. Obtain the key of a mesh through \ref Mesh::merge_key().
+ */
+struct MergeKey {
+    const Object *bsdf, *emitter, *sensor, *interior_medium, *exterior_medium;
+
+    /**
+     * \brief Packed record layout, without the \c FaceBSDFs bit that a merge
+     * unions
+     *
+     * The face-normal setting needs no separate field, since a built mesh
+     * carries the \c Normals bit exactly when it shades with vertex normals.
+     */
+    Layout layout;
+
+    bool operator==(const MergeKey &k) const {
+        return bsdf == k.bsdf && emitter == k.emitter && sensor == k.sensor &&
+               interior_medium == k.interior_medium &&
+               exterior_medium == k.exterior_medium && layout == k.layout;
+    }
+
+    bool operator!=(const MergeKey &k) const { return !operator==(k); }
+};
+
+/// Hash function of a \ref MergeKey, for use with ``tsl::robin_map``
+struct MergeKeyHasher {
+    size_t operator()(const MergeKey &k) const {
+        uint64_t h = (uint64_t) k.layout;
+        for (const Object *p : { k.bsdf, k.emitter, k.sensor,
+                                 k.interior_medium, k.exterior_medium })
+            h = fmix64(h ^ (uintptr_t) p);
+        return (size_t) h;
+    }
+};
 
 /**
  * \brief Encode a unit normal \c n and a tangent \c s into three floats
