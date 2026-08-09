@@ -488,18 +488,25 @@ MI_PY_EXPORT(parser) {
 
             return single_object_or_list(objects);
         },
+        nb::sig("def load_file(path: str, parallel: bool = True, "
+                "optimize: bool = True, **kwargs) -> typing.Any"),
         "path"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
-        R"doc(Load a Mitsuba scene or object from an XML file
+        R"doc(
+        Load a Mitsuba scene or object from an XML file
 
-Args:
-    path: The XML scene description's filename
-    parallel: Whether the loading should be executed on multiple threads in parallel
-    optimize: Whether to enable optimizations like merging identical objects
-        (default: True)
-    kwargs: A dictionary of key value pairs that will replace any default
-        parameters declared in the XML.
+        Returns the loaded object, or a list of objects if the description
+        contains several top-level entries. The declared return type is
+        ``typing.Any`` so that the concrete type (e.g. :py:class:`Scene`) can
+        be used without a cast.
 
-)doc");
+        Args:
+            path: The XML scene description's filename
+            parallel: Whether the loading should be executed on multiple threads in parallel
+            optimize: Whether to enable optimizations like merging identical objects
+                (default: True)
+            kwargs: A dictionary of key value pairs that will replace any default
+                parameters declared in the XML.
+        )doc");
 
 
     m.def(
@@ -522,18 +529,25 @@ Args:
 
             return single_object_or_list(objects);
         },
+        nb::sig("def load_string(value: str, parallel: bool = True, "
+                "optimize: bool = True, **kwargs) -> typing.Any"),
         "value"_a, "parallel"_a = true, "optimize"_a = true, "kwargs"_a,
-        R"doc(Load a Mitsuba scene or object from an XML string
+        R"doc(
+        Load a Mitsuba scene or object from an XML string
 
-Args:
-    value: The XML scene description as a string
-    parallel: Whether the loading should be executed on multiple threads in parallel
-    optimize: Whether to enable optimizations like merging identical objects
-        (default: True)
-    kwargs: A dictionary of key value pairs that will replace any default
-        parameters declared in the XML.
+        Returns the loaded object, or a list of objects if the description
+        contains several top-level entries. The declared return type is
+        ``typing.Any`` so that the concrete type (e.g. :py:class:`Scene`) can
+        be used without a cast.
 
-)doc");
+        Args:
+            value: The XML scene description as a string
+            parallel: Whether the loading should be executed on multiple threads in parallel
+            optimize: Whether to enable optimizations like merging identical objects
+                (default: True)
+            kwargs: A dictionary of key value pairs that will replace any default
+                parameters declared in the XML.
+        )doc");
 
     m.def(
         "load_dict",
@@ -556,14 +570,21 @@ Args:
 
             return single_object_or_list(objects);
         },
+        nb::sig("def load_dict(dict: dict, parallel: bool = True, "
+                "optimize: bool = True) -> typing.Any"),
         "dict"_a, "parallel"_a=true, "optimize"_a=true,
-        R"doc(Load a Mitsuba scene or object from an Python dictionary
+        R"doc(
+        Load a Mitsuba scene or object from an Python dictionary
 
-Args:
-    dict: Python dictionary containing the object description
-    parallel: Whether the loading should be executed on multiple threads in parallel
-    optimize: Whether to enable optimizations like merging identical objects
-        (default: True)
+        Returns the loaded object, or a list of objects if the dictionary
+        contains several top-level entries. The declared return type is
+        ``typing.Any`` so that the concrete type (e.g. :py:class:`Scene`) can
+        be used without a cast.
 
-)doc");
+        Args:
+            dict: Python dictionary containing the object description
+            parallel: Whether the loading should be executed on multiple threads in parallel
+            optimize: Whether to enable optimizations like merging identical objects
+                (default: True)
+        )doc");
 }
