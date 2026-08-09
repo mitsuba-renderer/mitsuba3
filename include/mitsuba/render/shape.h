@@ -207,8 +207,8 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  *    their name must start with ``vertex_`` (resp. ``face_``), and their size
  *    must match the number of vertices (resp. faces) of the mesh.
  *
- * Once registered, attributes are queried with the ``Shape::eval_attribute*``
- * methods.
+ * Once registered, attributes are queried with the `Shape.eval_attribute`,
+ * `Shape.eval_attribute_1` and `Shape.eval_attribute_3` methods.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public JitObject<Shape<Float, Spectrum>> {
@@ -239,7 +239,7 @@ public:
      * Args:
      *     time: The scene time associated with the position sample
      *
-     *     sample: A uniformly distributed 2D point on the domain ``[0,1]^2``
+     *     sample: A uniformly distributed 2D point on the domain :math:`[0,1]^2`
      *
      * Returns:
      *     A `PositionSample3f` instance describing the generated sample
@@ -280,7 +280,7 @@ public:
      * Args:
      *     it: A reference position somewhere within the scene.
      *
-     *     sample: A uniformly distributed 2D point on the domain ``[0,1]^2``
+     *     sample: A uniformly distributed 2D point on the domain :math:`[0,1]^2`
      *
      * Returns:
      *     A `DirectionSample3f` instance describing the generated sample
@@ -537,10 +537,6 @@ public:
      * will already have been initialized by the caller. The field ``wi`` is initialized
      * by the caller following the call to `compute_surface_interaction()`, and
      * ``duv_dx``, and ``duv_dy`` are left uninitialized.
-     *
-     * Every call must be followed by `SurfaceInteraction3f.finalize_surface_interaction()`, which implementations
-     * rely on: it is what invalidates ``t`` on the inactive lanes, so they need
-     * not mask it themselves.
      *
      * Args:
      *     ray: Ray associated with the ray intersection
@@ -913,7 +909,7 @@ public:
 
     /**
      * Return whether any shape's parameters that introduce visibility
-     *  discontinuities require gradients (default return false)
+     * discontinuities require gradients (default return false)
      */
     virtual bool parameters_grad_enabled() const;
 

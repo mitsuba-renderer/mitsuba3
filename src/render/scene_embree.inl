@@ -115,7 +115,7 @@ static void embree_backface_cull(const RTCFilterFunctionNArguments *args) {
     }
 }
 
-/// Build one Embree geometry from a \ref ShapeIR.
+/// Build one Embree geometry from a `ShapeIR`.
 template <typename Float, typename Spectrum>
 static RTCGeometry
 embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,

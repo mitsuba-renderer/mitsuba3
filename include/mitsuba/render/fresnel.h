@@ -293,7 +293,7 @@ Vector<Float, 3> reflect(const Vector<Float, 3> &wi, const Normal<Float, 3> &m) 
 /**
  * Refraction in local coordinates
  *
- * The 'cos_theta_t' and 'eta_ti' parameters correspond to entries of the
+ * The ``cos_theta_t`` and ``eta_ti`` parameters correspond to entries of the
  * tuple returned by the `fresnel` and `fresnel_polarized` functions.
  */
 template <typename Float>

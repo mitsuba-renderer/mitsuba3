@@ -28,9 +28,9 @@ NAMESPACE_BEGIN(mitsuba)
  * texture coordinates, and tangents that the renderer interpolates across
  * faces. Tangents orient the shading frame for use with normal maps and
  * anisotropic appearance models (e.g., brushed metal) and are computed
- * following the MikkTSpace (https://github.com/mmikk/MikkTSpace) standard. The
- * class can also store and interpolate arbitrary user-provided data with 1 to
- * 4 dimensions.
+ * following the `MikkTSpace <https://github.com/mmikk/MikkTSpace>`__ standard.
+ * The class can also store and interpolate arbitrary user-provided data with 1
+ * to 4 dimensions.
  *
  * Constructing a mesh involves two steps: the `Mesh()` constructor to create
  * an empty mesh followed by a call to one of `from_fields()` (for indexed
@@ -70,16 +70,17 @@ NAMESPACE_BEGIN(mitsuba)
  * normal groups, where each level subdivides the previous one (``P <= N <=
  * V``). In particular, the `Mesh` exposes the following set of arrays:
  *
- * .. code-block:: text
- *
- *    Name              Type          Shape     Range     Optional
- *    faces             TensorXu32    (F, 3)    [0, V)
- *    position_index    UInt32 array  V         [0, P)       x
- *    normal_index      UInt32 array  V         [0, N)       x
- *    positions         TensorXf32    (P, 3)
- *    normals           TensorXf32    (N, 3)                 x
- *    texcoords         TensorXf32    (V, 2)                 x
- *    bsdf_index        UInt32 array  F         [0, B)       x
+ * ==================  ================  ==========  ==========  ========
+ * Name                Type              Shape       Range       Optional
+ * ==================  ================  ==========  ==========  ========
+ * ``faces``           ``TensorXu32``    ``(F, 3)``  ``[0, V)``
+ * ``position_index``  ``UInt32`` array  ``V``       ``[0, P)``  x
+ * ``normal_index``    ``UInt32`` array  ``V``       ``[0, N)``  x
+ * ``positions``       ``TensorXf32``    ``(P, 3)``
+ * ``normals``         ``TensorXf32``    ``(N, 3)``              x
+ * ``texcoords``       ``TensorXf32``    ``(V, 2)``              x
+ * ``bsdf_index``      ``UInt32`` array  ``F``       ``[0, B)``  x
+ * ==================  ================  ==========  ==========  ========
  *
  * The fields have the following roles:
  *
@@ -99,7 +100,7 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * - ``bsdf_index`` (optional): per-face index into a set of ``B`` materials.
  *
- * ## Example usage
+ * .. rubric:: Example usage
  *
  * Texture coordinates and tangents vary *per vertex*. For example,
  * reading the UV coordinate for corner ``c`` of face ``f`` involves
@@ -123,7 +124,7 @@ NAMESPACE_BEGIN(mitsuba)
  * and/or normal. This permits splitting a mesh into different parameterization
  * charts or adding creases without the problems mentioned earlier.
  *
- * ## Parameter interface
+ * .. rubric:: Parameter interface
  *
  * The mesh exposes the fields listed above via `traverse()`, and all of them
  * can be written. Custom mesh attributes appear as further ``vertex_*`` and
@@ -133,7 +134,7 @@ NAMESPACE_BEGIN(mitsuba)
  * size of all fields, and refresh dependent state (bounding box, sampling
  * tables, tangents, acceleration structures).
  *
- * ## Packed layout
+ * .. rubric:: Packed layout
  *
  * The representation explained above is expressive but not particularly
  * efficient in a ray tracer, since it involves several indirections and
@@ -152,7 +153,7 @@ NAMESPACE_BEGIN(mitsuba)
  * hardware instruction each on recent GPUs with 256-bit loads (NVIDIA
  * Blackwell), as opposed to ~28 scalar loads spread across multiple buffers.
  *
- * ## Orientation
+ * .. rubric:: Orientation
  *
  * The face winding order defines the orientation of the surface. In
  * particular, the geometric normal of a face follows from the right hand rule
@@ -408,8 +409,8 @@ public:
      *
      * This function returns `faces()` re-indexed into surface position space,
      * i.e., the geometric topology of the mesh without UV/normal-related
-     * seams. It is used by features like `dedge()` and the
-     * mesh Laplacian in ``largesteps.py``.
+     * seams. It is used by features like `Mesh.dedge` and the
+     * mesh Laplacian in ``mitsuba.ad.largesteps``.
      */
     TensorXu32 geometric_faces() const;
 
@@ -576,8 +577,9 @@ public:
      * Returns the opposite edge index associated with directed edge ``index``
      *
      * This is one of four accessors forwarding to the `DirectedEdge`
-     * structure, which `dedge()` builds on first use. A returned ``DirectedEdge::Invalid`` therefore always describes the topology, here the
-     * absence of a neighboring face.
+     * structure, which `Mesh.dedge` builds on first use. A returned
+     * `DirectedEdge.Invalid` therefore always describes the topology, here
+     * the absence of a neighboring face.
      */
     MI_INLINE UInt32 dedge_opposite(UInt32 index, Mask active = true) const {
         return dedge()->opposite(index, active);
@@ -1240,7 +1242,7 @@ protected:
     /// representative vertex
     mutable IndexBuffer m_position_rep, m_normal_rep;
 
-    // Views of the packed state (see \ref build_views())
+    // Views of the packed state (see `build_views()`)
     TensorXf32 m_positions;
     TensorXf32 m_normals;
     TensorXf32 m_texcoords;

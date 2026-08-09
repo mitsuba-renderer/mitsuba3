@@ -15,11 +15,11 @@ NAMESPACE_BEGIN(mitsuba)
 /**
  * Generates a spiral of blocks to be rendered.
  *
- * Adam Arbree
- * Aug 25, 2005
- * RayTracer.java
- * Used with permission.
- * Copyright 2005 Program of Computer Graphics, Cornell University
+ * | Adam Arbree
+ * | Aug 25, 2005
+ * | RayTracer.java
+ * | Used with permission.
+ * | Copyright 2005 Program of Computer Graphics, Cornell University
  */
 class MI_EXPORT_LIB Spiral : public Object {
 public:

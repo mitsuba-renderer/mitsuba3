@@ -35,7 +35,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * The result is purely combinatorial and immutable. It stores neither vertex
  * positions nor a copy of the index buffer.
  *
- * **Representation**
+ * .. rubric:: Representation
  *
  * ``F`` stores the three vertex indices of each triangle consecutively and in
  * winding order. Triangle ``f`` therefore contributes three half-edges
@@ -84,7 +84,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *
  * The examples below use Python-style scalar pseudocode.
  *
- * **Example 1: querying the neighborhood of an edge**
+ * .. rubric:: Example 1: querying the neighborhood of an edge
  *
  * The following snippet obtains the two faces ``f0`` and ``f1`` that share
  * an interior manifold edge (which is the case when ``o != Invalid``).
@@ -109,7 +109,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * This local neighborhood is useful when computing cotangent weights,
  * curvature, etc.
  *
- * **Example 2: traversing the faces around a vertex**
+ * .. rubric:: Example 2: traversing the faces around a vertex
  *
  * Starting at `vertex_edge()`, repeatedly crossing the current edge
  * and advancing within the neighboring triangle walks around its source
@@ -142,7 +142,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *
  * These neighborhoods are commonly used by Laplacian and curvature operators.
  *
- * **Robustness**
+ * .. rubric:: Robustness
  *
  * The implementation only pairs half-edges when the result is unambiguous.
  * Whenever ``o = E2E[e]`` is not ``Invalid``, the following invariants hold:
@@ -156,7 +156,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * These invariants remain true in the presence of boundaries and malformed
  * topology.
  *
- * **Boundaries and edge defects**
+ * .. rubric:: Boundaries and edge defects
  *
  * On a well-formed mesh, every edge belongs to at most two triangles. An
  * interior edge is shared by two triangles with oppositely oriented
@@ -181,13 +181,14 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  *
  * The following table summarizes the classification:
  *
- * .. code-block:: text
- *
- *    faces  winding    E2E entries  flags at both endpoints
- *    1      -          Invalid      Boundary
- *    2      opposite   paired       none
- *    2      same       Invalid      Boundary | InconsistentOrientation
- *    >= 3   any        Invalid      Boundary | NonManifoldEdge
+ * ========  ==========  ===========  =========================================
+ * Faces     Winding     E2E entries  Flags at both endpoints
+ * ========  ==========  ===========  =========================================
+ * 1         --          Invalid      ``Boundary``
+ * 2         opposite    paired       none
+ * 2         same        Invalid      ``Boundary | InconsistentOrientation``
+ * >= 3      any         Invalid      ``Boundary | NonManifoldEdge``
+ * ========  ==========  ===========  =========================================
  *
  * A vertex accumulates the flags of all edges that touch it, so several
  * bits may be set at once. Test them individually using ``has_flag()``
@@ -195,7 +196,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * flag, `VertexFlags.NonManifoldVertex`, is not part of the edge
  * classification and is explained next.
  *
- * **Disconnected fans around a vertex**
+ * .. rubric:: Disconnected fans around a vertex
  *
  * `VertexFlags.NonManifoldVertex` marks vertices where the walk of
  * Example 2 reaches fewer faces than `valence()` reports. The
@@ -209,7 +210,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * half-edges with ``F[e] == v`` (again skipping triangles with repeated
  * indices) instead of walking from `vertex_edge()`.
  *
- * **Triangles with repeated indices**
+ * .. rubric:: Triangles with repeated indices
  *
  * A triangle such as ``(a, a, b)`` has no area and is ignored as a whole:
  * it keeps its slots in the half-edge numbering, but its three ``E2E``
@@ -221,7 +222,7 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * boundary edge: code that scans all half-edges must first skip those of
  * triangles with repeated indices.
  *
- * **Geometric and input limitations**
+ * .. rubric:: Geometric and input limitations
  *
  * This structure only examines vertex indices. It cannot detect zero-area
  * geometry caused by collinear vertices or distinct indices that refer to the

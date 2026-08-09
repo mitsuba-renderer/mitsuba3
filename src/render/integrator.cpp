@@ -533,8 +533,8 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 
 MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
-    /*  Longest visualized path depth (``-1 = infinite``). A value of \c 1 will
-        visualize only directly visible light sources. \c 2 will lead to
+    /*  Longest visualized path depth (``-1 = infinite``). A value of ``1`` will
+        visualize only directly visible light sources. ``2`` will lead to
         single-bounce (direct-only) illumination, and so on. */
     int max_depth = props.get<int>("max_depth", -1);
     if (max_depth < 0 && max_depth != -1)

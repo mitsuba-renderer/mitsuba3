@@ -448,7 +448,7 @@ public:
 
 protected:
     /**
-     * \brief Returns the number of channels in the grid
+     * Returns the number of channels in the grid
      *
      * For object instances that perform spectral upsampling, the channel that
      * holds all scaling coefficients is omitted.
@@ -464,7 +464,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction using spectral
+     * Evaluates the volume at the given interaction using spectral
      * upsampling
      */
     MI_INLINE UnpolarizedSpectrum interpolate_spectral(const Interaction3f &it,
@@ -527,7 +527,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 1 channel.
      */
@@ -543,7 +543,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 3 channels.
      */
@@ -557,7 +557,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 6 channels.
      */
@@ -573,7 +573,7 @@ protected:
 
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume contains data with multiple channels
      */

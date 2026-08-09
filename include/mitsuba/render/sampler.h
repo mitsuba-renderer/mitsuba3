@@ -24,39 +24,39 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * Scalar rendering algorithm:
  *
- *   1. The rendering algorithm first invokes `seed()` to initialize the
- *      sampler state.
+ * 1. The rendering algorithm first invokes `seed()` to initialize the
+ *    sampler state.
  *
- *   2. The first pixel sample can now be computed, after which `advance()`
- *      needs to be invoked. This repeats until all pixel samples have been
- *      generated. Note that some implementations need to be configured for a
- *      certain number of pixel samples, and exceeding these will lead to an
- *      exception being thrown.
+ * 2. The first pixel sample can now be computed, after which `advance()`
+ *    needs to be invoked. This repeats until all pixel samples have been
+ *    generated. Note that some implementations need to be configured for a
+ *    certain number of pixel samples, and exceeding these will lead to an
+ *    exception being thrown.
  *
- *   3. While computing a pixel sample, the rendering algorithm usually
- *      requests 1D or 2D component blocks using the `next_1d()` and
- *      `next_2d()` functions before moving on to the next sample.
+ * 3. While computing a pixel sample, the rendering algorithm usually
+ *    requests 1D or 2D component blocks using the `next_1d()` and
+ *    `next_2d()` functions before moving on to the next sample.
  *
  * A vectorized rendering algorithm effectively queries multiple sample
  * generators that advance in parallel. This involves the following steps:
  *
- *   1. The rendering algorithm invokes `set_samples_per_wavefront()`
- *      if each rendering step is split into multiple passes (in which
- *      case fewer samples should be returned per `next_1d()`
- *      or `next_2d()` call).
+ * 1. The rendering algorithm invokes `set_samples_per_wavefront()`
+ *    if each rendering step is split into multiple passes (in which
+ *    case fewer samples should be returned per `next_1d()`
+ *    or `next_2d()` call).
  *
- *   2. The rendering algorithm then invokes `seed()` to initialize the
- *      sampler state, and to inform the sampler of the wavefront size,
- *      i.e., how many sampler evaluations should be performed in parallel,
- *      accounting for all passes. The initialization ensures that the set of
- *      parallel samplers is mutually statistically independent (in a
- *      pseudo/quasi-random sense).
+ * 2. The rendering algorithm then invokes `seed()` to initialize the
+ *    sampler state, and to inform the sampler of the wavefront size,
+ *    i.e., how many sampler evaluations should be performed in parallel,
+ *    accounting for all passes. The initialization ensures that the set of
+ *    parallel samplers is mutually statistically independent (in a
+ *    pseudo/quasi-random sense).
  *
- *   3. `advance()` can be used to advance to the next point.
+ * 3. `advance()` can be used to advance to the next point.
  *
- *   4. As in the scalar approach, the rendering algorithm can request batches
- *      of (pseudo-) random numbers using the `next_1d()` and `next_2d()`
- *      functions.
+ * 4. As in the scalar approach, the rendering algorithm can request batches
+ *    of (pseudo-) random numbers using the `next_1d()` and `next_2d()`
+ *    functions.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Sampler : public JitObject<Sampler<Float, Spectrum>> {

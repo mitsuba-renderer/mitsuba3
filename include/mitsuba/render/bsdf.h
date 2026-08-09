@@ -324,7 +324,7 @@ public:
            Mask active = true) const = 0;
 
     /**
-     * Evaluate the BSDF f(wi, wo) or its adjoint version f^{*}(wi, wo)
+     * Evaluate the BSDF f(wi, wo) or its adjoint version :math:`f^{*}(wi, wo)`
      * and multiply by the cosine foreshortening term.
      *
      * Based on the information in the supplied query context ``ctx``, this

@@ -457,8 +457,8 @@ public:
 #endif
 
 #if defined(MI_ENABLE_METAL)
-    /// Migrate the ellipsoid arrays to the host and invoke \c f with the
-    /// world-space frame (rotation \c R, center \c c, scale \c s) of each.
+    /// Migrate the ellipsoid arrays to the host and invoke ``f`` with the
+    /// world-space frame (rotation ``R``, center ``c``, scale ``s``) of each.
     template <typename Func>
     void gpu_for_each_frame(Func &&f) const {
         size_t n = (size_t) m_ellipsoids.count();

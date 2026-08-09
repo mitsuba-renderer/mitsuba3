@@ -83,10 +83,11 @@ public:
      * Reads a specified amount of data from the stream.
      *
      * Note:
-     *     This does **not** handle endianness swapping.
+     *     This does **not** handle endianness swapping. Implementations
+     *     need to handle endianness swap when appropriate.
      *
-     *     Throws an exception when the stream ended prematurely.
-     *     Implementations need to handle endianness swap when appropriate.
+     * Raises:
+     *     RuntimeError: If the stream ended prematurely.
      */
     virtual void read(void *p, size_t size) = 0;
 
@@ -94,10 +95,11 @@ public:
      * Writes a specified amount of data into the stream.
      *
      * Note:
-     *     This does **not** handle endianness swapping.
+     *     This does **not** handle endianness swapping. Implementations
+     *     need to handle endianness swap when appropriate.
      *
-     *     Throws an exception when not all data could be written.
-     *     Implementations need to handle endianness swap when appropriate.
+     * Raises:
+     *     RuntimeError: If not all data could be written.
      */
     virtual void write(const void *p, size_t size) = 0;
 
@@ -114,7 +116,9 @@ public:
      * Truncates the stream to a given size.
      *
      * The position is updated to ``min(old_position, size)``.
-     * Throws an exception if in read-only mode.
+     *
+     * Raises:
+     *     RuntimeError: If in read-only mode.
      */
     virtual void truncate(size_t size) = 0;
 

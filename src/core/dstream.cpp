@@ -25,14 +25,14 @@ void DummyStream::write(const void *, size_t size) {
 
 void DummyStream::seek(size_t pos) {
     /* Updates the current position in the stream.
-      Even though the <tt>DummyStream</tt> doesn't write anywhere, position is
+      Even though the `DummyStream` doesn't write anywhere, position is
       taken into account to accurately compute the size of the stream. */
     m_pos = pos;
 }
 
 void DummyStream::truncate(size_t size) {
     /*  Simply sets the current size of the stream.
-   The position is updated to <tt>min(old_position, size)</tt>. */
+   The position is updated to ``min(old_position, size)``. */
     m_size = size;  // No underlying data, so there's nothing else to do.
     m_pos = std::min(m_pos, size);
 }

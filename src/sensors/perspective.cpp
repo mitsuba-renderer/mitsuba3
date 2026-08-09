@@ -329,13 +329,13 @@ public:
     }
 
     /**
-     * \brief Compute the directional sensor response function of the camera
+     * Compute the directional sensor response function of the camera
      * multiplied with the cosine foreshortening factor associated with the
      * image plane
      *
-     * \param d
-     *     A normalized direction vector from the aperture position to the
-     *     reference point in question (all in local camera space)
+     * Args:
+     *     d: A normalized direction vector from the aperture position to the
+     *         reference point in question (all in local camera space)
      */
     Float importance(const Vector3f &d) const {
         /* How is this derived? Imagine a hypothetical image plane at a

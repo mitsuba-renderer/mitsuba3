@@ -80,7 +80,7 @@ are meaningless whenever there is only partial pixel coverage or when using a
 wide pixel reconstruction filter as it will result in fractional values.
 
 The :monosp:`albedo` AOV will evaluate the diffuse reflectance
-(\ref BSDF::eval_diffuse_reflectance) of the material. Note that depending on
+(`BSDF::eval_diffuse_reflectance()`) of the material. Note that depending on
 the material, this value might only be an approximation.
  */
 

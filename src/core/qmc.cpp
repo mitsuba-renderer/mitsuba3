@@ -125,7 +125,7 @@ size_t RadicalInverse::base(size_t index) const {
 }
 
 /**
- * \ref Compute the Faure permutations using dynamic programming
+ * Compute the Faure permutations using dynamic programming
  *
  * For reference, see "Good permutations for extreme discrepancy"
  * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.

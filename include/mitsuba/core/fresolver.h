@@ -91,7 +91,8 @@ extern MI_EXPORT_LIB FileResolver *file_resolver();
 extern MI_EXPORT_LIB void set_file_resolver(FileResolver *file_resolver);
 
 /**
- * RAII helper that overrides the resolver returned by `file_resolver()` on the calling thread
+ * RAII helper that overrides the resolver returned by `file_resolver()`
+ * on the calling thread
  *
  * Callers must keep the provided file resolver alive for as long as this
  * object exists.

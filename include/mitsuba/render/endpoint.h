@@ -74,9 +74,9 @@ public:
      * sample that is approximately distributed according to the endpoint's
      * spectral sensitivity/emission profile.
      *
-     * For this, the input 1D sample is first replicated into
-     * ``Spectrum::Size`` separate samples using simple arithmetic
-     * transformations (see ``math.sample_shifted()``), which can be interpreted
+     * For this, the input 1D sample is first replicated into one sample per
+     * component of `Spectrum` using simple arithmetic transformations (see
+     * `mitsuba.sample_shifted`), which can be interpreted
      * as a type of Quasi-Monte-Carlo integration scheme. Following this, a
      * standard technique (e.g. inverse transform sampling) is used to find the
      * corresponding wavelengths. Any discrepancies between ideal and actual
@@ -138,13 +138,13 @@ public:
      *     sample1: A uniformly distributed 1D value that is used to sample the spectral
      *         dimension of the emission profile.
      *
-     *     sample2: A uniformly distributed sample on the domain ``[0,1]^2``. For
+     *     sample2: A uniformly distributed sample on the domain :math:`[0,1]^2`. For
      *         sensor endpoints, this argument corresponds to the sample position in
      *         fractional pixel coordinates relative to the crop window of the
      *         underlying film.
      *         This argument is ignored if ``needs_sample_2() == false``.
      *
-     *     sample3: A uniformly distributed sample on the domain ``[0,1]^2``. For
+     *     sample3: A uniformly distributed sample on the domain :math:`[0,1]^2`. For
      *         sensor endpoints, this argument determines the position on the
      *         aperture of the sensor.
      *         This argument is ignored if ``needs_sample_3() == false``.
@@ -186,7 +186,7 @@ public:
      * Args:
      *     it: A reference position somewhere within the scene.
      *
-     *     sample: A uniformly distributed 2D point on the domain ``[0,1]^2``.
+     *     sample: A uniformly distributed 2D point on the domain :math:`[0,1]^2`.
      *
      * Returns:
      *     A `DirectionSample3f` instance describing the generated sample
@@ -262,7 +262,7 @@ public:
      * Args:
      *     time: The scene time associated with the position to be sampled.
      *
-     *     sample: A uniformly distributed 2D point on the domain ``[0,1]^2``.
+     *     sample: A uniformly distributed 2D point on the domain :math:`[0,1]^2`.
      *
      * Returns:
      *     A `PositionSample3f` instance describing the generated sample

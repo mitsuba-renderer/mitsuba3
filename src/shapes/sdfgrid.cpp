@@ -779,7 +779,7 @@ private:
                  Point<FloatP, 2>(0.f, 0.f), ((uint32_t) -1), prim_index };
     }
 
-    /* \brief Solve cubic polynomial that gives solution to voxel intersection
+    /* Solve cubic polynomial that gives solution to voxel intersection
      *
      *  M ARMITT, G., K LEER , A., WALD , I., AND F RIEDRICH , H.
      *  2004. Fast and accurate ray-voxel intersection techniques for
@@ -857,7 +857,7 @@ private:
         return { active, t };
     }
 
-    /* \brief Given an index of the flat SDFGrid data (voxel corners), return
+    /* Given an index of the flat SDFGrid data (voxel corners), return
      * the associated voxel position
      */
     MI_INLINE ScalarVector3u to_voxel_position(uint32_t index) const {
@@ -877,7 +877,7 @@ private:
         return { x, y, z };
     }
 
-    /* \brief Given a voxel position, returns the corresponding voxel index
+    /* Given a voxel position, returns the corresponding voxel index
      * relative to the flat array of SDFGrid data. In particular, the returned
      * index maps to the bottom-left corner of the associated voxel
      */
@@ -890,7 +890,7 @@ private:
         return v.z() * shape_v[1] * shape_v[0] + v.y() * shape_v[0] + v.x();
     }
 
-    /* \brief Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
+    /* Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
      * its corresponding point in the texture. This is usually necessary because
      * dr::Texture objects assume that the value of a pixel is positionned in
      * the middle of the pixel. For a 3D grid, this means that values are not
@@ -904,7 +904,7 @@ private:
         };
     }
 
-    /* \brief Given the voxel position, returns tight bounding box around the
+    /* Given the voxel position, returns tight bounding box around the
      * surface.
      *
      *  Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field
@@ -995,7 +995,7 @@ private:
         return { occupied_mask, bbox };
     };
 
-    /* \brief Only computes AABBs for voxel that contain a surface in it.
+    /* Only computes AABBs for voxel that contain a surface in it.
      * Returns a pointer to the array of AABBs, a pointer to an array of voxel
      * indices of the former AABBs and the count of voxels with surface in them.
      *

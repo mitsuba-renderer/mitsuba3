@@ -363,7 +363,7 @@ public:
     }
 
     /**
-     * \brief Perform a Mueller matrix multiplication in polarized modes, and a
+     * Perform a Mueller matrix multiplication in polarized modes, and a
      * fused multiply-add otherwise.
      */
     Spectrum spec_fma(const Spectrum &a, const Spectrum &b,

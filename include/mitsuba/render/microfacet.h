@@ -40,25 +40,21 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  * Implementation of the Beckmann and GGX / Trowbridge-Reitz microfacet
  * distributions and various useful sampling routines
  *
- * Based on the papers
+ * Based on the following papers:
  *
- *   "Microfacet Models for Refraction through Rough Surfaces"
- *    by Bruce Walter, Stephen R. Marschner, Hongsong Li, and Kenneth E. Torrance
+ * - :cite:`Walter07Microfacet`
  *
- * and
+ * - :cite:`Heitz1014Importance`
  *
- *   "Importance Sampling Microfacet-Based BSDFs using the Distribution of Visible Normals"
- *    by Eric Heitz and Eugene D'Eon
+ * - "An Improved Visible Normal Sampling Routine for the Beckmann
+ *   Distribution" by Wenzel Jakob
  *
- * The visible normal sampling code was provided by Eric Heitz and Eugene D'Eon.
- * An improvement of the Beckmann model sampling routine is discussed in
+ * - "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible
+ *   Normals" by Eric Heitz
  *
- *   "An Improved Visible Normal Sampling Routine for the Beckmann Distribution"
- *    by Wenzel Jakob
- *
- * An improvement of the GGX model sampling routine is discussed in
- *    "A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals"
- *     by Eric Heitz
+ * The visible normal sampling code was provided by Eric Heitz and Eugene
+ * D'Eon. The last two papers improve the sampling routines of the Beckmann
+ * and GGX models, respectively.
  */
 template <typename Float, typename Spectrum>
 class MicrofacetDistribution : drjit::TraversableBase {

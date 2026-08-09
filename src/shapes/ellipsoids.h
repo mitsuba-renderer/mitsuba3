@@ -23,7 +23,7 @@ struct Ellipsoid {
 constexpr uint32_t EllipsoidStructSize = 10u;
 
 /**
- * \brief Generic container class for ellipsoids.
+ * Generic container class for ellipsoids.
  *
  * This is a convenience data structure meant to hold ellipsoids shape
  * data (centers, scales, rotation) and its extra attributes.

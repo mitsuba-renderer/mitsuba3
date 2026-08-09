@@ -491,9 +491,9 @@ public:
      *     sample1: A uniformly distributed 1D value that is used to sample the spectral
      *         dimension of the emission profile.
      *
-     *     sample2: A uniformly distributed sample on the domain ``[0,1]^2``.
+     *     sample2: A uniformly distributed sample on the domain :math:`[0,1]^2`.
      *
-     *     sample3: A uniformly distributed sample on the domain ``[0,1]^2``.
+     *     sample3: A uniformly distributed sample on the domain :math:`[0,1]^2`.
      *
      * Returns:
      *     A tuple ``(ray, weight, emitter)``, where
