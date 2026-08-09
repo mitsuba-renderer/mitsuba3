@@ -323,32 +323,32 @@ MI_PY_EXPORT(parser) {
     auto parser = m.def_submodule("parser", "Scene parsing infrastructure");
 
     // Export ParserConfig
-    nb::class_<ParserConfig>(parser, "ParserConfig")
+    nb::class_<ParserConfig>(parser, "ParserConfig", D(parser, ParserConfig))
         .def(nb::init<std::string_view>(), "variant"_a,
-             "Constructor that takes variant name")
+             D(parser, ParserConfig, ParserConfig))
         .def_rw("unused_parameters", &ParserConfig::unused_parameters,
-                "How to handle unused \"$key\" -> \"value\" substitution parameters: Error (default), Warn, or Debug")
+                D(parser, ParserConfig, unused_parameters))
         .def_rw("unused_properties", &ParserConfig::unused_properties,
-                "How to handle unused properties during instantiation: Error (default), Warn, or Debug")
+                D(parser, ParserConfig, unused_properties))
         .def_rw("max_include_depth", &ParserConfig::max_include_depth,
-                "Maximum include depth to prevent infinite recursion (default: 15)")
+                D(parser, ParserConfig, max_include_depth))
         .def_rw("variant", &ParserConfig::variant,
-                "Target variant for instantiation (e.g., \"scalar_rgb\", \"cuda_spectral\")")
+                D(parser, ParserConfig, variant))
         .def_rw("parallel", &ParserConfig::parallel,
-                "Enable parallel instantiation for better performance (default: true)")
+                D(parser, ParserConfig, parallel))
         .def_rw("merge_equivalent", &ParserConfig::merge_equivalent,
-                "Enable merging of equivalent nodes (deduplication) (default: true)")
+                D(parser, ParserConfig, merge_equivalent))
         .def_rw("merge_meshes", &ParserConfig::merge_meshes,
-                "Enable merging of meshes into a single merge shape (default: true)");
+                D(parser, ParserConfig, merge_meshes));
 
     // Export SceneNode
-    nb::class_<SceneNode>(parser, "SceneNode")
+    nb::class_<SceneNode>(parser, "SceneNode", D(parser, SceneNode))
         .def(nb::init<>())
         .def(nb::init<const SceneNode &>(), "Copy constructor")
-        .def_rw("type", &SceneNode::type, "Object type")
-        .def_rw("file_index", &SceneNode::file_index, "File index in ParserState::files")
-        .def_rw("offset", &SceneNode::offset, "Byte offset of the node within the parsed file/string")
-        .def_rw("props", &SceneNode::props, "Properties of this node")
+        .def_rw("type", &SceneNode::type, D(parser, SceneNode, type))
+        .def_rw("file_index", &SceneNode::file_index, D(parser, SceneNode, file_index))
+        .def_rw("offset", &SceneNode::offset, D(parser, SceneNode, offset))
+        .def_rw("props", &SceneNode::props, D(parser, SceneNode, props))
         .def("__eq__", &SceneNode::operator==)
         .def("__ne__", &SceneNode::operator!=);
 
@@ -357,15 +357,13 @@ MI_PY_EXPORT(parser) {
         parser, "SceneNodeList");
 
     // Export ParserState
-    nb::class_<ParserState>(parser, "ParserState")
+    nb::class_<ParserState>(parser, "ParserState", D(parser, ParserState))
         .def(nb::init<>())
         .def(nb::init<const ParserState &>(), "Copy constructor")
-        .def_rw("nodes", &ParserState::nodes, "List of all scene nodes")
-        .def_rw("node_paths", &ParserState::node_paths, "Node paths for dictionary parsing")
-        .def_rw("files", &ParserState::files, "List of parsed files")
-        .def_rw("resolver", &ParserState::resolver,
-                "File resolver holding the scene directory and any directories "
-                "declared via <path> tags or 'resources' entries")
+        .def_rw("nodes", &ParserState::nodes, D(parser, ParserState, nodes))
+        .def_rw("node_paths", &ParserState::node_paths, D(parser, ParserState, node_paths))
+        .def_rw("files", &ParserState::files, D(parser, ParserState, files))
+        .def_rw("resolver", &ParserState::resolver, D(parser, ParserState, resolver))
         .def_prop_rw("id_to_index",
             [](const ParserState &s) {
                 nb::dict result;
@@ -379,8 +377,8 @@ MI_PY_EXPORT(parser) {
                     s.id_to_index[nb::cast<std::string>(key)] = nb::cast<size_t>(value);
                 }
             },
-            "Map from IDs to node indices")
-        .def_rw("versions", &ParserState::versions, "Version number for each file")
+            D(parser, ParserState, id_to_index))
+        .def_rw("versions", &ParserState::versions, D(parser, ParserState, versions))
         .def_prop_ro("root",
             [](ParserState &s) -> SceneNode & {
                 if (s.nodes.empty())
@@ -388,7 +386,7 @@ MI_PY_EXPORT(parser) {
                 return s.root();
             },
             nb::rv_policy::reference_internal,
-            "Access the root node")
+            D(parser, ParserState, root))
         .def("__eq__", &ParserState::operator==)
         .def("__ne__", &ParserState::operator!=);
 
@@ -398,14 +396,14 @@ MI_PY_EXPORT(parser) {
               return parse_file(config, fs::path(filename), convert_param_list(kwargs));
           },
           "config"_a, "filename"_a, "kwargs"_a,
-          "Parse a scene from an XML file");
+          D(parser, parse_file));
 
     parser.def("parse_string",
           [](const ParserConfig &config, std::string_view string, nb::kwargs kwargs) {
               return parse_string(config, string, convert_param_list(kwargs));
           },
           "config"_a, "string"_a, "kwargs"_a,
-          "Parse a scene from an XML string");
+          D(parser, parse_string));
 
     parser.def("parse_dict", &parse_dict,
           "config"_a, "dict"_a,
@@ -413,39 +411,39 @@ MI_PY_EXPORT(parser) {
 
     parser.def("transform_upgrade", &transform_upgrade,
           "config"_a, "state"_a,
-          "Upgrade scene data to latest version");
+          D(parser, transform_upgrade));
 
     parser.def("transform_resolve_references", &transform_resolve,
           "config"_a, "state"_a,
-          "Resolve named references and raise an error when detecting broken links");
+          D(parser, transform_resolve));
 
     parser.def("transform_resolve", &transform_resolve,
           "config"_a, "state"_a,
-          "Resolve named references and raise an error when detecting broken links");
+          D(parser, transform_resolve));
 
     parser.def("transform_merge_equivalent", &transform_merge_equivalent,
           "config"_a, "state"_a,
-          "Merge equivalent nodes to reduce memory usage and improve performance");
+          D(parser, transform_merge_equivalent));
 
     parser.def("transform_merge_meshes", &transform_merge_meshes,
           "config"_a, "state"_a,
-          "Combine meshes with identical materials");
+          D(parser, transform_merge_meshes));
 
     parser.def("transform_reorder", &transform_reorder,
           "config"_a, "state"_a,
-          "Reorder immediate children of scene nodes for better readability");
+          D(parser, transform_reorder));
 
     parser.def("transform_relocate", &transform_relocate,
           "config"_a, "state"_a, "output_directory"_a,
-          "Relocate scene files to organized subfolders");
+          D(parser, transform_relocate));
 
     parser.def("transform_all", &transform_all,
           "config"_a, "state"_a,
-          "Apply all transformations in the correct order");
+          D(parser, transform_all));
 
     parser.def("file_location", &file_location,
           "state"_a, "node"_a,
-          "Get human-readable file location for a node");
+          D(parser, file_location));
 
     parser.def("instantiate",
           [](const ParserConfig &config, ParserState &state) -> nb::object {
@@ -457,15 +455,15 @@ MI_PY_EXPORT(parser) {
               return single_object_or_list(objects);
           },
           "config"_a, "state"_a,
-          "Instantiate the parsed representation into concrete Mitsuba objects");
+          D(parser, instantiate));
 
     parser.def("write_file", &write_file,
           "state"_a, "filename"_a, "add_section_headers"_a = false,
-          "Write scene data to an XML file");
+          D(parser, write_file));
 
     parser.def("write_string", &write_string,
           "state"_a, "add_section_headers"_a = false,
-          "Convert scene data to an XML string");
+          D(parser, write_string));
 
     // ======================== Main interface ========================
 

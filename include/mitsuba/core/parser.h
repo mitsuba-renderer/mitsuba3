@@ -72,19 +72,21 @@ struct ParserConfig {
     /// Warn, or Debug
     LogLevel unused_properties = LogLevel::Error;
 
-    /// Maximum include depth to prevent infinite recursion
+    /// Maximum include depth to prevent infinite recursion (default: 15)
     int max_include_depth = 15;
 
     /// Target variant for instantiation (e.g., "scalar_rgb", "cuda_spectral")
     std::string variant;
 
-    /// Enable parallel instantiation for better performance
+    /// Enable parallel instantiation for better performance (default: true)
     bool parallel = true;
 
-    /// Enable merging of identical plugin instances (e.g., materials)
+    /// Enable merging of identical plugin instances, e.g. materials
+    /// (default: true)
     bool merge_equivalent = true;
 
-    /// Merge compatible meshes (same material) into single larger mesh
+    /// Merge compatible meshes (same material) into a single larger mesh
+    /// (default: true)
     bool merge_meshes = true;
 
     /// Constructor that takes variant name
@@ -208,6 +210,9 @@ struct MI_EXPORT_LIB ParserState {
  *
  * This function is variant-independent.
  *
+ * In Python, the substitutions are given as keyword arguments, as in
+ * ``parse_file(config, filename, my_param='value')``.
+ *
  * \param config Parser configuration options
  * \param filename Path to the XML file to load
  * \param params List of parameter substitutions to apply
@@ -224,6 +229,9 @@ extern MI_EXPORT_LIB ParserState parse_file(
  *
  * Similar to parse_file() but takes the XML content as a string. This function
  * is variant-independent.
+ *
+ * In Python, the substitutions are given as keyword arguments, as in
+ * ``parse_string(config, xml, my_param='value')``.
  *
  * \param config Parser configuration options
  * \param string XML content to parse
@@ -409,6 +417,9 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * parallelism if requested (\ref ParserConfig::parallel). It will usually
  * return a single object but may also produce multiple return values if the
  * top-level object expands into sub-objects.
+ *
+ * In Python, this function returns the object itself when the input expands
+ * into a single one, and a list of objects otherwise.
  *
  * \param config Parser configuration options including target variant and
  *        parallel flag

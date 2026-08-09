@@ -2235,6 +2235,12 @@ R"doc(Calculate the bounding box extents
 Returns:
     ``max - min``)doc";
 
+static const char *__doc_mitsuba_BoundingBox_fields = R"doc(Component-wise maximum)doc";
+
+static const char *__doc_mitsuba_BoundingBox_fields_2 = R"doc(Component-wise maximum)doc";
+
+static const char *__doc_mitsuba_BoundingBox_labels = R"doc(Component-wise maximum)doc";
+
 static const char *__doc_mitsuba_BoundingBox_major_axis = R"doc(Return the dimension index with the index associated side length)doc";
 
 static const char *__doc_mitsuba_BoundingBox_max = R"doc(Component-wise minimum)doc";
@@ -2244,6 +2250,8 @@ static const char *__doc_mitsuba_BoundingBox_merge = R"doc(Merge two bounding bo
 static const char *__doc_mitsuba_BoundingBox_min = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingBox_minor_axis = R"doc(Return the dimension index with the shortest associated side length)doc";
+
+static const char *__doc_mitsuba_BoundingBox_name = R"doc(Component-wise maximum)doc";
 
 static const char *__doc_mitsuba_BoundingBox_operator_eq = R"doc(Test for equality against another bounding box)doc";
 
@@ -10112,6 +10120,18 @@ static const char *__doc_mitsuba_Scene_update_silhouette_sampling_distribution =
 
 static const char *__doc_mitsuba_Scene_variant_name = R"doc()doc";
 
+static const char *__doc_mitsuba_ScopedFileResolver =
+R"doc(RAII helper that temporarily installs a file resolver as the session-
+global instance and restores the previous one when leaving the scope)doc";
+
+static const char *__doc_mitsuba_ScopedFileResolver_ScopedFileResolver = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedFileResolver_ScopedFileResolver_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedFileResolver_m_backup = R"doc()doc";
+
+static const char *__doc_mitsuba_ScopedFileResolver_operator_assign = R"doc()doc";
+
 static const char *__doc_mitsuba_ScopedPhase = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedPhase_ScopedPhase = R"doc()doc";
@@ -14225,13 +14245,17 @@ such as how to handle unused parameters and other validation settings.)doc";
 
 static const char *__doc_mitsuba_parser_ParserConfig_ParserConfig = R"doc(Constructor that takes variant name)doc";
 
-static const char *__doc_mitsuba_parser_ParserConfig_max_include_depth = R"doc(Maximum include depth to prevent infinite recursion)doc";
+static const char *__doc_mitsuba_parser_ParserConfig_max_include_depth = R"doc(Maximum include depth to prevent infinite recursion (default: 15))doc";
 
-static const char *__doc_mitsuba_parser_ParserConfig_merge_equivalent = R"doc(Enable merging of identical plugin instances (e.g., materials))doc";
+static const char *__doc_mitsuba_parser_ParserConfig_merge_equivalent =
+R"doc(Enable merging of identical plugin instances, e.g. materials (default:
+true))doc";
 
-static const char *__doc_mitsuba_parser_ParserConfig_merge_meshes = R"doc(Merge compatible meshes (same material) into single larger mesh)doc";
+static const char *__doc_mitsuba_parser_ParserConfig_merge_meshes =
+R"doc(Merge compatible meshes (same material) into a single larger mesh
+(default: true))doc";
 
-static const char *__doc_mitsuba_parser_ParserConfig_parallel = R"doc(Enable parallel instantiation for better performance)doc";
+static const char *__doc_mitsuba_parser_ParserConfig_parallel = R"doc(Enable parallel instantiation for better performance (default: true))doc";
 
 static const char *__doc_mitsuba_parser_ParserConfig_unused_parameters =
 R"doc(How to handle unused "$key" -> "value" substitutions during parsing:
@@ -14259,7 +14283,9 @@ Indexed by SceneNode.file_index, unused in the dictionary parser)doc";
 
 static const char *__doc_mitsuba_parser_ParserState_id_to_index =
 R"doc(Maps named nodes with an ``id`` attribute to their index in ``nodes``
-Allows efficient lookup of objects for reference resolution)doc";
+Allows efficient lookup of objects for reference resolution. In
+Python, reading this attribute returns a copy, so modifications must
+be written back by assigning a complete dictionary.)doc";
 
 static const char *__doc_mitsuba_parser_ParserState_node_paths =
 R"doc(Node paths (e.g., "scene.myshape.mybsdf") parallel to ``nodes``. Only
@@ -14276,6 +14302,8 @@ static const char *__doc_mitsuba_parser_ParserState_operator_array_2 = R"doc(Con
 static const char *__doc_mitsuba_parser_ParserState_operator_eq = R"doc(Equality comparison for ParserState)doc";
 
 static const char *__doc_mitsuba_parser_ParserState_operator_ne = R"doc()doc";
+
+static const char *__doc_mitsuba_parser_ParserState_resolver = R"doc(Search paths for files referenced by the scene)doc";
 
 static const char *__doc_mitsuba_parser_ParserState_root = R"doc(Return the root node)doc";
 
@@ -14345,12 +14373,17 @@ intermediate representation. It handles:
 - Plugin instantiation via the PluginManager - Dependency ordering for
 correct instantiation order - Parallel instantiation of independent
 objects (if enabled via ``config.parallel``) - Property validation and
-type checking - Object expansion (Object::expand())
+type checking - Object expansion (Object::expand()) - Installing
+ParserState::resolver as the global file resolver, so that plugins can
+locate the files referenced by the scene
 
 This function creates plugins with variant ParserConfig::variant,
 using parallelism if requested (ParserConfig::parallel). It will
 usually return a single object but may also produce multiple return
 values if the top-level object expands into sub-objects.
+
+In Python, this function returns the object itself when the input
+expands into a single one, and a list of objects otherwise.
 
 Parameter ``config``:
     Parser configuration options including target variant and parallel
@@ -14376,6 +14409,9 @@ It does no further interpretation/instantiation.
 
 This function is variant-independent.
 
+In Python, the substitutions are given as keyword arguments, as in
+``parse_file(config, filename, my_param='value')``.
+
 Parameter ``config``:
     Parser configuration options
 
@@ -14393,6 +14429,9 @@ R"doc(Parse a scene from an XML string and return the resulting parser state
 
 Similar to parse_file() but takes the XML content as a string. This
 function is variant-independent.
+
+In Python, the substitutions are given as keyword arguments, as in
+``parse_string(config, xml, my_param='value')``.
 
 Parameter ``config``:
     Parser configuration options
