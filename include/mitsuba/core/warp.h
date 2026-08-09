@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 /**
  * Implements common warping techniques that map from the unit
- * square [0, 1]^2 to other domains such as spheres, hemispheres, etc.
+ * square :math:`[0,1]^2` to other domains such as spheres, hemispheres, etc.
  *
  * The main application of this namespace is to generate uniformly
  * distributed or weighted point sets in certain common target domains.
@@ -192,20 +192,20 @@ MI_INLINE Value square_to_std_normal_pdf(const Point<Value, 2> &p) {
 
 // =======================================================================
 
-/// Warp a uniformly distributed sample on [0, 1] to a tent distribution
+/// Warp a uniformly distributed sample on :math:`[0,1]` to a tent distribution
 template <typename Value>
 Value interval_to_tent(Value sample) {
     sample -= 0.5f;
     return dr::copysign(1.f - dr::safe_sqrt(dr::fmadd(dr::abs(sample), -2.f, 1.f)), sample);
 }
 
-/// Warp a tent distribution to a uniformly distributed sample on [0, 1]
+/// Warp a tent distribution to a uniformly distributed sample on :math:`[0,1]`
 template <typename Value>
 Value tent_to_interval(const Value &value) {
     return 0.5f * (1.f + value * (2.f - dr::abs(value)));
 }
 
-/// Warp a uniformly distributed sample on [0, 1] to a nonuniform tent distribution with nodes ``{a, b, c}``
+/// Warp a uniformly distributed sample on :math:`[0,1]` to a nonuniform tent distribution with nodes ``{a, b, c}``
 template <typename Value>
 Value interval_to_nonuniform_tent(const Value &a, const Value &b, const Value &c, const Value &sample_) {
     auto mask = (sample_ * (c - a) < b - a);
@@ -800,7 +800,7 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
 // Warping techniques for surface tangents
 // =======================================================================
 
-/// Warp a uniformly distributed sample on [0, 1] to a direction in the tangent plane
+/// Warp a uniformly distributed sample on :math:`[0,1]` to a direction in the tangent plane
 template <typename Value>
 MI_INLINE Vector<Value, 3>
 interval_to_tangent_direction(const Normal<Value, 3> &n, Value sample) {

@@ -25,8 +25,8 @@ public:
     get_majorant(const MediumInteraction3f &mi,
                  Mask active = true) const = 0;
 
-    /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
-    /// at a given `MediumInteraction3f` ``mi``
+    /// Returns the medium coefficients :math:`\sigma_s`, :math:`\sigma_n` and
+    /// :math:`\sigma_t` evaluated at a given `MediumInteraction3f` ``mi``
     virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum,
                        UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,

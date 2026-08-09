@@ -303,7 +303,7 @@ public:
         Vector3f d = uv_to_direction(uv, inv_sin_theta);
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
-        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        // Unlike `sample_direction()`, ray goes from the envmap toward the scene
         Vector3f d_global = m_to_world.value() * -d;
 
         // Compute ray origin
@@ -447,7 +447,7 @@ protected:
         return Vector3f(sin_phi * sin_theta, cos_theta, -cos_phi * sin_theta);
     }
 
-    /// Inverse of \ref uv_to_direction (latitude-longitude texture coordinates)
+    /// Inverse of `uv_to_direction()` (latitude-longitude texture coordinates)
     Point2f direction_to_uv(const Vector3f &d) const {
         return Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
                        dr::safe_acos(d.y()) * dr::InvPi<Float>);

@@ -47,8 +47,9 @@ public:
      *
      * The file is opened in read-only or read/write mode as specified by ``mode``.
      *
-     * Throws if trying to open a non-existing file with write disabled.
-     * Throws an exception if the file cannot be opened / created.
+     * Raises:
+     *     RuntimeError: If the file cannot be opened / created, or if write
+     *         is disabled and the file does not already exist.
      */
     FileStream(const fs::path &p, EMode mode = ERead);
 

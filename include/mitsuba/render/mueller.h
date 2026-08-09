@@ -55,7 +55,7 @@ MuellerMatrix<Float> absorber(Float value) {
  * Constructs the Mueller matrix of a linear polarizer
  * which transmits linear polarization at 0 degrees.
  *
- * "Polarized Light" by Edward Collett, Ch. 5 eq. (13)
+ * :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (13)
  *
  * Args:
  *     value: The amount of attenuation of the transmitted component (1 corresponds
@@ -157,7 +157,7 @@ MuellerMatrix<Float> diattenuator(Float x, Float y) {
  * will look like -45˚ linear polarized light s2 = R(45˚) * s1 = [1,0,-1,0]
  * after applying a rotator of +45˚ to it.
  *
- * "Polarized Light" by Edward Collett, Ch. 5 eq. (43)
+ * :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (43)
  */
 template <typename Float>
 MuellerMatrix<Float> rotator(Float theta) {

@@ -541,21 +541,21 @@ class ProjectiveDetail():
         Evaluate the indirect discontinuous derivatives integral for a given
         sample point in boundary sample space.
 
-        Parameters ``sample`` (``mi.Point3f``):
-            The sample point in boundary sample space.
+        Args:
+            sample: The sample point in boundary sample space.
 
-        This function returns a tuple ``(result, sensor_uv)`` where
+        Returns:
+            A tuple ``(result, wavelengths, sensor_uv)`` where
 
-        Output ``result`` (``mi.Spectrum``):
-            The integrand of the indirect discontinuous derivatives.
+            - ``result``: The integrand of the indirect discontinuous
+              derivatives.
 
-        Output ``wavelengths`` (``mi.Wavelength``):
-            Set of wavelength used by this sample. (Only relevant in spectral
-            variants)
+            - ``wavelengths``: Set of wavelength used by this sample. (Only
+              relevant in spectral variants)
 
-        Output ``sensor_uv`` (``mi.Point2f``):
-            The UV coordinates on the sensor film to splat the result to. If
-            ``preprocess`` is false, this coordinate is not used.
+            - ``sensor_uv``: The UV coordinates on the sensor film to splat
+              the result to. If ``preprocess`` is false, this coordinate is
+              not used.
         """
         parent = self.parent
 
@@ -615,7 +615,7 @@ class ProjectiveDetail():
     class ProjectOperation():
         """
         Projection operation takes a seed ray as input and outputs a
-        \ref SilhouetteSample3f object.
+        `mitsuba.SilhouetteSample3f` object.
         """
         def __init__(self, mesh_proj_algo, max_walk, max_jump) -> None:
             self.mesh_proj_algo = mesh_proj_algo

@@ -115,7 +115,7 @@ public:
      * Args:
      *     noisy: The noisy input. When passing additional information like albedo or
      *         normals to the denoiser, this `Bitmap` object must use the
-     *         `PixelFormat.MultiChannel` pixel format.
+     *         `Bitmap.PixelFormat.MultiChannel` pixel format.
      *
      *     albedo_ch: The name of the channel in the ``noisy`` parameter which contains
      *         the albedo information of the noisy rendering.

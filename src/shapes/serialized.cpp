@@ -188,7 +188,7 @@ at the end of the file, which specifies the starting position of each sub-mesh:
         }
  */
 
-/// Legacy format versions; the current one is \ref SerializedVersion
+/// Legacy format versions; the current one is `SerializedVersion`
 #define MI_FILEFORMAT_VERSION_V3 0x0003
 #define MI_FILEFORMAT_VERSION_V4 0x0004
 
@@ -388,7 +388,7 @@ public:
      * Load a version 5 mesh, which stores the packed representation
      * verbatim: vertex and face records, the vertex -> surface point /
      * normal group maps, and custom attributes stream directly into the
-     * staging storage. \ref Mesh::write_serialized() is the writer.
+     * staging storage. `Mesh::write_serialized()` is the writer.
      */
     void load_v5(Stream *stream_, const Properties &props) {
         ref<Stream> stream = new ZStream(stream_);
@@ -464,7 +464,7 @@ public:
         from_packed(std::move(pm));
     }
 
-    /// Read ``m_vertex_count * dim`` values. A null \c dst discards them:
+    /// Read ``m_vertex_count * dim`` values. A null ``dst`` discards them:
     /// compressed streams have no ``seek``, so skipping means reading.
     void read_helper(Stream *stream, bool dp, InputFloat *dst, size_t dim) {
         size_t count = m_vertex_count * dim;

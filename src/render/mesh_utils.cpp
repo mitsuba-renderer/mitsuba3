@@ -8,7 +8,7 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/// Allocate a staging buffer of the flavor appropriate for \c backend
+/// Allocate a staging buffer of the flavor appropriate for ``backend``
 template <typename T>
 static drjit::unique_buffer<T> alloc(JitBackend backend, size_t n) {
     return drjit::unique_buffer<T>(backend, n, /* shared */ true);
@@ -180,8 +180,8 @@ float *PackedMesh::add_attribute(std::string_view name, size_t dim,
 constexpr uint32_t MissingIndex = (uint32_t) -1;
 
 /**
- * \brief Fetch the bit pattern of one record of attribute \c d at source
- * corner \c sc and advance the output pointer
+ * Fetch the bit pattern of one record of attribute ``d`` at source
+ * corner ``sc`` and advance the output pointer
  *
  * Indices resolve (missing entries yield zeros), and -0.0 folds to +0.0
  * so that equal values also match bitwise.

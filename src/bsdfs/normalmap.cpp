@@ -218,8 +218,9 @@ public:
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
-    /** \brief Compute the perturbation due to the normal map relative to \c si.sh_frame,
-     * as well as the full \c sh_frame of the perturbation in the world coordinate system.
+    /** Compute the perturbation due to the normal map relative to
+     * ``si.sh_frame``, as well as the full ``sh_frame`` of the perturbation
+     * in the world coordinate system.
      */
     std::pair<Frame3f, Frame3f> frame(const SurfaceInteraction3f &si, Mask active) const {
         Normal3f n = dr::fmadd(m_normalmap->eval_3(si, active), 2, -1.f);

@@ -106,7 +106,7 @@ struct MI_EXPORT_LIB SceneNode {
     /// (unused in the dict parser)
     ObjectType type = ObjectType::Unknown;
 
-    /// File index, identifies an entry of ``ParserState::files``
+    /// File index, identifies an entry of `ParserState.files`
     /// Used for error reporting to show which file contains this node
     /// (unused in the dict parser)
     uint32_t file_index = 0;
@@ -273,8 +273,8 @@ extern MI_EXPORT_LIB void transform_upgrade(const ParserConfig &config,
  * Resolve named references and raise an error when detecting broken
  * links
  *
- * This transformation converts all (named) `Properties.Reference` objects
- * into index-based `Properties.ResolvedReference` references.
+ * This transformation converts all (named) `mitsuba.Properties.Reference` objects
+ * into index-based `mitsuba.Properties.ResolvedReference` references.
  *
  * This transformation is variant-independent.
  *
@@ -284,7 +284,7 @@ extern MI_EXPORT_LIB void transform_upgrade(const ParserConfig &config,
  *     state: Parser state to modify in-place
  *
  * Raises:
- *     std::runtime_error if a reference cannot be resolved
+ *     RuntimeError: If a reference cannot be resolved.
  */
 extern MI_EXPORT_LIB void transform_resolve(const ParserConfig &config,
                                             ParserState &state);
@@ -300,9 +300,12 @@ extern MI_EXPORT_LIB void transform_resolve(const ParserConfig &config,
  * elements (e.g., identical materials or textures referenced by multiple
  * shapes).
  *
- * Note: Nodes containing Object or Any properties are never deduplicated as
- * their equality cannot be reliably determined. Additionally, emitter and shape
- * nodes are excluded from merging to preserve their distinct identities.
+ * .. note::
+ *
+ *    Nodes containing Object or Any properties are never deduplicated as
+ *    their equality cannot be reliably determined. Additionally, emitter
+ *    and shape nodes are excluded from merging to preserve their distinct
+ *    identities.
  *
  * Args:
  *     config: Parser configuration
@@ -318,7 +321,8 @@ extern MI_EXPORT_LIB void transform_merge_equivalent(const ParserConfig &config,
  * This transformation moves all top-level geometry (i.e., occurring directly
  * within the ``<scene>``) into a shape plugin of type ``merge``.
  *
- * When instantiated, this ``merge`` shape
+ * When instantiated, this ``merge`` shape:
+ *
  * - Collects compatible groups of mesh objects (i.e., with identical BSDF,
  *   media, emitter, etc.)
  * - Merges them into single mesh instances to reduce memory usage
@@ -353,8 +357,10 @@ extern MI_EXPORT_LIB void transform_merge_meshes(const ParserConfig &config,
  * This transformation only affects the ordering of immediate children of the
  * scene node. It does not recurse into nested structures.
  *
- * Note: This transformation is not included in `transform_all()` and must
- * be called explicitly if desired.
+ * .. note::
+ *
+ *    This transformation is not included in `transform_all()` and must be
+ *    called explicitly if desired.
  *
  * Args:
  *     config: Parser configuration (currently unused)
@@ -372,13 +378,16 @@ extern MI_EXPORT_LIB void transform_reorder(const ParserConfig &config,
  * creating subdirectories as needed.
  *
  * File organization:
+ *
  * - Textures and emitter files → textures/ subfolder
  * - Shape files (meshes) → meshes/ subfolder
  * - Spectrum files → spectra/ subfolder
  * - Other files → assets/ subfolder
  *
- * Note: This transformation is not included in `transform_all()` and must
- * be called explicitly if desired, typically before XML export.
+ * .. note::
+ *
+ *    This transformation is not included in `transform_all()` and must be
+ *    called explicitly if desired, typically before XML export.
  *
  * Args:
  *     config: Parser configuration (currently unused)
@@ -396,6 +405,7 @@ extern MI_EXPORT_LIB void transform_relocate(const ParserConfig &config,
  *
  * This convenience function applies all parser transformations to the scene
  * graph in the following order:
+ *
  * 1. `transform_upgrade()`
  * 2. `transform_resolve()`
  * 3. `transform_merge_equivalent()` (if ``config.merge_equivalent`` is enabled)
@@ -433,17 +443,17 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * This final stage creates the actual scene objects from the intermediate
  * representation. It handles:
  *
- * - Plugin instantiation via the `PluginManager`
+ * - Plugin instantiation via the `mitsuba.PluginManager`
  * - Dependency ordering for correct instantiation order
  * - Parallel instantiation of independent objects (if enabled via
  *   ``config.parallel``)
  * - Property validation and type checking
- * - Object expansion (`Object.expand()`)
+ * - Object expansion (`mitsuba.Object.expand`)
  * - Installing `ParserState.resolver` as the global file resolver, so that
  *   plugins can locate the files referenced by the scene
  *
- * This function creates plugins with variant ``ParserConfig::variant``, using
- * parallelism if requested (``ParserConfig::parallel``). It will usually
+ * This function creates plugins with variant `ParserConfig.variant`, using
+ * parallelism if requested (`ParserConfig.parallel`). It will usually
  * return a single object but may also produce multiple return values if the
  * top-level object expands into sub-objects.
  *
@@ -467,6 +477,7 @@ extern MI_EXPORT_LIB std::vector<ref<Object>> instantiate(const ParserConfig &co
  *
  * This function converts the intermediate representation into an XML format
  * and writes it to disk. Useful for:
+ *
  * - Converting between scene formats (dict to XML)
  * - Saving programmatically generated scenes
  * - Debugging the parser's intermediate representation

@@ -196,11 +196,13 @@ public:
      * etc. At each interaction, we attempt to connect to the sensor and add
      * the current radiance to the given `block`.
      *
-     * Note: this will *not* account for directly visible emitters, since
-     * they require a direct connection from the emitter to the sensor. See
-     * \ref sample_visible_emitters.
+     * Returns:
+     *     The radiance along the ray and an alpha value.
      *
-     * \return The radiance along the ray and an alpha value.
+     * Note:
+     *     This will *not* account for directly visible emitters, since they
+     *     require a direct connection from the emitter to the sensor. See
+     *     `sample_visible_emitters()`.
      */
     std::pair<Spectrum, Float>
     trace_light_ray(Ray3f ray, const Scene *scene, const Sensor *sensor,
@@ -326,7 +328,8 @@ public:
      * Finally, splat `weight` (with all appropriate factors) to the
      * given image block.
      *
-     * \return The quantity that was accumulated to the block.
+     * Returns:
+     *     The quantity that was accumulated to the block.
      */
     Spectrum connect_sensor(const Scene *scene, const SurfaceInteraction3f &si,
                             const DirectionSample3f &sensor_ds,

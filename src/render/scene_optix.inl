@@ -59,8 +59,8 @@ struct MiOptixSceneState {
 
 
 /// Pipeline components (modules, program groups) for one set of shape-type
-/// features, shared across all scenes that need it and keyed by \ref key.
-/// \ref Scene::static_accel_shutdown frees them.
+/// features, shared across all scenes that need it and keyed by ``key``.
+/// `Scene.static_accel_shutdown` frees them.
 struct MiOptixConfig {
     OptixDeviceContext context;
     OptixPipelineCompileOptions pipeline_compile_options;
@@ -343,7 +343,7 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
 //  OptixAccel<Float, Spectrum> -- lifecycle
 // -----------------------------------------------------------------------
 
-/// Build the per-BLAS GAS and the scene IAS from the lowered \ref SceneIR,
+/// Build the per-BLAS GAS and the scene IAS from the lowered `SceneIR`,
 /// then publish the IAS as the rebindable accel handle and arm the scene-state
 /// cleanup callback. Shared by init() (which passes the SceneIR it already
 /// gathered for the SBT) and rebuild().

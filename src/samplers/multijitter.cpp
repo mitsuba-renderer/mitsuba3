@@ -207,11 +207,11 @@ public:
     traverse_1_cb_ro(void *payload,
                      drjit ::detail ::traverse_callback_ro fn) const override {
         /**
-         * Traversing the field \c m_sample_index for loop state variables,
+         * Traversing the field ``m_sample_index`` for loop state variables,
          * causes the loop to be re-traced. This incurs significant overhead.
          * Therefore we gate traversal of the sampler base class behind the
-         * \c JitFlag::EnableObjectTraversal, and otherwise handle
-         * \c m_dimension_index and \c m_rng separately.
+         * `JitFlag::EnableObjectTraversal`, and otherwise handle
+         * ``m_dimension_index`` and ``m_rng`` separately.
          */
         if (jit_flag(JitFlag::EnableObjectTraversal)) {
             Base::traverse_1_cb_ro(payload, fn);
@@ -224,11 +224,11 @@ public:
     void traverse_1_cb_rw(void *payload,
                           drjit ::detail ::traverse_callback_rw fn) override {
         /**
-         * Traversing the field \c m_sample_index for loop state variables,
+         * Traversing the field ``m_sample_index`` for loop state variables,
          * causes the loop to be re-traced. This incurs significant overhead.
          * Therefore we gate traversal of the sampler base class behind the
-         * \c JitFlag::EnableObjectTraversal, and otherwise handle
-         * \c m_dimension_index and \c m_rng separately.
+         * `JitFlag::EnableObjectTraversal`, and otherwise handle
+         * ``m_dimension_index`` and ``m_rng`` separately.
          */
         if (jit_flag(JitFlag::EnableObjectTraversal)) {
             Base::traverse_1_cb_rw(payload, fn);

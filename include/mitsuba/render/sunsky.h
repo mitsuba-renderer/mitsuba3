@@ -346,7 +346,7 @@ public:
                 sample_sun({(sample3.x() - sky_sampling_w) / (1 - sky_sampling_w), sample3.y()}, sun_angles)
         );
         active &= Frame3f::cos_theta(d) >= 0.f;
-        // Unlike \ref sample_direction, ray goes from the envmap toward the scene
+        // Unlike `sample_direction()`, ray goes from the envmap toward the scene
         Vector3f d_world = m_to_world.value() * (-d);
 
         Mask sun_hit = !pick_sky || hit_sun(sun_angles, d);

@@ -91,13 +91,19 @@ MI_PY_EXPORT(Properties) {
             PyErr_WarnEx(PyExc_DeprecationWarning,
                         "has_property() is deprecated, use 'key in props' instead", 1);
             return p.has_property(key);
-        }, "key"_a, "Deprecated: use 'key in props' instead")
+        }, "key"_a,
+           "Check whether a property exists.\n\n"
+           ".. deprecated:: 3.7.0\n"
+           "   Use ``key in props`` instead.")
         .def("remove_property", [](Properties& p, std::string_view key) {
             // Issue deprecation warning
             PyErr_WarnEx(PyExc_DeprecationWarning,
                         "remove_property() is deprecated, use 'del props[key]' instead", 1);
             return p.remove_property(key);
-        }, "key"_a, "Deprecated: use 'del props[key]' instead")
+        }, "key"_a,
+           "Remove a property.\n\n"
+           ".. deprecated:: 3.7.0\n"
+           "   Use ``del props[key]`` instead.")
         .def("property_names", [](const Properties& p) {
             // Issue deprecation warning
             PyErr_WarnEx(PyExc_DeprecationWarning,
@@ -106,7 +112,9 @@ MI_PY_EXPORT(Properties) {
             for (const auto &key : p)
                 names.push_back(std::string(key.name()));
             return names;
-        }, "Deprecated: use 'props.keys()' instead")
+        }, "Return the names of all properties.\n\n"
+           ".. deprecated:: 3.7.0\n"
+           "   Use ``props.keys()`` instead.")
         .def("mark_queried",
              nb::overload_cast<std::string_view, bool>(&Properties::mark_queried, nb::const_),
              "name"_a, "value"_a = true,

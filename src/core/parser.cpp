@@ -41,7 +41,7 @@ enum class TagType {
 };
 
 /**
- * \brief Structure to track parameter substitutions during XML parsing
+ * Structure to track parameter substitutions during XML parsing
  *
  * This structure holds information about a single parameter that can be
  * substituted in XML attributes using the $parameter_name syntax.
@@ -114,7 +114,7 @@ static void check_unused_parameters(const ParserConfig &config,
 }
 
 /**
- * \brief Interprets an XML tag name and returns its type classification
+ * Interprets an XML tag name and returns its type classification
  *
  * This function takes an XML tag name and returns a pair containing:
  * - For property tags (e.g., "float", "rgb", "transform"):
@@ -122,8 +122,11 @@ static void check_unused_parameters(const ParserConfig &config,
  * - For object tags (e.g., "scene", "bsdf", "shape"):
  *   returns (TagType::Object, appropriate ObjectType)
  *
- * \param str The XML tag name to interpret
- * \return A pair of (TagType, ObjectType) indicating the tag classification
+ * Args:
+ *     str: The XML tag name to interpret
+ *
+ * Returns:
+ *     A pair of (TagType, ObjectType) indicating the tag classification
  */
 static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
     if (str.empty())
@@ -195,16 +198,21 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
 }
 
 /**
- * \brief Perform parameter substitution on an XML attribute in-place
+ * Perform parameter substitution on an XML attribute in-place
  *
  * This function modifies the attribute value directly, replacing any
  * occurrences of $parameter_name with the corresponding parameter value.
  *
- * \param xml_node The XML node containing the attribute (for error location)
- * \param attr The XML attribute to modify
- * \param params List of parameters sorted by search key length
- * \param state Parser state for error reporting
- * \param file_index File index for error location
+ * Args:
+ *     xml_node: The XML node containing the attribute (for error location)
+ *
+ *     attr: The XML attribute to modify
+ *
+ *     params: List of parameters sorted by search key length
+ *
+ *     state: Parser state for error reporting
+ *
+ *     file_index: File index for error location
  */
 static void substitute_parameters(pugi::xml_node xml_node,
                                   pugi::xml_attribute &attr,
@@ -397,16 +405,20 @@ static ScalarVector3d parse_vector_from_string(const ParserState &state,
 }
 
 /**
- * \brief Generate a human-readable file location string for error reporting
+ * Generate a human-readable file location string for error reporting
  *
  * Returns a string describing where a scene node was defined in the source file.
  * For XML files, this includes the filename and line:column information.
  * For dictionary-parsed nodes (which don't have location info), returns the node's ID
  * or a generic description.
  *
- * \param state Parser state containing file information
- * \param node Scene node to locate
- * \return Human-readable location string (e.g., "scene.xml (line 10, col 5)")
+ * Args:
+ *     state: Parser state containing file information
+ *
+ *     node: Scene node to locate
+ *
+ * Returns:
+ *     Human-readable location string (e.g., "scene.xml (line 10, col 5)")
  */
 std::string file_location(const ParserState &state, const SceneNode &node) {
     // First check if we have a path from dictionary parsing
@@ -1823,7 +1835,7 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
 // ===========================================================================
 
 /**
- * \brief Helper function to decompose a transform matrix into a canonical
+ * Helper function to decompose a transform matrix into a canonical
  * format to improve editability of the resulting XML.
 
  * The function tries to decompose the transformation into

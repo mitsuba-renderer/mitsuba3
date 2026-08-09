@@ -136,8 +136,8 @@ size_t file_size(const path& p) {
 }
 
 #if defined(_WIN32)
-/** \brief Retrieve the volume and file identifier of a file or directory.
- * The Windows CRT reports a constant inode number of zero via <tt>stat()</tt>,
+/** Retrieve the volume and file identifier of a file or directory.
+ * The Windows CRT reports a constant inode number of zero via ``stat()``,
  * hence this information must be queried from a file handle.
  */
 static bool file_identity(const path &p, BY_HANDLE_FILE_INFORMATION &info) noexcept {

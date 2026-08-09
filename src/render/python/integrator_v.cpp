@@ -171,7 +171,7 @@ public:
 };
 
 /**
- * \brief Abstract integrator that should **exclusively** be used to trampoline
+ * Abstract integrator that should **exclusively** be used to trampoline
  * Python AD integrators for primal renderings
  */
 template <typename Float, typename Spectrum>

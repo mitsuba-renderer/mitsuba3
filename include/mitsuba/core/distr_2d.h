@@ -28,18 +28,18 @@ NAMESPACE_BEGIN(mitsuba)
  * synchronization steps.)
  *
  * The first class `DiscreteDistribution2D` generates samples proportional to
- * a <em>discrete</em> 2D function sampled on a regular grid by sampling the
+ * a *discrete* 2D function sampled on a regular grid by sampling the
  * marginal distribution to choose a row, then a conditional distribution to
  * choose a column. This is a very simple ingredient that can be used to build
  * more advanced kinds of sampling schemes.
  *
- * The other two classes \c Hierarchical2D and \c Marginal2D are significantly
- * more complex and target sampling of <em>linear interpolants</em>, which
- * means that the sampling procedure is a function with floating point inputs
- * and outputs. The mapping is bijective and can be evaluated in <em>both
- * directions</em>. The implementations also supports <em>conditional
- * distributions</em>, i.e., 2D distributions that depend on an arbitrary
- * number of parameters (indicated via the \c Dimension template parameter). In
+ * The other two classes ``Hierarchical2D`` and ``Marginal2D`` are
+ * significantly more complex and target sampling of *linear interpolants*,
+ * which means that the sampling procedure is a function with floating point
+ * inputs and outputs. The mapping is bijective and can be evaluated in *both
+ * directions*. The implementations also supports *conditional
+ * distributions*, i.e., 2D distributions that depend on an arbitrary number
+ * of parameters (indicated via the ``Dimension`` template parameter). In
  * this case, a higher-dimensional discretization must be provided that will
  * also be linearly interpolated in these extra dimensions.
  *
@@ -47,27 +47,29 @@ NAMESPACE_BEGIN(mitsuba)
  * mapping from random numbers to samples tends to be very different, which can
  * play an important role in certain applications. In particular:
  *
- * \c Hierarchical2D generates samples using hierarchical sample warping, which
- * is essentially a coarse-to-fine traversal of a MIP map. It generates a
- * mapping with very little shear/distortion, but it has numerous
+ * ``Hierarchical2D`` generates samples using hierarchical sample warping,
+ * which is essentially a coarse-to-fine traversal of a MIP map. It generates
+ * a mapping with very little shear/distortion, but it has numerous
  * discontinuities that can be problematic for some applications.
  *
- * \c Marginal2D is similar to `DiscreteDistribution2D`, in that it samples the
- * marginal, then the conditional. In contrast to `DiscreteDistribution2D`,
- * the mapping provides fractional outputs. In contrast to \c Hierarchical2D,
- * the mapping is guaranteed to not contain any discontinuities but tends to
- * have significant shear/distortion when the distribution contains isolated
- * regions with very high probability densities.
+ * ``Marginal2D`` is similar to `DiscreteDistribution2D`, in that it samples
+ * the marginal, then the conditional. In contrast to
+ * `DiscreteDistribution2D`, the mapping provides fractional outputs. In
+ * contrast to ``Hierarchical2D``, the mapping is guaranteed to not contain
+ * any discontinuities but tends to have significant shear/distortion when
+ * the distribution contains isolated regions with very high probability
+ * densities.
  *
- * There are actually two variants of \c Marginal2D: when <tt>Continuous=false</tt>,
- * discrete marginal/conditional distributions are used to select a bilinear
- * patch, followed by a continuous sampling step that chooses a specific
- * position inside the patch. When <tt>Continuous=true</tt>,
+ * There are actually two variants of ``Marginal2D``: when
+ * ``Continuous=false``, discrete marginal/conditional distributions are used
+ * to select a bilinear patch, followed by a continuous sampling step that
+ * chooses a specific position inside the patch. When ``Continuous=true``,
  * continuous marginal/conditional distributions are used instead, and the
- * second step is no longer needed. The latter scheme requires more computation
- * and memory accesses but produces an overall smoother mapping. The continuous
- * version of \c Marginal2D may be beneficial when this method is not used as a
- * sampling scheme, but rather to generate very high-quality parameterizations.
+ * second step is no longer needed. The latter scheme requires more
+ * computation and memory accesses but produces an overall smoother mapping.
+ * The continuous version of ``Marginal2D`` may be beneficial when this
+ * method is not used as a sampling scheme, but rather to generate very
+ * high-quality parameterizations.
  *
  * =======================================================================
  */
@@ -352,7 +354,7 @@ public:
  *
  * This class takes a rectangular floating point array as input and constructs
  * internal data structures to efficiently map uniform variates from the unit
- * square ``[0, 1]^2`` to a function on ``[0, 1]^2`` that linearly
+ * square :math:`[0,1]^2` to a function on :math:`[0,1]^2` that linearly
  * interpolates the input array.
  *
  * The mapping is constructed from a sequence of ``log2(max(res))``
@@ -859,7 +861,7 @@ protected:
  *
  * This class takes a rectangular floating point array as input and constructs
  * internal data structures to efficiently map uniform variates from the unit
- * square ``[0, 1]^2`` to a function on ``[0, 1]^2`` that linearly
+ * square :math:`[0,1]^2` to a function on :math:`[0,1]^2` that linearly
  * interpolates the input array.
  *
  * The mapping is constructed via the inversion method, which is applied to

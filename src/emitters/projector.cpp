@@ -193,7 +193,7 @@ public:
         ray.o = si.p;
         ray.d = m_to_world.value() * near_dir;
 
-        // Scaling factor to match \ref sample_direction.
+        // Scaling factor to match `sample_direction()`.
         weight *= dr::Pi<ScalarFloat> * m_sensor_area;
 
         return { ray, depolarizer<Spectrum>(weight / pdf) & active };
@@ -231,9 +231,9 @@ public:
         ds.dist = dr::sqrt(dist_squared);
         ds.d *= dr::rcp(ds.dist);
 
-        /* Scale so that irradiance at z=1 is correct.
-         * See the weight returned by \ref PerspectiveCamera::sample_direction
-         * and the comments in \ref PerspectiveCamera::importance.
+        /* Scale so that irradiance at z=1 is correct. See the weight
+         * returned by `PerspectiveCamera::sample_direction()` and the
+         * comments in `PerspectiveCamera::importance()`.
          * Note that:
          *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
          */

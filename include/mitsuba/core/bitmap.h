@@ -161,8 +161,10 @@ public:
         /**
          * Automatically detect the file format
          *
-         * Note: this flag only applies when loading a file. In this case,
-         * the source stream must support the `Stream.seek()` operation.
+         * .. note::
+         *
+         *    This flag only applies when loading a file. In this case,
+         *    the source stream must support the `Stream.seek()` operation.
          */
         Auto
     };

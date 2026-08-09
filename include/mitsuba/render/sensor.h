@@ -47,9 +47,10 @@ public:
      *     sample2: This argument corresponds to the sample position in fractional pixel
      *         coordinates relative to the crop window of the underlying film.
      *
-     *     sample3: A uniformly distributed sample on the domain ``[0,1]^2``. This
-     *         argument determines the position on the aperture of the sensor. This
-     *         argument is ignored if ``needs_sample_3() == false``.
+     *     sample3: A uniformly distributed sample on the domain
+     *         :math:`[0,1]^2`. This argument determines the position on the
+     *         aperture of the sensor. It is ignored if
+     *         ``needs_sample_3() == false``.
      *
      * Returns:
      *     The sampled ray differential and (potentially spectrally varying)

@@ -178,7 +178,7 @@ auto sample_tea_float(UInt32 v0, UInt32 v1, int rounds = 4) {
  * Generate pseudorandom permutation vector using a shuffling network
  *
  * This algorithm repeatedly invokes `sample_tea_32()` internally and has
- * O(log2(sample_count)) complexity. It only supports permutation vectors,
+ * ``O(log2(sample_count))`` complexity. It only supports permutation vectors,
  * whose lengths are a power of 2.
  *
  * Args:
@@ -215,12 +215,11 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
 }
 
 /**
- * Generate pseudorandom permutation vector using the algorithm described in Pixar's
- * technical memo "Correlated Multi-Jittered Sampling":
+ * Generate pseudorandom permutation vector using the algorithm described in
+ * Pixar's technical memo "Correlated Multi-Jittered Sampling"
+ * :cite:`Kensler2013CorrelatedMS`.
  *
- *     https://graphics.pixar.com/library/MultiJitteredSampling/
- *
- *  Unlike `permute`, this function supports permutation vectors of any length.
+ * Unlike `permute`, this function supports permutation vectors of any length.
  *
  * Args:
  *     index: Input index to be mapped

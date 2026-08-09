@@ -21,8 +21,10 @@ template <typename T> using ref = nanobind::ref<T>;
  * by Mitsuba scene objects. The scene loader uses these to ensure
  * that a loaded object matches the expected interface.
  *
- * Note: This enum is forward-declared at the beginning of the file to allow
- * its usage in macros that appear before the full definition.
+ * .. note::
+ *
+ *    This enum is forward-declared at the beginning of the file to allow
+ *    its usage in macros that appear before the full definition.
  */
 enum class ObjectType : uint32_t {
     /// The default returned by `Object` subclasses
@@ -75,8 +77,9 @@ enum class ObjectType : uint32_t {
  * the foundation of an efficient reference-counted object hierarchy.
  *
  * We use an intrusive reference counting approach to avoid various gnarly
- * issues that arise in combined Python/C++ codebase, see the following page for
- * details: https://nanobind.readthedocs.io/en/latest/ownership_adv.html
+ * issues that arise in combined Python/C++ codebase, see `this page
+ * <https://nanobind.readthedocs.io/en/latest/ownership_adv.html>`__ for
+ * details.
  *
  * The counter provided by ``drjit::TraversableBase`` establishes a unified
  * reference count that is consistent across both C++ and Python. It is more

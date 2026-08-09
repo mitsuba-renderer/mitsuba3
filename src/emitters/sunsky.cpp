@@ -439,7 +439,7 @@ private:
     }
 
     /**
-     * \brief Updates the sky sampling data and sun irradiance values
+     * Updates the sky sampling data and sun irradiance values
      * based on the current parameters.
      */
     std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {

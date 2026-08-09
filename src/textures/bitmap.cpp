@@ -285,7 +285,7 @@ protected:
     }
 
     /**
-     * \brief Resolve \ref Format::Auto to a concrete storage precision
+     * Resolve `Format::Auto` to a concrete storage precision
      *
      * ``auto`` matches the storage to the source bit depth: 8-bit sources are
      * stored losslessly as 8-bit (and decoded from sRGB on lookup), 16-bit
@@ -311,7 +311,7 @@ protected:
     }
 
     /**
-     * \brief Load the bitmap into a tensor of the given storage type and build
+     * Load the bitmap into a tensor of the given storage type and build
      * the implementation object
      *
      * ``StoredType`` fixes the storage precision; the sRGB strategy follows from
@@ -348,9 +348,9 @@ protected:
     }
 
     /**
-     * \brief Bring the source bitmap into the exact format the texture needs
+     * Bring the source bitmap into the exact format the texture needs
      *
-     * The (potentially expensive) \ref Bitmap::convert() is skipped entirely
+     * The (potentially expensive) `Bitmap::convert()` is skipped entirely
      * when the bitmap already matches the target pixel format, component type,
      * and gamma -- e.g. an sRGB 8-bit PNG stored as ``uint8``. Sub-2x2 images are
      * up-sampled so that bilinear interpolation has at least one cell.
@@ -372,7 +372,7 @@ protected:
     }
 
     /// Map the source pixel format to the 1- or 3-channel layout the texture
-    /// stores (alpha is dropped and XYZ converted to RGB by \ref convert()).
+    /// stores (alpha is dropped and XYZ converted to RGB by `convert()`).
     Bitmap::PixelFormat target_pixel_format(Bitmap::PixelFormat pf) const {
         switch (pf) {
             case Bitmap::PixelFormat::Y:
@@ -389,7 +389,7 @@ protected:
         }
     }
 
-    /// Construct the concrete \ref BitmapTextureImpl for the chosen storage type
+    /// Construct the concrete `BitmapTextureImpl` for the chosen storage type
     template <typename StoredType, typename Tensor>
     Object *instantiate(Tensor &&tensor, bool srgb) const {
         Properties props;
@@ -748,11 +748,11 @@ public:
 
 protected:
     /**
-     * \brief Do the stored values represent spectral upsampling coefficients
+     * Do the stored values represent spectral upsampling coefficients
      * rather than plain RGB?
      *
      * This is the case for a 3-channel texture in a spectral variant with color
-     * conversion enabled (\c raw=false). Such textures can only answer spectral
+     * conversion enabled (``raw=false``). Such textures can only answer spectral
      * queries; monochromatic and RGB lookups are rejected.
      */
     bool stores_spectral_coeffs(size_t channels) const {
@@ -766,7 +766,7 @@ protected:
     };
 
     /**
-     * \brief Compute the bilinear interpolation weights for a texture-space
+     * Compute the bilinear interpolation weights for a texture-space
      * coordinate
      *
      * Applies the half-texel shift between the UV and texel-center conventions,
@@ -781,7 +781,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the texture at the given surface interaction using
+     * Evaluates the texture at the given surface interaction using
      * spectral upsampling
      */
     MI_INLINE UnpolarizedSpectrum
@@ -819,7 +819,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the texture at the given surface interaction
+     * Evaluates the texture at the given surface interaction
      *
      * Should only be used when the texture has exactly 1 channel.
      */
@@ -835,7 +835,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the texture at the given surface interaction
+     * Evaluates the texture at the given surface interaction
      *
      * Should only be used when the texture has exactly 3 channels.
      */
@@ -850,7 +850,7 @@ protected:
     }
 
     /**
-     * \brief Decode a raw stored value to linear, mirroring the texture's own
+     * Decode a raw stored value to linear, mirroring the texture's own
      * sampling-time conversion
      *
      * For 8-bit storage this normalizes to [0, 1] and undoes the sRGB curve (if
@@ -870,7 +870,7 @@ protected:
     }
 
     /**
-     * \brief Recompute mean and 2D sampling distribution (if requested)
+     * Recompute mean and 2D sampling distribution (if requested)
      * following an update
      */
     void rebuild_internals(const StoredTensorXf& tensor, bool init_mean, bool init_distr) {
@@ -972,7 +972,7 @@ protected:
 
 protected:
     /// Transferring the texel distribution to the surface parameterization
-    /// needs \c to_uv to permute the corners of the unit square
+    /// needs ``to_uv`` to permute the corners of the unit square
     void check_sampling_transform() const {
         const ScalarPoint2f corners[4] = { { 0.f, 0.f }, { 1.f, 0.f },
                                            { 1.f, 1.f }, { 0.f, 1.f } };

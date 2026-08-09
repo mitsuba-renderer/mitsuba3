@@ -70,7 +70,7 @@ struct AttributeCallback : public TraversalCallback {
     std::string name;
 
     /// Was an attribute of this name found? Attributes that the BSDF does
-    /// not carry leave \ref result at zero (see \ref BSDF::has_attribute())
+    /// not carry leave `result` at zero (see `BSDF::has_attribute()`)
     bool found;
     Type result;
     F1 func_object;

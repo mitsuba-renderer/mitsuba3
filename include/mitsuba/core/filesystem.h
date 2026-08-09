@@ -124,18 +124,19 @@ public:
     /**
      * Returns the extension of the filename component of the path (the
      * substring starting at the rightmost period, including the period).
-     * Special paths '.' and '..' have an empty extension.
+     * Special paths ``.`` and ``..`` have an empty extension.
      */
     path extension() const;
 
     /**
-     * Replaces the substring starting at the rightmost '.' symbol
+     * Replaces the substring starting at the rightmost ``.`` symbol
      * by the provided string.
      *
-     * A '.' symbol is automatically inserted if the replacement does not start
-     * with a dot. Removes the extension altogether if the empty path is
-     * passed. If there is no extension, appends a '.' followed by the
-     * replacement. If the path is empty, '.' or '..', the method does nothing.
+     * A ``.`` symbol is automatically inserted if the replacement does not
+     * start with a dot. Removes the extension altogether if the empty path
+     * is passed. If there is no extension, appends a ``.`` followed by the
+     * replacement. If the path is empty, ``.`` or ``..``, the method does
+     * nothing.
      *
      * Returns ``*this``.
      */
@@ -227,7 +228,8 @@ extern MI_EXPORT_LIB path current_path();
  * Returns an absolute path to the same location pointed by ``p``.
  *
  * See Also:
- *     http://en.cppreference.com/w/cpp/experimental/fs/absolute
+ *     `cppreference: std::experimental::filesystem::absolute
+ *     <http://en.cppreference.com/w/cpp/experimental/fs/absolute>`__
  */
 extern MI_EXPORT_LIB path absolute(const path& p);
 

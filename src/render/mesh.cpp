@@ -60,7 +60,7 @@ DRJIT_INLINE Index gather_map(const Buffer &map, const Index &idx) {
 }
 
 /// Construct the array [func(i/dim, i%dim) for i in range(rows*dim)],
-/// where \c func returns one lane
+/// where ``func`` returns one lane
 template <typename Buf, typename F>
 Buf element_view(size_t rows, uint32_t dim, F &&func) {
     if (rows == 0)
@@ -81,12 +81,12 @@ Buf element_view(size_t rows, uint32_t dim, F &&func) {
     }
 }
 
-/// Selects how \ref interleaved() evaluates in JIT variants
+/// Selects how `interleaved()` evaluates in JIT variants
 enum Eval { Eager, Symbolic };
 
 /// Construct the array [func(i/N)[i%N] for i in range(count*N)], where
-/// \c func returns a whole row. \c Eager scatters into fresh storage,
-/// \c Symbolic builds an unevaluated lane selection.
+/// ``func`` returns a whole row. ``Eager`` scatters into fresh storage,
+/// ``Symbolic`` builds an unevaluated lane selection.
 template <size_t N, typename Buf, Eval E = Eager, typename Func>
 Buf interleaved(size_t count, Func &&func) {
     using UInt32 = dr::uint32_array_t<Buf>;
@@ -115,7 +115,7 @@ Buf interleaved(size_t count, Func &&func) {
     }
 }
 
-/// Gather the ``Dim``-wide row \c idx of an interleaved tensor or buffer
+/// Gather the ``Dim``-wide row ``idx`` of an interleaved tensor or buffer
 template <size_t Dim, typename Source, typename Index>
 DRJIT_INLINE auto deinterleave(const Source &src, const Index &idx) {
     if constexpr (dr::is_tensor_v<Source>) {
@@ -128,7 +128,7 @@ DRJIT_INLINE auto deinterleave(const Source &src, const Index &idx) {
     }
 }
 
-/// Add \c value to the ``Dim``-wide row \c idx of the interleaved buffer \c buf
+/// Add ``value`` to the ``Dim``-wide row ``idx`` of the interleaved buffer ``buf``
 template <size_t Dim, typename Buffer, typename Value, typename Index,
           typename Mask>
 DRJIT_INLINE void interleaved_add(Buffer &buf, const Value &value,
@@ -228,8 +228,8 @@ static void require_unbuilt(bool built, const std::string &filename,
               "parameter interface to change the mesh state.", ctx, filename);
 }
 
-/// Raise when a placement or orientation is still pending, see \ref
-/// from_packed() and \ref PackedMesh::set_transform()
+/// Raise when a placement or orientation is still pending, see
+/// `from_packed()` and `PackedMesh::set_transform()`
 static void require_baked(bool pending, const std::string &filename) {
     if (pending)
         Throw("Mesh::from_packed(): mesh \"%s\": it's the caller's "

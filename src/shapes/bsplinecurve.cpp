@@ -1115,7 +1115,7 @@ private:
     }
 
     /**
-     * \brief Returns the position partials, normals partials and the second
+     * Returns the position partials, normals partials and the second
      * fundamental form
      */
     std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>

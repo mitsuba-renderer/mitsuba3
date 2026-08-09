@@ -1,6 +1,6 @@
 NAMESPACE_BEGIN(mitsuba)
 /**
- * \brief GTR1_isotropic Microfacet Distribution class
+ * GTR1_isotropic Microfacet Distribution class
  *
  * This class implements GTR1 Microfacet Distribution Methods
  * for sampling routines of clearcoat lobe in the pricipled BSDF.
@@ -24,8 +24,9 @@ public:
     /**
      * Create an isotropic microfacet distribution for clearcoat lobe
      * based on GTR1.
-     * \param m_alpha
-     *     The roughness of the surface.
+     *
+     * Args:
+     *     m_alpha: The roughness of the surface.
      */
     GTR1Isotropic(Float alpha) : m_alpha(alpha){};
 
@@ -61,17 +62,20 @@ private:
 };
 
 /**
- * \brief Separable shadowing-masking for GGX. Mitsuba does not have a GGX1
+ * Separable shadowing-masking for GGX. Mitsuba does not have a GGX1
  * support in microfacet so it is added in principled material plugin.
- * \param wi
- *     Incident Direction.
- * \param wo
- *     Outgoing direction.
- * \param wh
- *     Halfway vector.
- * \param alpha
- *     Roughness of the clearcoat lobe.
- * \return Shadowing-Masking term for GGX. Used in clearcoat lobe.
+ *
+ * Args:
+ *     wi: Incident Direction.
+ *
+ *     wo: Outgoing direction.
+ *
+ *     wh: Halfway vector.
+ *
+ *     alpha: Roughness of the clearcoat lobe.
+ *
+ * Returns:
+ *     Shadowing-Masking term for GGX. Used in clearcoat lobe.
  */
 template<typename Float>
 Float clearcoat_G(const Vector<Float,3> &wi, const Vector<Float,3> &wo,
@@ -80,15 +84,18 @@ Float clearcoat_G(const Vector<Float,3> &wi, const Vector<Float,3> &wo,
 }
 
 /**
- * \brief Calculates Smith ggx shadowing-masking function. Used in
+ * Calculates Smith ggx shadowing-masking function. Used in
  * separable masking-shadowing term calculation.
- * \param v
- *     Direction for the calculation of the function.
- * \param wh
- *     Halfway vector.
- * \param alpha
- *     Roughness of the clearcoat lobe.
- * \return Smith ggx1 shadowing-masking function.
+ *
+ * Args:
+ *     v: Direction for the calculation of the function.
+ *
+ *     wh: Halfway vector.
+ *
+ *     alpha: Roughness of the clearcoat lobe.
+ *
+ * Returns:
+ *     Smith ggx1 shadowing-masking function.
  */
 template<typename Float>
 Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
@@ -111,13 +118,16 @@ Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
 }
 
 /**
- * \brief Get the flag which determines whether the corresponding
+ * Get the flag which determines whether the corresponding
  * feature is going to be implemented or not.
- * \param name
- *     Name of the feature.
- * \param props
- *     Given properties.
- * \return the flag of the feature.
+ *
+ * Args:
+ *     name: Name of the feature.
+ *
+ *     props: Given properties.
+ *
+ * Returns:
+ *     the flag of the feature.
  */
 bool get_flag(const std::string &name, const Properties &props) {
     if (props.has_property(name)) {
@@ -132,10 +142,13 @@ bool get_flag(const std::string &name, const Properties &props) {
 }
 
 /**
- * \brief Computes the schlick weight for Fresnel Schlick approximation.
- * \param cos_i
- *     Incident angle of the ray based on microfacet normal.
- * \return schlick weight
+ * Computes the schlick weight for Fresnel Schlick approximation.
+ *
+ * Args:
+ *     cos_i: Incident angle of the ray based on microfacet normal.
+ *
+ * Returns:
+ *     schlick weight
  */
 template <typename Float>
 Float schlick_weight(Float cos_i) {
@@ -144,14 +157,17 @@ Float schlick_weight(Float cos_i) {
 }
 
 /**
- * \brief Schlick Approximation for Fresnel Reflection coefficient F = R0 +
+ * Schlick Approximation for Fresnel Reflection coefficient F = R0 +
  * (1-R0) (1-cos^5(i)). Transmitted ray's angle should be used for eta<1.
- * \param R0
- *     Incident specular. (Fresnel term when incident ray is aligned with
- *     the surface normal.)
- * \param cos_theta_i
- *     Incident angle of the ray based on microfacet normal.
- * \return Schlick approximation result.
+ *
+ * Args:
+ *     R0: Incident specular. (Fresnel term when incident ray is aligned with
+ *         the surface normal.)
+ *
+ *     cos_theta_i: Incident angle of the ray based on microfacet normal.
+ *
+ * Returns:
+ *     Schlick approximation result.
  */
 template <typename T,typename Float>
 T calc_schlick(T R0, Float cos_theta_i,Float eta){
@@ -170,11 +186,14 @@ T calc_schlick(T R0, Float cos_theta_i,Float eta){
 }
 
 /**
- * \brief Approximation of incident specular based on relative index of
+ * Approximation of incident specular based on relative index of
  * refraction.
- * \param eta
- *     Relative index of refraction.
- * \return Incident specular
+ *
+ * Args:
+ *     eta: Relative index of refraction.
+ *
+ * Returns:
+ *     Incident specular
  */
 template <typename Float>
 Float schlick_R0_eta(Float eta){
@@ -182,18 +201,21 @@ Float schlick_R0_eta(Float eta){
 }
 
 /**
- * \brief Computes a mask for macro-micro surface incompatibilities.
- * \param m
- *     Micro surface normal.
- * \param wi
- *     Incident direction.
- * \param wo
- *     Outgoing direction.
- * \param cos_theta_i
- *     Incident angle
- * \param reflection
- *     Flag for determining reflection or refraction case.
- * \return  Macro-micro surface compatibility mask.
+ * Computes a mask for macro-micro surface incompatibilities.
+ *
+ * Args:
+ *     m: Micro surface normal.
+ *
+ *     wi: Incident direction.
+ *
+ *     wo: Outgoing direction.
+ *
+ *     cos_theta_i: Incident angle
+ *
+ *     reflection: Flag for determining reflection or refraction case.
+ *
+ * Returns:
+ *     Macro-micro surface compatibility mask.
  */
 template <typename Float>
 dr::mask_t<Float> mac_mic_compatibility(const Vector<Float,3> &m,
@@ -211,29 +233,32 @@ dr::mask_t<Float> mac_mic_compatibility(const Vector<Float,3> &m,
 }
 
 /**
- * \brief  Modified fresnel function for the principled material. It blends
+ * Modified fresnel function for the principled material. It blends
  * metallic and dielectric responses (not true metallic). spec_tint portion
  * of the dielectric response is tinted towards base_color. Schlick
  * approximation is used for spec_tint and metallic parts whereas dielectric
  * part is calculated with the true fresnel dielectric implementation.
- * \param F_dielectric
- *     True dielectric response.
- * \param metallic
- *     Metallic weight.
- * \param spec_tint
- *     Specular tint weight.
- * \param base_color
- *     Base color of the material.
- * \param lum
- *     Luminance of the base color.
- * \param cos_theta_i
- *     Incident angle of the ray based on microfacet normal.
- * \param front_side
- *     Mask for front side of the macro surface.
- * \param bsdf
- *     Weight of the BSDF major lobe.
- * \return Fresnel term of principled BSDF with metallic and dielectric response
- * combined.
+ *
+ * Args:
+ *     F_dielectric: True dielectric response.
+ *
+ *     metallic: Metallic weight.
+ *
+ *     spec_tint: Specular tint weight.
+ *
+ *     base_color: Base color of the material.
+ *
+ *     lum: Luminance of the base color.
+ *
+ *     cos_theta_i: Incident angle of the ray based on microfacet normal.
+ *
+ *     front_side: Mask for front side of the macro surface.
+ *
+ *     bsdf: Weight of the BSDF major lobe.
+ *
+ * Returns:
+ *     Fresnel term of principled BSDF with metallic and dielectric response
+ *     combined.
  */
 template<typename Float,typename T>
 T principled_fresnel(const Float &F_dielectric, const Float &metallic,
@@ -275,22 +300,25 @@ T principled_fresnel(const Float &F_dielectric, const Float &metallic,
 }
 
 /**
-* \brief  Modified Fresnel function for thin film approximation. It
+* Modified Fresnel function for thin film approximation. It
 * calculates the tinted Fresnel factor with Schlick Approximation.
-* \param F_dielectric
-*     True dielectric response.
-* \param spec_tint
-*     Specular tint weight.
-* \param base_color
-*     Base color of the material.
-* \param lum
-*     Luminance of the base color.
-* \param cos_theta_i
-*     Incident angle of the ray based on microfacet normal.
-* \param eta_t
-*     Relative index of Refraction of the thin Film
-* \return Fresnel term of the thin BSDF with normal and tinted response
-* combined.
+*
+* Args:
+*     F_dielectric: True dielectric response.
+*
+*     spec_tint: Specular tint weight.
+*
+*     base_color: Base color of the material.
+*
+*     lum: Luminance of the base color.
+*
+*     cos_theta_i: Incident angle of the ray based on microfacet normal.
+*
+*     eta_t: Relative index of Refraction of the thin Film
+*
+* Returns:
+*     Fresnel term of the thin BSDF with normal and tinted response
+*     combined.
 */
 template<typename Float,typename T>
 T thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
@@ -308,13 +336,16 @@ T thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
 }
 
 /**
- * \brief Calculates the microfacet distribution parameters based on
+ * Calculates the microfacet distribution parameters based on
  * Disney Course Notes.
- * \param anisotropic
- *     Anisotropy weight.
- * \param roughness
- *     Roughness parameter of the material.
- * \return Microfacet Distribution roughness parameters: alpha_x, alpha_y.
+ *
+ * Args:
+ *     anisotropic: Anisotropy weight.
+ *
+ *     roughness: Roughness parameter of the material.
+ *
+ * Returns:
+ *     Microfacet Distribution roughness parameters: alpha_x, alpha_y.
  */
 template<typename Float>
 std::pair<Float, Float> calc_dist_params(Float anisotropic,
