@@ -126,8 +126,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
 
     int m = (n + 1) / 2;
     for (int i = 1; i < m; ++i) {
-        /* Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
-           and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999 */
+        // Initial guess for this root -- see "On the Legendre-Gauss-Lobatto Points
+        // and Weights" by Seymor V. Parter, Journal of Sci. Comp., Vol. 14, 4, 1999
 
         double x = -dr::cos((i + 0.25) * dr::Pi<double> / n -
                             3 / (8 * n * dr::Pi<double> * (i + 0.25)));
@@ -138,8 +138,8 @@ std::pair<Float, Float> gauss_lobatto(int n) {
                 throw std::runtime_error("gauss_lobatto(" + std::to_string(n) +
                                          "): did not converge after 20 iterations!");
 
-            /* Search for the interior roots of P_n'(x) using Newton's method. The same
-               roots are also shared by P_{n+1}-P_{n-1}, which is nicer to evaluate. */
+            // Search for the interior roots of P_n'(x) using Newton's method. The same
+            // roots are also shared by P_{n+1}-P_{n-1}, which is nicer to evaluate.
 
             std::pair<double, double> Q = math::legendre_pd_diff(n, x);
             double step = Q.first / Q.second;

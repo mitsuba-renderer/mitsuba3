@@ -229,8 +229,8 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
 
-    /* Callback function cleanup static variant-specific data structures, this
-     * should be called when the interpreter is exiting */
+    // Callback function cleanup static variant-specific data structures, this
+    // should be called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         {
@@ -241,11 +241,11 @@ NB_MODULE(MI_VARIANT_NAME, m) {
         Scene::static_accel_shutdown();
     }));
 
-    /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.scalar_rgb.test.util import function`
-     * For that we `__path__` needs to be populated. We do it by using the
-     * `__file__` attribute of a Python file which is located in the same
-     * directory as this module */
+    // Make this a package, thus allowing statements such as:
+    // `from mitsuba.scalar_rgb.test.util import function`
+    // For that we `__path__` needs to be populated. We do it by using the
+    // `__file__` attribute of a Python file which is located in the same
+    // directory as this module
     nb::module_ os = nb::module_::import_("os");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));

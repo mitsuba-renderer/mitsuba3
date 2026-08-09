@@ -393,9 +393,9 @@ private:
             // The shells reference their vertices directly, without maps
             m_position_count = m_normal_count = vertex_count;
 
-            /* The shell vertices carry positions only: the remaining lanes
-               of the packed records stay zero, and this plugin never runs
-               Mesh::pack(). */
+            // The shell vertices carry positions only: the remaining lanes
+            // of the packed records stay zero, and this plugin never runs
+            // Mesh::pack().
             m_packed_vertices = dr::zeros<StoredFloat>(
                 (size_t) MeshVertexStride * m_vertex_count);
             m_packed_faces    = dr::empty<IndexStorage>(4 * m_face_count);

@@ -101,9 +101,9 @@ public:
                 Throw("The `sample()` method for this integrator must "
                       "exclusively be called through the `render()` method!");
 
-            /* The Stokes vector that comes from the integrator is still aligned
-               with the implicit Stokes frame used for the ray direction. Apply
-               one last rotation here s.t. it aligns with the sensor's x-axis. */
+            // The Stokes vector that comes from the integrator is still aligned
+            // with the implicit Stokes frame used for the ray direction. Apply
+            // one last rotation here s.t. it aligns with the sensor's x-axis.
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
             Vector3f vertical = m_sensor->world_transform() * Vector3f(0.f, 1.f, 0.f);
             Vector3f target_basis = dr::cross(ray.d, vertical);

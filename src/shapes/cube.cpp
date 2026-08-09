@@ -73,11 +73,11 @@ public:
             { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }
         };
 
-        /* Vertex -> cube corner map: the 24 vertices (four per face)
-           reference 8 distinct corners, which connects the faces in the
-           geometric topology while the authored normals keep the edges
-           sharp. Corner ``c`` sits at (+-1, +-1, +-1), with bit ``k`` of
-           ``c`` selecting the sign of axis ``k``. */
+        // Vertex -> cube corner map: the 24 vertices (four per face)
+        // reference 8 distinct corners, which connects the faces in the
+        // geometric topology while the authored normals keep the edges
+        // sharp. Corner ``c`` sits at (+-1, +-1, +-1), with bit ``k`` of
+        // ``c`` selecting the sign of axis ``k``.
         static const uint32_t position_index[vertex_count] = {
             1, 5, 4, 0,  3, 2, 6, 7,  1, 3, 7, 5,
             5, 7, 6, 4,  4, 6, 2, 0,  3, 1, 0, 2

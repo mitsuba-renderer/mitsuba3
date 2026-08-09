@@ -125,9 +125,9 @@ public:
         Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
-        /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
-           generates wavefront or megakernel renderer based on configuration).
-           Register everything that changes as part of the loop here */
+        // Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+        // generates wavefront or megakernel renderer based on configuration).
+        // Register everything that changes as part of the loop here
         struct LoopState {
             Mask active;
             UInt32 depth;

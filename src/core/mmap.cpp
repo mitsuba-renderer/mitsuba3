@@ -176,8 +176,8 @@ struct MemoryMappedFile::MemoryMappedFilePrivate {
 
         #if defined(__linux__) || defined(__APPLE__)
             if (temp) {
-                /* Temporary file that will be deleted in any case:
-                   invalidate dirty pages to avoid a costly flush to disk */
+                // Temporary file that will be deleted in any case:
+                // invalidate dirty pages to avoid a costly flush to disk
                 int retval = msync(data, size, MS_INVALIDATE);
                 if (retval != 0)
                     Throw("munmap(): unable to unmap memory: %s", strerror(errno));
@@ -231,7 +231,7 @@ MemoryMappedFile::~MemoryMappedFile() {
         try {
             d->unmap();
         } catch (std::exception &e) {
-            /* Don't throw exceptions from a constructor */
+            // Don't throw exceptions from a constructor
             Log(Warn, "%s", e.what());
         }
     }

@@ -114,7 +114,7 @@ public:
         /// Process vertex/index records in large batches
         constexpr size_t elements_per_packet = 1024;
 
-        /* Causes all texture coordinates to be vertically flipped. */
+        // Causes all texture coordinates to be vertically flipped.
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", false);
 
         auto fail = [&](const char *descr) {
@@ -142,9 +142,9 @@ public:
             fail(e.what());
         }
 
-        /* The element counts and the record layout follow from the header,
-           so the packed staging storage can be allocated up front and each
-           record written exactly once, at its final place. */
+        // The element counts and the record layout follow from the header,
+        // so the packed staging storage can be allocated up front and each
+        // record written exactly once, at its final place.
         auto has_uv_fields = [](const sj::Struct &s) {
             return (s.contains("u") && s.contains("v")) ||
                    (s.contains("texture_u") && s.contains("texture_v")) ||
@@ -172,9 +172,9 @@ public:
         m_flip_normals = false;
         m_to_world = ScalarAffineTransform4f();
 
-        /* Shared packet-streaming scaffolding of both element types:
-           convert the element's records into 'out_struct' in batches and
-           hand a pointer to each converted record to 'per_record'. */
+        // Shared packet-streaming scaffolding of both element types:
+        // convert the element's records into 'out_struct' in batches and
+        // hand a pointer to each converted record to 'per_record'.
         auto stream_records = [&](const PLYElement &el,
                                   const sj::Struct &out_struct,
                                   auto &&per_record) {

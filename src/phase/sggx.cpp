@@ -88,14 +88,14 @@ public:
         // The diffuse variant of the SGGX is currently not supported and
         // requires some changes to the phase function interface to work in
         // GPU/LLVM modes
-        /* if (m_diffuse) {
-           Frame3f frame(sampled_n);
-           auto wo =
-           warp::square_to_cosine_hemisphere(ctx.sampler->next_2d(active));
-           Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
-           wo = frame.to_world(wo);
-           return {wo, pdf};
-           } else { */
+        // if (m_diffuse) {
+        // Frame3f frame(sampled_n);
+        // auto wo =
+        // warp::square_to_cosine_hemisphere(ctx.sampler->next_2d(active));
+        // Float pdf = warp::square_to_cosine_hemisphere_pdf(wo);
+        // wo = frame.to_world(wo);
+        // return {wo, pdf};
+        // } else {
         Float pdf = 0.25f * sggx_pdf(Vector3f(sampled_n), s) /
                     sggx_projected_area(mi.wi, s);
         Vector3f wo = dr::normalize(reflect(mi.wi, sampled_n));
@@ -109,10 +109,10 @@ public:
                                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::PhaseFunctionEvaluate, active);
         auto s = eval_ndf_params(mi, active);
-        /* if (m_diffuse) {
-           auto sampled_n = sggx_sample(mi.sh_frame,
-           ctx.sampler->next_2d(active), s); return dr::InvPi<Float> *
-           dr::maximum(dr::dot(wo, sampled_n), 0.f); } else { */
+        // if (m_diffuse) {
+        // auto sampled_n = sggx_sample(mi.sh_frame,
+        // ctx.sampler->next_2d(active), s); return dr::InvPi<Float> *
+        // dr::maximum(dr::dot(wo, sampled_n), 0.f); } else {
         Float pdf = 0.25f * sggx_pdf(dr::normalize(wo + mi.wi), s) /
                     sggx_projected_area(mi.wi, s);
         // }

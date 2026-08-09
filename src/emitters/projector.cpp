@@ -231,12 +231,11 @@ public:
         ds.dist = dr::sqrt(dist_squared);
         ds.d *= dr::rcp(ds.dist);
 
-        /* Scale so that irradiance at z=1 is correct. See the weight
-         * returned by `PerspectiveCamera::sample_direction()` and the
-         * comments in `PerspectiveCamera::importance()`.
-         * Note that:
-         *    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
-         */
+        // Scale so that irradiance at z=1 is correct. See the weight
+        // returned by `PerspectiveCamera::sample_direction()` and the
+        // comments in `PerspectiveCamera::importance()`.
+        // Note that:
+        //    dist^2 * cos_theta^3 == it_local.z^2 * cos_theta
         spec *= dr::Pi<Float> * m_intensity_scale /
                 (dr::square(it_local.z()) * -dr::dot(ds.n, ds.d));
 
@@ -301,8 +300,8 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        /* This emitter does not occupy any particular region
-           of space, return an invalid bounding box */
+        // This emitter does not occupy any particular region
+        // of space, return an invalid bounding box
         return ScalarBoundingBox3f();
     }
 

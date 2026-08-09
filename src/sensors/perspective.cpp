@@ -182,8 +182,8 @@ public:
         m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
              - m_sample_to_camera * Point3f(0.f);
 
-        /* Precompute some data for importance(). Please
-           look at that function for further details. */
+        // Precompute some data for importance(). Please
+        // look at that function for further details.
         Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
                 pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
 
@@ -338,42 +338,41 @@ public:
      *         reference point in question (all in local camera space)
      */
     Float importance(const Vector3f &d) const {
-        /* How is this derived? Imagine a hypothetical image plane at a
-           distance of d=1 away from the pinhole in camera space.
-
-           Then the visible rectangular portion of the plane has the area
-
-              A = (2 * dr::tan(0.5 * xfov in radians))^2 / aspect
-
-           Since we allow crop regions, the actual visible area is
-           potentially reduced:
-
-              A' = A * (cropX / filmX) * (cropY / filmY)
-
-           Perspective transformations of such aligned rectangles produce
-           an equivalent scaled (but otherwise undistorted) rectangle
-           in screen space. This means that a strategy, which uniformly
-           generates samples in screen space has an associated area
-           density of 1/A' on this rectangle.
-
-           To compute the solid angle density of a sampled point P on
-           the rectangle, we can apply the usual measure conversion term:
-
-              d_omega = 1/A' * distance(P, origin)^2 / dr::cos(theta)
-
-           where theta is the angle that the unit direction vector from
-           the origin to P makes with the rectangle. Since
-
-              distance(P, origin)^2 = Px^2 + Py^2 + 1
-
-           and
-
-              dr::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
-
-           we have
-
-              d_omega = 1 / (A' * cos^3(theta))
-        */
+        // How is this derived? Imagine a hypothetical image plane at a
+        // distance of d=1 away from the pinhole in camera space.
+        //
+        // Then the visible rectangular portion of the plane has the area
+        //
+        //    A = (2 * dr::tan(0.5 * xfov in radians))^2 / aspect
+        //
+        // Since we allow crop regions, the actual visible area is
+        // potentially reduced:
+        //
+        //    A' = A * (cropX / filmX) * (cropY / filmY)
+        //
+        // Perspective transformations of such aligned rectangles produce
+        // an equivalent scaled (but otherwise undistorted) rectangle
+        // in screen space. This means that a strategy, which uniformly
+        // generates samples in screen space has an associated area
+        // density of 1/A' on this rectangle.
+        //
+        // To compute the solid angle density of a sampled point P on
+        // the rectangle, we can apply the usual measure conversion term:
+        //
+        //    d_omega = 1/A' * distance(P, origin)^2 / dr::cos(theta)
+        //
+        // where theta is the angle that the unit direction vector from
+        // the origin to P makes with the rectangle. Since
+        //
+        //    distance(P, origin)^2 = Px^2 + Py^2 + 1
+        //
+        // and
+        //
+        //    dr::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
+        //
+        // we have
+        //
+        //    d_omega = 1 / (A' * cos^3(theta))
 
         Float ct     = Frame3f::cos_theta(d),
               inv_ct = dr::rcp(ct);
@@ -381,8 +380,8 @@ public:
         // Compute the position on the plane at distance 1
         Point2f p(d.x() * inv_ct, d.y() * inv_ct);
 
-        /* Check if the point lies to the front and inside the
-           chosen crop rectangle */
+        // Check if the point lies to the front and inside the
+        // chosen crop rectangle
         Mask valid = ct > 0 && m_image_rect.contains(p);
 
         return dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);

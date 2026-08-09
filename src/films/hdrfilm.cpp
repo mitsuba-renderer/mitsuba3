@@ -321,9 +321,9 @@ public:
                 pixel_count = dr::prod(m_storage->size());
             }
 
-            /* The following code develops weighted image block data into
-               an output image of the desired configuration, while using
-               a minimal number of JIT kernel launches. */
+            // The following code develops weighted image block data into
+            // an output image of the desired configuration, while using
+            // a minimal number of JIT kernel launches.
 
             // Determine what channels are needed
             bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
@@ -347,9 +347,9 @@ public:
                    pixel_idx   = idx / target_ch,
                    channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
 
-            /* Index vectors referencing source pixels/weights as follows:
-                 values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
-                 weight_idx = W1, W1, W1, W2, W2, W2 */
+            // Index vectors referencing source pixels/weights as follows:
+            // values_idx = R1, G1, B1, R2, G2, B2 (for RGB output)
+            // weight_idx = W1, W1, W1, W2, W2, W2
             UInt32 values_idx = dr::fmadd(pixel_idx, source_ch, channel_idx),
                    weight_idx = dr::fmadd(pixel_idx, source_ch, base_ch - 1);
 

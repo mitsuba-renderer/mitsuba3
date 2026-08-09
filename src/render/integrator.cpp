@@ -260,7 +260,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
                     film->put_block(block);
 
-                    /* Critical section: update progress bar */
+                    // Critical section: update progress bar
                     if (progress) {
                         std::lock_guard<std::mutex> lock(mutex);
                         blocks_done++;
@@ -379,8 +379,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 Log(Info, "Code generation finished. (took %s)",
                     util::time_string((float) timer.value(), true));
 
-                /* Separate computation graph recording from the actual
-                   rendering time in single-pass mode */
+                // Separate computation graph recording from the actual
+                // rendering time in single-pass mode
                 m_render_timer.reset();
             }
 
@@ -533,9 +533,9 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
 
 MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Properties &props)
     : Base(props) {
-    /*  Longest visualized path depth (``-1 = infinite``). A value of ``1`` will
-        visualize only directly visible light sources. ``2`` will lead to
-        single-bounce (direct-only) illumination, and so on. */
+    // Longest visualized path depth (``-1 = infinite``). A value of ``1`` will
+    // visualize only directly visible light sources. ``2`` will lead to
+    // single-bounce (direct-only) illumination, and so on.
     int max_depth = props.get<int>("max_depth", -1);
     if (max_depth < 0 && max_depth != -1)
         Throw("\"max_depth\" must be set to -1 (infinite) or a value >= 0");
@@ -739,8 +739,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         block->set_offset(film->crop_offset());
 
-        /* Disable coalescing of atomic writes performed within the ImageBlock
-           (they are highly irregular in any particle tracing-based method) */
+        // Disable coalescing of atomic writes performed within the ImageBlock
+        // (they are highly irregular in any particle tracing-based method)
         block->set_coalesce(false);
 
         Timer timer;
@@ -771,8 +771,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                 Log(Info, "Code generation finished. (took %s)",
                     util::time_string((float) timer.value(), true));
 
-                /* Separate computation graph recording from the actual
-                   rendering time in single-pass mode */
+                // Separate computation graph recording from the actual
+                // rendering time in single-pass mode
                 m_render_timer.reset();
             }
 

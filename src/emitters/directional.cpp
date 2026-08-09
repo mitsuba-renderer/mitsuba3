@@ -63,8 +63,8 @@ public:
     MI_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
-        /* Until `set_scene` is called, we have no information
-           about the scene and default to the unit bounding sphere. */
+        // Until `set_scene` is called, we have no information
+        // about the scene and default to the unit bounding sphere.
         m_bsphere = ScalarBoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         if (props.has_property("direction")) {
@@ -211,8 +211,8 @@ public:
     }
 
     ScalarBoundingBox3f bbox() const override {
-        /* This emitter does not occupy any particular region
-           of space, return an invalid bounding box */
+        // This emitter does not occupy any particular region
+        // of space, return an invalid bounding box
         return ScalarBoundingBox3f();
     }
 

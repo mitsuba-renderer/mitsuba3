@@ -41,12 +41,12 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
           eta_it = dr::select(outside_mask, eta, rcp_eta),
           eta_ti = dr::select(outside_mask, rcp_eta, eta);
 
-    /* Using Snell's law, calculate the squared sine of the
-       angle between the surface normal and the transmitted ray */
+    // Using Snell's law, calculate the squared sine of the
+    // angle between the surface normal and the transmitted ray
     Float cos_theta_t_sqr =
         dr::fnmadd(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
 
-    /* Find the absolute cosines of the incident/transmitted rays */
+    // Find the absolute cosines of the incident/transmitted rays
     Float cos_theta_i_abs = dr::abs(cos_theta_i);
     Float cos_theta_t_abs = dr::safe_sqrt(cos_theta_t_sqr);
 
@@ -55,7 +55,7 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
 
     Float r_sc = dr::select(index_matched, Float(0.f), Float(1.f));
 
-    /* Amplitudes of reflected waves */
+    // Amplitudes of reflected waves
     Float a_s = dr::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
                 dr::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
 
@@ -66,7 +66,7 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
 
     dr::masked(r, special_case) = r_sc;
 
-    /* Adjust the sign of the transmitted direction */
+    // Adjust the sign of the transmitted direction
     Float cos_theta_t = dr::mulsign_neg(cos_theta_t_abs, cos_theta_i);
 
     return { r, cos_theta_t, eta_it, eta_ti };
@@ -159,23 +159,23 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
           eta_it  = dr::select(outside_mask, eta, rcp_eta),
           eta_ti  = dr::select(outside_mask, rcp_eta, eta);
 
-    /* Using Snell's law, calculate the squared sine of the
-       angle between the surface normal and the transmitted ray */
+    // Using Snell's law, calculate the squared sine of the
+    // angle between the surface normal and the transmitted ray
     Float cos_theta_t_sqr =
         dr::fnmadd(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f), eta_ti * eta_ti, 1.f);
 
-    /* Find the cosines of the incident/transmitted rays */
+    // Find the cosines of the incident/transmitted rays
     Float cos_theta_i_abs = dr::abs(cos_theta_i);
     dr::Complex<Float> cos_theta_t = dr::sqrt(dr::Complex<Float>(cos_theta_t_sqr));
 
-    /* Choose the appropriate sign of the root (important when computing the
-       phase difference under total internal reflection, see appendix A.2 of
-       "Stellar Polarimetry" by David Clarke) */
+    // Choose the appropriate sign of the root (important when computing the
+    // phase difference under total internal reflection, see appendix A.2 of
+    // "Stellar Polarimetry" by David Clarke)
     cos_theta_t = dr::mulsign(dr::Array<Float, 2>(cos_theta_t), cos_theta_t_sqr);
 
-    /* Amplitudes of reflected waves. The sign of 'a_p' used here is referred
-       to as the "Verdet convention" which more common in the literature
-       compared to Fresnel's original formulation from 1823. */
+    // Amplitudes of reflected waves. The sign of 'a_p' used here is referred
+    // to as the "Verdet convention" which more common in the literature
+    // compared to Fresnel's original formulation from 1823.
     dr::Complex<Float> a_s = (cos_theta_i_abs - eta_it * cos_theta_t) /
                              (cos_theta_i_abs + eta_it * cos_theta_t);
     dr::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
@@ -186,7 +186,7 @@ fresnel_polarized(Float cos_theta_i, Float eta) {
     dr::masked(a_s, index_matched || invalid) = 0.f;
     dr::masked(a_p, index_matched || invalid) = 0.f;
 
-    /* Adjust the sign of the transmitted direction */
+    // Adjust the sign of the transmitted direction
     Float cos_theta_t_signed =
         dr::select(cos_theta_t_sqr >= 0.f,
                dr::mulsign_neg(dr::real(cos_theta_t), cos_theta_i), 0.f);
@@ -234,32 +234,32 @@ std::tuple<dr::Complex<Float>, dr::Complex<Float>, Float, dr::Complex<Float>, dr
 fresnel_polarized(Float cos_theta_i, dr::Complex<Float> eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    /* Polarized Fresnel equations here assume that 'kappa' is negative, which
-       is flipped from the usual convention used by Mitsuba that is more common
-       in computer graphics. */
+    // Polarized Fresnel equations here assume that 'kappa' is negative, which
+    // is flipped from the usual convention used by Mitsuba that is more common
+    // in computer graphics.
     dr::masked(eta, dr::imag(eta) > 0.f) = dr::conj(eta);
 
     dr::Complex<Float> rcp_eta = dr::rcp(eta),
                        eta_it  = dr::select(outside_mask, eta, rcp_eta),
                        eta_ti  = dr::select(outside_mask, rcp_eta, eta);
 
-    /* Using Snell's law, calculate the squared sine of the
-       angle between the surface normal and the transmitted ray */
+    // Using Snell's law, calculate the squared sine of the
+    // angle between the surface normal and the transmitted ray
     dr::Complex<Float> cos_theta_t_sqr =
         1.f - dr::square(eta_ti) * dr::fnmadd(cos_theta_i, cos_theta_i, 1.f);
 
-    /* Find the cosines of the incident/transmitted rays */
+    // Find the cosines of the incident/transmitted rays
     Float cos_theta_i_abs = dr::abs(cos_theta_i);
     dr::Complex<Float> cos_theta_t = dr::sqrt(cos_theta_t_sqr);
 
-    /* Choose the appropriate sign of the root (important when computing the
-       phase difference under total internal reflection, see appendix A.2 of
-       "Stellar Polarimetry" by David Clarke) */
+    // Choose the appropriate sign of the root (important when computing the
+    // phase difference under total internal reflection, see appendix A.2 of
+    // "Stellar Polarimetry" by David Clarke)
     dr::masked(cos_theta_t, dr::imag(cos_theta_t) > 0) = dr::conj(cos_theta_t);
 
-    /* Amplitudes of reflected waves. The sign of 'a_p' used here is referred
-       to as the "Verdet convention" which more common in the literature
-       compared to Fresnel's original formulation from 1823. */
+    // Amplitudes of reflected waves. The sign of 'a_p' used here is referred
+    // to as the "Verdet convention" which more common in the literature
+    // compared to Fresnel's original formulation from 1823.
     dr::Complex<Float> a_s = (cos_theta_i_abs - eta_it * cos_theta_t) /
                              (cos_theta_i_abs + eta_it * cos_theta_t);
     dr::Complex<Float> a_p = (eta_it * cos_theta_i_abs - cos_theta_t) /
@@ -270,7 +270,7 @@ fresnel_polarized(Float cos_theta_i, dr::Complex<Float> eta) {
     dr::masked(a_s, index_matched || invalid) = 0.f;
     dr::masked(a_p, index_matched || invalid) = 0.f;
 
-    /* Adjust the sign of the transmitted direction */
+    // Adjust the sign of the transmitted direction
     Float cos_theta_t_signed =
         dr::select(dr::real(cos_theta_t_sqr) >= 0.f,
                dr::mulsign_neg(dr::real(cos_theta_t), cos_theta_i), 0.f);
@@ -335,28 +335,27 @@ Vector<Float, 3> refract(const Vector<Float, 3> &wi, const Normal<Float, 3> &m, 
  */
 template <typename Float>
 Float fresnel_diffuse_reflectance(Float eta) {
-    /* Fast mode: the following code approximates the diffuse Frensel reflectance
-       for the eta<1 and eta>1 cases. An evaluation of the accuracy led to the
-       following scheme, which cherry-picks fits from two papers where they are
-       best. */
+    // Fast mode: the following code approximates the diffuse Frensel reflectance
+    // for the eta<1 and eta>1 cases. An evaluation of the accuracy led to the
+    // following scheme, which cherry-picks fits from two papers where they are
+    // best.
     Float inv_eta = dr::rcp(eta);
 
-    /* Fit by Egan and Hilgeman (1973). Works reasonably well for
-       "normal" IOR values (<2).
-       Max rel. error in 1.0 - 1.5 : 0.1%
-       Max rel. error in 1.5 - 2   : 0.6%
-       Max rel. error in 2.0 - 5   : 9.5%
-    */
+    // Fit by Egan and Hilgeman (1973). Works reasonably well for
+    // "normal" IOR values (<2).
+    // Max rel. error in 1.0 - 1.5 : 0.1%
+    // Max rel. error in 1.5 - 2   : 0.6%
+    // Max rel. error in 2.0 - 5   : 9.5%
     Float approx_1 =
         dr::fmadd(0.0636f, inv_eta,
                   dr::fmadd(eta, dr::fmadd(eta, -1.4399f, 0.7099f), 0.6681f));
 
-    /* Fit by d'Eon and Irving (2011)
-
-       Maintains a good accuracy even for unrealistic IOR values.
-
-       Max rel. error in 1.0 - 2.0   : 0.1%
-       Max rel. error in 2.0 - 10.0  : 0.2%  */
+    // Fit by d'Eon and Irving (2011)
+    //
+    // Maintains a good accuracy even for unrealistic IOR values.
+    //
+    // Max rel. error in 1.0 - 2.0   : 0.1%
+    // Max rel. error in 2.0 - 10.0  : 0.2%
     Float approx_2 = dr::horner(inv_eta, 0.919317f, -3.4793f, 6.75335f,
                                 -7.80989f, 4.98554f, -1.36881f);
 

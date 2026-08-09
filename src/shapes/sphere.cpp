@@ -262,9 +262,9 @@ public:
                   inv_sin_theta_max = dr::rcp(sin_theta_max),
                   cos_theta_max     = dr::safe_sqrt(1.f - sin_theta_max_2);
 
-            /* Fall back to a Taylor series expansion for small angles, where
-               the standard approach suffers from severe cancellation errors */
-            Float sin_theta_2 = dr::select(sin_theta_max_2 > 0.00068523f, /* sin^2(1.5 deg) */
+            // Fall back to a Taylor series expansion for small angles, where
+            // the standard approach suffers from severe cancellation errors
+            Float sin_theta_2 = dr::select(sin_theta_max_2 > 0.00068523f, // sin^2(1.5 deg)
                                        1.f - dr::square(dr::fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
                                        sin_theta_max_2 * sample.x()),
                   cos_theta = dr::safe_sqrt(1.f - sin_theta_2);
@@ -643,9 +643,9 @@ public:
         const AffineTransform4f& to_world = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
 
-        /* If necessary, temporally suspend gradient tracking for all shape
-           parameters to construct a surface interaction completely detach from
-           the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detach from
+        // the shape.
         dr::suspend_grad<Float> scope(detach_shape, center, radius, to_world, to_object);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
@@ -655,8 +655,8 @@ public:
         si.n = dr::detach(dr::normalize(ray(pi.t) - center));
         si.p = dr::detach(dr::fmadd(si.n, radius, center));
 
-        /* Surface position at the detached parameterization: the local
-           coordinates are static as the sphere moves. */
+        // Surface position at the detached parameterization: the local
+        // coordinates are static as the sphere moves.
         Point3f p_att = to_world * dr::detach(to_object * si.p);
 
         si.attach_motion(ray, p_att, ray_flags);

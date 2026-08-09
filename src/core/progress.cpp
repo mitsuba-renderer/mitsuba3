@@ -10,11 +10,11 @@ ProgressReporter::ProgressReporter(const std::string &label, void *payload)
     m_line[0] = '\r'; // Carriage return
 
     dr::ssize_t bar_size = (dr::ssize_t) m_line.length()
-        - (dr::ssize_t) m_bar_start /* CR, Label, space, leading bracket */
-        - 2 /* Trailing bracket and space */
+        - (dr::ssize_t) m_bar_start // CR, Label, space, leading bracket
+        - 2 // Trailing bracket and space
         - 22 /* Max length for ETA string */;
 
-    if (bar_size > 0) { /* Is there even space to draw a progress bar? */
+    if (bar_size > 0) { // Is there even space to draw a progress bar?
         m_bar_size = bar_size;
         memcpy((char *) m_line.data() + 1, label.data(), label.length());
         m_line[m_bar_start - 1] = '[';

@@ -135,9 +135,9 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(UInt32 seed,
         UInt32 idx = dr::arange<UInt32>(m_wavefront_size);
         dr::make_opaque(seed_value);
 
-        /* Scramble seed and stream index using the Tiny Encryption Algorithm.
-           Just providing a linearly increasing sequence of integers as streams
-           does not produce a sufficiently statistically independent set of RNGs */
+        // Scramble seed and stream index using the Tiny Encryption Algorithm.
+        // Just providing a linearly increasing sequence of integers as streams
+        // does not produce a sufficiently statistically independent set of RNGs
         auto [v0, v1] = sample_tea_32(seed_value, idx);
 
         m_rng.seed(v0, v1);

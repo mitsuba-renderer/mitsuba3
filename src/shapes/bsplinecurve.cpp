@@ -374,8 +374,8 @@ public:
         pi.valid = active;
         dr::masked(pi.t, active) = eps * 10;
 
-        /* Create a ray at the intersection point and offset it by epsilon in
-         the direction of the local surface normal */
+        // Create a ray at the intersection point and offset it by epsilon in
+        // the direction of the local surface normal
         Point3f c;
         Vector3f dc_dv, dc_dvv;
         Float radius, dr_dv;
@@ -463,9 +463,9 @@ public:
             );
             Frame3f frame(n);
 
-            /* Because of backface culling, we only consider the set of
-             * tangential direcitons in the hemisphere which is pointing In
-             * the same direction as the surface normal */
+            // Because of backface culling, we only consider the set of
+            // tangential direcitons in the hemisphere which is pointing In
+            // the same direction as the surface normal
             Vector3f local_d = warp::square_to_uniform_hemisphere(
                 Point2f(sample.y(), sample.z()));
             ss.d = frame.to_world(-local_d);
@@ -676,8 +676,8 @@ public:
                           dr::normalize(dc_dv));
             ss.n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
-            /* Because of backface culling, we only consider the set of
-             * directions which are seeing the outside of the curve */
+            // Because of backface culling, we only consider the set of
+            // directions which are seeing the outside of the curve
             Vector3f rad_vec = ss.p - c;
             Float correction = dr::dot(rad_vec, dc_dvv); // curvature correction
             Normal3f n = dr::normalize(
@@ -883,9 +883,9 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
-        /* If necessary, temporally suspend gradient tracking for all shape
-           parameters to construct a surface interaction completely detach from
-           the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detach from
+        // the shape.
         dr::suspend_grad<Float> scope(detach_shape, m_control_points);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
@@ -913,8 +913,8 @@ public:
              dr::dot(rad_vec_d, dr::detach(dc_dvv))) * rad_vec_d -
             (dr::detach(dr_dv) * dr::detach(radius)) * dr::detach(dc_dv));
 
-        /* Surface position at the detached parameterization: the angular
-           coordinate does not move with the curve. */
+        // Surface position at the detached parameterization: the angular
+        // coordinate does not move with the curve.
         Vector3f rad_vec_dn = dr::normalize(rad_vec_d);
         Float u = dr::atan2(dr::dot(dr::detach(u_rot), rad_vec_dn),
                             dr::dot(dr::detach(u_rad), rad_vec_dn));
@@ -928,8 +928,8 @@ public:
 
         if constexpr (IsDiff) {
             if (!follow_shape) {
-                /* Let the curve parameter follow the sliding of the
-                   interaction point across the moving surface */
+                // Let the curve parameter follow the sliding of the
+                // interaction point across the moving surface
                 Float v_global = (v_local + prim_idx) / dr::width(m_indices);
                 Vector3f dp_dv;
                 std::tie(std::ignore, dp_dv, std::ignore, std::ignore,
@@ -966,8 +966,8 @@ public:
         this->cull_backface(si, ray, active);
 
         if (shading) {
-            /* Recompute the angular coordinate so that it tracks the motion of
-               the interaction point, unlike the one that defined ``p_att`` */
+            // Recompute the angular coordinate so that it tracks the motion of
+            // the interaction point, unlike the one that defined ``p_att``
             Vector3f rad_vec_n = dr::normalize(rad_vec);
             Float u_att = dr::atan2(dr::dot(u_rot, rad_vec_n),
                                     dr::dot(u_rad, rad_vec_n));
@@ -1120,12 +1120,11 @@ private:
      */
     std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
     partials(Point2f uv, Mask active) const {
-        /* To compute the partial devriatives of a point on the curve and of its
-           normal, we start by building the Frenet-Serret (TNB) frame. From the
-           frame we can compute the curves' first and second fundamental forms.
-           Finally, these are then used in the Weingarten equations to get the
-           normal's partials.
-         */
+        // To compute the partial devriatives of a point on the curve and of its
+        // normal, we start by building the Frenet-Serret (TNB) frame. From the
+        // frame we can compute the curves' first and second fundamental forms.
+        // Finally, these are then used in the Weingarten equations to get the
+        // normal's partials.
         Float v_global = uv.y();
         size_t segment_count = dr::width(m_indices);
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * segment_count);

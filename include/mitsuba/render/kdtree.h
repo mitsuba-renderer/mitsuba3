@@ -74,7 +74,7 @@ public:
             }
         }
 
-        /* No chunk had enough free memory */
+        // No chunk had enough free memory
         size_t alloc_size = std::max(size, m_min_allocation);
 
         std::unique_ptr<uint8_t[]> data(new uint8_t[alloc_size]);
@@ -97,7 +97,7 @@ public:
         #if !defined(NDEBUG)
             for (auto const &chunk : m_chunks) {
                 if (ptr == chunk.start.get() + chunk.size)
-                    return; /* Potentially 0-sized buffer, don't be too stringent */
+                    return; // Potentially 0-sized buffer, don't be too stringent
             }
 
             Throw("OrderedChunkAllocator: Internal error while releasing memory");
@@ -122,7 +122,7 @@ public:
             if (new_size == 0) {
                 for (auto const &chunk : m_chunks) {
                     if (ptr == chunk.start.get() + chunk.size)
-                        return; /* Potentially 0-sized buffer, don't be too stringent */
+                        return; // Potentially 0-sized buffer, don't be too stringent
                 }
             }
 
@@ -876,7 +876,7 @@ protected:
             for (Index axis = 0; axis < Dimension; ++axis) {
                 SplitCandidate candidate;
 
-                /* Initially: all primitives to the right, none on the left */
+                // Initially: all primitives to the right, none on the left
                 candidate.left_count = 0;
                 candidate.right_count = prim_count;
                 candidate.right_bin = 0;
@@ -884,7 +884,7 @@ protected:
                 candidate.split = m_bbox.min[axis];
 
                 for (Index i = 0; i < m_bin_count; ++i) {
-                    /* Evaluate the cost model and keep the best candidate */
+                    // Evaluate the cost model and keep the best candidate
                     candidate.cost = model.inner_cost(
                         axis, candidate.split,
                         model.leaf_cost(candidate.left_count),
@@ -893,24 +893,23 @@ protected:
                     if (candidate.cost < best.cost)
                         best = candidate;
 
-                    /* Move one bin to the right and
-
-                       1. Increase left_count by the number of primitives which
-                          started in the bin (thus they at least overlap with
-                          the left interval). This information is stored in the MIN
-                          bin.
-
-                       2. Reduce right_count by the number of primitives which
-                          ended (thus they are entirely on the left). This
-                          information is stored in the MAX bin.
-                    */
-                    candidate.left_count  += *bin++; /* MIN-bin */
-                    candidate.right_count -= *bin++; /* MAX-bin */
+                    // Move one bin to the right and
+                    //
+                    // 1. Increase left_count by the number of primitives which
+                    //    started in the bin (thus they at least overlap with
+                    //    the left interval). This information is stored in the MIN
+                    //    bin.
+                    //
+                    // 2. Reduce right_count by the number of primitives which
+                    //    ended (thus they are entirely on the left). This
+                    //    information is stored in the MAX bin.
+                    candidate.left_count  += *bin++; // MIN-bin
+                    candidate.right_count -= *bin++; // MAX-bin
                     candidate.right_bin++;
                     candidate.split += step[axis];
                 }
 
-                /* Evaluate the cost model and keep the best candidate */
+                // Evaluate the cost model and keep the best candidate
                 candidate.cost = model.inner_cost(
                     axis, candidate.split,
                     model.leaf_cost(candidate.left_count),
@@ -936,25 +935,25 @@ protected:
                     offset = m_bbox.min[best.axis],
                     right_bin = best.right_bin
                 ](Scalar value) {
-                    /* Predicate which says whether a value falls on the left
-                       of the chosen split plane. This function is meant to
-                       behave exactly the same way as put() above. */
+                    // Predicate which says whether a value falls on the left
+                    // of the chosen split plane. This function is meant to
+                    // behave exactly the same way as put() above.
                     return Index((value - offset) * inv_bin_size) < right_bin;
                 };
 
-                /* Find the last floating point value which is classified as
-                   falling into the left subtree. Due the various rounding
-                   errors that are involved, it's tricky to compute this
-                   variable using an explicit floating point expression. The
-                   code below bisects the interval to find this value, which is
-                   guaranteed to work (this takes ~ 20-30 iterations) */
+                // Find the last floating point value which is classified as
+                // falling into the left subtree. Due the various rounding
+                // errors that are involved, it's tricky to compute this
+                // variable using an explicit floating point expression. The
+                // code below bisects the interval to find this value, which is
+                // guaranteed to work (this takes ~ 20-30 iterations)
                 best.split = math::bisect<Scalar>(
                     m_bbox.min[best.axis],
                     m_bbox.max[best.axis],
                     predicate
                 );
 
-                /* Double-check that it worked */
+                // Double-check that it worked
                 Assert(predicate(best.split));
                 Assert(!predicate(std::nextafter(
                     best.split, dr::Infinity<Scalar>)));
@@ -1026,7 +1025,7 @@ protected:
                         }
                     }
 
-                    /* Merge into global results */
+                    // Merge into global results
                     Index *target_left = nullptr, *target_right = nullptr;
 
                     /* critical section */ {
@@ -1161,7 +1160,7 @@ protected:
             /*                              Binning                                 */
             /* ==================================================================== */
 
-            /* Accumulate all shapes into bins */
+            // Accumulate all shapes into bins
             MinMaxBins bins(derived.min_max_bins(), m_tight_bbox);
             std::mutex bins_mutex;
             dr::parallel_for(
@@ -1187,7 +1186,7 @@ protected:
             Assert(best.split >= m_bbox.min[best.axis]);
             Assert(best.split <= m_bbox.max[best.axis]);
 
-            /* Allow a few bad refines in sequence before giving up */
+            // Allow a few bad refines in sequence before giving up
             Scalar leaf_cost = model.leaf_cost(prim_count);
             if (best.cost >= leaf_cost) {
                 if ((best.cost > 4 * leaf_cost && prim_count < 16)
@@ -1205,7 +1204,7 @@ protected:
 
             auto partition = bins.partition(derived, m_indices, best);
 
-            /* Release index list */
+            // Release index list
             IndexVector().swap(m_indices);
 
             /* ==================================================================== */
@@ -1254,7 +1253,7 @@ protected:
                 left_cost, right_cost
             );
 
-            /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
+            // Tear up bad (i.e. costly) subtrees and replace them with leaf nodes
             if (unlikely(*m_cost > leaf_cost && derived.retract_bad_splits())) {
                 std::unordered_set<Index> temp;
                 traverse(m_node, temp);
@@ -1270,7 +1269,7 @@ protected:
                            Size bad_refines, bool left_child = true) {
             const Derived &derived = m_ctx.derived;
 
-            /* Initialize the tree cost model */
+            // Initialize the tree cost model
             CostModel model(derived.cost_model());
             model.set_bounding_box(bbox);
             Scalar leaf_cost = model.leaf_cost(prim_count);
@@ -1288,28 +1287,28 @@ protected:
             /*                        Split candidate search                        */
             /* ==================================================================== */
 
-            /* First, find the optimal splitting plane according to the
-               tree construction heuristic. To do this in O(n), the search is
-               implemented as a sweep over the edge events */
+            // First, find the optimal splitting plane according to the
+            // tree construction heuristic. To do this in O(n), the search is
+            // implemented as a sweep over the edge events
 
-            /* Initially, the split plane is placed left of the scene
-               and thus all geometry is on its right side */
+            // Initially, the split plane is placed left of the scene
+            // and thus all geometry is on its right side
             Size left_count[Dimension], right_count[Dimension];
             for (size_t i = 0; i < Dimension; ++i) {
                 left_count[i] = 0;
                 right_count[i] = prim_count;
             }
 
-            /* Keep track of where events for different axes start */
+            // Keep track of where events for different axes start
             EdgeEvent* events_by_dimension[Dimension + 1] { };
             events_by_dimension[0] = events_start;
             events_by_dimension[Dimension] = events_end;
 
-            /* Iterate over all events and find the best split plane */
+            // Iterate over all events and find the best split plane
             SplitCandidate best;
             for (auto event = events_start; event != events_end; ) {
-                /* Record the current position and count the number
-                   and type of remaining events that are also here. */
+                // Record the current position and count the number
+                // and type of remaining events that are also here.
                 Size num_start = 0, num_end = 0, num_planar = 0;
                 int axis = event->axis;
                 Scalar pos = event->pos;
@@ -1323,20 +1322,20 @@ protected:
                     ++event;
                 }
 
-                /* Keep track of the beginning of each dimension */
+                // Keep track of the beginning of each dimension
                 if (event < events_end && event->axis != axis)
                     events_by_dimension[event->axis] = event;
 
-                /* The split plane can now be moved onto 't'. Accordingly, all planar
-                   and ending primitives are removed from the right side */
+                // The split plane can now be moved onto 't'. Accordingly, all planar
+                // and ending primitives are removed from the right side
                 right_count[axis] -= num_planar + num_end;
 
-                /* Check if the edge event is out of bounds -- when primitive
-                   clipping is active, this should never happen! */
+                // Check if the edge event is out of bounds -- when primitive
+                // clipping is active, this should never happen!
                 Assert(!(derived.clip_primitives() &&
                          (pos < bbox.min[axis] || pos > bbox.max[axis])));
 
-                /* Calculate a score using the tree construction heuristic */
+                // Calculate a score using the tree construction heuristic
                 if (likely(pos > bbox.min[axis] && pos < bbox.max[axis])) {
                     Size num_left = left_count[axis] + num_planar,
                          num_right = right_count[axis];
@@ -1355,8 +1354,8 @@ protected:
                     }
 
                     if (num_planar != 0) {
-                        /* There are planar events here -- also consider
-                           placing them on the right side */
+                        // There are planar events here -- also consider
+                        // placing them on the right side
                         num_left = left_count[axis];
                         num_right = right_count[axis] + num_planar;
 
@@ -1375,21 +1374,21 @@ protected:
                     }
                 }
 
-                /* The split plane is moved past 't'. All prims,
-                    which were planar on 't', are moved to the left
-                    side. Also, starting prims are now also left of
-                    the split plane. */
+                // The split plane is moved past 't'. All prims,
+                // which were planar on 't', are moved to the left
+                // side. Also, starting prims are now also left of
+                // the split plane.
                 left_count[axis] += num_start + num_planar;
             }
 
-            /* Sanity checks. Everything should now be left of the split plane */
+            // Sanity checks. Everything should now be left of the split plane
             for (size_t i = 0; i < Dimension; ++i) {
                 Assert(right_count[i] == 0 && left_count[i] == prim_count);
                 Assert(events_by_dimension[i] != events_end && events_by_dimension[i]->axis == i);
                 Assert((i == 0) || ((events_by_dimension[i]-1)->axis == i - 1));
             }
 
-            /* Allow a few bad refines in sequence before giving up */
+            // Allow a few bad refines in sequence before giving up
             if (best.cost >= leaf_cost) {
                 if ((best.cost > 4 * leaf_cost && prim_count < 16)
                     || bad_refines >= derived.max_bad_refines()
@@ -1407,7 +1406,7 @@ protected:
 
             auto &classification = m_local.classification_storage;
 
-            /* Initially mark all prims as being located on both sides */
+            // Initially mark all prims as being located on both sides
             for (auto event = events_by_dimension[best.axis];
                  event != events_by_dimension[best.axis + 1]; ++event)
                 classification.set(event->index, PrimClassification::Both);
@@ -1418,22 +1417,22 @@ protected:
 
                 if (event->type == EdgeEvent::Type::EdgeEnd &&
                     event->pos <= best.split) {
-                    /* Fully on the left side (the primitive's interval ends
-                       before (or on) the split plane) */
+                    // Fully on the left side (the primitive's interval ends
+                    // before (or on) the split plane)
                     Assert(classification.get(event->index) == PrimClassification::Both);
                     classification.set(event->index, PrimClassification::Left);
                     prims_left++;
                 } else if (event->type == EdgeEvent::Type::EdgeStart &&
                            event->pos >= best.split) {
-                    /* Fully on the right side (the primitive's interval
-                       starts after (or on) the split plane) */
+                    // Fully on the right side (the primitive's interval
+                    // starts after (or on) the split plane)
                     Assert(classification.get(event->index) == PrimClassification::Both);
                     classification.set(event->index, PrimClassification::Right);
                     prims_right++;
                 } else if (event->type == EdgeEvent::Type::EdgePlanar) {
-                    /* If the planar primitive is not on the split plane,
-                       the classification is easy. Otherwise, place it on
-                       the side with the lower cost */
+                    // If the planar primitive is not on the split plane,
+                    // the classification is easy. Otherwise, place it on
+                    // the side with the lower cost
                     Assert(classification.get(event->index) == PrimClassification::Both);
                     if (event->pos < best.split ||
                         (event->pos == best.split && best.planar_left)) {
@@ -1449,7 +1448,7 @@ protected:
 
             Size prims_both = prim_count - prims_left - prims_right;
 
-            /* Some sanity checks */
+            // Some sanity checks
             Assert(prims_left + prims_both == best.left_count);
             Assert(prims_right + prims_both == best.right_count);
 
@@ -1469,9 +1468,9 @@ protected:
             EdgeEvent *left_events_start, *right_events_start,
                       *left_events_end, *right_events_end;
 
-            /* First, allocate a conservative amount of scratch space for
-               the final event lists and then resize it to the actual used
-               amount */
+            // First, allocate a conservative amount of scratch space for
+            // the final event lists and then resize it to the actual used
+            // amount
             if (left_child) {
                 left_events_start = events_start;
                 right_events_start = right_alloc.template allocate<EdgeEvent>(
@@ -1485,11 +1484,11 @@ protected:
             right_events_end = right_events_start;
 
             if (prims_both == 0 || !derived.clip_primitives()) {
-                /* Fast path: no clipping needed. */
+                // Fast path: no clipping needed.
                 for (auto it = events_start; it != events_end; ++it) {
                     auto event = *it;
 
-                    /* Fetch the classification of the current event */
+                    // Fetch the classification of the current event
                     switch (classification.get(event.index)) {
                         case PrimClassification::Left:
                             *left_events_end++ = event;
@@ -1512,11 +1511,11 @@ protected:
                 Assert((Size) (left_events_end - left_events_start) <= best.left_count* 2 * Dimension);
                 Assert((Size) (right_events_end - right_events_start) <= best.right_count * 2 * Dimension);
             } else {
-                /* Slow path: some primitives are straddling the split plane
-                   and primitive clipping is enabled. They will generate new
-                   events that have to be sorted and merged into the current
-                   sorted event lists. Start by allocating some more scratch
-                   space for this.. */
+                // Slow path: some primitives are straddling the split plane
+                // and primitive clipping is enabled. They will generate new
+                // events that have to be sorted and merged into the current
+                // sorted event lists. Start by allocating some more scratch
+                // space for this..
                 EdgeEvent *temp_left_events_start, *temp_left_events_end,
                     *temp_right_events_start, *temp_right_events_end,
                     *new_left_events_start, *new_left_events_end,
@@ -1534,7 +1533,7 @@ protected:
                 for (auto it = events_start; it != events_end; ++it) {
                     auto event = *it;
 
-                    /* Fetch the classification of the current event */
+                    // Fetch the classification of the current event
                     switch (classification.get(event.index)) {
                         case PrimClassification::Left:
                             *temp_left_events_end++ = event;
@@ -1594,8 +1593,8 @@ protected:
                                     pruned_right++;
                                 }
 
-                                /* Set classification to 'EIgnore' to ensure that
-                                   clipping occurs only once */
+                                // Set classification to 'EIgnore' to ensure that
+                                // clipping occurs only once
                                 classification.set(
                                     event.index, PrimClassification::Ignore);
                             }
@@ -1613,29 +1612,29 @@ protected:
 
                 m_ctx.pruned += pruned_left + pruned_right;
 
-                /* Sort the events due to primitives which overlap the split plane */
+                // Sort the events due to primitives which overlap the split plane
                 std::sort(new_left_events_start, new_left_events_end);
                 std::sort(new_right_events_start, new_right_events_end);
 
-                /* Merge the left list */
+                // Merge the left list
                 left_events_end = std::merge(temp_left_events_start,
                     temp_left_events_end, new_left_events_start,
                     new_left_events_end, left_events_start);
 
-                /* Merge the right list */
+                // Merge the right list
                 right_events_end = std::merge(temp_right_events_start,
                     temp_right_events_end, new_right_events_start,
                     new_right_events_end, right_events_start);
 
-                /* Release temporary memory */
+                // Release temporary memory
                 left_alloc.release(new_left_events_start);
                 right_alloc.release(new_right_events_start);
                 left_alloc.release(temp_left_events_start);
                 right_alloc.release(temp_right_events_start);
             }
 
-            /* Shrink the edge event storage now that we know exactly how
-               many events are on each side */
+            // Shrink the edge event storage now that we know exactly how
+            // many events are on each side
             left_alloc.shrink_allocation(left_events_start,
                                         left_events_end - left_events_start);
             right_alloc.shrink_allocation(right_events_start,
@@ -1663,7 +1662,7 @@ protected:
                             right_events_start, right_events_end, right_bbox,
                             depth + 1, bad_refines, false);
 
-            /* Release the index lists not needed by the children anymore */
+            // Release the index lists not needed by the children anymore
             if (left_child)
                 right_alloc.release(right_events_start);
             else
@@ -1676,7 +1675,7 @@ protected:
             Scalar final_cost =
                 model.inner_cost(best.axis, best.split, left_cost, right_cost);
 
-            /* Tear up bad (i.e. costly) subtrees and replace them with leaf nodes */
+            // Tear up bad (i.e. costly) subtrees and replace them with leaf nodes
             if (unlikely(final_cost > leaf_cost && derived.retract_bad_splits())) {
                 std::unordered_set<Index> temp;
                 traverse(node, temp);
@@ -1704,8 +1703,8 @@ protected:
 
             Size prim_count = Size(m_indices.size()), final_prim_count = prim_count;
 
-            /* We don't yet know how many edge events there will be. Allocate a
-               conservative amount and shrink the buffer later on. */
+            // We don't yet know how many edge events there will be. Allocate a
+            // conservative amount and shrink the buffer later on.
             Size initial_size = prim_count * 2 * Dimension;
 
             EdgeEvent *events_start =
@@ -1739,10 +1738,10 @@ protected:
                 }
             }
 
-            /* Release index list */
+            // Release index list
             IndexVector().swap(m_indices);
 
-            /* Sort the events list and remove invalid ones from the end */
+            // Sort the events list and remove invalid ones from the end
             std::sort(events_start, events_end);
             while (events_start != events_end && !(events_end-1)->valid())
                 --events_end;
@@ -1842,7 +1841,7 @@ protected:
     }
 
     void build() {
-        /* Some sanity checks */
+        // Some sanity checks
         if (ready())
             Throw("The kd-tree has already been built!");
         if (m_min_max_bins <= 1)
@@ -1937,8 +1936,8 @@ protected:
         );
         ctx.node_storage.release();
 
-        /* Slightly avoid the bounding box to avoid numerical issues
-           involving geometry that exactly lies on the boundary */
+        // Slightly avoid the bounding box to avoid numerical issues
+        // involving geometry that exactly lies on the boundary
         Vector extra = (m_bbox.extents() + 1.f) * dr::Epsilon<Scalar>;
         m_bbox.min -= extra;
         m_bbox.max += extra;
@@ -2235,7 +2234,7 @@ public:
                 const ScalarFloat split = node->split();
                 const uint32_t axis     = node->axis();
 
-                /* Compute parametric distance along the rays to the split plane */
+                // Compute parametric distance along the rays to the split plane
                 ScalarFloat t_plane = (split - ray.o[axis]) * d_rcp[axis];
 
                 bool left_first  = (ray.o[axis] < split) ||
@@ -2244,26 +2243,26 @@ public:
                                    t_plane < 0.f || !dr::isfinite(t_plane),
                      single_node = start_after || end_before;
 
-                /* If we only need to visit one node, just pick the correct one and continue */
+                // If we only need to visit one node, just pick the correct one and continue
                 if (likely(single_node)) {
                     bool visit_left = end_before == left_first;
                     node = node->left() + (visit_left ? 0 : 1);
                     continue;
                 }
 
-                /* Visit both child nodes in the right order */
+                // Visit both child nodes in the right order
                 Index node_offset = left_first ? 0 : 1;
                 const KDNode *left   = node->left(),
                              *n_cur  = left + node_offset,
                              *n_next = left + (1 - node_offset);
 
-                /* Postpone visit to 'n_next' */
+                // Postpone visit to 'n_next'
                 KDStackEntry& entry = stack[stack_index++];
                 entry.mint = t_plane;
                 entry.maxt = maxt;
                 entry.node = n_next;
 
-                /* Visit 'n_cur' now */
+                // Visit 'n_cur' now
                 node = n_cur;
                 maxt = t_plane;
                 continue;
@@ -2324,7 +2323,7 @@ public:
 
         const KDNode *node = m_nodes.get();
 
-        /* Intersect against the scene bounding box */
+        // Intersect against the scene bounding box
         auto bbox_result = m_bbox.ray_intersect(ray);
         Float mint = dr::maximum(ray.mint, std::get<1>(bbox_result));
         Float maxt = dr::minimum(ray.maxt, std::get<2>(bbox_result));
@@ -2354,7 +2353,7 @@ public:
                          all_visit_only_right = dr::all(visit_only_right || !active),
                          all_visit_same_node  = all_visit_only_left || all_visit_only_right;
 
-                    /* If we only need to visit one node, just pick the correct one and continue */
+                    // If we only need to visit one node, just pick the correct one and continue
                     if (all_visit_same_node) {
                         node = node->left() + (all_visit_only_left ? 0 : 1);
                         continue;
@@ -2371,13 +2370,13 @@ public:
                          visit_cur     = visit_both || eq (visit_left, go_left_bcast),
                          visit_next    = visit_both || dr::neq(visit_left, go_left_bcast);
 
-                    /* Visit both child nodes in the right order */
+                    // Visit both child nodes in the right order
                     Index node_offset = go_left ? 0 : 1;
                     const KDNode *left   = node->left(),
                                  *n_cur  = left + node_offset,
                                  *n_next = left + (1 - node_offset);
 
-                    /* Postpone visit to 'n_next' */
+                    // Postpone visit to 'n_next'
                     Mask sel0 =  correct_order && visit_both,
                          sel1 = !correct_order && visit_both;
                     KDStackEntry& entry = stack[stack_index++];
@@ -2386,7 +2385,7 @@ public:
                     entry.active = active && visit_next;
                     entry.node = n_next;
 
-                    /* Visit 'n_cur' now */
+                    // Visit 'n_cur' now
                     mint = dr::select(sel1, t_plane, mint);
                     maxt = dr::select(sel0, t_plane, maxt);
                     active = active && visit_cur;

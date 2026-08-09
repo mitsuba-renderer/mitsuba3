@@ -258,15 +258,15 @@ public:
         // Ignore perfectly grazing configurations
         active &= cos_theta_i != 0.f;
 
-        /* Construct the microfacet distribution matching the roughness values at the current surface position. */
+        // Construct the microfacet distribution matching the roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
                                      m_sample_visible);
 
-        /* Trick by Walter et al.: slightly scale the roughness values to
-           reduce importance sampling weights. Not needed for the
-           Heitz and D'Eon sampling technique. */
+        // Trick by Walter et al.: slightly scale the roughness values to
+        // reduce importance sampling weights. Not needed for the
+        // Heitz and D'Eon sampling technique.
         MicrofacetDistribution sample_distr(distr);
         if (unlikely(!m_sample_visible))
             sample_distr.scale_alpha(1.2f - .2f * dr::sqrt(dr::abs(cos_theta_i)));
@@ -286,8 +286,8 @@ public:
         if (likely(has_reflection && has_transmission)) {
             selected_r = sample1 <= F && active;
             weight = 1.f;
-            /* For differentiable variants, lobe choice has to be detached to avoid bias.
-                Sampling weights should be computed accordingly. */
+            // For differentiable variants, lobe choice has to be detached to avoid bias.
+            // Sampling weights should be computed accordingly.
             if constexpr (dr::is_diff_v<Float>) {
                 if (dr::grad_enabled(F)) {
                     Float r_diff = dr::replace_grad(Float(1.f), F / dr::detach(F));
@@ -332,8 +332,8 @@ public:
             // Perfect specular transmission based on the microfacet normal
             bs.wo[selected_t]  = refract(si.wi, m, cos_theta_t, eta_ti);
 
-            /* For transmission, radiance must be scaled to account for the solid
-               angle compression that occurs when crossing the interface. */
+            // For transmission, radiance must be scaled to account for the solid
+            // angle compression that occurs when crossing the interface.
             UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? dr::square(eta_ti) : Float(1.f);
 
             if (m_specular_transmittance)
@@ -384,8 +384,8 @@ public:
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = dr::mulsign(m, Frame3f::cos_theta(m));
 
-        /* Construct the microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct the microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -415,9 +415,9 @@ public:
         }
 
         if (dr::any_or<true>(eval_t)) {
-            /* Missing term in the original paper: account for the solid angle
-               compression when tracing radiance -- this is necessary for
-               bidirectional methods. */
+            // Missing term in the original paper: account for the solid angle
+            // compression when tracing radiance -- this is necessary for
+            // bidirectional methods.
             Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
@@ -461,10 +461,10 @@ public:
         // Ensure that the half-vector points into the same hemisphere as the macrosurface normal
         m = dr::mulsign(m, Frame3f::cos_theta(m));
 
-        /* Filter cases where the micro/macro-surface don't agree on the side.
-           This logic is evaluated in smith_g1() called as part of the eval()
-           and sample() methods and needs to be replicated in the probability
-           density computation as well. */
+        // Filter cases where the micro/macro-surface don't agree on the side.
+        // This logic is evaluated in smith_g1() called as part of the eval()
+        // and sample() methods and needs to be replicated in the probability
+        // density computation as well.
         active &= dr::dot(si.wi, m) * Frame3f::cos_theta(si.wi) > 0.f &&
                   dr::dot(wo,    m) * Frame3f::cos_theta(wo)    > 0.f;
 
@@ -473,8 +473,8 @@ public:
                                (eta * eta * dr::dot(wo, m)) /
                                    dr::square(dr::dot(si.wi, m) + eta * dr::dot(wo, m)));
 
-        /* Construct the microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct the microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution sample_distr(
             m_type,
             m_alpha_u->eval_1(si, active),
@@ -482,9 +482,9 @@ public:
             m_sample_visible
         );
 
-        /* Trick by Walter et al.: slightly scale the roughness values to
-           reduce importance sampling weights. Not needed for the
-           Heitz and D'Eon sampling technique. */
+        // Trick by Walter et al.: slightly scale the roughness values to
+        // reduce importance sampling weights. Not needed for the
+        // Heitz and D'Eon sampling technique.
         if (unlikely(!m_sample_visible))
             sample_distr.scale_alpha(1.2f - .2f * dr::sqrt(dr::abs(Frame3f::cos_theta(si.wi))));
 
@@ -533,15 +533,15 @@ public:
         Float dot_wi_m = dr::dot(si.wi, m),
               dot_wo_m = dr::dot(wo   , m);
 
-        /* Filter cases where the micro/macro-surface don't agree on the side.
-           This logic is evaluated in smith_g1() called as part of the eval()
-           and sample() methods and needs to be replicated in the probability
-           density computation as well. */
+        // Filter cases where the micro/macro-surface don't agree on the side.
+        // This logic is evaluated in smith_g1() called as part of the eval()
+        // and sample() methods and needs to be replicated in the probability
+        // density computation as well.
         active &= dot_wi_m * cos_theta_i > 0.f &&
                   dot_wo_m * cos_theta_o > 0.f;
 
-        /* Construct the microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct the microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -571,9 +571,9 @@ public:
         }
 
         if (dr::any_or<true>(eval_t)) {
-            /* Missing term in the original paper: account for the solid angle
-               compression when tracing radiance -- this is necessary for
-               bidirectional methods. */
+            // Missing term in the original paper: account for the solid angle
+            // compression when tracing radiance -- this is necessary for
+            // bidirectional methods.
             Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
@@ -587,9 +587,9 @@ public:
             result[eval_t] = value;
         }
 
-        /* Trick by Walter et al.: slightly scale the roughness values to
-           reduce importance sampling weights. Not needed for the
-           Heitz and D'Eon sampling technique. */
+        // Trick by Walter et al.: slightly scale the roughness values to
+        // reduce importance sampling weights. Not needed for the
+        // Heitz and D'Eon sampling technique.
         if (unlikely(!m_sample_visible))
             distr.scale_alpha(1.2f - .2f * dr::sqrt(dr::abs(cos_theta_i)));
 

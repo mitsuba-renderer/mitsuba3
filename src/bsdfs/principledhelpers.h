@@ -111,8 +111,8 @@ Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
 
     // Perpendicular incidence -- no shadowing/masking
     dr::masked(result, v.z() == 1.f) = 1.f;
-    /* Ensure consistent orientation (can't see the back
-       of the microfacet from the front and vice versa) */
+    // Ensure consistent orientation (can't see the back
+    // of the microfacet from the front and vice versa)
     dr::masked(result, dr::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
     return result;
 }
@@ -294,8 +294,8 @@ T principled_fresnel(const Float &F_dielectric, const Float &metallic,
     // Front side fresnel.
     T F_front =
             (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric + F_schlick;
-    /* For back side there is no tint or metallic, just true dielectric
-       fresnel.*/
+    // For back side there is no tint or metallic, just true dielectric
+    // fresnel.
     return dr::select(front_side, F_front, bsdf * F_dielectric);
 }
 

@@ -172,8 +172,8 @@ public:
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
 
-                /* Determine BSDF value and probability of having sampled
-                   that same direction using BSDF sampling. */
+                // Determine BSDF value and probability of having sampled
+                // that same direction using BSDF sampling.
                 auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
@@ -204,8 +204,8 @@ public:
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
-                /* Determine probability of having sampled that same
-                   direction using Emitter sampling. */
+                // Determine probability of having sampled that same
+                // direction using Emitter sampling.
                 DirectionSample3f ds(scene, si_bsdf, si);
 
                 Float emitter_pdf =

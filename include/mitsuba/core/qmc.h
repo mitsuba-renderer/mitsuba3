@@ -194,8 +194,8 @@ Float radical_inverse_2(UInt index, UInt scramble = 0) {
         index = ((index & 0x3333333333333333ULL) << 2)  | ((index & 0xccccccccccccccccULL) >> 2);
         index = ((index & 0x5555555555555555ULL) << 1)  | ((index & 0xaaaaaaaaaaaaaaaaULL) >> 1);
 
-        /* Generate an uniformly distributed double precision number in [1,2)
-         * from the scrambled index and subtract 1. */
+        // Generate an uniformly distributed double precision number in [1,2)
+        // from the scrambled index and subtract 1.
         return dr::reinterpret_array<Float>(dr::sr<12>(index ^ scramble) | 0x3ff0000000000000ull) - 1.0;
     } else {
         index = (index << 16) | (index >> 16);
@@ -204,8 +204,8 @@ Float radical_inverse_2(UInt index, UInt scramble = 0) {
         index = ((index & 0x33333333) << 2) | ((index & 0xcccccccc) >> 2);
         index = ((index & 0x55555555) << 1) | ((index & 0xaaaaaaaa) >> 1);
 
-        /* Generate an uniformly distributed single precision number in [1,2)
-         * from the scrambled index and subtract 1. */
+        // Generate an uniformly distributed single precision number in [1,2)
+        // from the scrambled index and subtract 1.
         return dr::reinterpret_array<Float>(dr::sr<9>(index ^ scramble) | 0x3f800000u) - 1.f;
     }
 }

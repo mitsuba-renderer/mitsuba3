@@ -54,7 +54,7 @@ void StreamAppender::append(LogLevel level, std::string_view text) {
     memset(&console_info, 0, sizeof(CONSOLE_SCREEN_BUFFER_INFO));
 #endif
     if (!m_is_file) {
-        /* Insert a newline if the last message was a progress message */
+        // Insert a newline if the last message was a progress message
         if (m_last_message_was_progress)
             (*m_stream) << std::endl;
         if (level == Debug || level == Warn || level == Error) {

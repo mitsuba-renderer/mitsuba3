@@ -47,7 +47,7 @@ PLYHeader parse_ply_header(Stream *stream, std::string name) {
     fmt_map["float"]  = sj::Type::Float32;
     fmt_map["double"] = sj::Type::Float64;
 
-    /* Unofficial extensions :) */
+    // Unofficial extensions :)
     fmt_map["uint8"]   = sj::Type::UInt8;
     fmt_map["uint16"]  = sj::Type::UInt16;
     fmt_map["uint32"]  = sj::Type::UInt32;
@@ -273,7 +273,7 @@ void find_other_fields(const std::string& type, std::vector<PLYAttributeDescript
     sj::Struct &ref_struct, std::unordered_set<std::string> &reserved_names, std::string name) {
 
     if (ref_struct.contains("r") && ref_struct.contains("g") && ref_struct.contains("b")) {
-        /* all good */
+        // all good
     } else if (ref_struct.contains("red") &&
                 ref_struct.contains("green") &&
                 ref_struct.contains("blue")) {

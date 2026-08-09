@@ -168,8 +168,8 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(DiscontinuityFlags);
     MI_PY_IMPORT(VertexFlags);
 
-    /* Register a cleanup callback function to wait for pending tasks (this is
-     * called before all Python variables are cleaned up */
+    // Register a cleanup callback function to wait for pending tasks (this is
+    // called before all Python variables are cleaned up
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         {
@@ -187,11 +187,11 @@ NB_MODULE(mitsuba_ext, m) {
         Thread::static_shutdown();
     }));
 
-    /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.test.util import function`
-     * For that `__path__` needs to be populated. We do it by using the
-     * `__file__` attribute of a Python file which is located in the same
-     * directory as this module */
+    // Make this a package, thus allowing statements such as:
+    // `from mitsuba.test.util import function`
+    // For that `__path__` needs to be populated. We do it by using the
+    // `__file__` attribute of a Python file which is located in the same
+    // directory as this module
     nb::module_ os = nb::module_::import_("os");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));

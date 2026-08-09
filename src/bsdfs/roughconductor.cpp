@@ -238,8 +238,8 @@ public:
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return { bs, 0.f };
 
-        /* Construct a microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct a microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -274,18 +274,18 @@ public:
 
         Spectrum F;
         if constexpr (is_polarized_v<Spectrum>) {
-            /* Due to the coordinate system rotations for polarization-aware
-               pBSDFs below we need to know the propagation direction of light.
-               In the following, light arrives along `-wo_hat` and leaves along
-               `+wi_hat`. */
+            // Due to the coordinate system rotations for polarization-aware
+            // pBSDFs below we need to know the propagation direction of light.
+            // In the following, light arrives along `-wo_hat` and leaves along
+            // `+wi_hat`.
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, m)), eta_c);
 
-            /* The Stokes reference frame vector of this matrix lies perpendicular
-               to the plane of reflection. */
+            // The Stokes reference frame vector of this matrix lies perpendicular
+            // to the plane of reflection.
             Vector3f s_axis_in  = dr::cross(m, -wo_hat);
             Vector3f s_axis_out = dr::cross(m, wi_hat);
 
@@ -296,8 +296,8 @@ public:
             s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
                                                dr::normalize(s_axis_out));
 
-            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
-               Stokes bases of -wo_hat & wi_hat. */
+            // Rotate in/out reference vector of F s.t. it aligns with the implicit
+            // Stokes bases of -wo_hat & wi_hat.
             F = mueller::rotate_mueller_basis(F,
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
@@ -305,7 +305,7 @@ public:
             F = fresnel_conductor(UnpolarizedSpectrum(dr::dot(si.wi, m)), eta_c);
         }
 
-        /* If requested, include the specular reflectance component */
+        // If requested, include the specular reflectance component
         if (m_specular_reflectance)
             weight *= m_specular_reflectance->eval(si, active);
 
@@ -327,8 +327,8 @@ public:
         // Calculate the half-direction vector
         Vector3f H = dr::normalize(wo + si.wi);
 
-        /* Construct a microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct a microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -351,18 +351,18 @@ public:
 
         Spectrum F;
         if constexpr (is_polarized_v<Spectrum>) {
-            /* Due to the coordinate system rotations for polarization-aware
-               pBSDFs below we need to know the propagation direction of light.
-               In the following, light arrives along `-wo_hat` and leaves along
-               `+wi_hat`. */
+            // Due to the coordinate system rotations for polarization-aware
+            // pBSDFs below we need to know the propagation direction of light.
+            // In the following, light arrives along `-wo_hat` and leaves along
+            // `+wi_hat`.
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, H)), eta_c);
 
-            /* The Stokes reference frame vector of this matrix lies perpendicular
-               to the plane of reflection. */
+            // The Stokes reference frame vector of this matrix lies perpendicular
+            // to the plane of reflection.
             Vector3f s_axis_in  = dr::cross(H, -wo_hat);
             Vector3f s_axis_out = dr::cross(H, wi_hat);
 
@@ -373,8 +373,8 @@ public:
             s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
                                                dr::normalize(s_axis_out));
 
-            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
-               Stokes bases of -wo_hat & wi_hat. */
+            // Rotate in/out reference vector of F s.t. it aligns with the implicit
+            // Stokes bases of -wo_hat & wi_hat.
             F = mueller::rotate_mueller_basis(F,
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
@@ -382,7 +382,7 @@ public:
             F = fresnel_conductor(UnpolarizedSpectrum(dr::dot(si.wi, H)), eta_c);
         }
 
-        /* If requested, include the specular reflectance component */
+        // If requested, include the specular reflectance component
         if (m_specular_reflectance)
             result *= m_specular_reflectance->eval(si, active);
 
@@ -399,18 +399,18 @@ public:
         // Calculate the half-direction vector
         Vector3f m = dr::normalize(wo + si.wi);
 
-        /* Filter cases where the micro/macro-surface don't agree on the side.
-           This logic is evaluated in smith_g1() called as part of the eval()
-           and sample() methods and needs to be replicated in the probability
-           density computation as well. */
+        // Filter cases where the micro/macro-surface don't agree on the side.
+        // This logic is evaluated in smith_g1() called as part of the eval()
+        // and sample() methods and needs to be replicated in the probability
+        // density computation as well.
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
                   dr::dot(si.wi, m) > 0.f && dr::dot(wo, m) > 0.f;
 
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return 0.f;
 
-        /* Construct a microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct a microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -438,18 +438,18 @@ public:
         // Calculate the half-direction vector
         Vector3f H = dr::normalize(wo + si.wi);
 
-        /* Filter cases where the micro/macro-surface don't agree on the side.
-           This logic is evaluated in smith_g1() called as part of the eval()
-           and sample() methods and needs to be replicated in the probability
-           density computation as well. */
+        // Filter cases where the micro/macro-surface don't agree on the side.
+        // This logic is evaluated in smith_g1() called as part of the eval()
+        // and sample() methods and needs to be replicated in the probability
+        // density computation as well.
         active &= cos_theta_i > 0.f && cos_theta_o > 0.f &&
                   dr::dot(si.wi, H) > 0.f && dr::dot(wo, H) > 0.f;
 
         if (unlikely(!ctx.is_enabled(BSDFFlags::GlossyReflection) || dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
-        /* Construct a microfacet distribution matching the
-           roughness values at the current surface position. */
+        // Construct a microfacet distribution matching the
+        // roughness values at the current surface position.
         MicrofacetDistribution distr(m_type,
                                      m_alpha_u->eval_1(si, active),
                                      m_alpha_v->eval_1(si, active),
@@ -473,18 +473,18 @@ public:
 
         Spectrum F;
         if constexpr (is_polarized_v<Spectrum>) {
-            /* Due to the coordinate system rotations for polarization-aware
-               pBSDFs below we need to know the propagation direction of light.
-               In the following, light arrives along `-wo_hat` and leaves along
-               `+wi_hat`. */
+            // Due to the coordinate system rotations for polarization-aware
+            // pBSDFs below we need to know the propagation direction of light.
+            // In the following, light arrives along `-wo_hat` and leaves along
+            // `+wi_hat`.
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             // Mueller matrix for specular reflection.
             F = mueller::specular_reflection(UnpolarizedSpectrum(dot(wo_hat, H)), eta_c);
 
-            /* The Stokes reference frame vector of this matrix lies perpendicular
-               to the plane of reflection. */
+            // The Stokes reference frame vector of this matrix lies perpendicular
+            // to the plane of reflection.
             Vector3f s_axis_in  = dr::cross(H, -wo_hat);
             Vector3f s_axis_out = dr::cross(H, wi_hat);
 
@@ -495,8 +495,8 @@ public:
             s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
                                                dr::normalize(s_axis_out));
 
-            /* Rotate in/out reference vector of F s.t. it aligns with the implicit
-               Stokes bases of -wo_hat & wi_hat. */
+            // Rotate in/out reference vector of F s.t. it aligns with the implicit
+            // Stokes bases of -wo_hat & wi_hat.
             F = mueller::rotate_mueller_basis(F,
                                               -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));

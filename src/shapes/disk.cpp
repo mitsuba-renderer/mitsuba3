@@ -460,8 +460,8 @@ public:
         si.p = dr::detach(
             p + dr::dot(dr::detach(to_world).translation() - p, si.n) * si.n);
 
-        /* Surface position at the detached parameterization: the local
-           coordinates are static as the disk moves. */
+        // Surface position at the detached parameterization: the local
+        // coordinates are static as the disk moves.
         Point3f p_att = to_world * dr::detach(to_object * si.p);
 
         si.attach_motion(ray, p_att, ray_flags);

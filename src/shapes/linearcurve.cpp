@@ -330,9 +330,9 @@ public:
 
         bool shading = has_flag(ray_flags, RayFlags::Shading);
 
-        /* If necessary, temporally suspend gradient tracking for all shape
-           parameters to construct a surface interaction completely detached
-           from the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detached
+        // from the shape.
         dr::suspend_grad<Float> scope(
             has_flag(ray_flags, RayFlags::DetachShape), m_control_points);
 
@@ -364,9 +364,9 @@ public:
         Vector3f rad_vec_d = si.p - dr::detach(c);
         si.n = dr::normalize(rad_vec_d);
 
-        /* Surface position at the detached parameterization: the offset from the
-           center line is held fixed in the curve's frame, so that it rotates
-           along with the segment. */
+        // Surface position at the detached parameterization: the offset from the
+        // center line is held fixed in the curve's frame, so that it rotates
+        // along with the segment.
         Point3f p_att = c + dr::dot(rad_vec_d, dr::detach(u_rad)) * u_rad +
                             dr::dot(rad_vec_d, dr::detach(u_rot)) * u_rot +
                             dr::dot(rad_vec_d, dr::detach(axis))  * axis;
@@ -375,8 +375,8 @@ public:
 
         if constexpr (dr::is_diff_v<Float>) {
             if (!has_flag(ray_flags, RayFlags::FollowShape)) {
-                /* Let the curve parameter follow the sliding of the interaction
-                   point across the moving surface */
+                // Let the curve parameter follow the sliding of the interaction
+                // point across the moving surface
                 Vector3f dp_dv = dr::detach(
                     (p1 - p0) + (c1.w() - c0.w()) * dr::normalize(rad_vec_d));
 
@@ -407,8 +407,8 @@ public:
 
             si.uv = Point2f(u, v);
 
-            /* Tangents of the (u, v) parameterization: ``u`` runs around the
-               curve, ``v`` along all segments. */
+            // Tangents of the (u, v) parameterization: ``u`` runs around the
+            // curve, ``v`` along all segments.
             Float segment_count = (Float) dr::width(m_indices);
             si.dp_du = dr::TwoPi<Float> * dr::cross(axis, si.p - c);
             si.dp_dv = segment_count *

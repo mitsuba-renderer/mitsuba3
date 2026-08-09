@@ -91,8 +91,8 @@ public:
     using typename Base::InputNormal3f;
 
     OBJMesh(const Properties &props) : Base(props) {
-        /* Causes all texture coordinates to be vertically flipped.
-           Enabled by default, for consistency with the Mitsuba 1 behavior. */
+        // Causes all texture coordinates to be vertically flipped.
+        // Enabled by default, for consistency with the Mitsuba 1 behavior.
         bool flip_tex_coords = props.get<bool>("flip_tex_coords", true);
 
         auto fail = [&](const char *descr, auto... args) {
@@ -106,9 +106,9 @@ public:
 
         constexpr uint32_t MissingIndex = (uint32_t) -1;
 
-        /* Value pools (flat float arrays) and per-corner indices into them.
-           The heavy lifting -- corner deduplication, triangulation, normal
-           generation -- happens in from_corners(). */
+        // Value pools (flat float arrays) and per-corner indices into them.
+        // The heavy lifting -- corner deduplication, triangulation, normal
+        // generation -- happens in from_corners().
         std::vector<InputFloat> vertices, normals, texcoords;
         std::vector<uint32_t> corner_vertex, corner_uv, corner_normal;
         std::vector<uint32_t> face_offsets;
