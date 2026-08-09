@@ -245,12 +245,19 @@ set(STUB_ARGS
 # enabled.
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
+  # Stub generation does not recurse, each module must be listed separately.
+  # 'python.ad.optimizers' is absent because it forwards to 'drjit.opt'.
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
+                         "python.ad" "python.ad.guiding" "python.ad.largesteps"
+                         "python.ad.projective"
+                         "python.ad.loaders.ray_loader"
+                         "python.ad.integrators.common"
+                         "python.chi2" "python.math_py" "python.util"
+                         "python.tensor_io" "python.testing" "parser")
 
   nanobind_add_stub(
     mitsuba-stub
-    MODULE mitsuba.mitsuba_stubs
+    MODULE mitsuba
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
     MARKER_FILE ${MI_BINARY_DIR}/python/mitsuba/py.typed
     ${STUB_ARGS}
@@ -258,7 +265,8 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    DEPENDS mitsuba-stub
+    DEPENDS mitsuba-stub ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
     COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
       ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
       ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
@@ -272,14 +280,15 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     string(REPLACE "." "/" value_path ${value})
     nanobind_add_stub(
       mitsuba-stub-${value}
-      MODULE mitsuba.mitsuba_stubs.${value}
+      MODULE mitsuba.${value}
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
       ${STUB_ARGS}
     )
 
     add_custom_command(
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
-      DEPENDS mitsuba-stub-${value}
+      DEPENDS mitsuba-stub-${value} ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
       COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
         ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
         ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi

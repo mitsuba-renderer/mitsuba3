@@ -38,3 +38,26 @@ with _dr.detail.scoped_rtld_deepbind():
     from . import mitsuba_alias
 
 _ = mitsuba_alias # Removes unused variable warnings
+
+
+def _stub_variant() -> str:
+    """Pick the variant whose bindings expose the largest part of the API.
+
+    The stubs are generated once and shared between all variants, so this
+    prefers the color representations that add the most (polarization,
+    spectral rendering) over a plain RGB build.
+    """
+    scores = { 'scalar': 1, 'llvm': 200, 'cuda': 300, 'mono': 10, 'rgb': 20,
+               'spectral': 30, 'polarized': 100 }
+
+    def score(variant: str) -> int:
+        return sum(v for feature, v in scores.items() if feature in variant)
+
+    import mitsuba
+    return max(mitsuba.variants(), key=score)
+
+
+if _os.environ.get('NB_STUBGEN'):
+    # Automatically set a variant so that Mitsuba is ready for stub generation
+    import mitsuba
+    mitsuba.set_variant(_stub_variant())
