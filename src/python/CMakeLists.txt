@@ -332,7 +332,8 @@ if (UNIX)
        -DMI_ENABLE_LLVM=1 -DMI_ENABLE_METAL=1 -DMI_ENABLE_EMBREE=1)
 
   add_custom_target(docstrings USES_TERMINAL COMMAND
-    ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++ -ferror-limit=100000
+    ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/mkdocs.py
+    -std=c++17 -stdlib=libc++ -ferror-limit=100000
     ${MKDOC_CXXFLAGS}
     `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`
