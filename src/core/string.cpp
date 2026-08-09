@@ -15,16 +15,11 @@ template <typename T> T parse_float(const char *s, const char *end, char **endpt
     const char *p = s;
 
     // Skip leading space
-    do {
-        char c = *p;
-        if (c == ' ' || c == '\t')
-            ++p;
-        else
-            break;
-    } while (true);
+    while (p != end && (*p == ' ' || *p == '\t'))
+        ++p;
 
     // Skip leading '+' signs (not handled by from_chars)
-    if (*p == '+')
+    if (p != end && *p == '+')
         ++p;
 
     T result = 0;

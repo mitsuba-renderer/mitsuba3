@@ -32,11 +32,13 @@ NAMESPACE_BEGIN(string)
  * \brief Locale-independent string to floating point conversion analogous
  * to std::stof. (implemented using Daniel Lemire's fast_float library.)
  *
- * Parses a floating point number in a (potentially longer) string start..end-1.
- * The 'endptr' argument (if non-NULL) is used to return a pointer to the
- * character following the parsed floating point value.
+ * Parses a floating point number in the range start..end-1, skipping leading
+ * spaces and tabs. The function never accesses characters outside of this
+ * range, which makes it safe to use on memory-mapped files.
  *
- * Throws an exception if the conversion is unsuccessful.
+ * The 'endptr' argument returns a pointer to the character following the
+ * parsed value. An unsuccessful conversion returns zero and sets '*endptr'
+ * to 'start'.
  */
 template <typename T>
 T parse_float(const char *start, const char *end, char **endptr) noexcept;

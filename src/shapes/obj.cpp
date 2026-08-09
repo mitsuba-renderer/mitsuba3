@@ -78,23 +78,6 @@ Loading an ordinary OBJ file is as simple as writing:
 
  */
 
-template <bool Negate, size_t N>
-void advance(const char **start_, const char *end, const char (&delim)[N]) {
-    const char *start = *start_;
-
-    while (true) {
-        bool is_delim = false;
-        for (size_t i = 0; i < N; ++i)
-            if (*start == delim[i])
-                is_delim = true;
-        if ((is_delim ^ Negate) || start == end)
-            break;
-        ++start;
-    }
-
-    *start_ = start;
-}
-
 template <typename Float, typename Spectrum>
 class OBJMesh final : public Mesh<Float, Spectrum> {
 public:
@@ -145,7 +128,6 @@ public:
 
         size_t vertex_guess = file_size / 100;
         const char *eof     = ptr + file_size;
-        char buf[1025];
 
         vertices.reserve(vertex_guess * 3);
         normals.reserve(vertex_guess * 3);
@@ -160,118 +142,146 @@ public:
 
         Timer timer;
 
+        // Skip space and tab characters, staying within the line
+        auto skip_ws = [](const char *&p, const char *end) {
+            while (p != end && (*p == ' ' || *p == '\t'))
+                ++p;
+        };
+
+        // Bounded float parser (leaves 'p' unchanged on failure)
+        auto parse_float = [](const char *&p, const char *end, InputFloat &out,
+                              bool &error) {
+            const char *orig = p;
+            out = string::parse_float<InputFloat>(p, end, (char **) &p);
+            error |= p == orig;
+        };
+
         while (ptr < eof) {
-            // Determine the offset of the next newline
-            const char *next = ptr;
-            advance<false>(&next, eof, "\n");
+            // The current line spans ptr..eol-1 and is parsed in place
+            const char *eol = (const char *) memchr(ptr, '\n', eof - ptr);
+            if (!eol)
+                eol = eof;
 
-            // Copy buf into a 0-terminated buffer
-            size_t size = next - ptr;
-            if (size >= sizeof(buf) - 1)
-                fail("file contains an excessively long line! (%i characters)", size);
-            memcpy(buf, ptr, size);
-            buf[size] = '\0';
-
-            // Skip whitespace
-            const char *cur = buf, *eol = buf + size;
-            advance<true>(&cur, eol, " \t\r");
+            const char *cur = ptr;
+            skip_ws(cur, eol);
+            size_t len = eol - cur;
 
             bool parse_error = false;
-            if (cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
+            if (len >= 2 && cur[0] == 'v' && (cur[1] == ' ' || cur[1] == '\t')) {
                 // Vertex position
                 InputPoint3f p;
                 cur += 2;
-                for (size_t i = 0; i < 3; ++i) {
-                    const char *orig = cur;
-                    p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
-                    parse_error |= cur == orig;
-                }
+                for (size_t i = 0; i < 3; ++i)
+                    parse_float(cur, eol, p[i], parse_error);
                 if (unlikely(!all(dr::isfinite(p))))
                     fail("mesh contains invalid vertex position data");
-                for (size_t i = 0; i < 3; ++i)
-                    vertices.push_back(p[i]);
-            } else if (cur[0] == 'v' && cur[1] == 'n' && (cur[2] == ' ' || cur[2] == '\t')) {
+                size_t off = vertices.size();
+                vertices.resize(off + 3);
+                dr::store(vertices.data() + off, p);
+            } else if (len >= 3 && cur[0] == 'v' && cur[1] == 'n' &&
+                       (cur[2] == ' ' || cur[2] == '\t')) {
                 if (!has_face_normals()) {
-                    cur += 3;
                     // Vertex normal
                     InputNormal3f n;
-                    for (size_t i = 0; i < 3; ++i) {
-                        const char *orig = cur;
-                        n[i] = string::strtof<InputFloat>(cur, (char **) &cur);
-                        parse_error |= cur == orig;
-                    }
+                    cur += 3;
+                    for (size_t i = 0; i < 3; ++i)
+                        parse_float(cur, eol, n[i], parse_error);
                     if (unlikely(!all(dr::isfinite(n))))
                         fail("mesh contains invalid vertex normal data");
-                    for (size_t i = 0; i < 3; ++i)
-                        normals.push_back(n[i]);
+                    size_t off = normals.size();
+                    normals.resize(off + 3);
+                    dr::store(normals.data() + off, n);
                 }
-            } else if (cur[0] == 'v' && cur[1] == 't' && (cur[2] == ' ' || cur[2] == '\t')) {
+            } else if (len >= 3 && cur[0] == 'v' && cur[1] == 't' &&
+                       (cur[2] == ' ' || cur[2] == '\t')) {
                 // Texture coordinate
                 InputVector2f uv;
                 cur += 3;
-                for (size_t i = 0; i < 2; ++i) {
-                    const char *orig = cur;
-                    uv[i] = string::strtof<InputFloat>(cur, (char **) &cur);
-                    parse_error |= cur == orig;
-                }
+                for (size_t i = 0; i < 2; ++i)
+                    parse_float(cur, eol, uv[i], parse_error);
                 if (flip_tex_coords)
                     uv.y() = 1.f - uv.y();
 
-                texcoords.push_back(uv.x());
-                texcoords.push_back(uv.y());
-            } else if (cur[0] == 'f' && (cur[1] == ' ' || cur[1] == '\t')) {
+                size_t off = texcoords.size();
+                texcoords.resize(off + 2);
+                dr::store(texcoords.data() + off, uv);
+            } else if (len >= 2 && cur[0] == 'f' &&
+                       (cur[1] == ' ' || cur[1] == '\t')) {
                 // Face specification
                 cur += 2;
-                size_t type_index = 0;
-                uint32_t key[3] { 0, 0, 0 };
 
                 while (true) {
-                    const char *next2;
-                    uint32_t value = (uint32_t) strtoul(cur, (char **) &next2, 10);
-                    if (cur == next2)
+                    skip_ws(cur, eol);
+                    if (cur == eol || *cur == '\r')
                         break;
 
-                    if (type_index < 3) {
-                        key[type_index] = value;
-                    } else {
-                        parse_error = true;
+                    // One corner: an index triplet v, v/vt, v//vn, or v/vt/vn
+                    uint32_t key[3] { 0, 0, 0 };
+                    size_t type_index = 0;
+                    bool corner_ok = false, has_vertex = false;
+
+                    while (true) {
+                        if (unlikely(cur != eol && *cur == '-'))
+                            fail("negative (relative) face indices are not "
+                                 "supported in line \"%s\"",
+                                 std::string(ptr, eol));
+
+                        // A digit loop, which benchmarks faster than
+                        // std::from_chars on this kind of input
+                        uint32_t value = 0;
+                        bool has_digits = false;
+                        while (cur != eol && (unsigned char) (*cur - '0') < 10) {
+                            value = value * 10 + (uint32_t) (*cur - '0');
+                            ++cur;
+                            has_digits = true;
+                        }
+
+                        if (has_digits) {
+                            if (type_index >= 3) {
+                                parse_error = true;
+                                break;
+                            }
+                            key[type_index] = value;
+                            has_vertex |= type_index == 0;
+                        }
+
+                        if (cur != eol && *cur == '/') {
+                            do {
+                                type_index++;
+                                cur++;
+                            } while (cur != eol && *cur == '/');
+                            continue;
+                        }
+
+                        corner_ok = has_vertex &&
+                                    (cur == eol || *cur == ' ' ||
+                                     *cur == '\t' || *cur == '\r');
                         break;
                     }
 
-                    while (*next2 == '/') {
-                        type_index++;
-                        next2++;
-                    }
+                    if (!corner_ok)
+                        break;
 
-                    if (*next2 == ' ' || *next2 == '\t' || *next2 == '\0' || *next2 == '\r') {
-                        type_index = 0;
+                    if (unlikely(key[0] == 0 || key[0] > vertices.size() / 3))
+                        fail("reference to invalid vertex %i!", key[0]);
+                    if (unlikely(key[1] > texcoords.size() / 2))
+                        fail("reference to invalid texture coordinate %i!", key[1]);
+                    if (unlikely(!has_face_normals() && key[2] > normals.size() / 3))
+                        fail("reference to invalid normal %i!", key[2]);
 
-                        if (unlikely(key[0] == 0 || (key[0] - 1) * 3 >= vertices.size()))
-                            fail("reference to invalid vertex %i!", key[0]);
-                        if (unlikely(key[1] != 0 && (key[1] - 1) * 2 >= texcoords.size()))
-                            fail("reference to invalid texture coordinate %i!", key[1]);
-                        if (unlikely(key[2] != 0 && !has_face_normals() &&
-                                     (key[2] - 1) * 3 >= normals.size()))
-                            fail("reference to invalid normal %i!", key[2]);
-
-                        corner_vertex.push_back(key[0] - 1);
-                        corner_uv.push_back(key[1] ? key[1] - 1 : MissingIndex);
-                        corner_normal.push_back(key[2] ? key[2] - 1 : MissingIndex);
-                        has_uv_indices |= key[1] != 0;
-                        has_normal_indices |= key[2] != 0;
-
-                        key[1] = key[2] = 0;
-                    }
-
-                    cur = next2;
+                    corner_vertex.push_back(key[0] - 1);
+                    corner_uv.push_back(key[1] ? key[1] - 1 : MissingIndex);
+                    corner_normal.push_back(key[2] ? key[2] - 1 : MissingIndex);
+                    has_uv_indices |= key[1] != 0;
+                    has_normal_indices |= key[2] != 0;
                 }
 
                 face_offsets.push_back((uint32_t) corner_vertex.size());
             }
 
             if (unlikely(parse_error))
-                fail("could not parse line \"%s\"", buf);
-            ptr = next + 1;
+                fail("could not parse line \"%s\"", std::string(ptr, eol));
+            ptr = eol + 1;
         }
 
         CornerMesh desc;
