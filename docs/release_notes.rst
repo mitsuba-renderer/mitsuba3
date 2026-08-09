@@ -253,7 +253,7 @@ Mitsuba 3.9.0
 
   - **Environment maps**. The :ref:`envmap <emitter-envmap>` emitter now uses
     GPU hardware texture units for lookups. The underlying
-    :cpp:class:`mitsuba.Hierarchical2D0` class for importance sampling
+    :py:class:`mitsuba.Hierarchical2D0` class for importance sampling
     envmaps switched to a packed memory layout and now uses vector memory
     loads to pull in data more efficiently. Scenes using environment maps
     should render noticeably faster after this change. (commits `2ad8ea <https://github.com/mitsuba-renderer/mitsuba3/commit/2ad8eaefeb79c95796fcc6196bbae6b6a0d28715>`__,
