@@ -385,9 +385,9 @@ public:
             return dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        /* If necessary, temporally suspend gradient tracking for all shape
-           parameters to construct a surface interaction completely detach from
-           the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detach from
+        // the shape.
         dr::suspend_grad<Float> scope(detach_shape, m_ellipsoids.data());
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 

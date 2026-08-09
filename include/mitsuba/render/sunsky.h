@@ -244,8 +244,8 @@ public:
         // Precompute sun dataset
         m_sun_radiance = dr::take_interp(m_sun_rad_dataset, m_turbidity - 1.f);
 
-        /* Until `set_scene` is called, we have no information
-        about the scene and default to the unit bounding sphere. */
+        // Until `set_scene` is called, we have no information
+        // about the scene and default to the unit bounding sphere.
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
 
         dr::eval(m_albedo_tex, m_albedo, m_sun_radiance, m_sky_rad_dataset,
@@ -475,10 +475,10 @@ public:
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
-            /* Do not throw an exception in JIT-compiled variants. This
-               function might be invoked by DrJit's virtual function call
-               recording mechanism despite not influencing any actual
-               calculation. */
+            // Do not throw an exception in JIT-compiled variants. This
+            // function might be invoked by DrJit's virtual function call
+            // recording mechanism despite not influencing any actual
+            // calculation.
             return { dr::zeros<PositionSample3f>(), dr::NaN<Float> };
         } else {
             NotImplementedError("sample_position");
@@ -1106,8 +1106,8 @@ protected:
         Float d_y;
         Float d_x;
 
-        /* Calculate difference in days between the current Julian Day
-           and JD 2451545.0, which is noon 1 January 2000 Universal Time */
+        // Calculate difference in days between the current Julian Day
+        // and JD 2451545.0, which is noon 1 January 2000 Universal Time
         {
             // Calculate time of the day in UT decimal hours
             dec_hours = date_time.hour - location.timezone +
@@ -1125,9 +1125,9 @@ protected:
             elapsed_julian_days = d_julian_date - 2451545.f;
         }
 
-        /* Calculate ecliptic coordinates (ecliptic longitude and obliquity of the
-           ecliptic in radians but without limiting the angle to be less than 2*Pi
-           (i.e., the result may be greater than 2*Pi) */
+        // Calculate ecliptic coordinates (ecliptic longitude and obliquity of the
+        // ecliptic in radians but without limiting the angle to be less than 2*Pi
+        // (i.e., the result may be greater than 2*Pi)
         {
             Float omega = 2.1429f - 0.0010394594f * elapsed_julian_days;
             Float mean_longitude = 4.8950630f + 0.017202791698f * elapsed_julian_days; // Radians
@@ -1141,9 +1141,9 @@ protected:
                 + 0.0000396f * dr::cos(omega);
         }
 
-        /* Calculate celestial coordinates ( right ascension and declination ) in radians
-           but without limiting the angle to be less than 2*Pi (i.e., the result may be
-           greater than 2*Pi) */
+        // Calculate celestial coordinates ( right ascension and declination ) in radians
+        // but without limiting the angle to be less than 2*Pi (i.e., the result may be
+        // greater than 2*Pi)
         {
             Float sin_ecliptic_longitude = dr::sin(ecliptic_longitude);
             d_y = dr::cos(ecliptic_obliquity) * sin_ecliptic_longitude;

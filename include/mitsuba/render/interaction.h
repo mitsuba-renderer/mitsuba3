@@ -574,10 +574,10 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         wavelengths = ray.wavelengths;
 
         if (has_flag(ray_flags, RayFlags::Shading)) {
-            /* Orthogonalize the tangent direction that the shape wrote to
-               ``sh_frame.s`` against the shading normal. Shapes that leave
-               the field at its zero initialization fall back to an
-               arbitrary basis below. */
+            // Orthogonalize the tangent direction that the shape wrote to
+            // ``sh_frame.s`` against the shading normal. Shapes that leave
+            // the field at its zero initialization fall back to an
+            // arbitrary basis below.
             Vector3f n = sh_frame.n,
                      s = dr::fnmadd(n, dr::dot(n, sh_frame.s), sh_frame.s);
             Float sqr_norm = dr::squared_norm(s);

@@ -455,9 +455,9 @@ public:
         m_raw(raw),
         m_srgb(srgb) {
 
-        /* Compute the mean without migrating texture data, i.e. avoid the
-           m_texture.tensor() call that would trigger a migration. On CUDA we
-           ideally keep the data solely as a GPU texture. */
+        // Compute the mean without migrating texture data, i.e. avoid the
+        // m_texture.tensor() call that would trigger a migration. On CUDA we
+        // ideally keep the data solely as a GPU texture.
         rebuild_internals(tensor, true, false);
 
         m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel, accel,
@@ -644,10 +644,10 @@ public:
                     sample2[sample2 > 1.f] -= 1.f;
                     break;
 
-                /* Texel sampling is restricted to [0, 1] and only interpolation
-                   with one row/column of pixels beyond that is considered, so
-                   both clamp/mirror effectively use the same strategy. No such
-                   distinction is needed for the pdf() method. */
+                // Texel sampling is restricted to [0, 1] and only interpolation
+                // with one row/column of pixels beyond that is considered, so
+                // both clamp/mirror effectively use the same strategy. No such
+                // distinction is needed for the pdf() method.
                 case dr::WrapMode::Clamp:
                 case dr::WrapMode::Mirror:
                     sample2[sample2 < 0.f] = -sample2;

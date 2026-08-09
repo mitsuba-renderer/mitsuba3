@@ -98,7 +98,7 @@ std::string Logger::read_log() {
             return sa->read_log();
     }
     Log(Error, "No stream appender with a file attachment could be found");
-    return std::string(); /* Don't warn */
+    return std::string(); // Don't warn
 }
 
 void Logger::clear_appenders() {

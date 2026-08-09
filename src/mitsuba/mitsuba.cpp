@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
     std::string error_msg, mode;
 
 #if !defined(_WIN32)
-    /* Initialize signal handlers */
+    // Initialize signal handlers
     struct sigaction sa;
     sa.sa_handler = hup_signal_handler;
     sigemptyset(&sa.sa_mask);

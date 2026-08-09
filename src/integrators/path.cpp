@@ -120,12 +120,11 @@ public:
         Bool          prev_bsdf_delta = true;
         BSDFContext   bsdf_ctx;
 
-        /* Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
-           mode, and it generates either a megakernel (default) or
-           wavefront-style renderer in JIT variants. This can be controlled by
-           passing the '-W' command line flag to the mitsuba binary or
-           enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
-        */
+        // Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
+        // mode, and it generates either a megakernel (default) or
+        // wavefront-style renderer in JIT variants. This can be controlled by
+        // passing the '-W' command line flag to the mitsuba binary or
+        // enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
         struct LoopState {
             Ray3f ray;
             PreliminaryIntersection3f pi;
@@ -168,11 +167,11 @@ public:
 
         // ---------------------- Hide area emitters ----------------------
 
-        /* dr::any_or() checks for active entries in the provided boolean
-           array. JIT/Megakernel modes can't do this test efficiently as
-           each Monte Carlo sample runs independently. In this case,
-           dr::any_or<..>() returns the template argument (true) which means
-           that the 'if' statement is always conservatively taken. */
+        // dr::any_or() checks for active entries in the provided boolean
+        // array. JIT/Megakernel modes can't do this test efficiently as
+        // each Monte Carlo sample runs independently. In this case,
+        // dr::any_or<..>() returns the template argument (true) which means
+        // that the 'if' statement is always conservatively taken.
 
         if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
             // Did we hit an area emitter? If so, skip all area emitters along this ray
@@ -194,8 +193,8 @@ public:
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
 
-            /* dr::while_loop implicitly masks all code in the loop using the
-               'active' flag, so there is no need to pass it to every function */
+            // dr::while_loop implicitly masks all code in the loop using the
+            // 'active' flag, so there is no need to pass it to every function
 
             // Fill out all information of the interaction
             SurfaceInteraction3f si =
@@ -247,8 +246,8 @@ public:
                     si, ls.sampler->next_2d(), true, active_em);
                 active_em &= (ds.pdf != 0.f);
 
-                /* Given the detached emitter sample, recompute its contribution
-                   with AD to enable light source optimization. */
+                // Given the detached emitter sample, recompute its contribution
+                // with AD to enable light source optimization.
                 if (dr::grad_enabled(si.p)) {
                     ds.d = dr::normalize(ds.p - si.p);
                     Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
@@ -286,11 +285,11 @@ public:
 
             ls.ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
 
-            /* When the path tracer is differentiated, we must be careful that
-               the generated Monte Carlo samples are detached (i.e. don't track
-               derivatives) to avoid bias resulting from the combination of moving
-               samples and discontinuous visibility. We need to re-evaluate the
-               BSDF differentiably with the detached sample in that case. */
+            // When the path tracer is differentiated, we must be careful that
+            // the generated Monte Carlo samples are detached (i.e. don't track
+            // derivatives) to avoid bias resulting from the combination of moving
+            // samples and discontinuous visibility. We need to re-evaluate the
+            // BSDF differentiably with the detached sample in that case.
             if (dr::grad_enabled(ls.ray)) {
                 ls.ray = dr::detach(ls.ray);
 
@@ -322,9 +321,9 @@ public:
             Mask rr_active = ls.depth >= m_rr_depth,
                  rr_continue = ls.sampler->next_1d() < rr_prob;
 
-            /* Differentiable variants of the renderer require the russian
-               roulette sampling weight to be detached to avoid bias. This is a
-               no-op in non-differentiable variants. */
+            // Differentiable variants of the renderer require the russian
+            // roulette sampling weight to be detached to avoid bias. This is a
+            // no-op in non-differentiable variants.
             ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
             ls.active = active_next && (!rr_active || rr_continue) &&

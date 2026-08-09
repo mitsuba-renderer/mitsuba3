@@ -267,8 +267,8 @@ public:
         if (shape_index != 0) {
             size_t file_size = stream->size();
 
-            /* Determine the position of the requested substream. This
-               is stored at the end of the file */
+            // Determine the position of the requested substream. This
+            // is stored at the end of the file
             stream->seek(file_size - sizeof(uint32_t));
 
             uint32_t count = 0;
@@ -455,8 +455,8 @@ public:
         m_to_world = ScalarAffineTransform4f();
         pm.transform_records();
 
-        /* The stored FaceNormals flag applies when the scene description
-           leaves the property unset */
+        // The stored FaceNormals flag applies when the scene description
+        // leaves the property unset
         if ((flags & (uint32_t) SerializedFlags::FaceNormals) &&
             !props.has_property("face_normals"))
             m_face_normals = true;

@@ -68,23 +68,23 @@ int core_count() {
     __cached_core_count = nprocs;
     return nprocs;
 #else
-    /* Determine the number of present cores */
+    // Determine the number of present cores
     int ncores = sysconf(_SC_NPROCESSORS_CONF);
 
-    /* Don't try to query CPU affinity if running inside Valgrind */
+    // Don't try to query CPU affinity if running inside Valgrind
     if (getenv("VALGRIND_OPTS") == NULL) {
-        /* Some of the cores may not be available to the user
-           (e.g. on certain cluster nodes) -- determine the number
-           of actual available cores here. */
+        // Some of the cores may not be available to the user
+        // (e.g. on certain cluster nodes) -- determine the number
+        // of actual available cores here.
         int ncores_logical = ncores;
         size_t size = 0;
         cpu_set_t *cpuset = NULL;
         int retval = 0;
 
-        /* The kernel may expect a larger cpu_set_t than would
-           be warranted by the physical core count. Keep querying
-           with increasingly larger buffers if the
-           pthread_getaffinity_np operation fails */
+        // The kernel may expect a larger cpu_set_t than would
+        // be warranted by the physical core count. Keep querying
+        // with increasingly larger buffers if the
+        // pthread_getaffinity_np operation fails
         for (int i = 0; i<10; ++i) {
             size = CPU_ALLOC_SIZE(ncores_logical);
             cpuset = CPU_ALLOC(ncores_logical);

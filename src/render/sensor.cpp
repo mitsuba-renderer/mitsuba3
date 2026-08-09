@@ -119,11 +119,11 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
 
 MI_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties &props)
     : Base(props) {
-    /* Distance to the near clipping plane */
+    // Distance to the near clipping plane
     m_near_clip = props.get<ScalarFloat>("near_clip", 1e-2f);
-    /* Distance to the far clipping plane */
+    // Distance to the far clipping plane
     m_far_clip = props.get<ScalarFloat>("far_clip", 1e4f);
-    /* Distance to the focal plane */
+    // Distance to the focal plane
     m_focus_distance = props.get<ScalarFloat>("focus_distance", (float) m_far_clip);
 
     if (m_near_clip <= 0.f)

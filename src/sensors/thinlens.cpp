@@ -198,8 +198,8 @@ public:
         m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
              - m_sample_to_camera * Point3f(0.f);
 
-        /* Precompute some data for importance(). Please
-           look at that function for further details. */
+        // Precompute some data for importance(). Please
+        // look at that function for further details.
         Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
                 pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
 

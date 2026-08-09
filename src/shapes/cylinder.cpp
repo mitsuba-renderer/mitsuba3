@@ -186,8 +186,8 @@ public:
         ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
                       p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 1.f);
 
-        /* To bound the cylinder, it is sufficient to find the
-           smallest box containing the two circles at the endpoints. */
+        // To bound the cylinder, it is sufficient to find the
+        // smallest box containing the two circles at the endpoints.
         return ScalarBoundingBox3f(dr::minimum(p0 - x, p1 - x),
                                    dr::maximum(p0 + x, p1 + x));
     }
@@ -207,9 +207,9 @@ public:
         ScalarBoundingBox3f bbox(this->bbox());
         bbox.clip(clip);
 
-        /* Now forget about the cylinder ends and intersect an infinite
-           cylinder with each bounding box face, then compute a bounding
-           box of the resulting ellipses. */
+        // Now forget about the cylinder ends and intersect an infinite
+        // cylinder with each bounding box face, then compute a bounding
+        // box of the resulting ellipses.
         Point3fP8  face_p = dr::zeros<Point3fP8>();
         Vector3fP8 face_n = dr::zeros<Vector3fP8>();
 
@@ -687,15 +687,15 @@ public:
         const AffineTransform4f& to_world = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
 
-        /* If necessary, temporally suspend gradient tracking for all shape
-        parameters to construct a surface interaction completely detach from
-        the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detach from
+        // the shape.
         dr::suspend_grad<Float> scope(detach_shape, radius, to_world, to_object);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
-        /* Local coordinates of the hit point, re-projected onto the unit
-           cylinder to mitigate roundoff error */
+        // Local coordinates of the hit point, re-projected onto the unit
+        // cylinder to mitigate roundoff error
         Point3f local = dr::detach(to_object * ray(pi.t));
         Float inv_r = dr::rcp(dr::norm(dr::head<2>(local)));
         local.x() *= inv_r;

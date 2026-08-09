@@ -13,7 +13,7 @@ template <typename T, std::enable_if_t<!std::is_enum_v<T>, int> = 0> size_t hash
 }
 
 template <typename T, std::enable_if_t<std::is_enum_v<T>, int> = 0> size_t hash(const T &t) {
-    /* Enum hash workaround for GCC / C++11 */
+    // Enum hash workaround for GCC / C++11
     return hash(typename std::underlying_type<T>::type(t));
 }
 

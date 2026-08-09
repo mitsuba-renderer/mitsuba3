@@ -340,8 +340,8 @@ public:
 
         if (m_type == MicrofacetType::Beckmann) {
             Float a = dr::rsqrt(tan_theta_alpha_2), a_sqr = dr::square(a);
-            /* Use a fast and accurate (<0.35% rel. error) rational
-               approximation to the shadowing-masking function */
+            // Use a fast and accurate (<0.35% rel. error) rational
+            // approximation to the shadowing-masking function
             result = dr::select(a >= 1.6f, 1.f,
                                 (3.535f * a + 2.181f * a_sqr) /
                                     (1.f + 2.276f * a + 2.577f * a_sqr));
@@ -352,8 +352,8 @@ public:
         // Perpendicular incidence -- no shadowing/masking
         dr::masked(result, xy_alpha_2 == 0.f) = 1.f;
 
-        /* Ensure consistent orientation (can't see the back
-           of the microfacet from the front and vice versa) */
+        // Ensure consistent orientation (can't see the back
+        // of the microfacet from the front and vice versa)
         dr::masked(result, dr::dot(v, m) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
 
         return result;
@@ -362,22 +362,22 @@ public:
     /// Visible normal sampling code for the alpha=1 case
     Vector2f sample_visible_11(Float cos_theta_i, Point2f sample) const {
         if (m_type == MicrofacetType::Beckmann) {
-            /* The original inversion routine from the paper contained
-               discontinuities, which causes issues for QMC integration
-               and techniques like Kelemen-style MLT. The following code
-               performs a numerical inversion with better behavior */
+            // The original inversion routine from the paper contained
+            // discontinuities, which causes issues for QMC integration
+            // and techniques like Kelemen-style MLT. The following code
+            // performs a numerical inversion with better behavior
 
             Float tan_theta_i =
                 dr::safe_sqrt(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
                 cos_theta_i;
             Float cot_theta_i = dr::rcp(tan_theta_i);
 
-            /* Search interval -- everything is parameterized
-               in the erf() domain */
+            // Search interval -- everything is parameterized
+            // in the erf() domain
             Float maxval = dr::erf(cot_theta_i);
 
-            /* Start with a good initial guess (analytic solution for
-               theta_i = pi/2, which is the most nonlinear case) */
+            // Start with a good initial guess (analytic solution for
+            // theta_i = pi/2, which is the most nonlinear case)
             sample = dr::maximum(dr::minimum(sample, 1.f - 1e-6f), 1e-6f);
             Float x = maxval - (maxval + 1.f) * dr::erf(dr::sqrt(-dr::log(sample.x())));
 

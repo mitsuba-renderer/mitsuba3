@@ -20,31 +20,31 @@ MI_VARIANT ShapeKDTree<Float, Spectrum>::ShapeKDTree(const Properties &props)
              empty space */
           props.get<ScalarFloat>("kd_empty_space_bonus", .9f))) {
 
-    /* kd-tree construction: A kd-tree node containing this many or fewer
-       primitives will not be split */
+    // kd-tree construction: A kd-tree node containing this many or fewer
+    // primitives will not be split
     if (props.has_property("kd_stop_prims"))
         set_stop_primitives(props.get<int>("kd_stop_prims"));
 
-    /* kd-tree construction: Maximum tree depth */
+    // kd-tree construction: Maximum tree depth
     if (props.has_property("kd_max_depth"))
         set_max_depth(props.get<int>("kd_max_depth"));
 
-    /* kd-tree construction: Number of bins used by the min-max binning method */
+    // kd-tree construction: Number of bins used by the min-max binning method
     if (props.has_property("kd_min_max_bins"))
         set_min_max_bins(props.get<int>("kd_min_max_bins"));
 
-    /* kd-tree construction: Enable primitive clipping? Generally leads to a
-      significant improvement of the resulting tree. */
+    // kd-tree construction: Enable primitive clipping? Generally leads to a
+    // significant improvement of the resulting tree.
     if (props.has_property("kd_clip"))
         set_clip_primitives(props.get<bool>("kd_clip"));
 
-    /* kd-tree construction: specify whether or not bad splits can be "retracted". */
+    // kd-tree construction: specify whether or not bad splits can be "retracted".
     if (props.has_property("kd_retract_bad_splits"))
         set_retract_bad_splits(props.get<bool>("kd_retract_bad_splits"));
 
-    /* kd-tree construction: Specify the number of primitives, at which the
-       builder will switch from (approximate) Min-Max binning to the accurate
-       O(n log n) SAH-based optimization method. */
+    // kd-tree construction: Specify the number of primitives, at which the
+    // builder will switch from (approximate) Min-Max binning to the accurate
+    // O(n log n) SAH-based optimization method.
     if (props.has_property("kd_exact_primitive_threshold"))
         set_exact_primitive_threshold(props.get<int>("kd_exact_primitive_threshold"));
 

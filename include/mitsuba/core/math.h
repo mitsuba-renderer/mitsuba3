@@ -359,36 +359,35 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     using Scalar = dr::scalar_t<Value>;
     using Mask = dr::mask_t<Value>;
 
-    /* Is this perhaps a linear equation? */
+    // Is this perhaps a linear equation?
     Mask linear_case = a == Scalar(0);
 
-    /* If so, we require b != 0 */
+    // If so, we require b != 0
     Mask valid_linear = linear_case && (b != Scalar(0));
 
-    /* Initialize solution with that of linear equation */
+    // Initialize solution with that of linear equation
     Value x0, x1;
     x0 = x1 = -c / b;
 
-    /* Check if the quadratic equation is solvable */
+    // Check if the quadratic equation is solvable
     Value discrim = dr::fmsub(b, b, Scalar(4) * a * c);
     Mask valid_quadratic = !linear_case && (discrim >= Scalar(0));
 
     if (likely(dr::any_or<true>(valid_quadratic))) {
         Value sqrt_discrim = dr::sqrt(discrim);
 
-        /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
-         *
-         * Based on the observation that one solution is always
-         * accurate while the other is not. Finds the solution of
-         * greater magnitude which does not suffer from loss of
-         * precision and then uses the identity x1 * x2 = c / a
-         */
+        // Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
+        //
+        // Based on the observation that one solution is always
+        // accurate while the other is not. Finds the solution of
+        // greater magnitude which does not suffer from loss of
+        // precision and then uses the identity x1 * x2 = c / a
         Value temp = -Scalar(0.5) * (b + dr::copysign(sqrt_discrim, b));
 
         Value x0p = temp / a,
               x1p = c / temp;
 
-        /* Order the results so that x0 < x1 */
+        // Order the results so that x0 < x1
         Value x0m = dr::minimum(x0p, x1p),
               x1m = dr::maximum(x0p, x1p);
 

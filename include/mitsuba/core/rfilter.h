@@ -127,7 +127,7 @@ template <typename Scalar_> struct Resampler {
               filter_radius = filter_radius_orig,
               scale = 1, inv_scale = 1;
 
-        /* Low-pass filter: scale reconstruction filters when downsampling */
+        // Low-pass filter: scale reconstruction filters when downsampling
         if (target_res < source_res) {
             scale = (Float) source_res / (Float) target_res;
             inv_scale = dr::rcp(scale);
@@ -141,23 +141,23 @@ template <typename Scalar_> struct Resampler {
         if (filter_radius_orig < 1)
             m_taps = std::min(m_taps, source_res);
 
-        if (source_res != target_res) { /* Resampling mode */
+        if (source_res != target_res) { // Resampling mode
             m_start = std::unique_ptr<int32_t[]>(new int32_t[target_res]);
             m_weights = std::unique_ptr<Scalar[]>(new Scalar[m_taps * target_res]);
             m_fast_start = 0;
             m_fast_end = m_target_res;
 
             for (uint32_t i = 0; i < target_res; i++) {
-                /* Compute the fractional coordinates of the new sample i
-                   in the original coordinates */
+                // Compute the fractional coordinates of the new sample i
+                // in the original coordinates
                 Float center = (i + Float(0.5)) / target_res * source_res;
 
-                /* Determine the index of the first original sample
-                   that might contribute */
+                // Determine the index of the first original sample
+                // that might contribute
                 m_start[i] = dr::floor2int<int32_t>(center - filter_radius + Float(0.5));
 
-                /* Determine the size of center region, on which to run
-                   the fast non condition-aware code */
+                // Determine the size of center region, on which to run
+                // the fast non condition-aware code
                 if (m_start[i] < 0)
                     m_fast_start = std::max(m_fast_start, i + 1);
                 else if (m_start[i] + m_taps - 1 >= m_source_res)
@@ -165,14 +165,14 @@ template <typename Scalar_> struct Resampler {
 
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
-                    /* Compute the position where the filter should be evaluated */
+                    // Compute the position where the filter should be evaluated
                     Float pos = m_start[i] + (int32_t) j + Float(0.5) - center;
 
-                    /* Perform the evaluation and record the weight */
+                    // Perform the evaluation and record the weight
                     auto weight = rfilter->eval(pos * inv_scale);
 
-                    /* Handle the (numerical) edge case of the pixel center missing
-                       the filter support when upsampling using the box filter. */
+                    // Handle the (numerical) edge case of the pixel center missing
+                    // the filter support when upsampling using the box filter.
                     if (target_res > source_res && rfilter->is_box_filter())
                         weight = Float(1.0);
                     m_weights[i * m_taps + j] = static_cast<Scalar>(weight);
@@ -183,14 +183,14 @@ template <typename Scalar_> struct Resampler {
                                  "support of some output samples does not contain "
                                  "any input samples!");
 
-                /* Normalize the contribution of each sample */
+                // Normalize the contribution of each sample
                 double normalization = 1.0 / sum;
                 for (uint32_t j = 0; j < m_taps; j++) {
                     Scalar &value = m_weights[i * m_taps + j];
                     value = Scalar(double(value) * normalization);
                 }
             }
-        } else { /* Filtering mode */
+        } else { // Filtering mode
             uint32_t half_taps = m_taps / 2;
             m_weights = std::unique_ptr<Scalar[]>(new Scalar[m_taps]);
 
@@ -215,8 +215,8 @@ template <typename Scalar_> struct Resampler {
                 (dr::ssize_t) m_target_res - (dr::ssize_t) half_taps - 1, (dr::ssize_t) 0);
         }
 
-        /* Avoid overlapping fast start/end intervals when the
-           target image is very small compared to the source image */
+        // Avoid overlapping fast start/end intervals when the
+        // target image is very small compared to the source image
         m_fast_start = std::min(m_fast_start, m_fast_end);
     }
 
@@ -315,7 +315,7 @@ private:
         target_stride = channels * (target_stride - 1);
         source_stride *= channels;
 
-        /* Resample the left border region, while accounting for the boundary conditions */
+        // Resample the left border region, while accounting for the boundary conditions
         for (uint32_t i = 0; i < m_fast_start; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);
@@ -335,7 +335,7 @@ private:
                 weights += taps;
         }
 
-        /* Use a faster branch-free loop for resampling the main portion */
+        // Use a faster branch-free loop for resampling the main portion
         for (uint32_t i = m_fast_start; i < m_fast_end; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);
@@ -356,7 +356,7 @@ private:
                 weights += taps;
         }
 
-        /* Resample the right border region, while accounting for the boundary conditions */
+        // Resample the right border region, while accounting for the boundary conditions
         for (uint32_t i = m_fast_end; i < m_target_res; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);

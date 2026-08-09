@@ -212,8 +212,8 @@ public:
         m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
         m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 1.0f);
 
-        /*Eta and specular has one to one correspondence, both of them can
-         * not be specified. */
+        // Eta and specular has one to one correspondence, both of them can
+        // not be specified.
         if (props.has_property("eta") && props.has_property("specular")) {
             Throw("Specified an invalid index of refraction property  "
                   "\"%s\", either use \"eta\" or \"specular\" !");
@@ -311,8 +311,8 @@ public:
             m_has_flatness = true;
 
         if (!m_eta_specular && string::contains(keys, "specular")) {
-            /* Specular=0 is corresponding to eta=1 which is not plausible
-               for transmission. */
+            // Specular=0 is corresponding to eta=1 which is not plausible
+            // for transmission.
             dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
             m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
         }
@@ -372,8 +372,8 @@ public:
         active &= (front_side || (bsdf > 0.0f));
 
         // Probability definitions
-        /* Inside  the material, just microfacet Reflection and
-           microfacet Transmission is sampled. */
+        // Inside  the material, just microfacet Reflection and
+        // microfacet Transmission is sampled.
         Float prob_spec_reflect = dr::select(
                 front_side,
                 m_spec_srate * (1.0f - bsdf * (1.0f - F_spec_dielectric)),
@@ -424,8 +424,8 @@ public:
             dr::masked(bs.sampled_type, sample_spec_reflect) =
                     +BSDFFlags::GlossyReflection;
 
-            /* Filter the cases where macro and micro surfaces do not agree
-             on the same side and reflection is not successful*/
+            // Filter the cases where macro and micro surfaces do not agree
+            // on the same side and reflection is not successful
             Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
             active &=
                     (!sample_spec_reflect ||
@@ -442,8 +442,8 @@ public:
                     +BSDFFlags::GlossyTransmission;
             dr::masked(bs.eta, sample_spec_trans) = eta_it;
 
-            /* Filter the cases where macro and micro surfaces do not agree
-             on the same side and refraction is successful. */
+            // Filter the cases where macro and micro surfaces do not agree
+            // on the same side and refraction is successful.
             Mask refract = cos_theta_i * Frame3f::cos_theta(wo) < 0.0f;
             active &= (!sample_spec_trans ||
                     (mac_mic_compatibility(Vector3f(m_spec),
@@ -464,8 +464,8 @@ public:
             dr::masked(bs.sampled_type, sample_clearcoat) =
                     +BSDFFlags::GlossyReflection;
 
-            /* Filter the cases where macro and microfacets do not agree on
-             the same side and reflection is not successful. */
+            // Filter the cases where macro and microfacets do not agree on
+            // the same side and reflection is not successful.
             Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
             active &= (!sample_clearcoat ||
                     (mac_mic_compatibility(Vector3f(m_cc),
@@ -603,8 +603,8 @@ public:
         // Main specular transmission evaluation
         if (m_has_spec_trans && dr::any_or<true>(spec_trans_active)) {
 
-            /* Account for the solid angle compression when tracing
-               radiance. This is necessary for bidirectional methods. */
+            // Account for the solid angle compression when tracing
+            // radiance. This is necessary for bidirectional methods.
             Float scale = (ctx.mode == TransportMode::Radiance)
                     ? dr::square(inv_eta_path)
                     : Float(1.0f);
@@ -626,8 +626,8 @@ public:
             // term.
             Float Fcc = calc_schlick<Float>(0.04f, dr::dot(si.wi, wh),m_eta);
 
-            /* Clearcoat lobe uses GTR1 distribution. Roughness is mapped
-             * between 0.1 and 0.001. */
+            // Clearcoat lobe uses GTR1 distribution. Roughness is mapped
+            // between 0.1 and 0.001.
             GTR1 mfacet_dist(dr::lerp(0.1f, 0.001f, clearcoat_gloss));
             Float Dcc = mfacet_dist.eval(wh);
 
@@ -655,9 +655,9 @@ public:
             Float f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
 
             if (m_has_flatness) {
-                /* Fake subsurface implementation based on Hanrahan Krueger
-                   Fss90 used to "flatten" retro reflection based on
-                   roughness.*/
+                // Fake subsurface implementation based on Hanrahan Krueger
+                // Fss90 used to "flatten" retro reflection based on
+                // roughness.
                 Float Fss90 = Rr / 2.0f;
                 Float Fss =
                         dr::lerp(1.0f, Fss90, Fo) * dr::lerp(1.0f, Fss90, Fi);
@@ -785,8 +785,8 @@ public:
         prob_clearcoat *= rcp_tot_prob;
         prob_diffuse *= rcp_tot_prob;
 
-        /* Calculation of dwh/dwo term. Different for reflection and
-         transmission. */
+        // Calculation of dwh/dwo term. Different for reflection and
+        // transmission.
         Float dwh_dwo_abs;
         if (m_has_spec_trans) {
             Float dot_wi_h = dr::dot(si.wi, wh);

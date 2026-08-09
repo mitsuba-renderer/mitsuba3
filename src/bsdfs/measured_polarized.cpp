@@ -224,27 +224,27 @@ public:
         if (unlikely(dr::none_or<false>(active) || !ctx.is_enabled(BSDFFlags::GlossyReflection)))
             return 0.f;
 
-        /* Due to the coordinate system rotations for polarization-aware
-           pBSDFs below we need to know the propagation direction of light.
-           In the following, light arrives along `-wo_hat` and leaves along
-           `+wi_hat`. */
+        // Due to the coordinate system rotations for polarization-aware
+        // pBSDFs below we need to know the propagation direction of light.
+        // In the following, light arrives along `-wo_hat` and leaves along
+        // `+wi_hat`.
         Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? wo : si.wi,
                  wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
-        /* We now transform both directions to the standard frame defined in
-           Figure 3. Here, one of the directions is aligned with the x-axis. */
+        // We now transform both directions to the standard frame defined in
+        // Figure 3. Here, one of the directions is aligned with the x-axis.
         Float phi_std = phi(wi_hat);
         Vector3f wo_std = rotate_vector(wo_hat, Vector3f(0,0,1), -phi_std),
                  wi_std = rotate_vector(wi_hat, Vector3f(0,0,1), -phi_std);
 
-        /* This representation can be turned into the (isotropic) Rusinkiewicz
-           parameterization. */
+        // This representation can be turned into the (isotropic) Rusinkiewicz
+        // parameterization.
         auto [phi_d, theta_h, theta_d] = directions_to_rusinkiewicz(wo_std, wi_std);
 
         Spectrum value;
         if constexpr (is_polarized_v<Spectrum>) {
-            /* The Stokes reference frame vector of this matrix lies in the plane
-               of reflection. See Figure 4. */
+            // The Stokes reference frame vector of this matrix lies in the plane
+            // of reflection. See Figure 4.
             Vector3f zo_std = -wo_std,
                      to_std = dr::normalize(dr::cross(wo_std - wi_std, zo_std)),
                      yo_std = dr::normalize(dr::cross(to_std, zo_std)),
@@ -280,8 +280,8 @@ public:
                 }
             }
 
-            /* Invalid configurations such as transmission directions are encoded as NaNs.
-               Make sure these values don't end up in the interpolated value. */
+            // Invalid configurations such as transmission directions are encoded as NaNs.
+            // Make sure these values don't end up in the interpolated value.
             dr::masked(value, dr::any(dr::isnan(value(0,0)))) = 0.f;
 
             // Make sure intensity is non-negative
@@ -291,8 +291,8 @@ public:
             Vector3f xo_hat = rotate_vector(xo_std, Vector3f(0, 0, 1), phi_std),
                      xi_hat = rotate_vector(xi_std, Vector3f(0, 0, 1), phi_std);
 
-            /* Rotate in/out reference vector of `value` s.t. it aligns with the
-               implicit Stokes bases of -wo_hat & wi_hat. */
+            // Rotate in/out reference vector of `value` s.t. it aligns with the
+            // implicit Stokes bases of -wo_hat & wi_hat.
             value = mueller::rotate_mueller_basis(value,
                                                   -wo_hat, xo_hat, mueller::stokes_basis(-wo_hat),
                                                    wi_hat, xi_hat, mueller::stokes_basis(wi_hat));

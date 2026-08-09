@@ -57,22 +57,21 @@ MI_INLINE Point<Value, 2> square_to_uniform_disk_concentric(const Point<Value, 2
     Value x = dr::fmsub(2.f, sample.x(), 1.f),
           y = dr::fmsub(2.f, sample.y(), 1.f);
 
-    /* Modified concentric map code with less branching (by Dave Cline), see
-       http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
-
-      Original non-vectorized version:
-
-        Value phi, r;
-        if (x == 0 && y == 0) {
-            r = phi = 0;
-        } else if (x * x > y * y) {
-            r = x;
-            phi = (dr::Pi / 4.f) * (y / x);
-        } else {
-            r = y;
-            phi = (dr::Pi / 2.f) - (x / y) * (dr::Pi / 4.f);
-        }
-    */
+    // Modified concentric map code with less branching (by Dave Cline), see
+    // http://psgraphics.blogspot.ch/2011/01/improved-code-for-concentric-map.html
+    //
+    // Original non-vectorized version:
+    //
+    //  Value phi, r;
+    //  if (x == 0 && y == 0) {
+    //      r = phi = 0;
+    //  } else if (x * x > y * y) {
+    //      r = x;
+    //      phi = (dr::Pi / 4.f) * (y / x);
+    //  } else {
+    //      r = y;
+    //      phi = (dr::Pi / 2.f) - (x / y) * (dr::Pi / 4.f);
+    //  }
 
     Mask is_zero         = (x == 0.f) &&
                            (y == 0.f),
@@ -643,13 +642,13 @@ MI_INLINE Vector<Value, 3> square_to_von_mises_fisher(const Point<Value, 2> &sam
     // Approach 1: warping method based on standard disk mapping
 
     #if 0
-        /* Approach 1.1: standard inversion method algorithm for sampling the
-           von Mises Fisher distribution (numerically unstable!) */
+        // Approach 1.1: standard inversion method algorithm for sampling the
+        // von Mises Fisher distribution (numerically unstable!)
         Value cos_theta = dr::log(dr::exp(-kappa) + 2.f *
                               sample.y() * dr::sinh(kappa)) / kappa;
 #else
-        /* Approach 1.2: stable algorithm for sampling the von Mises Fisher
-           distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+        // Approach 1.2: stable algorithm for sampling the von Mises Fisher
+        // distribution https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf
         Value sy = dr::maximum(1.f - sample.y(), 1e-6f);
         Value cos_theta = 1.f +
             dr::log(dr::fmadd(1.f - sy, dr::exp(-2.f * kappa), sy)) / kappa;
@@ -700,8 +699,8 @@ MI_INLINE Point<Value, 2> von_mises_fisher_to_square(const Vector<Value, 3> &v,
 /// Probability density of `square_to_von_mises_fisher()`
 template <typename Value>
 MI_INLINE Value square_to_von_mises_fisher_pdf(const Vector<Value, 3> &v, Value kappa) {
-    /* Stable algorithm for evaluating the von Mises Fisher distribution
-       https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf */
+    // Stable algorithm for evaluating the von Mises Fisher distribution
+    // https://www.mitsuba-renderer.org/~wenzel/files/vmf.pdf
 
     Value res = dr::exp(kappa * (v.z() - 1.f)) * (kappa * dr::InvTwoPi<Value>) /
                 (1.f - dr::exp(-2.f * kappa));

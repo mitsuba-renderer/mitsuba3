@@ -27,9 +27,9 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
 
     set_crop_window(crop_offset, crop_size);
 
-    /* If set to true, regions slightly outside of the film plane will also be
-       sampled, which improves the image quality at the edges especially with
-       large reconstruction filters. */
+    // If set to true, regions slightly outside of the film plane will also be
+    // sampled, which improves the image quality at the edges especially with
+    // large reconstruction filters.
     m_sample_border = props.get<bool>("sample_border", false);
 
     // Use the provided reconstruction filter, if any.

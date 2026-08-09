@@ -96,9 +96,9 @@ public:
                 m_sensors.push_back(sensor);
             } else if (Shape *shape = prop.try_get<Shape>()) {
                 if (shape->is_sensor()) {
-                    /* Inner sensors only have a weak ref to any parent shape
-                     * to make sure lifetime of shapes are at least that of
-                     * batch sensor */
+                    // Inner sensors only have a weak ref to any parent shape
+                    // to make sure lifetime of shapes are at least that of
+                    // batch sensor
                     m_shapes.push_back(shape);
                     m_sensors.push_back(shape->sensor());
                 } else {
@@ -148,11 +148,11 @@ public:
             sensor->sample_ray(time, wavelength_sample, position_sample_2,
                                aperture_sample, active);
 
-        /* The `m_last_index` variable **needs** to be updated after the
-         * virtual function call above. In recorded JIT modes, the tracing will
-         * also cover this function and hence overwrite `m_last_index` as part
-         * of that process. To "undo" that undesired side_effect, we must
-         * update `m_last_index` after that virtual function call. */
+        // The `m_last_index` variable **needs** to be updated after the
+        // virtual function call above. In recorded JIT modes, the tracing will
+        // also cover this function and hence overwrite `m_last_index` as part
+        // of that process. To "undo" that undesired side_effect, we must
+        // update `m_last_index` after that virtual function call.
         m_last_index = index;
 
         return { ray, spec };
@@ -178,11 +178,11 @@ public:
             time, wavelength_sample, position_sample_2, aperture_sample,
             active);
 
-        /* The `m_last_index` variable **needs** to be updated after the
-         * virtual function call above. In recorded JIT modes, the tracing will
-         * also cover this function and hence overwrite `m_last_index` as part
-         * of that process. To "undo" that undesired side_effect, we must
-         * update `m_last_index` after that virtual function call. */
+        // The `m_last_index` variable **needs** to be updated after the
+        // virtual function call above. In recorded JIT modes, the tracing will
+        // also cover this function and hence overwrite `m_last_index` as part
+        // of that process. To "undo" that undesired side_effect, we must
+        // update `m_last_index` after that virtual function call.
         m_last_index = index;
 
         return { ray, spec };

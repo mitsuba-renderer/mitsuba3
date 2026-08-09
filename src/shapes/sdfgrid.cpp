@@ -366,9 +366,9 @@ public:
 
         Point3f p_att = si.p;
         if constexpr (dr::is_diff_v<Float>) {
-            /* Position at the detached parameterization. Only a motion of the
-               entire shape truly glues the interaction point to the surface:
-               for a single voxel the motion is ambiguous. */
+            // Position at the detached parameterization. Only a motion of the
+            // entire shape truly glues the interaction point to the surface:
+            // for a single voxel the motion is ambiguous.
             Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
                 rescale_point(local_p)).x();
             Point3f local_motion =

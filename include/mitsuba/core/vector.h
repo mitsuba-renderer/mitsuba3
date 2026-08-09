@@ -118,10 +118,10 @@ template <typename Vector3f> std::pair<Vector3f, Vector3f> coordinate_system(con
 
     using Float = dr::value_t<Vector3f>;
 
-    /* Based on "Building an Orthonormal Basis, Revisited" by
-       Tom Duff, James Burgess, Per Christensen,
-       Christophe Hery, Andrew Kensler, Max Liani,
-       and Ryusuke Villemin (JCGT Vol 6, No 1, 2017) */
+    // Based on "Building an Orthonormal Basis, Revisited" by
+    // Tom Duff, James Burgess, Per Christensen,
+    // Christophe Hery, Andrew Kensler, Max Liani,
+    // and Ryusuke Villemin (JCGT Vol 6, No 1, 2017)
 
     Float sign = dr::sign(n.z()),
           a    = -dr::rcp(sign + n.z()),

@@ -53,8 +53,8 @@ public:
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     ConstantBackgroundEmitter(const Properties &props) : Base(props) {
-        /* Until `set_scene` is called, we have no information
-           about the scene and default to the unit bounding sphere. */
+        // Until `set_scene` is called, we have no information
+        // about the scene and default to the unit bounding sphere.
         m_bsphere = BoundingSphere3f(ScalarPoint3f(0.f), 1.f);
         m_surface_area = 4.f * dr::Pi<ScalarFloat>;
 
@@ -174,8 +174,8 @@ public:
     sample_position(Float /*time*/, const Point2f & /*sample*/,
                     Mask /*active*/) const override {
         if constexpr (dr::is_jit_v<Float>) {
-            /* When virtual function calls are recorded in symbolic mode,
-               we can't throw an exception here. */
+            // When virtual function calls are recorded in symbolic mode,
+            // we can't throw an exception here.
             return { dr::zeros<PositionSample3f>(),
                      dr::full<Float>(dr::NaN<ScalarFloat>) };
         } else {

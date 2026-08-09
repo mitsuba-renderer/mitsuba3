@@ -437,8 +437,8 @@ struct Transform {
     static Transform perspective(Float fov, Float near_, Float far_) {
         Float recip = 1.f / (far_ - near_);
 
-        /* Perform a scale so that the field of view is mapped
-           to the interval [-1, 1] */
+        // Perform a scale so that the field of view is mapped
+        // to the interval [-1, 1]
         Float tan = dr::tan(dr::deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 

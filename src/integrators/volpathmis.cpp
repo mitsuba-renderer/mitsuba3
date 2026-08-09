@@ -204,9 +204,9 @@ public:
             sampler
         };
 
-        /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
-           generates wavefront or megakernel renderer based on configuration).
-           Register everything that changes as part of the loop here */
+        // Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+        // generates wavefront or megakernel renderer based on configuration).
+        // Register everything that changes as part of the loop here
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
             [this, scene, channel](LoopState& ls) {

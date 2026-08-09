@@ -958,8 +958,8 @@ public:
             for (uint32_t slice = 0; slice < m_slices; ++slice) {
                 ScalarFloat norm = 1.f;
 
-                /* The marginal/probability distribution computation
-                   differs for the Continuous=false/true cases */
+                // The marginal/probability distribution computation
+                // differs for the Continuous=false/true cases
                 if constexpr (Continuous) {
                     // Construct conditional CDF
                     for (uint32_t y = 0; y < h; ++y) {
