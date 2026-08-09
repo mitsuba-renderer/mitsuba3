@@ -117,7 +117,9 @@ using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 NB_MODULE(MI_VARIANT_NAME, m) {
-    bool is_stub_gen = std::getenv("MI_STUB_GENERATION");
+    // Stub generation (which sets this variable) must be able to import the
+    // module on machines without a working JIT backend
+    bool is_stub_gen = std::getenv("NB_STUBGEN");
 
     /* scoped */ {
         // Before loading everything in and creating a lot of references to

@@ -42,6 +42,8 @@ mitsuba.__prefix__:
         ad as ad,
         chi2 as chi2,
         math_py as math_py,
+        tensor_io as tensor_io,
+        testing as testing,
         util as util,
     )
 
