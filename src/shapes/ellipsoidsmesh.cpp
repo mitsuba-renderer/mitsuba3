@@ -104,7 +104,7 @@ detailed in :cite:`Condor2024Gaussians`.
 
 .. tabs::
     .. code-tab:: xml
-        :name: sphere
+        :name: ellipsoidsmesh-sphere
 
         <shape type="ellipsoidsmesh">
             <string name="filename" value="my_primitives.ply"/>

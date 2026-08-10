@@ -125,7 +125,7 @@ It is particularly useful for applications like architectural visualization or h
 where the goal is to simulate the lighting conditions over multiple days, months, years, or
 even longer, rather than the lighting at a specific instant. If the goal is to
 render using the sunsky background emitter at a fixed point in time,
-please take a look at the :ref:`sunsky <Sunsky Emitter>` that is optimised and more efficient for that.
+please take a look at the :ref:`sunsky <emitter-sunsky>` that is optimised and more efficient for that.
 
 The local reference frame of this emitter is Z-up and X being towards the north direction.
 This behaviour can be changed with the ``to_world`` parameter.
