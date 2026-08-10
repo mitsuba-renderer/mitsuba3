@@ -118,6 +118,8 @@ MI_PY_EXPORT(DrJit) {
         m.attr("UnpolarizedSpectrum") = m.attr("Spectrum");
     }
 
+    bind_dr<scalar_spectrum_t<UnpolarizedSpectrum>>(m, "ScalarUnpolarizedSpectrum");
+
     // Define suffix mappings based on ScalarFloat precision
     struct SuffixMapping {
         const char *mitsuba_suffix;  // Suffix used in Mitsuba
