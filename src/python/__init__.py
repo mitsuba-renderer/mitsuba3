@@ -66,18 +66,27 @@ def _variant_module(name: str) -> _types.ModuleType:
     return module
 
 
+def _variant_stub(name: str) -> _types.ModuleType:
+    """Create a placeholder that imports the real module upon access."""
+    stub = _types.ModuleType('mitsuba.' + name)
+    def __getattr__(attr):
+        return getattr(_variant_module(name), attr)
+    stub.__getattr__ = __getattr__
+    stub.__dir__ = lambda: dir(_variant_module(name))
+    return stub
+
+
+for _name in _variant_modules:
+    globals()[_name] = _variant_stub(_name)
+del _name, _variant_stub
+
+
 def _import_symbols(module: _types.ModuleType) -> None:
-    """
-    Copy the public symbols of ``module`` into the mitsuba namespace and
-    register contained submodules in ``sys.modules``, which makes them
-    importable as ``mitsuba.<submodule>``.
-    """
+    """Import ``module`` into the mitsuba namespace and register submodules."""
     g = globals()
     for k, v in module.__dict__.items():
-        # Skip entries such as __name__, __file__, or __path__. They describe
-        # the source module and would clobber this package's own metadata.
         if k.startswith('__') or k.endswith('__'):
-            continue
+            continue # Skip __name__, __file__, or __path__, etc.
         g[k] = v
         if isinstance(v, _types.ModuleType) and \
            v.__name__.startswith('mitsuba.'):
@@ -131,21 +140,18 @@ def set_variant(*args: str) -> None:
         for callback in list(detail._variant_callbacks):
             callback(old_variant, _variant)
 
+    # __getattr__ has a performance cost. Drop it once no longer needed.
+    globals().pop('__getattr__', None)
 
-def __getattr__(name: str) -> _types.ModuleType:
-    """Resolve variant-specific attributes such as ``mitsuba.scalar_rgb``"""
-    if name in _variant_modules:
-        return _variant_module(name)
 
-    if _variant is None:
-        raise AttributeError(
-            "Cannot access 'mitsuba.%s' before setting a variant. Please "
-            "call `mitsuba.set_variant('variant_name')` first. For example: "
-            "mitsuba.set_variant('scalar_rgb') or "
-            "mitsuba.set_variant('cuda_ad_rgb'). Use mitsuba.variants() to "
-            "see all available variants." % name)
-
-    raise AttributeError("module 'mitsuba' has no attribute '%s'" % name)
+def __getattr__(name: str):
+    """Warn about accesses that occur before a variant has been set."""
+    raise AttributeError(
+        "Cannot access 'mitsuba.%s' before setting a variant. Please "
+        "call `mitsuba.set_variant('variant_name')` first. For example: "
+        "mitsuba.set_variant('scalar_rgb') or "
+        "mitsuba.set_variant('cuda_ad_rgb'). Use mitsuba.variants() to "
+        "see all available variants." % name)
 
 
 with _dr.detail.scoped_rtld_deepbind():
