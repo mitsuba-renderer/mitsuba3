@@ -83,13 +83,6 @@ nanobind_add_module(mitsuba_ext
   ${RENDER_PY_SRC}
 )
 
-nanobind_add_module(mitsuba_alias
-  NB_DOMAIN ${MI_NB_DOMAIN}
-  NB_SHARED
-  ${MI_DIST_FLAGS}
-  alias.cpp
-)
-
 # macOS: Avoid warnings about loop unrolling being disabled with -Os
 target_compile_definitions(mitsuba_ext PRIVATE "-DDRJIT_UNROLL= ")
 
@@ -110,21 +103,6 @@ set_target_properties(mitsuba_ext
 )
 
 install(TARGETS mitsuba_ext
-  LIBRARY DESTINATION mitsuba
-)
-
-set_target_properties(mitsuba_alias
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  FOLDER python
-)
-
-target_include_directories(mitsuba_alias
-  PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
-
-install(TARGETS mitsuba_alias
   LIBRARY DESTINATION mitsuba
 )
 
@@ -209,7 +187,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
 endforeach()
 
-set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
+set(MI_STUB_DEPENDS mitsuba_ext mitsuba-copy-python-src ${MI_COPY_FILES} ${MI_ALL_VARIANTS})
 
 # We usually build Dr.Jit along with Mitsuba (except building wheels in the
 # cloud, as indicated by SKBUILD). In that case, Mitsuba stub generation
