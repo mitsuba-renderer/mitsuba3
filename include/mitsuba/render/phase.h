@@ -188,8 +188,8 @@ public:
     }
 
     /// Number of components this phase function is comprised of.
-    size_t component_count(Mask /*active*/ = true) const {
-        return m_components.size();
+    uint32_t component_count(Mask /*active*/ = true) const {
+        return (uint32_t) m_components.size();
     }
 
     /// Return a human-readable representation of the phase function

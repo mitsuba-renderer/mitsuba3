@@ -551,8 +551,8 @@ public:
     }
 
     /// Number of components this BSDF is comprised of.
-    size_t component_count(Mask /*active*/ = true) const {
-        return m_components.size();
+    uint32_t component_count(Mask /*active*/ = true) const {
+        return (uint32_t) m_components.size();
     }
 
     /**
