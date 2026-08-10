@@ -1,4 +1,4 @@
-.. _sec-file-format:
+.. _sec-differences:
 
 Differences to previous versions
 ================================

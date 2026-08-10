@@ -110,7 +110,7 @@ It is designed for use with volumetric primitive integrators, as detailed in
 
 .. tabs::
     .. code-tab:: xml
-        :name: sphere
+        :name: ellipsoids-sphere
 
         <shape type="ellipsoids">
             <string name="filename" value="my_primitives.ply"/>

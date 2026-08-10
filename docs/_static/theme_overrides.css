@@ -333,3 +333,11 @@ body[data-theme="dark"] .sphinx-tabs-panel {
     margin-top: 0;
     margin-bottom: 10px;
 }
+
+/* Refinements of the gallery styling that nbsphinx ships. */
+.nbsphinx-gallery > a:hover {
+    box-shadow: 0 0 11px rgba(33, 33, 33, .2);
+}
+.nbsphinx-gallery > a > div:first-child {
+    margin-bottom: 25px;
+}

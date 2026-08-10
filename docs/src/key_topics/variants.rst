@@ -183,6 +183,7 @@ The documentations provides several applied examples on :ref:`differentiable
 and inverse rendering <sec-diff-rendering-tutos>`.
 
 .. _sec-variants-colors:
+
 Part 3: Color representation
 ----------------------------
 

@@ -83,6 +83,7 @@ rst_prolog = r"""
 .. |transform| replace:: :paramtype:`transform`
 .. |volume| replace:: :paramtype:`volume`
 .. |tensor| replace:: :paramtype:`tensor`
+.. |mesh| replace:: :paramtype:`mesh`
 
 .. |drjit| replace:: :monosp:`drjit`
 .. |numpy| replace:: :monosp:`numpy`
@@ -139,6 +140,7 @@ exclude_patterns = ['.build',
                     'generated/*.rst',
                     'src/generated/*_api.rst',
                     'src/generated/api/*',
+                    'resources/**.ipynb',
                     '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
@@ -208,10 +210,7 @@ extensions.append('nbsphinx')
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "numpy": ("https://numpy.org/doc/stable/", None),
-    "drjit" : (
-        "https://drjit.readthedocs.io/en/latest/",
-        ("https://drjit.readthedocs.io/en/v0.4.6/", None)
-    )
+    "drjit": ("https://drjit.readthedocs.io/en/latest/", None)
 }
 
 # Silence unavoidable warnings:
@@ -580,4 +579,6 @@ def setup(app):
 
     # Texinfo
     app.connect("builder-inited", custom_step)
-    app.add_css_file('theme_overrides.css')
+    # The priority places the sheet behind those of the extensions, which is
+    # what lets it refine the gallery styling that nbsphinx ships.
+    app.add_css_file('theme_overrides.css', priority=900)
