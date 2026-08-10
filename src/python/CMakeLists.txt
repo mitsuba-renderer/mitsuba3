@@ -303,8 +303,12 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     DEPENDS ${MI_STUB_TARGET_DEPS}
   )
 
-  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION mitsuba)
-
+  # Preserve the hierarchy of submodule stubs
+  foreach (stub ${MI_STUB_TARGET_DEPS})
+    file(RELATIVE_PATH rel "${MI_BINARY_DIR}/python/mitsuba" "${stub}")
+    get_filename_component(dir "${rel}" DIRECTORY)
+    install(FILES ${stub} DESTINATION mitsuba/${dir})
+  endforeach()
 endif()
 
 
