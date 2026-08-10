@@ -154,6 +154,17 @@ static void set_variant(nb::args args) {
                 Safe_PyDict_SetItem(mi_dict, k.ptr(),
                     PyDict_GetItem(variant_dict.ptr(), k.ptr()));
 
+        // Publish variant-specific submodules
+        nb::dict sys_modules = nb::module_::import_("sys").attr("modules");
+        for (const auto &k : variant_dict.keys()) {
+            nb::object v = variant_dict[k];
+            if (!PyModule_Check(v.ptr()))
+                continue;
+            nb::object name = v.attr("__name__");
+            if (nb::bool_(name.attr("startswith")("mitsuba.")))
+                sys_modules[name] = v;
+        }
+
         curr_variant = requested_variant;
         break;
     }
