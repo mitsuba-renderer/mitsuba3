@@ -285,7 +285,7 @@ nbsphinx_prolog = """
     </style>
 
     <div style="display: block; width: 100%; text-align: center;">
-        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
+        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None).as_posix()[4:] }}" target="_blank">
             <button id="nb_btn">Download notebook</button>
         </a>
 
@@ -464,7 +464,7 @@ latex_elements = {
     #'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    'preamble': '\DeclareUnicodeCharacter{00A0}{}',
+    'preamble': r'\DeclareUnicodeCharacter{00A0}{}',
 
     # Latex figure (float) alignment
     #'figure_align': 'htbp',
