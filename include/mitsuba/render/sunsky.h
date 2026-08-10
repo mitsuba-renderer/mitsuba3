@@ -669,8 +669,7 @@ protected:
     /**
      * Evaluate the sky model for the given channel indices and angles
      *
-     * Based on the Hosek-Wilkie skylight model
-     * https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
+     * Based on the Hosek-Wilkie skylight model :cite:`HosekSky2012`
      *
      * Args:
      *     cos_theta: Cosine of the angle between the z-axis (up) and the viewing direction
@@ -1089,9 +1088,8 @@ protected:
      * Returns:
      *     The pair containing the polar angle and the azimuth
      *
-     *     Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
-     *     Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
-     *     in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.
+     *     Based on the algorithm of Blanco-Muriel et al.
+     *     :cite:`BlancoMuriel2001SolarVector`.
      */
     std::pair<Float, Float> sun_coordinates(const DateTimeRecord<Float> &date_time,
                                             const LocationRecord<Float> &location) const {

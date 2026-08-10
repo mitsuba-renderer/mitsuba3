@@ -102,7 +102,7 @@ struct MergeKeyHasher {
  * Together with the (implied) bitangent, this is an element of ``SO(3)``,
  * which this function parameterizes using 3 parameters by stereographically
  * projecting the frame's unit quaternion (the *modified Rodrigues
- * parameters*, Terzakis et al. 2018).
+ * parameters* of Terzakis et al. :cite:`Terzakis2018Rodrigues`).
  *
  * After flipping the quaternion to a non-negative real part ``w``, the result
  * is ``imag(q) / (1 + w)``, of length ``tan(angle/4) <= 1``.

@@ -442,8 +442,8 @@ template <typename Float> Float luminance(const Color<Float, 3> &c) {
  * Importance sample a "importance spectrum" that concentrates the computation
  * on wavelengths that are relevant for rendering of RGB data
  *
- * Based on "An Improved Technique for Full Spectral Rendering"
- * by Radziszewski, Boryczko, and Alda
+ * Based on the technique of Radziszewski et al.
+ * :cite:`Radziszewski2009Spectral`
  *
  * Returns a tuple with the sampled wavelength and inverse PDF
  */

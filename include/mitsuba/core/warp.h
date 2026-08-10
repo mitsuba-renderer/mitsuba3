@@ -767,17 +767,16 @@ namespace detail {
     }
 }
 
-/// Probability density of `square_to_rough_fiber()`
+/**
+ * Probability density of `square_to_rough_fiber()`
+ *
+ * Evaluates the analytic density of d'Eon et al. :cite:`dEon2011Hair`, with
+ * the numerically robust reformulation of d'Eon, Marschner and Hanika
+ * :cite:`dEon2013HairSampling`.
+ */
 template <typename Value, typename Vector3 = Vector<Value, 3>>
 Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vector3 &tangent,
                                 Value kappa) {
-    /**
-     * Analytic density function described in "An Energy-Conserving Hair Reflectance Model"
-     * by Eugene d’Eon, Guillaume Francois, Martin Hill, Joe Letteri, and Jean-Marie Aubry
-     *
-     * Includes modifications for numerical robustness described here:
-     * https://dl.acm.org/doi/10.1145/2542355.2542386
-     */
     Value sin_theta_i = dr::dot(wi, tangent),
           sin_theta_o = dr::dot(v, tangent),
           cos_theta_i = circ(sin_theta_i),
@@ -786,6 +785,8 @@ Value square_to_rough_fiber_pdf(const Vector3 &v, const Vector3 &wi, const Vecto
     Value c = cos_theta_i * cos_theta_o * kappa,
           s = sin_theta_i * sin_theta_o * kappa;
 
+    // The large-kappa branch evaluates the density in log space, since
+    // sinh(kappa) overflows well before the density becomes negligible.
     return dr::select(
         kappa > 10.f,
         dr::exp(-s + detail::log_i0(c) - kappa + 0.6931f + dr::log(.5f * kappa)) * dr::InvTwoPi<Value>,

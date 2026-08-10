@@ -42,9 +42,9 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  *
  * Based on the following papers:
  *
- * - :cite:`Walter07Microfacet`
+ * - Walter et al. :cite:`Walter07Microfacet`
  *
- * - :cite:`Heitz1014Importance`
+ * - Heitz and d'Eon :cite:`Heitz1014Importance`
  *
  * - "An Improved Visible Normal Sampling Routine for the Beckmann
  *   Distribution" by Wenzel Jakob

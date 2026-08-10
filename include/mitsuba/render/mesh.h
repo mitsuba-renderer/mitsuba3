@@ -789,8 +789,7 @@ public:
     /**
      * Ray-triangle intersection test
      *
-     * Uses the algorithm by Moeller and Trumbore discussed at
-     * ``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
+     * Uses the algorithm of Möller and Trumbore :cite:`Moller1997RayTriangle`.
      *
      * Args:
      *     index: Index of the triangle to be intersected.
@@ -1097,11 +1096,8 @@ protected:
     TensorXf32 compute_tangents() const;
 
     /**
-     * Moeller and Trumbore algorithm for computing ray-triangle
-     * intersection
-     *
-     * Discussed at
-     * ``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
+     * Möller and Trumbore algorithm for computing ray-triangle
+     * intersection :cite:`Moller1997RayTriangle`
      *
      * Args:
      *     ray: The ray segment to be used for the intersection query.

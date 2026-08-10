@@ -146,8 +146,7 @@ private:
     /**
      * Compute the Faure permutations using dynamic programming
      *
-     * For reference, see "Good permutations for extreme discrepancy"
-     * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.
+     * For reference, see Faure :cite:`Faure1992Permutations`.
      */
     void compute_faure_permutations(uint32_t max_base, uint16_t **perm);
 
