@@ -27,7 +27,8 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * Immutable half-edge adjacency for an indexed triangle mesh
  *
  * This class derives edge and vertex adjacency from a flat triangle index
- * buffer ``F`` using the directed-edge representation of Campagna et al. [1].
+ * buffer ``F`` using the directed-edge representation of Campagna et al.
+ * :cite:`Campagna1998DirectedEdges`.
  * It supports queries such as finding the triangle across an edge, traversing
  * the triangles around a vertex, processing each mesh edge once, and
  * identifying boundaries or malformed connectivity.
@@ -229,9 +230,6 @@ MI_DECLARE_ENUM_OPERATORS(VertexFlags)
  * same position, nor can it detect self-intersections. The constructor also
  * does not validate index bounds: every entry of ``F`` must be smaller than
  * ``vertex_count``, and violations cause undefined behavior.
- *
- * [1] S. Campagna, L. Kobbelt, and H.-P. Seidel, "Directed Edges: A Scalable
- * Representation for Triangle Meshes", Journal of Graphics Tools 3(4), 1998.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB DirectedEdge : public Object {

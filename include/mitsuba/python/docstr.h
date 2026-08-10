@@ -1279,8 +1279,7 @@ static const char *__doc_mitsuba_BaseSunskyEmitter_eval_direction = R"doc()doc";
 static const char *__doc_mitsuba_BaseSunskyEmitter_eval_sky =
 R"doc(Evaluate the sky model for the given channel indices and angles
 
-Based on the Hosek-Wilkie skylight model
-https://cgg.mff.cuni.cz/projects/SkylightModelling/HosekWilkie_SkylightModel_SIGGRAPH2012_Preprint_lowres.pdf
+Based on the Hosek-Wilkie skylight model :cite:`HosekSky2012`
 
 Args:
     cos_theta: Cosine of the angle between the z-axis (up) and the viewing direction
@@ -1500,9 +1499,8 @@ at ``location`` at the date and time specified in ``date_time``.
 Returns:
     The pair containing the polar angle and the azimuth
 
-    Based on "Computing the Solar Vector" by Manuel Blanco-Muriel,
-    Diego C. Alarcon-Padilla, Teodoro Lopez-Moratalla, and Martin Lara-Coira,
-    in "Solar energy", vol 27, number 5, 2001 by Pergamon Press.)doc";
+    Based on the algorithm of Blanco-Muriel et al.
+    :cite:`BlancoMuriel2001SolarVector`.)doc";
 
 static const char *__doc_mitsuba_BaseSunskyEmitter_sun_cos_psi =
 R"doc(Computes the cosine of the angle made between the sun's radius and the viewing direction
@@ -2830,7 +2828,8 @@ static const char *__doc_mitsuba_DirectedEdge =
 R"doc(Immutable half-edge adjacency for an indexed triangle mesh
 
 This class derives edge and vertex adjacency from a flat triangle index
-buffer ``F`` using the directed-edge representation of Campagna et al. [1].
+buffer ``F`` using the directed-edge representation of Campagna et al.
+:cite:`Campagna1998DirectedEdges`.
 It supports queries such as finding the triangle across an edge, traversing
 the triangles around a vertex, processing each mesh edge once, and
 identifying boundaries or malformed connectivity.
@@ -3031,10 +3030,7 @@ This structure only examines vertex indices. It cannot detect zero-area
 geometry caused by collinear vertices or distinct indices that refer to the
 same position, nor can it detect self-intersections. The constructor also
 does not validate index bounds: every entry of ``F`` must be smaller than
-``vertex_count``, and violations cause undefined behavior.
-
-[1] S. Campagna, L. Kobbelt, and H.-P. Seidel, "Directed Edges: A Scalable
-Representation for Triangle Meshes", Journal of Graphics Tools 3(4), 1998.)doc";
+``vertex_count``, and violations cause undefined behavior.)doc";
 
 static const char *__doc_mitsuba_DirectedEdge_2 = R"doc()doc";
 
@@ -6222,11 +6218,8 @@ packed record layout. Meshes are mergeable when their keys agree and
 none of them carries custom attributes.)doc";
 
 static const char *__doc_mitsuba_Mesh_moeller_trumbore =
-R"doc(Moeller and Trumbore algorithm for computing ray-triangle
-intersection
-
-Discussed at
-``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
+R"doc(Möller and Trumbore algorithm for computing ray-triangle
+intersection :cite:`Moller1997RayTriangle`
 
 Args:
     ray: The ray segment to be used for the intersection query.
@@ -6316,8 +6309,7 @@ static const char *__doc_mitsuba_Mesh_ray_intersect_triangle = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_ray_intersect_triangle_impl =
 R"doc(Ray-triangle intersection test
 
-Uses the algorithm by Moeller and Trumbore discussed at
-``http://www.acm.org/jgt/papers/MollerTrumbore97/code.html``.
+Uses the algorithm of Möller and Trumbore :cite:`Moller1997RayTriangle`.
 
 Args:
     index: Index of the triangle to be intersected.
@@ -6544,9 +6536,9 @@ distributions and various useful sampling routines
 
 Based on the following papers:
 
-- :cite:`Walter07Microfacet`
+- Walter et al. :cite:`Walter07Microfacet`
 
-- :cite:`Heitz1014Importance`
+- Heitz and d'Eon :cite:`Heitz1014Importance`
 
 - "An Improved Visible Normal Sampling Routine for the Beckmann
   Distribution" by Wenzel Jakob
@@ -8283,8 +8275,7 @@ static const char *__doc_mitsuba_RadicalInverse_class_name = R"doc()doc";
 static const char *__doc_mitsuba_RadicalInverse_compute_faure_permutations =
 R"doc(Compute the Faure permutations using dynamic programming
 
-For reference, see "Good permutations for extreme discrepancy"
-by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.)doc";
+For reference, see Faure :cite:`Faure1992Permutations`.)doc";
 
 static const char *__doc_mitsuba_RadicalInverse_eval =
 R"doc(Calculate the value of the radical inverse function
@@ -9541,7 +9532,8 @@ static const char *__doc_mitsuba_Scene_update_silhouette_sampling_distribution =
 static const char *__doc_mitsuba_Scene_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedFileResolver =
-R"doc(RAII helper that overrides the resolver returned by `file_resolver()` on the calling thread
+R"doc(RAII helper that overrides the resolver returned by `file_resolver()`
+on the calling thread
 
 Callers must keep the provided file resolver alive for as long as this
 object exists.)doc";
@@ -12646,7 +12638,7 @@ R"doc(Encode a unit normal ``n`` and a tangent ``s`` into three floats
 Together with the (implied) bitangent, this is an element of ``SO(3)``,
 which this function parameterizes using 3 parameters by stereographically
 projecting the frame's unit quaternion (the *modified Rodrigues
-parameters*, Terzakis et al. 2018).
+parameters* of Terzakis et al. :cite:`Terzakis2018Rodrigues`).
 
 After flipping the quaternion to a non-negative real part ``w``, the result
 is ``imag(q) / (1 + w)``, of length ``tan(angle/4) <= 1``.
@@ -13063,13 +13055,13 @@ attenuates the electric field components at 0 and 90 degrees by
 static const char *__doc_mitsuba_mueller_left_circular_polarizer =
 R"doc(Constructs the Mueller matrix of a (left) circular polarizer.
 
-"Polarized Light and Optical Systems" by Chipman et al. Table 6.2)doc";
+Chipman et al. :cite:`Chipman2018PolarizedLight`, Table 6.2)doc";
 
 static const char *__doc_mitsuba_mueller_linear_polarizer =
 R"doc(Constructs the Mueller matrix of a linear polarizer
 which transmits linear polarization at 0 degrees.
 
-:cite:`Collett1993PolarizedLight`, Ch. 5 eq. (13)
+Collett :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (13)
 
 Args:
     value: The amount of attenuation of the transmitted component (1 corresponds
@@ -13082,9 +13074,9 @@ axis aligned horizontally.
 This implements the general case with arbitrary phase shift and can be used
 to construct the common special cases of quarter-wave and half-wave plates.
 
-"Polarized Light, Third Edition" by Dennis H. Goldstein, Ch. 6 eq. (6.43)
-(Note that the fast and slow axis were flipped in the first edition by Edward
-Collett.)
+Goldstein :cite:`Goldstein2010PolarizedLight`, Ch. 6 eq. (6.43). Note that
+the fast and slow axis were flipped in the first edition by Collett
+:cite:`Collett1993PolarizedLight`.
 
 Args:
     phase: The phase difference between the fast and slow axis)doc";
@@ -13092,7 +13084,7 @@ Args:
 static const char *__doc_mitsuba_mueller_right_circular_polarizer =
 R"doc(Constructs the Mueller matrix of a (right) circular polarizer.
 
-"Polarized Light and Optical Systems" by Chipman et al. Table 6.2)doc";
+Chipman et al. :cite:`Chipman2018PolarizedLight`, Table 6.2)doc";
 
 static const char *__doc_mitsuba_mueller_rotate_mueller_basis =
 R"doc(Return the Mueller matrix for some new reference frames.
@@ -13177,7 +13169,7 @@ vector. For example: horizontally linear polarized light s1 = [1,1,0,0]
 will look like -45˚ linear polarized light s2 = R(45˚) * s1 = [1,0,-1,0]
 after applying a rotator of +45˚ to it.
 
-:cite:`Collett1993PolarizedLight`, Ch. 5 eq. (43))doc";
+Collett :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (43))doc";
 
 static const char *__doc_mitsuba_mueller_specular_reflection =
 R"doc(Calculates the Mueller matrix of a specular reflection at an
@@ -13914,8 +13906,7 @@ Returns:
 
 static const char *__doc_mitsuba_permute_kensler =
 R"doc(Generate pseudorandom permutation vector using the algorithm described in
-Pixar's technical memo "Correlated Multi-Jittered Sampling"
-:cite:`Kensler2013CorrelatedMS`.
+Kensler's Pixar technical memo :cite:`Kensler2013CorrelatedMS`.
 
 Unlike `permute`, this function supports permutation vectors of any length.
 
@@ -14063,8 +14054,8 @@ static const char *__doc_mitsuba_sample_rgb_spectrum =
 R"doc(Importance sample a "importance spectrum" that concentrates the computation
 on wavelengths that are relevant for rendering of RGB data
 
-Based on "An Improved Technique for Full Spectral Rendering"
-by Radziszewski, Boryczko, and Alda
+Based on the technique of Radziszewski et al.
+:cite:`Radziszewski2009Spectral`
 
 Returns a tuple with the sampled wavelength and inverse PDF)doc";
 
@@ -14072,8 +14063,7 @@ static const char *__doc_mitsuba_sample_tea_32 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the
 Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
-by Fahad Zafar, Marc Olano, and Aaron Curtis.
+For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
 
 Args:
     v0: First input value to be encrypted (could be the sample index)
@@ -14090,8 +14080,7 @@ static const char *__doc_mitsuba_sample_tea_64 =
 R"doc(Generate fast and reasonably good pseudorandom numbers using the
 Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
 
-For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
-by Fahad Zafar, Marc Olano, and Aaron Curtis.
+For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
 
 Args:
     v0: First input value to be encrypted (could be the sample index)
@@ -14196,7 +14185,8 @@ static const char *__doc_mitsuba_sggx_sample =
 R"doc(Samples the visible normal distribution of the SGGX
 microflake distribution
 
-This function is based on the paper :cite:`Heitz2015SGGX`.
+This function is based on the SGGX microflake distribution of Heitz et al.
+:cite:`Heitz2015SGGX`.
 
 Args:
     sh_frame: Shading frame aligned with the incident direction,
@@ -14826,7 +14816,12 @@ static const char *__doc_mitsuba_warp_square_to_cosine_hemisphere_pdf = R"doc(De
 
 static const char *__doc_mitsuba_warp_square_to_rough_fiber = R"doc(Warp a uniformly distributed square sample to a rough fiber distribution)doc";
 
-static const char *__doc_mitsuba_warp_square_to_rough_fiber_pdf = R"doc(Probability density of `square_to_rough_fiber()`)doc";
+static const char *__doc_mitsuba_warp_square_to_rough_fiber_pdf =
+R"doc(Probability density of `square_to_rough_fiber()`
+
+Evaluates the analytic density of d'Eon et al. :cite:`dEon2011Hair`, with
+the numerically robust reformulation of d'Eon, Marschner and Hanika
+:cite:`dEon2013HairSampling`.)doc";
 
 static const char *__doc_mitsuba_warp_square_to_std_normal = R"doc(Sample a point on a 2D standard normal distribution. Internally uses the Box-Muller transformation)doc";
 

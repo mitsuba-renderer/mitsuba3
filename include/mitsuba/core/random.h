@@ -56,8 +56,7 @@ template <typename UInt32> using PCG32 = dr::PCG32<UInt32>;
  * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
- * by Fahad Zafar, Marc Olano, and Aaron Curtis.
+ * For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
  *
  * Args:
  *     v0: First input value to be encrypted (could be the sample index)
@@ -91,8 +90,7 @@ std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
  * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
- * by Fahad Zafar, Marc Olano, and Aaron Curtis.
+ * For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
  *
  * Args:
  *     v0: First input value to be encrypted (could be the sample index)
@@ -216,8 +214,7 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
 
 /**
  * Generate pseudorandom permutation vector using the algorithm described in
- * Pixar's technical memo "Correlated Multi-Jittered Sampling"
- * :cite:`Kensler2013CorrelatedMS`.
+ * Kensler's Pixar technical memo :cite:`Kensler2013CorrelatedMS`.
  *
  * Unlike `permute`, this function supports permutation vectors of any length.
  *

@@ -49,7 +49,8 @@ std::ostream &operator<<(std::ostream &os, const SGGXPhaseFunctionParams<Float> 
  * Samples the visible normal distribution of the SGGX
  * microflake distribution
  *
- * This function is based on the paper :cite:`Heitz2015SGGX`.
+ * This function is based on the SGGX microflake distribution of Heitz et al.
+ * :cite:`Heitz2015SGGX`.
  *
  * Args:
  *     sh_frame: Shading frame aligned with the incident direction,

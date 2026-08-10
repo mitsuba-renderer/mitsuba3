@@ -55,7 +55,7 @@ MuellerMatrix<Float> absorber(Float value) {
  * Constructs the Mueller matrix of a linear polarizer
  * which transmits linear polarization at 0 degrees.
  *
- * :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (13)
+ * Collett :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (13)
  *
  * Args:
  *     value: The amount of attenuation of the transmitted component (1 corresponds
@@ -79,9 +79,9 @@ MuellerMatrix<Float> linear_polarizer(Float value = 1.f) {
  * This implements the general case with arbitrary phase shift and can be used
  * to construct the common special cases of quarter-wave and half-wave plates.
  *
- * "Polarized Light, Third Edition" by Dennis H. Goldstein, Ch. 6 eq. (6.43)
- * (Note that the fast and slow axis were flipped in the first edition by Edward
- * Collett.)
+ * Goldstein :cite:`Goldstein2010PolarizedLight`, Ch. 6 eq. (6.43). Note that
+ * the fast and slow axis were flipped in the first edition by Collett
+ * :cite:`Collett1993PolarizedLight`.
  *
  * Args:
  *     phase: The phase difference between the fast and slow axis
@@ -101,7 +101,7 @@ MuellerMatrix<Float> linear_retarder(Float phase) {
 /**
  * Constructs the Mueller matrix of a (right) circular polarizer.
  *
- * "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+ * Chipman et al. :cite:`Chipman2018PolarizedLight`, Table 6.2
  */
 template <typename Float>
 MuellerMatrix<Float> right_circular_polarizer() {
@@ -116,7 +116,7 @@ MuellerMatrix<Float> right_circular_polarizer() {
 /**
  * Constructs the Mueller matrix of a (left) circular polarizer.
  *
- * "Polarized Light and Optical Systems" by Chipman et al. Table 6.2
+ * Chipman et al. :cite:`Chipman2018PolarizedLight`, Table 6.2
  */
 template <typename Float>
 MuellerMatrix<Float> left_circular_polarizer() {
@@ -157,7 +157,7 @@ MuellerMatrix<Float> diattenuator(Float x, Float y) {
  * will look like -45˚ linear polarized light s2 = R(45˚) * s1 = [1,0,-1,0]
  * after applying a rotator of +45˚ to it.
  *
- * :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (43)
+ * Collett :cite:`Collett1993PolarizedLight`, Ch. 5 eq. (43)
  */
 template <typename Float>
 MuellerMatrix<Float> rotator(Float theta) {
