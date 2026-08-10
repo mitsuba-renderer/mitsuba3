@@ -1662,6 +1662,8 @@ static Task* instantiate_node(const ParserConfig &config,
     // Lambda function to instantiate a node once its children are ready
     auto instantiate = [&config, &state, &scratch, index, backend, scope]() {
         ScopedSetJITScope set_scope(config.parallel ? backend : 0u, scope);
+        ScopedFileResolver set_resolver(state.resolver ? state.resolver.get()
+                                                       : file_resolver());
 
         Scratch &s = scratch[index];
         SceneNode &node = state[index];
@@ -1794,9 +1796,6 @@ static Task* instantiate_node(const ParserConfig &config,
 std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &state) {
     if (state.empty())
         Throw("No nodes to instantiate");
-
-    ScopedFileResolver resolver_guard(state.resolver ? state.resolver.get()
-                                                     : file_resolver());
 
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     // Flush pending side effects here and now, to avoid potentially dirty

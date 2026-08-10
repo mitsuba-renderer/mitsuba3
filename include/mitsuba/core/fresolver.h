@@ -73,28 +73,39 @@ private:
     std::vector<fs::path> m_paths;
 };
 
-/// Return the global file resolver instance (this is a process-wide setting)
+/**
+ * \brief Return the file resolver that applies on the calling thread
+ *
+ * This is the override installed by \ref ScopedFileResolver when one is active,
+ * and the process-wide instance otherwise.
+ */
 extern MI_EXPORT_LIB FileResolver *file_resolver();
 
-/// Set the global file resolver instance (this is a process-wide setting)
+/**
+ * \brief Set the global file resolver instance (this is a process-wide setting)
+ *
+ * Only call this while no scene is being loaded. Plugin construction runs on
+ * several threads that read the global instance, and this function does not
+ * synchronize against them.
+ */
 extern MI_EXPORT_LIB void set_file_resolver(FileResolver *file_resolver);
 
 /**
- * \brief RAII helper that temporarily installs a file resolver as the
- * session-global instance and restores the previous one when leaving the scope
+ * \brief RAII helper that overrides the resolver returned by \ref
+ * file_resolver() on the calling thread
+ *
+ * Callers must keep the provided file resolver alive for as long as this
+ * object exists.
  */
-struct ScopedFileResolver {
-    ScopedFileResolver(FileResolver *fs) : m_backup(file_resolver()) {
-        set_file_resolver(fs);
-    }
-
-    ~ScopedFileResolver() { set_file_resolver(m_backup.get()); }
+struct MI_EXPORT_LIB ScopedFileResolver {
+    ScopedFileResolver(FileResolver *fs);
+    ~ScopedFileResolver();
 
     ScopedFileResolver(const ScopedFileResolver &) = delete;
     ScopedFileResolver &operator=(const ScopedFileResolver &) = delete;
 
 private:
-    ref<FileResolver> m_backup;
+    FileResolver *m_backup;
 };
 
 NAMESPACE_END(mitsuba)

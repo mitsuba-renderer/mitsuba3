@@ -10121,8 +10121,16 @@ static const char *__doc_mitsuba_Scene_update_silhouette_sampling_distribution =
 static const char *__doc_mitsuba_Scene_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_ScopedFileResolver =
-R"doc(RAII helper that temporarily installs a file resolver as the session-
-global instance and restores the previous one when leaving the scope)doc";
+R"doc(RAII helper that overrides the resolver returned by file_resolver() on
+the calling thread
+
+Scene loading constructs plugins on several worker threads, and a
+plugin constructor may recursively invoke the parser. Replacing the
+process-wide instance would race against the threads resolving
+filenames at the same time, so the override is kept thread-local.
+
+The resolver is not reference-counted here. Callers must keep it alive
+for as long as this object exists.)doc";
 
 static const char *__doc_mitsuba_ScopedFileResolver_ScopedFileResolver = R"doc()doc";
 
@@ -13177,8 +13185,10 @@ bottleneck e.g. when Embree calls shape-specific intersection
 routines.)doc";
 
 static const char *__doc_mitsuba_file_resolver =
-R"doc(Return the global file resolver instance (this is a process-wide
-setting))doc";
+R"doc(Return the file resolver that applies on the calling thread
+
+This is the override installed by ScopedFileResolver when one is
+active, and the process-wide instance otherwise.)doc";
 
 static const char *__doc_mitsuba_filesystem_absolute =
 R"doc(Returns an absolute path to the same location pointed by ``p``,
@@ -14917,7 +14927,12 @@ context for the current scope.)doc";
 
 static const char *__doc_mitsuba_scoped_optix_context_scoped_optix_context = R"doc()doc";
 
-static const char *__doc_mitsuba_set_file_resolver = R"doc(Set the global file resolver instance (this is a process-wide setting))doc";
+static const char *__doc_mitsuba_set_file_resolver =
+R"doc(Set the global file resolver instance (this is a process-wide setting)
+
+Only call this while no scene is being loaded. Plugin construction
+runs on several threads that read the global instance, and this
+function does not synchronize against them.)doc";
 
 static const char *__doc_mitsuba_set_impl = R"doc()doc";
 
@@ -15534,11 +15549,14 @@ static const char *__doc_mitsuba_string_parse_float =
 R"doc(Locale-independent string to floating point conversion analogous to
 std::stof. (implemented using Daniel Lemire's fast_float library.)
 
-Parses a floating point number in a (potentially longer) string
-start..end-1. The 'endptr' argument (if non-NULL) is used to return a
-pointer to the character following the parsed floating point value.
+Parses a floating point number in the range start..end-1, skipping
+leading spaces and tabs. The function never accesses characters
+outside of this range, which makes it safe to use on memory-mapped
+files.
 
-Throws an exception if the conversion is unsuccessful.)doc";
+The 'endptr' argument returns a pointer to the character following the
+parsed value. An unsuccessful conversion returns zero and sets
+'*endptr' to 'start'.)doc";
 
 static const char *__doc_mitsuba_string_replace_inplace = R"doc()doc";
 
