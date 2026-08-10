@@ -224,10 +224,10 @@ extern MI_EXPORT_LIB bool exists(const path& p) noexcept;
 extern MI_EXPORT_LIB size_t file_size(const path& p);
 
 /** \brief Checks whether two paths refer to the same file system object.
- * Both must refer to an existing file or directory.
- * Symlinks are followed to determine equivalence.
+ * Symlinks are followed to determine equivalence. Returns <tt>false</tt> if
+ * either path does not refer to an existing file or directory.
  */
-extern MI_EXPORT_LIB bool equivalent(const path& p1, const path& p2);
+extern MI_EXPORT_LIB bool equivalent(const path& p1, const path& p2) noexcept;
 
 /** \brief Creates a directory at <tt>p</tt> as if <tt>mkdir</tt> was used.
  * Returns true if directory creation was successful, false otherwise.

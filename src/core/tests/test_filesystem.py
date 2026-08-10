@@ -141,7 +141,36 @@ def test10_equivalence(variant_scalar_rgb, tmp_path):
     assert not p1 == p2
     assert fs.equivalent(p1, p2)
 
+    # Two distinct files with identical content are not equivalent
+    f1 = fs.path(str(tmp_path)) / 'file_1.txt'
+    f2 = fs.path(str(tmp_path)) / 'file_2.txt'
+    for f in (f1, f2):
+        with open(str(f), 'w') as fh:
+            fh.write('content')
+    assert not fs.equivalent(f1, f2)
+    assert fs.equivalent(f1, f1)
+
+    # Paths that do not exist are never equivalent
+    missing = fs.path(str(tmp_path)) / 'missing.txt'
+    assert not fs.equivalent(f1, missing)
+    assert not fs.equivalent(missing, missing)
+
     assert fs.remove(p1)
+
+
+def test10b_copy_file_onto_itself(variant_scalar_rgb, tmp_path):
+    """Copying a file onto itself must leave it intact rather than truncate it"""
+    p = fs.path(str(tmp_path)) / 'file.txt'
+    with open(str(p), 'w') as f:
+        f.write('content')
+
+    assert fs.copy_file(p, p)
+    assert fs.file_size(p) == 7
+
+    # The same file reached through a different spelling of the path
+    alias = fs.path(str(tmp_path)) / '.' / 'file.txt'
+    assert fs.copy_file(p, alias)
+    assert fs.file_size(p) == 7
 
 
 def test11_implicit_string_cast(variant_scalar_rgb):

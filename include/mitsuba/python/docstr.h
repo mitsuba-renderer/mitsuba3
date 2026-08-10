@@ -13201,9 +13201,9 @@ condition is not treated as an error).)doc";
 static const char *__doc_mitsuba_filesystem_current_path = R"doc(Returns the current working directory (equivalent to getcwd))doc";
 
 static const char *__doc_mitsuba_filesystem_equivalent =
-R"doc(Checks whether two paths refer to the same file system object. Both
-must refer to an existing file or directory. Symlinks are followed to
-determine equivalence.)doc";
+R"doc(Checks whether two paths refer to the same file system object.
+Symlinks are followed to determine equivalence. Returns ``False`` if
+either path does not refer to an existing file or directory.)doc";
 
 static const char *__doc_mitsuba_filesystem_exists = R"doc(Checks if ``p`` points to an existing filesystem object.)doc";
 
