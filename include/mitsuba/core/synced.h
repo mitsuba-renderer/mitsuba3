@@ -11,11 +11,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Convenience wrapper that keeps scalar host and Dr.Jit device values
+ * Convenience wrapper that keeps scalar host and Dr.Jit device values
  * synchronized
  *
  * This class implements a simple wrapper that replicates instance attributes
- * on the host and device. This is only relevant when \c DeviceType is a
+ * on the host and device. This is only relevant when ``DeviceType`` is a
  * JIT-compiled Dr.Jit array (when compiling the renderer in CUDA/LLVM mode).
  *
  * Why is this needed? Mitsuba plugins represent their internal state using

@@ -42,17 +42,16 @@ MI_PY_EXPORT(Object) {
         }, "props"_a, D(PluginManager, create_object))
         .def("plugin_type",
              [](PluginManager &pmgr, std::string_view name, nb::object variant_o) {
-                 std::string variant;
                  if (variant_o.is_none()) {
                      auto mi = nb::module_::import_("mitsuba");
                      nb::object current = mi.attr("variant")();
-                     variant = current.is_none()
-                         ? std::string(MI_DEFAULT_VARIANT)
-                         : nb::cast<std::string>(current);
-                 } else {
-                     variant = nb::cast<std::string>(variant_o);
+                     if (current.is_none())
+                         return pmgr.plugin_type(name);
+                     return pmgr.plugin_type(
+                         name, nb::cast<std::string>(current));
                  }
-                 return pmgr.plugin_type(name, variant);
+                 return pmgr.plugin_type(
+                     name, nb::cast<std::string>(variant_o));
              },
              "name"_a, "variant"_a = nb::none(),
              "Get the ObjectType of a plugin by name");

@@ -136,6 +136,10 @@ def set_variant(*args: str) -> None:
                                 'mitsuba.python.ad.loaders'):
                 _importlib.reload(_importlib.import_module(module_name))
 
+        # Built-in Python plugins must be ready before user callbacks observe
+        # the newly active variant.
+        _mitsuba_register_python_fields(old_variant, _variant)
+
         # Invoke user-provided callbacks once the modules above have reloaded
         for callback in list(detail._variant_callbacks):
             callback(old_variant, _variant)
@@ -170,12 +174,6 @@ def _mitsuba_register_python_fields(_old_variant=None, _new_variant=None):
     fields = _importlib.import_module("mitsuba.python.fields")
     fields._register_variant_fields(_sys.modules[__name__])
 
-
-if not hasattr(detail, "_mitsuba_field_registration_callback"):
-    detail.add_variant_callback(_mitsuba_register_python_fields)
-    detail._mitsuba_field_registration_callback = (
-        _mitsuba_register_python_fields
-    )
 
 _mitsuba_register_python_fields()
 

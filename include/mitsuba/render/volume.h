@@ -24,7 +24,7 @@ public:
     using Array6f      = typename Field<Float, Spectrum>::Array6f;
 
     // ======================================================================
-    //! @{ \name Volume interface
+    // Volume interface
     // ======================================================================
 
     /// Evaluate the volume at the given interaction, with color processing.
@@ -38,7 +38,7 @@ public:
     Vector3f eval_3(const Interaction3f &it, Mask active = true) const override;
 
     /**
-     * \brief Evaluate this volume as a six-channel quantity with no color
+     * Evaluate this volume as a six-channel quantity with no color
      * processing
      *
      * This interface is specifically intended to encode the parameters of an
@@ -47,7 +47,7 @@ public:
     dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const override;
 
     /**
-     * \brief Evaluate this volume as an n-channel float quantity
+     * Evaluate this volume as an n-channel float quantity
      *
      * This interface is specifically intended to encode a variable number of
      * parameters. Pointer allocation/deallocation must be performed by the
@@ -56,7 +56,7 @@ public:
     void eval_n(const Interaction3f &it, Float *out, Mask active = true) const override;
 
     /**
-     * \brief Evaluate the volume at the given interaction and compute the
+     * Evaluate the volume at the given interaction and compute the
      * gradients of the linear interpolant as well.
      */
     std::pair<UnpolarizedSpectrum, Vector3f> eval_gradient(const Interaction3f &it,
@@ -66,7 +66,7 @@ public:
     ScalarFloat max() const override;
 
     /**
-     * \brief In the case of a multi-channel volume, this function returns
+     * In the case of a multi-channel volume, this function returns
      * the maximum value for each channel.
      *
      * Pointer allocation/deallocation must be performed by the caller.
@@ -77,28 +77,27 @@ public:
     ScalarBoundingBox3f bbox() const override { return m_bbox; }
 
     /**
-     * \brief Returns the resolution of the volume, assuming that it is based
+     * Returns the resolution of the volume, assuming that it is based
      * on a discrete representation.
      *
-     * The default implementation returns <tt>(1, 1, 1)</tt>
+     * The default implementation returns ``(1, 1, 1)``
      */
     virtual ScalarVector3i resolution() const;
 
     ScalarVector3i resolution_3d() const override;
 
     /**
-     * \brief Returns the number of channels stored in the volume
+     * Returns the number of channels stored in the volume
      *
-     *  When the channel count is zero, it indicates that the volume
-     *  does not support per-channel queries.
+     * When the channel count is zero, it indicates that the volume
+     * does not support per-channel queries.
      */
     uint32_t channel_count() const override { return m_channel_count; }
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Field compatibility interface
+    // Field compatibility interface
     // =============================================================
 
     FieldValueType out_type() const override;
@@ -163,7 +162,6 @@ public:
                 Args args,
                 Mask active) const override;
 
-    //! @}
     // ======================================================================
 
     /// Returns a human-readable summary.

@@ -718,12 +718,12 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
             [](Ptr field, const SurfaceInteraction3f &si, Mask active) {
                 return field->eval_3(si, active);
             },
-            "si"_a, "active"_a = true, D(Field, eval_3, 3))
+            "si"_a, "active"_a = true, D(Field, eval_3, 2))
         .def("eval_3",
             [](Ptr field, const Interaction3f &it, Mask active) {
                 return field->eval_3(it, active);
             },
-            "it"_a, "active"_a = true, D(Field, eval_3, 2))
+            "it"_a, "active"_a = true, D(Field, eval_3, 3))
         .def("eval_6",
             [](Ptr field, const Interaction3f &it, Mask active) {
                 auto result = field->eval_6(it, active);

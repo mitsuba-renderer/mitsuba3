@@ -178,9 +178,8 @@ def _make_neural_field(mi):
                 size=self._feature_dim,
                 rng=dr.rng(seed=int(props.get("seed", 0))),
             )
-            self.network_weights, self._network = nn.pack(
-                network, layout="training"
-            )
+            self._network = nn.pack(network, layout="training")
+            self.network_weights = self._network["weights"]
             self._network_weight_count = dr.width(self.network_weights)
 
         def out_type(self):

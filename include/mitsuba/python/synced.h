@@ -7,7 +7,7 @@ NAMESPACE_BEGIN(NB_NAMESPACE)
 NAMESPACE_BEGIN(detail)
 
 /**
- * \brief Type caster for \c mitsuba::synced<...> values
+ * Type caster for ``mitsuba::synced<...>`` values
  *
  * The caster unwraps the device value when converting from C++ to Python and
  * wraps it back into a mirrored synced value when converting from Python to C++.

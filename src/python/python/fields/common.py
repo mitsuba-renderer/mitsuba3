@@ -4,15 +4,14 @@ import drjit as dr
 
 
 def _is_jit_variant(mi) -> bool:
-    variant = mi.variant()
-    return variant is not None and variant.startswith(("llvm_", "cuda_"))
+    return mi.variant() is not None and dr.is_jit_v(mi.Float)
 
 
 def _require_jit(mi, plugin_name: str) -> None:
     if not _is_jit_variant(mi):
         raise RuntimeError(
             f'{plugin_name}: variant "{mi.variant()}" is unsupported. '
-            "This field requires an LLVM or CUDA JIT variant."
+            "This field requires a JIT variant."
         )
 
 

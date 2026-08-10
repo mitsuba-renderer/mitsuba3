@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Specifies the transport mode when sampling or
+ * Specifies the transport mode when sampling or
  * evaluating a scattering function
  */
 enum class TransportMode : uint32_t {
@@ -22,11 +22,11 @@ enum class TransportMode : uint32_t {
 };
 
 /**
- * \brief This list of flags is used to classify the different types of lobes
+ * This list of flags is used to classify the different types of lobes
  * that are implemented in a BSDF instance.
  *
  * They are also useful for picking out individual components, e.g., by setting
- * combinations in \ref BSDFContext::type_mask.
+ * combinations in `BSDFContext.type_mask`.
  */
 enum class BSDFFlags : uint32_t {
     // =============================================================
@@ -64,7 +64,7 @@ enum class BSDFFlags : uint32_t {
     Delta1DTransmission  = 0x00100,
 
     // =============================================================
-    //!                   Other lobe attributes
+    //                    Other lobe attributes
     // =============================================================
 
     /// The lobe is not invariant to rotation around the normal
@@ -90,7 +90,7 @@ enum class BSDFFlags : uint32_t {
     NormalMapped         = 0x40000,
 
     // =============================================================
-    //!                 Compound lobe attributes
+    //                  Compound lobe attributes
     // =============================================================
 
     /// Any reason the shading frame must carry a smooth tangent rather
@@ -127,34 +127,33 @@ enum class BSDFFlags : uint32_t {
 MI_DECLARE_ENUM_OPERATORS(BSDFFlags)
 
 /**
- * \brief Context data structure for BSDF evaluation and sampling
+ * Context data structure for BSDF evaluation and sampling
  *
  * BSDF models in Mitsuba can be queried and sampled using a variety of
  * different modes -- for instance, a rendering algorithm can indicate whether
  * radiance or importance is being transported, and it can also restrict
  * evaluation and sampling to a subset of lobes in a multi-lobe BSDF model.
  *
- * The \ref BSDFContext data structure encodes these preferences and is
- * supplied to most \ref BSDF methods.
+ * The `BSDFContext` data structure encodes these preferences and is
+ * supplied to most `BSDF` methods.
  */
 struct MI_EXPORT_LIB BSDFContext {
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Transported mode (radiance or importance)
     TransportMode mode = TransportMode::Radiance;
 
-    /*
+    /**
      * Bit mask for requested BSDF component types to be sampled/evaluated
-     * The default value (equal to \ref BSDFFlags::All) enables all components.
+     * The default value (equal to `BSDFFlags.All`) enables all components.
      */
     uint32_t type_mask = (uint32_t) 0x1FFu;
 
     /// Integer value of requested BSDF component index to be sampled/evaluated.
     uint32_t component = (uint32_t) -1;
 
-    //! @}
     // =============================================================
 
     BSDFContext() = default;
@@ -164,7 +163,7 @@ struct MI_EXPORT_LIB BSDFContext {
         : mode(mode), type_mask(type_mask), component(component) { }
 
     /**
-     * \brief Reverse the direction of light transport in the record
+     * Reverse the direction of light transport in the record
      *
      * This updates the transport mode (radiance to importance and vice versa).
      */
@@ -186,17 +185,16 @@ struct MI_EXPORT_LIB BSDFContext {
 /// Data structure holding the result of BSDF sampling operations.
 template <typename Float, typename Spectrum> struct BSDFSample3 {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     using Vector3f = Vector<Float, 3>;
     using UInt32   = dr::uint32_array_t<Float>;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     /// Normalized outgoing direction in local coordinates
@@ -208,38 +206,36 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     /// Relative index of refraction in the sampled direction
     Float eta;
 
-    /// Stores the component type that was sampled by \ref BSDF::sample()
+    /// Stores the component type that was sampled by `BSDF.sample()`
     UInt32 sampled_type;
 
-    /// Stores the component index that was sampled by \ref BSDF::sample()
+    /// Stores the component index that was sampled by `BSDF.sample()`
     UInt32 sampled_component;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Methods
+    // Methods
     // =============================================================
 
     /**
-     * \brief Given a surface interaction and an incident/exitant direction
+     * Given a surface interaction and an incident/exitant direction
      * pair (wi, wo), create a query record to evaluate the BSDF or its
      * sampling density.
      *
      * By default, all components will be sampled regardless of what measure
      * they live on.
      *
-     * \param wo
-     *      An outgoing direction in local coordinates. This should
-     *      be a normalized direction vector that points \a away from
-     *      the scattering event.
+     * Args:
+     *     wo: An outgoing direction in local coordinates. This should
+     *         be a normalized direction vector that points *away* from
+     *         the scattering event.
      */
     BSDFSample3(const Vector3f &wo)
         : wo(wo), pdf(0.f), eta(1.f), sampled_type(0),
           sampled_component(uint32_t(-1)) { }
 
 
-    //! @}
     // =============================================================
 
     DRJIT_STRUCT(BSDFSample3, wo, pdf, eta, sampled_type, sampled_component);
@@ -247,9 +243,9 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 
 
 /**
- * \brief Bidirectional Scattering Distribution Function (BSDF) interface
+ * Bidirectional Scattering Distribution Function (BSDF) interface
  *
- * This class provides an abstract interface to all %BSDF plugins in Mitsuba.
+ * This class provides an abstract interface to all BSDF plugins in Mitsuba.
  * It exposes functions for evaluating and sampling the model, and for querying
  * associated probability densities.
  *
@@ -263,12 +259,14 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * of incident light. Mueller matrices (e.g. for mirrors) are expressed with
  * respect to a reference coordinate system for the incident and outgoing
  * direction. The convention used here is that these coordinate systems are
- * given by <tt>coordinate_system(wi)</tt> and <tt>coordinate_system(wo)</tt>,
- * where 'wi' and 'wo' are the incident and outgoing direction in local
+ * given by ``coordinate_system(wi)`` and ``coordinate_system(wo)``,
+ * where ``wi`` and ``wo`` are the incident and outgoing direction in local
  * coordinates.
  *
- * \sa mitsuba.BSDFContext
- * \sa mitsuba.BSDFSample3f
+ * See Also:
+ *     `BSDFContext`
+ *
+ *     `BSDFSample3f`
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
@@ -276,7 +274,7 @@ public:
     MI_IMPORT_TYPES(Field, Texture)
 
     /**
-     * \brief Importance sample the BSDF model
+     * Importance sample the BSDF model
      *
      * The function returns a sample data structure along with the importance
      * weight, which is the value of the BSDF divided by the probability
@@ -292,32 +290,31 @@ public:
      * multiplies by the cosine foreshortening factor with respect to the
      * sampled direction.
      *
-     * \param ctx
-     *     A context data structure describing which lobes to sample,
-     *     and whether radiance or importance are being transported.
+     * Args:
+     *     ctx: A context data structure describing which lobes to sample,
+     *         and whether radiance or importance are being transported.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      *
-     * \param sample1
-     *     A uniformly distributed sample on \f$[0,1]\f$. It is used
-     *     to select the BSDF lobe in multi-lobe models.
+     *     sample1: A uniformly distributed sample on :math:`[0,1]`. It is used
+     *         to select the BSDF lobe in multi-lobe models.
      *
-     * \param sample2
-     *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
-     *     used to generate the sampled direction.
+     *     sample2: A uniformly distributed sample on :math:`[0,1]^2`. It is
+     *         used to generate the sampled direction.
      *
-     * \return A pair (bs, value) consisting of
+     * Returns:
+     *     A tuple ``(bs, value)`` where
      *
-     *     bs:    Sampling record, indicating the sampled direction, PDF values
-     *            and other information. The contents are undefined if sampling
-     *            failed.
+     *     - ``bs`` is the sampling record, indicating the sampled direction,
+     *       PDF values and other information. The contents are undefined if
+     *       sampling failed.
      *
-     *     value: The BSDF value divided by the probability (multiplied by the
-     *            cosine foreshortening factor when a non-delta component is
-     *            sampled). A zero spectrum indicates that sampling failed.
+     *     - ``value`` is the BSDF value divided by the probability
+     *       (multiplied by the cosine foreshortening factor when a non-delta
+     *       component is sampled). A zero spectrum indicates that sampling
+     *       failed.
      */
     virtual std::pair<BSDFSample3f, Spectrum>
     sample(const BSDFContext &ctx,
@@ -330,26 +327,24 @@ public:
      * Evaluate the BSDF f(wi, wo) or its adjoint version :math:`f^{*}(wi, wo)`
      * and multiply by the cosine foreshortening term.
      *
-     * Based on the information in the supplied query context \c ctx, this
+     * Based on the information in the supplied query context ``ctx``, this
      * method will either evaluate the entire BSDF or query individual
      * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
-     * components are supported: calling ``eval()`` on a perfectly specular
+     * components are supported: calling `eval()` on a perfectly specular
      * material will return zero.
      *
      * Note that the incident direction does not need to be explicitly
-     * specified. It is obtained from the field <tt>si.wi</tt>.
+     * specified. It is obtained from the field ``si.wi``.
      *
-     * \param ctx
-     *     A context data structure describing which lobes to evaluate,
-     *     and whether radiance or importance are being transported.
+     * Args:
+     *     ctx: A context data structure describing which lobes to evaluate,
+     *         and whether radiance or importance are being transported.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      *
-     * \param wo
-     *     The outgoing direction
+     *     wo: The outgoing direction
      */
     virtual Spectrum eval(const BSDFContext &ctx,
                           const SurfaceInteraction3f &si,
@@ -357,30 +352,28 @@ public:
                           Mask active = true) const = 0;
 
     /**
-     * \brief Compute the probability per unit solid angle of sampling a
+     * Compute the probability per unit solid angle of sampling a
      * given direction
      *
      * This method provides access to the probability density that would result
      * when supplying the same BSDF context and surface interaction data
-     * structures to the \ref sample() method. It correctly handles changes in
+     * structures to the `sample()` method. It correctly handles changes in
      * probability when only a subset of the components is chosen for sampling
-     * (this can be done using the \ref BSDFContext::component and \ref
-     * BSDFContext::type_mask fields).
+     * (this can be done using the `BSDFContext.component` and
+     * `BSDFContext.type_mask` fields).
      *
      * Note that the incident direction does not need to be explicitly
-     * specified. It is obtained from the field <tt>si.wi</tt>.
+     * specified. It is obtained from the field ``si.wi``.
      *
-     * \param ctx
-     *     A context data structure describing which lobes to evaluate,
-     *     and whether radiance or importance are being transported.
+     * Args:
+     *     ctx: A context data structure describing which lobes to evaluate,
+     *         and whether radiance or importance are being transported.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      *
-     * \param wo
-     *     The outgoing direction
+     *     wo: The outgoing direction
      */
     virtual Float pdf(const BSDFContext &ctx,
                       const SurfaceInteraction3f &si,
@@ -388,37 +381,35 @@ public:
                       Mask active = true) const = 0;
 
     /**
-     * \brief Jointly evaluate the BSDF f(wi, wo) and the probability per unit
+     * Jointly evaluate the BSDF f(wi, wo) and the probability per unit
      * solid angle of sampling the given direction. The result from the evaluated
      * BSDF is multiplied by the cosine foreshortening term.
      *
-     * Based on the information in the supplied query context \c ctx, this
+     * Based on the information in the supplied query context ``ctx``, this
      * method will either evaluate the entire BSDF or query individual
      * components (e.g. the diffuse lobe). Only smooth (i.e. non-Dirac-delta)
-     * components are supported: calling ``eval()`` on a perfectly specular
+     * components are supported: calling `eval()` on a perfectly specular
      * material will return zero.
      *
      * This method provides access to the probability density that would result
      * when supplying the same BSDF context and surface interaction data
-     * structures to the \ref sample() method. It correctly handles changes in
+     * structures to the `sample()` method. It correctly handles changes in
      * probability when only a subset of the components is chosen for sampling
-     * (this can be done using the \ref BSDFContext::component and \ref
-     * BSDFContext::type_mask fields).
+     * (this can be done using the `BSDFContext.component` and
+     * `BSDFContext.type_mask` fields).
      *
      * Note that the incident direction does not need to be explicitly
-     * specified. It is obtained from the field <tt>si.wi</tt>.
+     * specified. It is obtained from the field ``si.wi``.
      *
-     * \param ctx
-     *     A context data structure describing which lobes to evaluate,
-     *     and whether radiance or importance are being transported.
+     * Args:
+     *     ctx: A context data structure describing which lobes to evaluate,
+     *         and whether radiance or importance are being transported.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      *
-     * \param wo
-     *     The outgoing direction
+     *     wo: The outgoing direction
      */
     virtual std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
                                                 const SurfaceInteraction3f &si,
@@ -426,35 +417,31 @@ public:
                                                 Mask active = true) const;
 
     /**
-     * \brief Jointly evaluate the BSDF f(wi, wo), the probability per unit
-     * solid angle of sampling the given direction \c wo and importance sample
+     * Jointly evaluate the BSDF f(wi, wo), the probability per unit
+     * solid angle of sampling the given direction ``wo`` and importance sample
      * the BSDF model.
      *
-     * This is simply a wrapper around two separate function calls to eval_pdf()
-     * and sample(). This function exists to reduce the number of virtual
-     * function calls, which has some performance benefits on highly vectorized
-     * JIT variants of the renderer. (A ~20% performance improvement for the
-     * basic path tracer on CUDA)
+     * This is simply a wrapper around two separate function calls to
+     * `eval_pdf()` and `sample()`. This function exists to reduce the
+     * number of virtual function calls, which has some performance benefits
+     * on highly vectorized JIT variants of the renderer. (A ~20% performance
+     * improvement for the basic path tracer on CUDA)
      *
-     * \param ctx
-     *     A context data structure describing which lobes to evaluate,
-     *     and whether radiance or importance are being transported.
+     * Args:
+     *     ctx: A context data structure describing which lobes to evaluate,
+     *         and whether radiance or importance are being transported.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      *
-     * \param wo
-     *     The outgoing direction
+     *     wo: The outgoing direction
      *
-     * \param sample1
-     *     A uniformly distributed sample on \f$[0,1]\f$. It is used
-     *     to select the BSDF lobe in multi-lobe models.
+     *     sample1: A uniformly distributed sample on :math:`[0,1]`. It is used
+     *         to select the BSDF lobe in multi-lobe models.
      *
-     * \param sample2
-     *     A uniformly distributed sample on \f$[0,1]^2\f$. It is
-     *     used to generate the sampled direction.
+     *     sample2: A uniformly distributed sample on :math:`[0,1]^2`. It is
+     *         used to generate the sampled direction.
      */
     virtual std::tuple<Spectrum, Float, BSDFSample3f, Spectrum>
     eval_pdf_sample(const BSDFContext &ctx,
@@ -466,42 +453,41 @@ public:
 
 
     /**
-     * \brief Evaluate un-scattered transmission component of the BSDF
+     * Evaluate un-scattered transmission component of the BSDF
      *
-     * This method will evaluate the un-scattered transmission (\ref
-     * BSDFFlags::Null) of the BSDF for light arriving from direction \c w.
-     * The default implementation returns zero.
+     * This method will evaluate the un-scattered transmission
+     * (`BSDFFlags.Null`) of the BSDF for light arriving from direction
+     * ``si.wi``. The default implementation returns zero.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position. The incident direction is obtained from
-     *     the field <tt>si.wi</tt>.
+     * Args:
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position. The incident direction is obtained from
+     *         the field ``si.wi``.
      */
     virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
                                             Mask active = true) const;
 
     /**
-     * \brief Returns whether this BSDF contains the specified attribute.
+     * Returns whether this BSDF contains the specified attribute.
      *
-     * \param name
-     *     Name of the attribute
+     * Args:
+     *     name: Name of the attribute
      */
     virtual Mask has_attribute(const std::string &name, Mask active = true) const;
 
     /**
-     * \brief Evaluate a specific BSDF attribute at the given surface interaction.
+     * Evaluate a specific BSDF attribute at the given surface interaction.
      *
      * BSDF attributes are user-provided fields that provide extra
      * information at an intersection. An example of this would be a per-vertex
      * or per-face color on a triangle mesh.
      *
-     * \param name
-     *     Name of the attribute to evaluate
+     * Args:
+     *     name: Name of the attribute to evaluate
      *
-     * \param si
-     *     Surface interaction associated with the query
+     *     si: Surface interaction associated with the query
      *
-     * \return
+     * Returns:
      *     An unpolarized spectral power distribution or reflectance value
      */
     virtual UnpolarizedSpectrum eval_attribute(const std::string &name,
@@ -509,19 +495,18 @@ public:
                                                Mask active = true) const;
 
     /**
-     * \brief Monochromatic evaluation of a BSDF attribute at the given surface interaction
+     * Monochromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provides raw access to
+     * This function differs from `eval_attribute()` in that it provided raw access to
      * scalar intensity/reflectance values without any color processing (e.g.
      * spectral upsampling).
      *
-     * \param name
-     *     Name of the attribute to evaluate
+     * Args:
+     *     name: Name of the attribute to evaluate
      *
-     * \param si
-     *     Surface interaction associated with the query
+     *     si: Surface interaction associated with the query
      *
-     * \return
+     * Returns:
      *     A scalar intensity or reflectance value
      */
     virtual Float eval_attribute_1(const std::string &name,
@@ -529,19 +514,18 @@ public:
                                    Mask active = true) const;
 
     /**
-     * \brief Trichromatic evaluation of a BSDF attribute at the given surface interaction
+     * Trichromatic evaluation of a BSDF attribute at the given surface interaction
      *
-     * This function differs from \ref eval_attribute() in that it provides raw access to
+     * This function differs from `eval_attribute()` in that it provided raw access to
      * RGB intensity/reflectance values without any additional color processing
      * (e.g. RGB-to-spectral upsampling).
      *
-     * \param name
-     *     Name of the attribute to evaluate
+     * Args:
+     *     name: Name of the attribute to evaluate
      *
-     * \param si
-     *     Surface interaction associated with the query
+     *     si: Surface interaction associated with the query
      *
-     * \return
+     * Returns:
      *     A trichromatic intensity or reflectance value
      */
     virtual Color3f eval_attribute_3(const std::string &name,
@@ -549,7 +533,7 @@ public:
                                      Mask active = true) const;
 
     // -----------------------------------------------------------------------
-    //! @{ \name BSDF property accessors (components, flags, etc)
+    // BSDF property accessors (components, flags, etc)
     // -----------------------------------------------------------------------
 
     /// Flags for all components combined.
@@ -572,7 +556,7 @@ public:
     }
 
     /**
-     * \brief Evaluate the diffuse reflectance
+     * Evaluate the diffuse reflectance
      *
      * This method approximates the total diffuse reflectance for a given
      * direction. For some materials, an exact value can be computed
@@ -581,21 +565,21 @@ public:
      * evaluating the BSDF for a normal outgoing direction and returning this
      * value multiplied by pi. This is the default behaviour of this method.
      *
-     * \param si
-     *     A surface interaction data structure describing the underlying
-     *     surface position.
+     * Args:
+     *     si: A surface interaction data structure describing the underlying
+     *         surface position.
      */
     virtual Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
                                               Mask active = true) const;
 
     /**
-     * \brief Returns the shading frame accounting for any pertubations that may 
-     * performed by the BSDF during evaluation.
+     * Returns the shading frame accounting for any perturbations that may
+     * be performed by the BSDF during evaluation.
      *
-     * \param si
-     *     Surface interaction associated with the query
+     * Args:
+     *     si: Surface interaction associated with the query
      *
-     * \return
+     * Returns:
      *     The perturbed shading frame. By default simply returns the surface
      *     interaction shading frame.
      */
@@ -606,7 +590,6 @@ public:
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
 
-    //! @}
     // -----------------------------------------------------------------------
 
     MI_DECLARE_PLUGIN_BASE_CLASS(BSDF)
@@ -625,7 +608,7 @@ protected:
 };
 
 // -----------------------------------------------------------------------
-//! @{ \name Misc implementations
+// Misc implementations
 // -----------------------------------------------------------------------
 
 extern MI_EXPORT_LIB std::ostream &operator<<(std::ostream &os,
@@ -657,14 +640,13 @@ typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, 
     return bsdf;
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(BSDF)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of BSDFs
+// Enables vectorized method calls on Dr.Jit arrays of BSDFs
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
@@ -684,5 +666,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     auto needs_differentials() const { return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials); }
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

@@ -29,6 +29,16 @@ def test01_create(variant_scalar_rgb):
     assert bsdf.flags() == bsdf.flags(0) | bsdf.flags(1)
 
 
+def test01_missing_weight(variant_scalar_rgb):
+    with pytest.raises(RuntimeError,
+                       match='Property "weight" cannot be found!'):
+        mi.load_dict({
+            'type': 'blendbsdf',
+            'nested1': { 'type': 'diffuse' },
+            'nested2': { 'type': 'diffuse' },
+        })
+
+
 def test02_eval_all(variant_scalar_rgb):
     weight = 0.2
 

@@ -316,6 +316,7 @@ def test09_eval_u8(variants_vec_backends_once_rgb):
     assert dr.allclose(tex_ref.eval_3(si), tex_u8.eval_3(si), atol=2e-3)
     assert dr.allclose(tex_ref.eval_1(si), tex_u8.eval_1(si), atol=2e-3)
     assert dr.allclose(tex_ref.mean(), tex_u8.mean(), atol=2e-3)
+    assert dr.allclose(tex_ref.max(), tex_u8.max(), atol=2e-3)
 
 
 @fresolver_append_path

@@ -10,7 +10,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Type of float channel tuple returned by a \ref Field
+ * Type of float channel tuple returned by a `Field`
  */
 enum class FieldValueType : uint32_t {
     /// A single scalar channel
@@ -33,12 +33,12 @@ enum class FieldValueType : uint32_t {
 };
 
 /**
- * \brief Mitsuba interaction record types accepted by a \ref Field
+ * Mitsuba interaction record types accepted by a `Field`
  *
  * This selects the supported evaluation record type
- * (\ref SurfaceInteraction3f or \ref Interaction3f). It does not describe the
+ * (`SurfaceInteraction3f` or `Interaction3f`). It does not describe the
  * mathematical dimensionality of the function; extra per-query channels are
- * represented by \ref FieldArgs.
+ * represented by `FieldArgs`.
  */
 enum class FieldDomain : uint32_t {
     /// Surface interactions only
@@ -54,10 +54,10 @@ enum class FieldDomain : uint32_t {
 extern MI_EXPORT_LIB const char *field_value_type_name(FieldValueType type);
 
 /**
- * \brief View of optional argument channels passed to a \ref Field query
+ * View of optional argument channels passed to a `Field` query
  */
 template <typename Float> struct FieldArgs {
-    /// Pointer to the first argument channel, or \c nullptr when empty
+    /// Pointer to the first argument channel, or ``nullptr`` when empty
     const Float *data = nullptr;
 
     /// Number of argument channels
@@ -68,13 +68,13 @@ template <typename Float> struct FieldArgs {
 };
 
 /**
- * \brief Base class of all field implementations
+ * Base class of all field implementations
  *
  * A field evaluates float-valued data at renderer interaction records. The
- * input can be a \ref SurfaceInteraction3f, a generic \ref Interaction3f, and
+ * input can be a `SurfaceInteraction3f`, a generic `Interaction3f`, and
  * an optional array of user-provided float arguments.
  *
- * The generic \ref eval() overloads return a dynamic array of output channels.
+ * The generic `eval()` overloads return a dynamic array of output channels.
  * Fixed-size routines are provided for callers that know the desired semantic
  * output type and want to avoid dynamic storage in performance-sensitive code.
  */
@@ -91,7 +91,7 @@ public:
     using FieldType    = Field<Float, Spectrum>;
 
     // =============================================================
-    //! @{ \name Field metadata
+    // Field metadata
     // =============================================================
 
     /// Return the semantic output type of this field
@@ -112,46 +112,43 @@ public:
     /// Return whether this field supports JIT Mitsuba variants
     virtual bool supports_jit() const;
 
-    /// Return whether this field supports \ref SurfaceInteraction3f queries
+    /// Return whether this field supports `SurfaceInteraction3f` queries
     virtual bool supports_surface_queries() const;
 
-    /// Return whether this field supports \ref Interaction3f queries
+    /// Return whether this field supports `Interaction3f` queries
     virtual bool supports_interaction_queries() const;
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Generic evaluation interface
+    // Generic evaluation interface
     // =============================================================
 
     /**
-     * \brief Evaluate the field at a surface interaction
+     * Evaluate the field at a surface interaction
      *
-     * \param si
-     *     An interaction record describing the associated surface position
+     * Args:
+     *     si: An interaction record describing the associated surface position
      *
-     * \param args
-     *     Optional field-specific argument channels
+     *     args: Optional field-specific argument channels
      *
-     * \return
-     *     A dynamic array containing \ref out_dim() float channels
+     * Returns:
+     *     A dynamic array containing `out_dim()` float channels
      */
     virtual FloatStorage eval(const SurfaceInteraction3f &si,
                               Args args,
                               Mask active = true) const;
 
     /**
-     * \brief Evaluate the field at a generic 3D interaction
+     * Evaluate the field at a generic 3D interaction
      *
-     * \param it
-     *     An interaction record describing the associated 3D position
+     * Args:
+     *     it: An interaction record describing the associated 3D position
      *
-     * \param args
-     *     Optional field-specific argument channels
+     *     args: Optional field-specific argument channels
      *
-     * \return
-     *     A dynamic array containing \ref out_dim() float channels
+     * Returns:
+     *     A dynamic array containing `out_dim()` float channels
      */
     virtual FloatStorage eval(const Interaction3f &it,
                               Args args,
@@ -165,11 +162,10 @@ public:
     virtual UnpolarizedSpectrum eval(const Interaction3f &it,
                                      Mask active = true) const;
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Specialized evaluation routines
+    // Specialized evaluation routines
     // =============================================================
 
     /// Evaluate the field as a single-channel quantity at a surface interaction.
@@ -257,7 +253,7 @@ public:
                                 Mask active = true) const;
 
     /**
-     * \brief Evaluate the field as an n-channel float array at a surface
+     * Evaluate the field as an n-channel float array at a surface
      * interaction
      *
      * Pointer allocation and deallocation must be performed by the caller.
@@ -269,7 +265,7 @@ public:
                         Mask active = true) const;
 
     /**
-     * \brief Evaluate the field as an n-channel float array at a generic 3D
+     * Evaluate the field as an n-channel float array at a generic 3D
      * interaction
      *
      * Pointer allocation and deallocation must be performed by the caller.
@@ -297,11 +293,10 @@ public:
     virtual Array6f eval_6(const Interaction3f &it,
                            Mask active = true) const;
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Surface role interface
+    // Surface role interface
     // =============================================================
 
     /// Evaluate the UV-space gradient of a scalar surface field.
@@ -314,7 +309,7 @@ public:
                     const Wavelength &sample,
                     Mask active = true) const;
 
-    /// Return the wavelength PDF associated with \ref sample_spectrum().
+    /// Return the wavelength PDF associated with `sample_spectrum()`.
     virtual Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
                                     Mask active = true) const;
 
@@ -322,7 +317,7 @@ public:
     virtual std::pair<Point2f, Float> sample_position(const Point2f &sample,
                                                       Mask active = true) const;
 
-    /// Return the UV-space position PDF associated with \ref sample_position().
+    /// Return the UV-space position PDF associated with `sample_position()`.
     virtual Float pdf_position(const Point2f &p,
                                Mask active = true) const;
 
@@ -344,11 +339,10 @@ public:
     /// Return whether evaluation varies over surface position.
     virtual bool is_spatially_varying() const;
 
-    //! @}
     // ======================================================================
 
     // =============================================================
-    //! @{ \name Volume role interface
+    // Volume role interface
     // =============================================================
 
     /// Evaluate a volume field and its spatial gradient, if available.
@@ -368,7 +362,6 @@ public:
     /// Return the number of stored volume channels, if available.
     virtual uint32_t channel_count() const;
 
-    //! @}
     // ======================================================================
 
     /// Convenience function returning the standard D65 illuminant field.

@@ -6,6 +6,7 @@ import mitsuba as mi
 _FIELD_AD_RGB_VARIANTS = [
     ("cuda_ad_rgb", dr.JitBackend.CUDA),
     ("llvm_ad_rgb", dr.JitBackend.LLVM),
+    ("metal_ad_rgb", dr.JitBackend.Metal),
 ]
 
 
