@@ -3,7 +3,10 @@
 Writing documentation
 =====================
 
-Mitsuba uses a multi-stage documentation generation process that combines C++ docstring extraction, plugin documentation generation, and Sphinx-based HTML generation. This guide explains how the system works and how to build documentation.
+Mitsuba uses a multi-stage documentation generation process that combines C++
+docstring extraction, plugin documentation generation, and Sphinx-based HTML
+generation. This guide explains how the system works and how to build
+documentation.
 
 Prerequisites
 -------------
@@ -33,7 +36,6 @@ The complete documentation build requires multiple steps in a specific order:
 
     ninja docstrings    # Extract C++ docstrings → include/mitsuba/python/docstr.h
     ninja               # Build main library and Python bindings
-    ninja mkdoc-api     # Generate API reference documentation
     ninja mkdoc         # Build final HTML documentation
 
 Detailed build steps
@@ -43,9 +45,7 @@ Detailed build steps
 
 2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings—required before generating API documentation.
 
-3. **API documentation** (``ninja mkdoc-api``): Introspects Python modules to generate API reference in ``build/html_api/``.
-
-4. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
+3. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
 
 Notebook tutorials
 ------------------

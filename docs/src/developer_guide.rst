@@ -40,9 +40,55 @@ etc.
 Coding style
 ------------
 
-We've essentially imported Python's `PEP 8 <https://peps.python.org/pep-0008/>`_
-into the C++ side (which does not specify a recommended naming convention),
-ensuring that code that uses functionality from both languages looks natural.
+The following style guidelines help make C++ code digestible to Mitsuba's API
+documentation tooling, while establishing consistency between C++ and Python
+parts.
+
+- Docstrings use ``/** */`` (or ``///`` for single-line ones) comments.
+  (Like Doxygen).
+
+- However, the docstrings themselves are written in Google-style
+  reStructuredText and *not* Doxygen. In particular, use double backticks for
+  inline code and single backticks for cross-references.
+  The special ``Args:`` and ``Returns:`` blocks and indentation annotate
+  the function signature.
+
+- The elements of tuple return values should be explained bullet points under
+  ``Returns:``.
+
+- Python docstrings follow the same Google-style reStructuredText convention,
+  so that the C++ and Python parts of the API reference read consistently.
+
+- Comments inside a function body use ``//``.
+
+A concrete exmaple:
+
+.. code-block:: cpp
+
+    /**
+     * Sample a point on the surface of this shape
+     *
+     * This function maps the uniform sample ``sample`` onto the
+     * shape's surface area. The asssociated distribution is modeled
+     * by `pdf_position()`.
+     *
+     * Args:
+     *     time: The scene time associated with the position sample
+     *
+     *     sample: A uniformly distributed 2D point on the domain
+     *         :math:`[0,1]^2`
+     *
+     * Returns:
+     *     A `PositionSample3f` instance describing the generated sample
+     */
+    virtual PositionSample3f sample_position(Float time, const Point2f &sample,
+                                             Mask active = true) const {
+        // A comment inside the function
+        ...
+    }
+
+See :ref:`sec-writing-documentation` for how these docstrings turn into the
+generated API reference.
 
 Contributing
 ------------
