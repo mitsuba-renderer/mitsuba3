@@ -2406,8 +2406,16 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
             si.uv = Point2f(dr::fmadd(duv0, b1, dr::fmadd(duv1, b2, Vector2f(uv0))));
 
-            Float det     = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()),
-                  inv_det = dr::select(det != 0.f, dr::rcp(det), 0.f);
+            Float det = dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x());
+
+            // Faces that occupy no UV area have no parameterization to invert.
+            // Substituting the identity map keeps the barycentric one.
+            Mask degenerate = det == 0.f;
+            duv0 = dr::select(degenerate, Vector2f(1.f, 0.f), duv0);
+            duv1 = dr::select(degenerate, Vector2f(0.f, 1.f), duv1);
+            det  = dr::select(degenerate, 1.f, det);
+
+            Float inv_det = dr::rcp(det);
 
             // Change of variables from the barycentric coordinates to the
             // texture parameterization

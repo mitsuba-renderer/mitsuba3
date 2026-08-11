@@ -337,7 +337,8 @@ def test07_vertex_splits(variant_scalar_rgb, split):
 def test08_degenerate_fallback(variant_scalar_rgb):
     """Degenerate triangles contribute nothing. A vertex without any
     valid contribution falls back to a finite direction perpendicular to
-    the normal."""
+    the normal, and a face without UV area keeps the barycentric
+    parameterization at render time."""
     positions = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
                          dtype=np.float32)
     cv = np.array([0, 1, 2, 0, 1, 1], dtype=np.uint32)
@@ -348,6 +349,13 @@ def test08_degenerate_fallback(variant_scalar_rgb):
     m.from_corners(positions=positions, corner_vertex=cv, texcoords=uv)
 
     assert_valid_tangent_frame(m)
+
+    # The first face maps to a single UV value, so its position partials are
+    # those of the barycentric coordinates
+    _, _, si, _ = probe(mi.load_dict({'type': 'scene', 'm': m}), (0.75, 0.25))
+    dr.assert_allclose(si.uv, mi.Point2f(0.5, 0.5))
+    dr.assert_allclose(si.dp_du, mi.Vector3f(1, 0, 0))
+    dr.assert_allclose(si.dp_dv, mi.Vector3f(1, 1, 0))
 
 
 def test09_tangent_weighting_convention(variants_all_rgb):
