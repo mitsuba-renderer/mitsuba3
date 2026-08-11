@@ -180,3 +180,18 @@ def test04_use_shadowing_function(variants_vec_backends_once_rgb):
     assert dr.all(bsdf2.sample(context, si, 0.5, (0.5, 0.5))[1] < 0.05)
     assert dr.all(bsdf2.eval(context, si, wo) < 0.01)
     assert dr.all(bsdf2.eval_pdf(context, si, wo)[0] < 0.01)
+
+
+def test06_tangent_requirement(variant_scalar_rgb):
+    """The tangent requirement has to survive the wrappers a scene applies."""
+    inner = {'type': 'normalmap',
+             'normalmap': {'type': 'srgb', 'color': [0.5, 0.5, 1.0]},
+             'nested_bsdf': {'type': 'diffuse'}}
+
+    for wrapped in [inner,
+                    {'type': 'twosided', 'a': inner},
+                    {'type': 'mask', 'opacity': 0.5, 'a': inner},
+                    {'type': 'blendbsdf', 'weight': 0.5, 'a': inner,
+                     'b': {'type': 'diffuse'}}]:
+        bsdf = mi.load_dict(wrapped)
+        assert bsdf.flags() & int(mi.BSDFFlags.NeedsTangents), wrapped['type']

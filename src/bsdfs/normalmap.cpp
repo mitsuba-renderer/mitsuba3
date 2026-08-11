@@ -114,16 +114,14 @@ public:
         m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
         m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
 
-        // Add all nested components
+        // Add all nested components. Each needs the mesh to supply a
+        // UV-oriented tangent for the shading frame.
         m_flags = (uint32_t) 0;
         for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i) {
-            m_components.push_back((m_nested_bsdf->flags(i)));
+            m_components.push_back(m_nested_bsdf->flags(i) |
+                                   (uint32_t) BSDFFlags::NormalMapped);
             m_flags |= m_components.back();
         }
-
-        // Tangent-space normals are relative to the shading frame, so the
-        // mesh must supply its UV-oriented tangent
-        m_flags |= (uint32_t) BSDFFlags::NormalMapped;
     }
 
     void traverse(TraversalCallback *cb) override {
