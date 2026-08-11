@@ -589,13 +589,15 @@ public:
             dr::fmadd(w0.x(), f01 - f00, w1.x() * (f11 - f10))
         };
 
+        // Partials w.r.t. the transformed coordinates
+        Vector2f df_st = resolution() * df_xy;
+
         // Partials w.r.t. u and v (include uv transform by transpose multiply)
-        Matrix3f uv_tm = m_transform.matrix;
-        Vector2f df_uv{ uv_tm.entry(0, 0) * df_xy.x() +
-                            uv_tm.entry(1, 0) * df_xy.y(),
-                        uv_tm.entry(0, 1) * df_xy.x() +
-                            uv_tm.entry(1, 1) * df_xy.y() };
-        return resolution() * df_uv;
+        const auto &tm = m_transform.matrix;
+        return Vector2f{ dr::fmadd(tm.entry(0, 0),  df_st.x(),
+                                   tm.entry(1, 0) * df_st.y()),
+                         dr::fmadd(tm.entry(0, 1),  df_st.x(),
+                                   tm.entry(1, 1) * df_st.y()) };
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si,
