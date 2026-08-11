@@ -358,6 +358,23 @@ def test08_degenerate_fallback(variant_scalar_rgb):
     dr.assert_allclose(si.dp_dv, mi.Vector3f(1, 1, 0))
 
 
+def test08b_degenerate_shading_normal(variant_scalar_rgb):
+    """Vertex normals that cancel out fall back to the geometric normal."""
+    positions = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]],
+                         dtype=np.float32)
+    n = np.zeros((4, 3), dtype=np.float32)
+    n[:, 2] = [1, -1, 1, -1]
+
+    m = mi.Mesh('degen')
+    m.from_fields(faces=np.array([[0, 1, 2], [0, 2, 3]], dtype=np.uint32),
+                  positions=positions, normals=n)
+
+    # The two normals of the first face cancel at ``b1 = 0.5``
+    _, uv, si, _ = probe(mi.load_dict({'type': 'scene', 'm': m}), (0.75, 0.25))
+    assert np.allclose(uv[0], 0.5)
+    dr.assert_allclose(si.sh_frame.n, si.n)
+
+
 def test09_tangent_weighting_convention(variants_all_rgb):
     """Tests the shading tangent computation (MikkTSpace convention) on a
     less regular case to catch regressions."""

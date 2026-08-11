@@ -2377,7 +2377,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
             Vector3f n = dr::fmadd(dn1, b1, dr::fmadd(dn2, b2, n0));
             Float il = dr::rsqrt(dr::squared_norm(n));
-            n *= il;
+
+            // Revert to the geometric normal if interpolation produces a
+            // zero-valued shading normal
+            Mask valid = dr::isfinite(il);
+            n  = dr::select(valid, n * il, Vector3f(si.n));
+            il = dr::select(valid, il, 0.f);
 
             si.sh_frame.n = Normal3f(n);
 
