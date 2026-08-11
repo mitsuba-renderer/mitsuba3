@@ -479,8 +479,8 @@ def test03_python_field_subclass_hook_preserves_user_hooks(field_ad_rgb_variant)
 
 
 def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
-    color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3])).field()
-    color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9])).field()
+    color_a = mi.load_dict(bitmap_field([0.1, 0.2, 0.3]))
+    color_b = mi.load_dict(bitmap_field([0.7, 0.8, 0.9]))
 
     ptr = dr.zeros(mi.FieldPtr, 4)
     dr.scatter(ptr, color_a, mi.UInt32(0, 2))
@@ -495,8 +495,8 @@ def test04_fieldptr_vectorized_fixed_and_generic_calls(field_ad_rgb_variant):
     )
     assert dr.allclose(result, expected)
 
-    scalar_a = mi.load_dict(bitmap_field([1.0])).field()
-    scalar_b = mi.load_dict(bitmap_field([2.0])).field()
+    scalar_a = mi.load_dict(bitmap_field([1.0]))
+    scalar_b = mi.load_dict(bitmap_field([2.0]))
     scalar_ptr = dr.zeros(mi.FieldPtr, 4)
     dr.scatter(scalar_ptr, scalar_a, mi.UInt32(0, 2))
     dr.scatter(scalar_ptr, scalar_b, mi.UInt32(1, 3))

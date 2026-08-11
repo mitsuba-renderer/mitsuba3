@@ -3,11 +3,12 @@
 Textures
 ========
 
-The following section describes the available texture data sources. In Mitsuba 3,
-textures are objects that can be attached to certain surface scattering model
-parameters to introduce spatial variation. In the documentation, these are listed
-as supporting the :paramtype:`texture` type. See the last sections about
-:ref:`BSDFs <sec-bsdfs>` for many examples.
+The following section describes fields that can be used in the texture role.
+They can be attached to surface-scattering parameters to introduce spatial
+variation and are listed as supporting the :paramtype:`texture` type. The
+``<texture>`` XML tag selects this role, while Python loaders return the
+plugin as an ``mi.Field`` directly. See :ref:`BSDFs <sec-bsdfs>` for many
+examples.
 
 Textures take an (optional) ``<transform>`` called :paramtype:`to_uv` which can
 be used to translate, scale, or rotate the lookup into the texture accordingly.
@@ -96,6 +97,4 @@ many times otherwise.
 
             # .. non-spatially varying BSDF parameters ..
         }
-
-
 

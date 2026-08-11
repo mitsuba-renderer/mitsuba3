@@ -47,7 +47,6 @@ def test01_bitmap_texture_public_surface_does_not_grow_field_args(variant_scalar
     si = make_si()
 
     assert isinstance(texture, mi.Field)
-    assert texture.field() is texture
 
     texture.eval(si)
     texture.eval_1(si)
@@ -86,7 +85,6 @@ def test02_grid_volume_public_surface_does_not_grow_field_args(variant_scalar_rg
     it = make_it()
 
     assert isinstance(volume6, mi.Field)
-    assert volume6.field() is volume6
 
     volume1.eval(it)
     volume1.eval_1(it)

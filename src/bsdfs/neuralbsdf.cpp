@@ -23,8 +23,9 @@ Neural diffuse material (:monosp:`neuralbsdf`)
    - Argument-free surface field that predicts the diffuse reflectance or albedo.
      Supported field outputs are ``Float``, ``Color3``, ``Array3``, and
      ``Spectrum``. In spectral variants, dynamic ``Color3``/``Array3`` fields are
-     rejected; use a spectrum field so Mitsuba's spectral upsampling policy is
-     explicit.
+     rejected; use ``Float`` for wavelength-independent neural predictions or a
+     wavelength-aware spectrum field. The built-in :monosp:`neuralfield` does
+     not currently provide wavelength-aware ``Spectrum`` outputs.
    - |exposed|, |differentiable|
 
  * - mode

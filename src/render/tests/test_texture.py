@@ -79,13 +79,22 @@ def test02_python_field_trampoline(variants_vec_backends_once_rgb):
     assert dr.allclose(ptr.eval_1(si, True), 96.0)
 
 
-def test03_legacy_texture_volume_python_api_removed(variants_vec_backends_once_rgb):
-    assert not hasattr(mi, "Texture")
-    assert not hasattr(mi, "TexturePtr")
-    assert not hasattr(mi, "Volume")
-    assert not hasattr(mi, "VolumePtr")
-    assert not hasattr(mi, "register_texture")
-    assert not hasattr(mi, "register_volume")
+def test03_python_field_api(variants_vec_backends_once_rgb):
+    surface_field = mi.load_dict({
+        "type": "uniform",
+        "value": 1.0,
+    })
+    interaction_field = mi.load_dict({
+        "type": "constvolume",
+        "value": 1.0,
+    })
 
-    field = mi.Field.D65()
-    assert isinstance(field, mi.Field)
+    assert isinstance(surface_field, mi.Field)
+    assert isinstance(interaction_field, mi.Field)
+    assert mi.PluginManager.instance().plugin_type("uniform") == mi.ObjectType.Field
+    assert mi.PluginManager.instance().plugin_type("constvolume") == mi.ObjectType.Field
+    assert surface_field.domain() == mi.FieldDomain.Surface
+    assert interaction_field.domain() == mi.FieldDomain.Interaction
+
+    illuminant = mi.Field.D65()
+    assert isinstance(illuminant, mi.Field)

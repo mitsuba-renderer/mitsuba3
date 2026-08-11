@@ -846,10 +846,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
              [](Ptr field) { return field->mean(); }, D(Field, mean));
 
     if constexpr (std::is_pointer_v<Ptr>) {
-        cls.def("field",
-            [](Ptr field) { return field; },
-            nb::rv_policy::reference)
-        .def("max",
+        cls.def("max",
              [](Ptr field) { return field->max(); }, D(Field, max))
         .def("is_spatially_varying",
              [](Ptr field) { return field->is_spatially_varying(); },

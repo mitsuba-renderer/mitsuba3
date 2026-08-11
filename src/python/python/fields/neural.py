@@ -20,7 +20,10 @@ Neural field (:monosp:`neuralfield`)
  * - out_type
    - |string|
    - Semantic output type: ``float``, ``spectrum``, ``color3``, ``array2``,
-     ``array3``, or ``features``. (Default: ``color3``)
+     ``array3``, or ``features``. ``spectrum`` represents native transport
+     channels in RGB and monochromatic variants. It is currently unsupported
+     in spectral variants because the decoder is not wavelength-conditioned.
+     (Default: ``color3``)
 
  * - out_dim
    - |int|
@@ -106,6 +109,13 @@ def _make_neural_field(mi):
                 raise RuntimeError("neuralfield: num_layers must be non-negative.")
             if self._args_dim < 0:
                 raise RuntimeError("neuralfield: args_dim must be non-negative.")
+            if self._out_type == mi.FieldValueType.Spectrum and mi.is_spectral:
+                raise RuntimeError(
+                    'neuralfield: out_type="spectrum" is unsupported in spectral '
+                    "variants because the decoder is not conditioned on "
+                    "record.wavelengths. Use out_type=\"float\" only for "
+                    "wavelength-independent values."
+                )
 
             expected_dim = _semantic_dim(mi, self._out_type)
             if self._out_type == mi.FieldValueType.Features:

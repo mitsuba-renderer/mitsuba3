@@ -3,7 +3,7 @@
 Volumes
 =======
 
-This section covers the different types of volume data sources included with
-Mitsuba. These plug-ins are intended to be used together with the medium
-plugins and provide three-dimensional spatially varying density and albedo fields.
-
+This section covers fields that implement the volume role. These plugins are
+intended to be used together with medium plugins and provide three-dimensional,
+spatially varying density and albedo data. The ``<volume>`` XML tag selects this
+role, while Python loaders return the plugin as an ``mi.Field`` directly.

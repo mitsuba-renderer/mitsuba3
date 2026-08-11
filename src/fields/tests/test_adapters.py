@@ -47,13 +47,11 @@ def grid_field(values, **kwargs):
 
 def test01_texture_and_field_tags_can_instantiate_bitmap(variant_scalar_rgb, tmpdir):
     value = (0.2, 0.4, 0.6)
-    texture = mi.load_dict(bitmap_field(value))
-    assert isinstance(texture, mi.Field)
-    field = texture.field()
-    assert field is texture
-    assert texture.domain() == mi.FieldDomain.Surface
-    assert texture.out_type() == mi.FieldValueType.Color3
-    assert dr.allclose(texture.eval_3(make_si()), value)
+    field = mi.load_dict(bitmap_field(value))
+    assert isinstance(field, mi.Field)
+    assert field.domain() == mi.FieldDomain.Surface
+    assert field.out_type() == mi.FieldValueType.Color3
+    assert dr.allclose(field.eval_3(make_si()), value)
     assert dr.allclose(field.eval_color3(make_si()), value)
     assert dr.allclose(mi.Field.eval(field, make_si())[0], value[0])
 
@@ -79,15 +77,13 @@ def test01_texture_and_field_tags_can_instantiate_bitmap(variant_scalar_rgb, tmp
 
 def test02_volume_and_field_tags_can_instantiate_gridvolume(variant_scalar_rgb, tmpdir):
     values = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
-    volume = mi.load_dict(grid_field(values, max_value=6.0))
-    assert isinstance(volume, mi.Field)
-    field = volume.field()
-    assert field is volume
-    assert volume.domain() == mi.FieldDomain.Interaction
-    assert volume.out_type() == mi.FieldValueType.Features
-    assert volume.out_dim() == 6
-    assert volume.channel_count() == 6
-    assert dr.allclose(volume.eval_6(make_it((0.5, 0.5, 0.5))), values)
+    field = mi.load_dict(grid_field(values, max_value=6.0))
+    assert isinstance(field, mi.Field)
+    assert field.domain() == mi.FieldDomain.Interaction
+    assert field.out_type() == mi.FieldValueType.Features
+    assert field.out_dim() == 6
+    assert field.channel_count() == 6
+    assert dr.allclose(field.eval_6(make_it((0.5, 0.5, 0.5))), values)
     assert dr.allclose(field.eval_array6(make_it((0.5, 0.5, 0.5))), values)
     assert dr.allclose(mi.Field.eval_n(field, make_it((0.5, 0.5, 0.5)), 6),
                        values)
@@ -275,7 +271,65 @@ def test06_python_fields_are_not_volume_role_implementations(variant_scalar_rgb)
         mi.load_string("""<volume version="3.0.0" type="python_unit_field"/>""")
 
 
-def test07_object_valued_expandable_fields_are_role_expanded(variant_scalar_rgb):
+def test07_role_boundaries_reject_inconsistent_query_metadata(variant_scalar_rgb):
+    class InconsistentQueryField(mi.Field):
+        def __init__(self, props):
+            mi.Field.__init__(self, props)
+
+        def out_type(self):
+            return mi.FieldValueType.Float
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def out_dim(self):
+            return 1
+
+        def args_dim(self):
+            return 0
+
+        def supports_scalar(self):
+            return True
+
+        def supports_jit(self):
+            return True
+
+        def supports_surface_queries(self):
+            return True
+
+        def supports_interaction_queries(self):
+            return True
+
+        def eval_1(self, si, args=None, active=True):
+            return dr.select(active, 0.25, 0.0)
+
+    try:
+        mi.register_field("inconsistent_query_field", InconsistentQueryField)
+    except RuntimeError as exc:
+        if "already" not in str(exc).lower():
+            raise
+
+    # Metadata consistency is a role-adaptation requirement. Direct Field use
+    # stays permissive so that partial or application-specific fields remain
+    # usable without pretending to satisfy the Texture or Volume contracts.
+    field = mi.load_string(
+        """<field version="3.0.0" type="inconsistent_query_field"/>"""
+    )
+    assert isinstance(field, mi.Field)
+    assert dr.allclose(field.eval_1(make_si()), 0.25)
+
+    error = "role field has inconsistent query metadata: domain=Surface"
+    with pytest.raises(RuntimeError, match=f"Texture {error}"):
+        mi.load_string(
+            """<texture version="3.0.0" type="inconsistent_query_field"/>"""
+        )
+    with pytest.raises(RuntimeError, match=f"Volume {error}"):
+        mi.load_string(
+            """<volume version="3.0.0" type="inconsistent_query_field"/>"""
+        )
+
+
+def test08_object_valued_expandable_fields_are_role_expanded(variant_scalar_rgb):
     pmgr = mi.PluginManager.instance()
     si = make_si()
 

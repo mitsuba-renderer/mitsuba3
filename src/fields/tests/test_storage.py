@@ -84,8 +84,7 @@ def grid_volume_dict(data, **kwargs):
 
 
 def load_field(props):
-    value = mi.load_dict(props)
-    return value.field() if hasattr(value, "field") else value
+    return mi.load_dict(props)
 
 
 def surface_interaction(width=1):
@@ -253,11 +252,10 @@ def test04_fixed_query_metadata_and_domain_mismatches_are_errors(variant_scalar_
 
 def test04b_fixed_query_metadata_checks_match_jit(field_ad_rgb_variant):
     data = mi.TensorXf([0.2, 0.4, 0.6] * 4, shape=(2, 2, 3))
-    texture = mi.load_dict(bitmap_texture_dict(data))
-    field = texture.field()
+    field = mi.load_dict(bitmap_texture_dict(data))
     si = surface_interaction()
 
-    assert dr.allclose(texture.eval_1(si), mi.luminance([0.2, 0.4, 0.6]))
+    assert dr.allclose(field.eval_1(si), mi.luminance([0.2, 0.4, 0.6]))
     assert dr.allclose(mi.Field.eval_1(field, si, args=[]),
                        mi.luminance([0.2, 0.4, 0.6]))
 
@@ -333,11 +331,10 @@ def test08_constvolume_reports_field_metadata_and_fixed_queries(variant_scalar_r
         "value": 0.25,
     })
     assert isinstance(scalar, mi.Field)
-    assert scalar.field() is scalar
     assert scalar.out_type() == mi.FieldValueType.Float
     assert scalar.out_dim() == 1
-    assert dr.allclose(mi.Field.eval_1(scalar.field(), it), 0.25)
-    assert dr.allclose(mi.Field.eval_n(scalar.field(), it, 1)[0], 0.25)
+    assert dr.allclose(mi.Field.eval_1(scalar, it), 0.25)
+    assert dr.allclose(mi.Field.eval_n(scalar, it, 1)[0], 0.25)
     assert dr.allclose(scalar.eval_n(it)[0], 0.25)
 
     color = mi.load_dict({
@@ -358,18 +355,16 @@ def test08_constvolume_reports_field_metadata_and_fixed_queries(variant_scalar_r
 def test09_spectral_gridvolume_reports_spectrum_field_output(variants_vec_spectral):
     values = [0.2, 0.4, 0.6] * 8
     data = mi.TensorXf(values, shape=(2, 2, 2, 3))
-    volume = mi.load_dict({
+    field = mi.load_dict({
         "type": "gridvolume",
         "grid": mi.VolumeGrid(data),
         "filter_type": "nearest",
         "wrap_mode": "clamp",
     })
-    field = volume.field()
-    assert field is volume
     it = interaction()
 
-    assert volume.channel_count() == 0
-    assert volume.max_per_channel() == []
+    assert field.channel_count() == 0
+    assert field.max_per_channel() == []
     assert field.out_type() == mi.FieldValueType.Spectrum
     assert field.out_dim() == len(field.eval(it))
     assert dr.allclose(field.eval_spec(it), field.eval(it))

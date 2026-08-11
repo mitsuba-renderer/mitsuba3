@@ -124,7 +124,7 @@ def interaction(width=1):
 def test01_bitmap_field_ad_gradients_are_finite_and_nonzero(field_ad_rgb_variant):
     field = mi.load_dict(bitmap_field_dict(
         channels=3, filter_type="bilinear", data=bitmap_data(channels=3)
-    )).field()
+    ))
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
     params.update()
@@ -143,7 +143,7 @@ def test02_bitmap_field_ad_gradient_matches_bilinear_weights(field_ad_rgb_varian
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 1)),
         filter_type="bilinear",
         wrap_mode="clamp",
-    )).field()
+    ))
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
     params.update()
@@ -162,7 +162,7 @@ def test03_grid_field_ad_gradient_matches_trilinear_weights(field_ad_rgb_variant
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 2, 1)),
         filter_type="trilinear",
         wrap_mode="clamp",
-    )).field()
+    ))
     params = mi.traverse(field)
     dr.enable_grad(params["data"])
     params.update()
@@ -181,7 +181,7 @@ def test04_bitmap_field_data_can_be_optimized(field_ad_rgb_variant):
         data=dr.zeros(mi.TensorXf, shape=(2, 2, 1)),
         filter_type="bilinear",
         wrap_mode="clamp",
-    )).field()
+    ))
     params = mi.traverse(field)
     opt = mi.ad.SGD(lr=0.5, params=params)
     params.update(opt)

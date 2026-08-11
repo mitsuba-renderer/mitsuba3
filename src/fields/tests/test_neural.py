@@ -259,6 +259,7 @@ def test09b_trainable_encoding_parameters_are_validated(
     "out_type,out_dim,method",
     [
         ("Float", 1, "eval_1"),
+        ("Spectrum", 3, "eval_spec"),
         ("Color3", 3, "eval_color3"),
         ("Array2", 2, "eval_array2"),
         ("Array3", 3, "eval_array3"),
@@ -370,7 +371,6 @@ def test14_neural_fields_in_texture_roles_are_validated(field_ad_rgb_variant):
     si = surface_interaction(width=4)
 
     assert isinstance(texture, mi.Field)
-    assert texture.field() is texture
     assert texture.args_dim() == 0
     assert texture.out_type() == mi.FieldValueType.Color3
     assert dr.all(dr.isfinite(texture.eval_3(si)))
@@ -403,3 +403,20 @@ def test16_neural_field_eval_rejects_color_outputs_in_spectral_variants(
     assert dr.all(dr.isfinite(field.eval_color3(si)))
     with pytest.raises(RuntimeError, match="cannot convert Color3"):
         field.eval(si)
+
+
+def test17_neural_field_rejects_spectrum_outputs_in_spectral_variants(
+    variants_all_ad_spectral
+):
+    with pytest.raises(
+        RuntimeError,
+        match="neuralfield.*spectrum.*spectral.*wavelength",
+    ):
+        mi.load_dict(
+            neural_field_dict(
+                out_type="Spectrum",
+                out_dim=0,
+                args_dim=0,
+                encoding=sinusoidal_encoding_dict(),
+            )
+        )

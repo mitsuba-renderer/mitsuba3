@@ -54,7 +54,10 @@ enum class FieldDomain : uint32_t {
 extern MI_EXPORT_LIB const char *field_value_type_name(FieldValueType type);
 
 /**
- * View of optional argument channels passed to a `Field` query
+ * Borrowed view of optional argument channels passed to a `Field` query
+ *
+ * Each entry is a Dr.Jit `Float` wavefront channel. The view is valid only for
+ * the duration of the query, and implementations must not retain its pointer.
  */
 template <typename Float> struct FieldArgs {
     /// Pointer to the first argument channel, or ``nullptr`` when empty
@@ -170,39 +173,39 @@ public:
 
     /// Evaluate the field as a single-channel quantity at a surface interaction.
     virtual Float eval_1(const SurfaceInteraction3f &si,
-                         Args args = {},
+                         Args args,
                          Mask active = true) const;
 
     /// Evaluate an argument-free single-channel field at a surface interaction.
     virtual Float eval_1(const SurfaceInteraction3f &si,
-                         Mask active) const;
+                         Mask active = true) const;
 
     /// Evaluate the field as a single-channel quantity at a generic 3D interaction.
     virtual Float eval_1(const Interaction3f &it,
-                         Args args = {},
+                         Args args,
                          Mask active = true) const;
 
     /// Evaluate an argument-free single-channel field at a generic 3D interaction.
     virtual Float eval_1(const Interaction3f &it,
-                         Mask active) const;
+                         Mask active = true) const;
 
     /// Evaluate the field as a three-channel color value at a surface interaction.
     virtual Color3f eval_color3(const SurfaceInteraction3f &si,
-                                Args args = {},
+                                Args args,
                                 Mask active = true) const;
 
     /// Evaluate an argument-free color field at a surface interaction.
     virtual Color3f eval_color3(const SurfaceInteraction3f &si,
-                                Mask active) const;
+                                Mask active = true) const;
 
     /// Evaluate the field as a three-channel color value at a generic 3D interaction.
     virtual Color3f eval_color3(const Interaction3f &it,
-                                Args args = {},
+                                Args args,
                                 Mask active = true) const;
 
     /// Evaluate an argument-free color field at a generic 3D interaction.
     virtual Color3f eval_color3(const Interaction3f &it,
-                                Mask active) const;
+                                Mask active = true) const;
 
     /// Evaluate the field as a two-channel array at a surface interaction.
     virtual Array2f eval_array2(const SurfaceInteraction3f &si,
@@ -226,21 +229,21 @@ public:
 
     /// Evaluate the field as an unpolarized spectrum at a surface interaction.
     virtual UnpolarizedSpectrum eval_spec(const SurfaceInteraction3f &si,
-                                          Args args = {},
+                                          Args args,
                                           Mask active = true) const;
 
     /// Evaluate an argument-free spectrum field at a surface interaction.
     virtual UnpolarizedSpectrum eval_spec(const SurfaceInteraction3f &si,
-                                          Mask active) const;
+                                          Mask active = true) const;
 
     /// Evaluate the field as an unpolarized spectrum at a generic 3D interaction.
     virtual UnpolarizedSpectrum eval_spec(const Interaction3f &it,
-                                          Args args = {},
+                                          Args args,
                                           Mask active = true) const;
 
     /// Evaluate an argument-free spectrum field at a generic 3D interaction.
     virtual UnpolarizedSpectrum eval_spec(const Interaction3f &it,
-                                          Mask active) const;
+                                          Mask active = true) const;
 
     /// Evaluate the field as a six-channel array at a surface interaction.
     virtual Array6f eval_array6(const SurfaceInteraction3f &si,

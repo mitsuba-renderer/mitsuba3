@@ -94,6 +94,42 @@ static ref<Object> expand_single_object(const ref<Object> &object,
     return children[0];
 }
 
+static const char *field_domain_name(FieldDomain domain) {
+    switch (domain) {
+        case FieldDomain::Surface:               return "Surface";
+        case FieldDomain::Interaction:           return "Interaction";
+        case FieldDomain::SurfaceAndInteraction: return "SurfaceAndInteraction";
+    }
+    return "invalid";
+}
+
+template <typename Field>
+static void validate_field_query_metadata(const Field *field,
+                                          const char *role) {
+    FieldDomain domain = field->domain();
+    bool domain_supports_surface =
+        domain == FieldDomain::Surface ||
+        domain == FieldDomain::SurfaceAndInteraction;
+    bool domain_supports_interaction =
+        domain == FieldDomain::Interaction ||
+        domain == FieldDomain::SurfaceAndInteraction;
+    bool supports_surface = field->supports_surface_queries();
+    bool supports_interaction = field->supports_interaction_queries();
+
+    if (domain_supports_surface != supports_surface ||
+        domain_supports_interaction != supports_interaction) {
+        Throw("%s role field has inconsistent query metadata: domain=%s "
+              "implies surface=%s and interaction=%s, but "
+              "supports_surface_queries()=%s and "
+              "supports_interaction_queries()=%s.",
+              role, field_domain_name(domain),
+              domain_supports_surface ? "true" : "false",
+              domain_supports_interaction ? "true" : "false",
+              supports_surface ? "true" : "false",
+              supports_interaction ? "true" : "false");
+    }
+}
+
 template <typename Float_, typename Spectrum_>
 ref<Object> make_texture_object(const ref<Object> &object) {
     using Field = mitsuba::Field<Float_, Spectrum_>;
@@ -102,6 +138,7 @@ ref<Object> make_texture_object(const ref<Object> &object) {
     if (!field)
         return nullptr;
 
+    validate_field_query_metadata(field, "Texture");
     if (!field->supports_surface_queries())
         Throw("Texture role requires a field that supports surface queries.");
     uint32_t args_dim = field->args_dim();
@@ -142,6 +179,7 @@ ref<Object> make_volume_object(const ref<Object> &object) {
     const Field *field = dynamic_cast<const Field *>(object.get());
     if (!field)
         return nullptr;
+    validate_field_query_metadata(field, "Volume");
     const VolumeField *volume = dynamic_cast<const VolumeField *>(field);
     if (!field->supports_interaction_queries())
         return nullptr;

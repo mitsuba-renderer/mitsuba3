@@ -161,11 +161,17 @@ the available object types:
           - Shape puglins define surfaces that mark transitions between different types of materials
           - `obj`, `ply`, `serialized`
         * - `texture`
-          - Compatibility role request for surface-compatible fields
+          - Role-specific scene tag that validates a field for surface use
           - `bitmap`, `checkerboard`
         * - `volume`
-          - Compatibility role request for volume-compatible fields
+          - Role-specific scene tag that validates a field for volume use
           - `gridvolume`, `constvolume`
+
+
+Field plugins always have the runtime type ``ObjectType.Field``. The
+``ObjectType.Texture`` and ``ObjectType.Volume`` values represent parser role
+requests associated with the corresponding XML tags; loaded fields retain the
+``ObjectType.Field`` runtime type and have no separate Python classes.
 
 
 Properties
