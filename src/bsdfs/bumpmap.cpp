@@ -142,21 +142,22 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
         // Sample nested BSDF with perturbed shading frame
+        auto [frame_p_local, frame_p_world] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi = perturbed_si.to_local(si.wi);
+        perturbed_si.sh_frame = frame_p_world;
+        perturbed_si.wi       = frame_p_local.to_local(si.wi);
         auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
                                                   sample1, sample2, active);
         active &= dr::any(unpolarized_spectrum(weight) != 0.f);
 
         // Transform sampled 'wo' back to original frame and check orientation
-        Vector3f perturbed_wo = perturbed_si.to_world(bs.wo);
+        Vector3f perturbed_wo = frame_p_local.to_world(bs.wo);
         active &= Frame3f::cos_theta(bs.wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
         bs.wo = perturbed_wo;
 
         if (m_use_shadowing_function)
-            weight *= eval_shadow_terminator(perturbed_si.sh_frame.n, bs.wo);
+            weight *= eval_shadow_terminator(frame_p_local.n, bs.wo);
 
         return { bs, weight & active };
     }
@@ -166,10 +167,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
+        auto [frame_p_local, frame_p_world] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = frame_p_world;
+        perturbed_si.wi       = frame_p_local.to_local(si.wi);
+        Vector3f perturbed_wo = frame_p_local.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
@@ -177,7 +179,7 @@ public:
         Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
 
         if (m_use_shadowing_function)
-            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+            value *= eval_shadow_terminator(frame_p_local.n, wo);
 
         return value & active;
     }
@@ -187,10 +189,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF pdf with perturbed shading frame
+        auto [frame_p_local, frame_p_world] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = frame_p_world;
+        perturbed_si.wi       = frame_p_local.to_local(si.wi);
+        Vector3f perturbed_wo = frame_p_local.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
@@ -205,10 +208,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         // Evaluate nested BSDF with perturbed shading frame
+        auto [frame_p_local, frame_p_world] = frame(si, active);
         SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame(si, active);
-        perturbed_si.wi       = perturbed_si.to_local(si.wi);
-        Vector3f perturbed_wo = perturbed_si.to_local(wo);
+        perturbed_si.sh_frame = frame_p_world;
+        perturbed_si.wi       = frame_p_local.to_local(si.wi);
+        Vector3f perturbed_wo = frame_p_local.to_local(wo);
 
         active &= Frame3f::cos_theta(wo) *
                   Frame3f::cos_theta(perturbed_wo) > 0.f;
@@ -216,12 +220,16 @@ public:
         auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
 
         if (m_use_shadowing_function)
-            value *= eval_shadow_terminator(perturbed_si.sh_frame.n, wo);
+            value *= eval_shadow_terminator(frame_p_local.n, wo);
 
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
-    Frame3f frame(const SurfaceInteraction3f &si, Mask active) const {
+    /** Compute the perturbation due to the bump map relative to
+     * ``si.sh_frame``, as well as the full ``sh_frame`` of the perturbation
+     * in the world coordinate system.
+     */
+    std::pair<Frame3f, Frame3f> frame(const SurfaceInteraction3f &si, Mask active) const {
         // Evaluate texture gradient
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);
 
@@ -229,31 +237,38 @@ public:
         Vector3f dp_du = dr::fmadd(si.sh_frame.n, grad_uv.x() - dr::dot(si.sh_frame.n, si.dp_du), si.dp_du);
         Vector3f dp_dv = dr::fmadd(si.sh_frame.n, grad_uv.y() - dr::dot(si.sh_frame.n, si.dp_dv), si.dp_dv);
 
-        // Bump-mapped shading normal
-        Frame3f result;
-        result.n = dr::normalize(dr::cross(dp_du, dp_dv));
+        // Bump-mapped shading normal, in world coordinates and unnormalized
+        Vector3f cr = dr::cross(dp_du, dp_dv);
 
         // Flip if not aligned with geometric normal
-        result.n[dr::dot(si.n, result.n) < .0f] *= -1.f;
+        cr[dr::dot(si.n, cr) < .0f] *= -1.f;
 
         // Convert to small rotation from original shading frame
-        result.n = si.to_local(result.n);
+        Normal3f n(si.to_local(cr));
 
         if (m_flip_invalid_normals) {
             // Ensure that shading normals are always facing the incident direction.
-            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, result.n) <= 0.0f;
-            result.n[flip] = Normal3f(-result.n.x(), -result.n.y(), result.n.z());
+            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, n) <= 0.0f;
+            n[flip] = Normal3f(-n.x(), -n.y(), n.z());
         }
 
-        // Gram-schmidt orthogonalization to compute local shading frame
-        result.s = dr::normalize(dr::fnmadd(result.n, dr::dot(result.n, si.dp_du), si.dp_du));
-        result.t = dr::cross(result.n, result.s);
+        Frame3f frame_p_local;
+        frame_p_local.n = dr::normalize(n);
+        frame_p_local.s = dr::normalize(dr::fnmadd(frame_p_local.n,
+                                                   frame_p_local.n.x(),
+                                                   Vector3f(1, 0, 0)));
+        frame_p_local.t = dr::cross(frame_p_local.n, frame_p_local.s);
 
-        return result;
+        Frame3f frame_p_world;
+        frame_p_world.n = si.to_world(frame_p_local.n);
+        frame_p_world.s = si.to_world(frame_p_local.s);
+        frame_p_world.t = si.to_world(frame_p_local.t);
+
+        return { frame_p_local, frame_p_world };
     }
 
     Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
-        return frame(si, active);
+        return frame(si, active).second;
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
