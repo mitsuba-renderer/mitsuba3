@@ -1,10 +1,8 @@
-#include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/texture.h>
 
-#include "normalmap_helpers.h"
+#include "perturbed_bsdf.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -94,142 +92,34 @@ map. Note that we set the ``raw`` properties of the bump map ``bitmap`` object t
 */
 
 template <typename Float, typename Spectrum>
-class BumpMap final : public BSDF<Float, Spectrum> {
+class BumpMap final
+    : public PerturbedBSDF<BumpMap<Float, Spectrum>, Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(BSDF, m_flags, m_components)
+    using Base = PerturbedBSDF<BumpMap<Float, Spectrum>, Float, Spectrum>;
+    MI_USING_MEMBERS(m_nested_bsdf)
     MI_IMPORT_TYPES(Texture)
 
     BumpMap(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
-            if (Base *bsdf = prop.try_get<Base>()) {
-                if (m_nested_bsdf)
-                    Throw("Only a single BSDF child object can be specified.");
-                m_nested_bsdf = bsdf;
-            } else if (Texture *texture = prop.try_get<Texture>()) {
+            if (Texture *texture = prop.try_get<Texture>()) {
                 if (m_nested_texture)
                     Throw("Only a single Texture child object can be specified.");
                 m_nested_texture = texture;
             }
         }
-        if (!m_nested_bsdf)
-            Throw("Exactly one BSDF child object must be specified.");
         if (!m_nested_texture)
             Throw("Exactly one Texture child object must be specified.");
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
-
-        m_flip_invalid_normals = props.get<bool>("flip_invalid_normals", true);
-        m_use_shadowing_function = props.get<bool>("use_shadowing_function", true);
-
-        // Add all nested components
-        m_components.clear();
-        for (size_t i = 0; i < m_nested_bsdf->component_count(); ++i)
-            m_components.push_back(m_nested_bsdf->flags(i));
-        m_flags = m_nested_bsdf->flags();
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("nested_bsdf",    m_nested_bsdf,    ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        Base::traverse(cb);
         cb->put("nested_texture", m_nested_texture, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("scale",          m_scale,          ParamFlags::NonDifferentiable);
     }
 
-    std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
-                                             const SurfaceInteraction3f &si,
-                                             Float sample1,
-                                             const Point2f &sample2,
-                                             Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
-
-        // Sample nested BSDF with perturbed shading frame
-        auto [frame_p_local, frame_p_world] = frame(si, active);
-        SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame_p_world;
-        perturbed_si.wi       = frame_p_local.to_local(si.wi);
-        auto [bs, weight] = m_nested_bsdf->sample(ctx, perturbed_si,
-                                                  sample1, sample2, active);
-        active &= dr::any(unpolarized_spectrum(weight) != 0.f);
-
-        // Transform sampled 'wo' back to original frame and check orientation
-        Vector3f perturbed_wo = frame_p_local.to_world(bs.wo);
-        active &= Frame3f::cos_theta(bs.wo) *
-                  Frame3f::cos_theta(perturbed_wo) > 0.f;
-        bs.wo = perturbed_wo;
-
-        if (m_use_shadowing_function)
-            weight *= eval_shadow_terminator(frame_p_local.n, bs.wo);
-
-        return { bs, weight & active };
-    }
-
-    Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-                  const Vector3f &wo, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
-
-        // Evaluate nested BSDF with perturbed shading frame
-        auto [frame_p_local, frame_p_world] = frame(si, active);
-        SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame_p_world;
-        perturbed_si.wi       = frame_p_local.to_local(si.wi);
-        Vector3f perturbed_wo = frame_p_local.to_local(wo);
-
-        active &= Frame3f::cos_theta(wo) *
-                  Frame3f::cos_theta(perturbed_wo) > 0.f;
-
-        Spectrum value = m_nested_bsdf->eval(ctx, perturbed_si, perturbed_wo, active);
-
-        if (m_use_shadowing_function)
-            value *= eval_shadow_terminator(frame_p_local.n, wo);
-
-        return value & active;
-    }
-
-    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
-              const Vector3f &wo, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
-
-        // Evaluate nested BSDF pdf with perturbed shading frame
-        auto [frame_p_local, frame_p_world] = frame(si, active);
-        SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame_p_world;
-        perturbed_si.wi       = frame_p_local.to_local(si.wi);
-        Vector3f perturbed_wo = frame_p_local.to_local(wo);
-
-        active &= Frame3f::cos_theta(wo) *
-                  Frame3f::cos_theta(perturbed_wo) > 0.f;
-
-        return dr::select(active, m_nested_bsdf->pdf(ctx, perturbed_si, perturbed_wo, active), 0.f);
-    }
-
-    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
-                                        const SurfaceInteraction3f &si,
-                                        const Vector3f &wo,
-                                        Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
-
-        // Evaluate nested BSDF with perturbed shading frame
-        auto [frame_p_local, frame_p_world] = frame(si, active);
-        SurfaceInteraction3f perturbed_si(si);
-        perturbed_si.sh_frame = frame_p_world;
-        perturbed_si.wi       = frame_p_local.to_local(si.wi);
-        Vector3f perturbed_wo = frame_p_local.to_local(wo);
-
-        active &= Frame3f::cos_theta(wo) *
-                  Frame3f::cos_theta(perturbed_wo) > 0.f;
-
-        auto [value, pdf] = m_nested_bsdf->eval_pdf(ctx, perturbed_si, perturbed_wo, active);
-
-        if (m_use_shadowing_function)
-            value *= eval_shadow_terminator(frame_p_local.n, wo);
-
-        return { value & active, dr::select(active, pdf, 0.f) };
-    }
-
-    /** Compute the perturbation due to the bump map relative to
-     * ``si.sh_frame``, as well as the full ``sh_frame`` of the perturbation
-     * in the world coordinate system.
-     */
-    std::pair<Frame3f, Frame3f> frame(const SurfaceInteraction3f &si, Mask active) const {
+    Normal3f perturbation(const SurfaceInteraction3f &si, Mask active) const {
         // Evaluate texture gradient
         Vector2f grad_uv = m_scale * m_nested_texture->eval_1_grad(si, active);
 
@@ -243,37 +133,8 @@ public:
         // Flip if not aligned with geometric normal
         cr[dr::dot(si.n, cr) < .0f] *= -1.f;
 
-        // Convert to small rotation from original shading frame
-        Normal3f n(si.to_local(cr));
-
-        if (m_flip_invalid_normals) {
-            // Ensure that shading normals are always facing the incident direction.
-            Mask flip = Frame3f::cos_theta(si.wi) * dr::dot(si.wi, n) <= 0.0f;
-            n[flip] = Normal3f(-n.x(), -n.y(), n.z());
-        }
-
-        Frame3f frame_p_local;
-        frame_p_local.n = dr::normalize(n);
-        frame_p_local.s = dr::normalize(dr::fnmadd(frame_p_local.n,
-                                                   frame_p_local.n.x(),
-                                                   Vector3f(1, 0, 0)));
-        frame_p_local.t = dr::cross(frame_p_local.n, frame_p_local.s);
-
-        Frame3f frame_p_world;
-        frame_p_world.n = si.to_world(frame_p_local.n);
-        frame_p_world.s = si.to_world(frame_p_local.s);
-        frame_p_world.t = si.to_world(frame_p_local.t);
-
-        return { frame_p_local, frame_p_world };
-    }
-
-    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
-        return frame(si, active).second;
-    }
-
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_nested_bsdf->eval_diffuse_reflectance(si, active);
+        // Restate in the coordinate system of the original shading frame
+        return Normal3f(si.to_local(cr));
     }
 
     std::string to_string() const override {
@@ -290,12 +151,8 @@ public:
 protected:
     ScalarFloat m_scale;
     ref<Texture> m_nested_texture;
-    ref<Base> m_nested_bsdf;
 
-    bool m_flip_invalid_normals;
-    bool m_use_shadowing_function;
-
-    MI_TRAVERSE_CB(Base, m_nested_texture, m_nested_bsdf)
+    MI_TRAVERSE_CB(Base, m_nested_texture)
 };
 
 MI_EXPORT_PLUGIN(BumpMap)

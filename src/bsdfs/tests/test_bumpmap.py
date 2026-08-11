@@ -61,3 +61,45 @@ def test02_shading_frame_is_world_space(variants_vec_backends_once_rgb):
 
     expected = np.array(to_world @ mi.ScalarNormal3f(0, 0, 1)).ravel()
     assert np.allclose(np.array(image)[..., 3:6], expected, atol=1e-5)
+
+
+def test03_sample_consistency(variants_vec_backends_once_rgb):
+    """Sampling and evaluation observe the same perturbed frame: the density
+    that ``sample()`` reports agrees with ``pdf()`` at the sampled direction,
+    and both vanish where the perturbation pushed that direction below the
+    surface."""
+    rng = mi.PCG32(size=4096)
+    texture = np.float32(np.arange(64).reshape(8, 8) % 5) / 4
+    bumpmap = mi.load_dict({
+        'type': 'bumpmap', 'scale': 4,
+        'texture': {'type': 'bitmap', 'raw': True,
+                    'bitmap': mi.Bitmap(texture)},
+        'nested_bsdf': {'type': 'roughconductor', 'alpha': 0.2,
+                        'material': 'Al'}
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f, 4096)
+    si.n = mi.Normal3f(0, 0, 1)
+    si.sh_frame = mi.Frame3f(si.n)
+    si.dp_du, si.dp_dv = mi.Vector3f(1, 0, 0), mi.Vector3f(0, 1, 0)
+    si.uv = mi.Point2f(rng.next_float32(), rng.next_float32())
+    si.wi = dr.normalize(mi.Vector3f(rng.next_float32() - 0.5,
+                                     rng.next_float32() - 0.5,
+                                     rng.next_float32() * 0.8 + 0.2))
+
+    ctx = mi.BSDFContext()
+    bs, weight = bumpmap.sample(ctx, si, rng.next_float32(),
+                                mi.Point2f(rng.next_float32(),
+                                           rng.next_float32()))
+    valid = dr.any(weight != 0)
+    assert dr.count(valid) > 0
+
+    # Rejected samples carry no density, valid ones agree with pdf()
+    assert dr.all(valid | (bs.pdf == 0))
+    pdf = bumpmap.pdf(ctx, si, bs.wo)
+    dr.assert_allclose(dr.select(valid, pdf, 0), dr.select(valid, bs.pdf, 0),
+                       rtol=1e-4)
+
+    value, pdf_2 = bumpmap.eval_pdf(ctx, si, bs.wo)
+    dr.assert_allclose(value, bumpmap.eval(ctx, si, bs.wo))
+    dr.assert_allclose(pdf_2, pdf)
