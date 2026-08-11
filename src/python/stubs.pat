@@ -234,7 +234,8 @@ is_polarized:
 is_rgb:
 is_spectral:
 UnpolarizedSpectrum:
-Spectrum:
+# Keep the variant-independent FieldValueType.Spectrum enum member.
+(?<!FieldValueType\.)Spectrum:
 _UnpolarizedSpectrumCp:
 _SpectrumCp:
 _SpectrumEntryCp:

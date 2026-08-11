@@ -145,9 +145,9 @@ the available object types:
         * - `integrator`
           - Integrators implement rendering techniques for solving the light transport equation
           - `path`, `direct`, `depth`
-        * - `field`
+        * - ``field``
           - Field plugins represent generic data evaluated at surface or volume interactions
-          - `bitmap`, `gridvolume`, `neuralfield`
+          - ``bitmap``, ``gridvolume``, ``neuralfield``
         * - `rfilter`
           - Reconstruction filters control how the `film` converts a set of samples into the output image
           - `box`, `gaussian`
@@ -160,12 +160,12 @@ the available object types:
         * - `shape`
           - Shape puglins define surfaces that mark transitions between different types of materials
           - `obj`, `ply`, `serialized`
-        * - `texture`
+        * - ``texture``
           - Role-specific scene tag that validates a field for surface use
-          - `bitmap`, `checkerboard`
-        * - `volume`
+          - ``bitmap``, ``checkerboard``
+        * - ``volume``
           - Role-specific scene tag that validates a field for volume use
-          - `gridvolume`, `constvolume`
+          - ``gridvolume``, ``constvolume``
 
 
 Field plugins always have the runtime type ``ObjectType.Field``. The

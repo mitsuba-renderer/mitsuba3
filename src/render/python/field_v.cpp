@@ -657,6 +657,35 @@ dr::DynamicArray<Float> array6_to_dynamic(Array6f &&input) {
     return result;
 }
 
+// These methods allocate their output storage in the Python binding and hence
+// need Python-specific documentation instead of the C++ pointer-based text.
+static constexpr const char *doc_field_eval_n_auto = R"doc(
+Evaluate every output channel and return the values as a Python list
+
+This overload is available for argument-free fields. The returned list has
+`Field.out_dim()` entries.
+)doc";
+
+static constexpr const char *doc_field_eval_n_count_args = R"doc(
+Evaluate ``count`` output channels and return the values as a Python list
+
+``count`` must equal `Field.out_dim()`. When provided, ``args`` must contain
+`Field.args_dim()` channels.
+)doc";
+
+static constexpr const char *doc_field_eval_n_count = R"doc(
+Evaluate ``count`` output channels and return the values as a Python list
+
+``count`` must equal `Field.out_dim()`.
+)doc";
+
+static constexpr const char *doc_field_resolution = R"doc(
+Return the resolution of a discrete field
+
+Interaction-only fields return their three-dimensional resolution. All other
+fields return their two-dimensional resolution.
+)doc";
+
 template <typename Ptr>
 void check_field_output(Ptr field, FieldValueType expected_type,
                         uint32_t expected_dim, const char *method) {
@@ -694,14 +723,14 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
 
     cls.def("eval",
             [](Ptr field, const SurfaceInteraction3f &si,
-               Mask active) -> nb::object {
-                return nb::cast(field->eval(si, active));
+               Mask active) {
+                return field->eval(si, active);
             },
             "si"_a, "active"_a = true, D(Field, eval, 3))
         .def("eval",
             [](Ptr field, const Interaction3f &it,
-               Mask active) -> nb::object {
-                return nb::cast(field->eval(it, active));
+               Mask active) {
+                return field->eval(it, active);
             },
             "it"_a, "active"_a = true, D(Field, eval, 4))
         .def("eval_1",
@@ -857,7 +886,11 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                     !field->supports_surface_queries())
                     return nb::cast(field->resolution_3d());
                 return nb::cast(field->resolution_2d());
-            })
+            },
+            nb::sig("def resolution(self) -> "
+                    "typing.Union[mitsuba.ScalarVector2i, "
+                    "mitsuba.ScalarVector3i]"),
+            doc_field_resolution)
         .def("resolution_2d",
             [](Ptr field) { return field->resolution_2d(); },
             D(Field, resolution_2d))
@@ -894,7 +927,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                               FieldArgs<Float>{}, active);
                 return result;
             },
-            "si"_a, "active"_a = true, D(Field, eval_n))
+            "si"_a, "active"_a = true, doc_field_eval_n_auto)
         .def("eval_n",
             [](Ptr field, const Interaction3f &it, Mask active) {
                 uint32_t count = field->out_dim();
@@ -903,7 +936,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                               FieldArgs<Float>{}, active);
                 return result;
             },
-            "it"_a, "active"_a = true, D(Field, eval_n, 3))
+            "it"_a, "active"_a = true, doc_field_eval_n_auto)
         .def("eval",
             [](Ptr field, const SurfaceInteraction3f &si, nb::object args,
                Mask active) {
@@ -1081,7 +1114,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                 return result;
             },
             "si"_a, "count"_a, "args"_a = nb::none(), "active"_a = true,
-            D(Field, eval_n))
+            doc_field_eval_n_count_args)
         .def("eval_n",
             [](Ptr field, const Interaction3f &it,
                uint32_t count, nb::object args, Mask active) {
@@ -1096,7 +1129,7 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                 return result;
             },
             "it"_a, "count"_a, "args"_a = nb::none(), "active"_a = true,
-            D(Field, eval_n, 2));
+            doc_field_eval_n_count_args);
     } else {
         cls.def("eval_n",
             [](Ptr field, const SurfaceInteraction3f &si,
@@ -1127,7 +1160,8 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                     result[i] = storage.entry(i);
                 return result;
             },
-            "si"_a, "count"_a, "active"_a = true, D(Field, eval_n))
+            "si"_a, "count"_a, "active"_a = true,
+            doc_field_eval_n_count)
         .def("eval_n",
             [](Ptr field, const Interaction3f &it,
                uint32_t count, Mask active) {
@@ -1157,7 +1191,8 @@ template <typename Ptr, typename Cls> void bind_field_generic(Cls &cls) {
                     result[i] = storage.entry(i);
                 return result;
             },
-            "it"_a, "count"_a, "active"_a = true, D(Field, eval_n, 2));
+            "it"_a, "count"_a, "active"_a = true,
+            doc_field_eval_n_count);
     }
 }
 

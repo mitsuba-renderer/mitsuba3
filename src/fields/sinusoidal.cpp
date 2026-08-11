@@ -23,19 +23,21 @@ Sinusoidal field (:monosp:`sinusoidalfield`)
 
  * - out_dim
    - |int|
-   - Number of feature channels produced by the encoding.
+   - Number of feature channels produced by the encoding. The value must lie
+     between 1 and ``input_dim * n_frequencies * 2``. (Default: the upper bound)
 
  * - n_frequencies
    - |int|
-   - Number of sinusoidal frequency bands.
+   - Number of sinusoidal frequency bands. (Default: 4)
 
  * - min_frequency
    - |float|
-   - Lowest frequency used by the encoding.
+   - Lowest positive frequency used by the encoding. (Default: 1)
 
  * - max_frequency
    - |float|
-   - Highest frequency used by the encoding.
+   - Highest frequency used by the encoding. This must be greater than or equal
+     to ``min_frequency``. (Default: 8)
 
 This field maps each renderer coordinate channel to deterministic sinusoidal
 features. It is intended as an analytic encoding for :monosp:`neuralfield`

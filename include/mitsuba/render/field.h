@@ -38,7 +38,7 @@ enum class FieldValueType : uint32_t {
  * This selects the supported evaluation record type
  * (`SurfaceInteraction3f` or `Interaction3f`). It does not describe the
  * mathematical dimensionality of the function; extra per-query channels are
- * represented by `FieldArgs`.
+ * supplied as optional argument arrays.
  */
 enum class FieldDomain : uint32_t {
     /// Surface interactions only
@@ -306,7 +306,19 @@ public:
     virtual Vector2f eval_1_grad(const SurfaceInteraction3f &si,
                                  Mask active = true) const;
 
-    /// Importance sample wavelengths proportional to the surface spectrum.
+    /**
+     * Importance sample wavelengths proportional to the surface spectrum
+     *
+     * Args:
+     *     si: An interaction record describing the associated surface position
+     *
+     *     sample: A uniform variate for each desired wavelength
+     *
+     * Returns:
+     *     - The sampled wavelengths in nanometers
+     *
+     *     - The corresponding Monte Carlo importance weights
+     */
     virtual std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &si,
                     const Wavelength &sample,
@@ -316,7 +328,17 @@ public:
     virtual Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
                                     Mask active = true) const;
 
-    /// Importance sample a UV-space position.
+    /**
+     * Importance sample a UV-space position
+     *
+     * Args:
+     *     sample: A uniformly distributed 2D point
+     *
+     * Returns:
+     *     - A sampled texture-space position in :math:`[0,1]^2`
+     *
+     *     - The corresponding probability density per unit area in UV space
+     */
     virtual std::pair<Point2f, Float> sample_position(const Point2f &sample,
                                                       Mask active = true) const;
 
@@ -348,7 +370,17 @@ public:
     // Volume role interface
     // =============================================================
 
-    /// Evaluate a volume field and its spatial gradient, if available.
+    /**
+     * Evaluate a volume field and its spatial gradient, if available
+     *
+     * Args:
+     *     it: An interaction record describing the associated 3D position
+     *
+     * Returns:
+     *     - The field value at the interaction
+     *
+     *     - Its spatial gradient
+     */
     virtual std::pair<UnpolarizedSpectrum, Vector3f>
     eval_gradient(const Interaction3f &it,
                   Mask active = true) const;

@@ -58,6 +58,10 @@ Neural field (:monosp:`neuralfield`)
    - Network storage precision, either ``fp16`` or ``fp32``. CUDA cooperative
      vectors currently require ``fp16``. (Default: ``fp16``)
 
+ * - seed
+   - |int|
+   - Seed used to initialize the network parameters. (Default: 0)
+
 This JIT-only field evaluates a Dr.Jit neural network at renderer interaction
 records. The network input always includes position, includes UV coordinates for
 surface queries, can include optional argument channels, and can be augmented by

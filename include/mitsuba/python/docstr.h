@@ -3947,7 +3947,11 @@ static const char *__doc_mitsuba_Field_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Field_7 = R"doc()doc";
 
-static const char *__doc_mitsuba_FieldArgs = R"doc(View of optional argument channels passed to a `Field` query)doc";
+static const char *__doc_mitsuba_FieldArgs =
+R"doc(Borrowed view of optional argument channels passed to a `Field` query
+
+Each entry is a Dr.Jit `Float` wavefront channel. The view is valid only for
+the duration of the query, and implementations must not retain its pointer.)doc";
 
 static const char *__doc_mitsuba_FieldArgs_FieldArgs = R"doc()doc";
 
@@ -3963,7 +3967,7 @@ R"doc(Mitsuba interaction record types accepted by a `Field`
 This selects the supported evaluation record type
 (`SurfaceInteraction3f` or `Interaction3f`). It does not describe the
 mathematical dimensionality of the function; extra per-query channels are
-represented by `FieldArgs`.)doc";
+supplied as optional argument arrays.)doc";
 
 static const char *__doc_mitsuba_FieldDomain_Interaction = R"doc(Generic 3D interactions only)doc";
 
@@ -4063,7 +4067,16 @@ static const char *__doc_mitsuba_Field_eval_color3_3 = R"doc(Evaluate the field 
 
 static const char *__doc_mitsuba_Field_eval_color3_4 = R"doc(Evaluate an argument-free color field at a generic 3D interaction.)doc";
 
-static const char *__doc_mitsuba_Field_eval_gradient = R"doc(Evaluate a volume field and its spatial gradient, if available.)doc";
+static const char *__doc_mitsuba_Field_eval_gradient =
+R"doc(Evaluate a volume field and its spatial gradient, if available
+
+Args:
+    it: An interaction record describing the associated 3D position
+
+Returns:
+    - The field value at the interaction
+
+    - Its spatial gradient)doc";
 
 static const char *__doc_mitsuba_Field_eval_n =
 R"doc(Evaluate the field as an n-channel float array at a surface
@@ -4107,9 +4120,29 @@ static const char *__doc_mitsuba_Field_resolution_2d = R"doc(Return the 2D resol
 
 static const char *__doc_mitsuba_Field_resolution_3d = R"doc(Return the 3D resolution of a discrete volume field.)doc";
 
-static const char *__doc_mitsuba_Field_sample_position = R"doc(Importance sample a UV-space position.)doc";
+static const char *__doc_mitsuba_Field_sample_position =
+R"doc(Importance sample a UV-space position
 
-static const char *__doc_mitsuba_Field_sample_spectrum = R"doc(Importance sample wavelengths proportional to the surface spectrum.)doc";
+Args:
+    sample: A uniformly distributed 2D point
+
+Returns:
+    - A sampled texture-space position in :math:`[0,1]^2`
+
+    - The corresponding probability density per unit area in UV space)doc";
+
+static const char *__doc_mitsuba_Field_sample_spectrum =
+R"doc(Importance sample wavelengths proportional to the surface spectrum
+
+Args:
+    si: An interaction record describing the associated surface position
+
+    sample: A uniform variate for each desired wavelength
+
+Returns:
+    - The sampled wavelengths in nanometers
+
+    - The corresponding Monte Carlo importance weights)doc";
 
 static const char *__doc_mitsuba_Field_spectral_resolution = R"doc(Return the wavelength spacing of a discretized spectrum.)doc";
 
@@ -7062,11 +7095,11 @@ static const char *__doc_mitsuba_ObjectType_Sensor = R"doc(Carries out radiance 
 
 static const char *__doc_mitsuba_ObjectType_Shape = R"doc(Denotes an arbitrary shape (including meshes))doc";
 
-static const char *__doc_mitsuba_ObjectType_Texture = R"doc(Compatibility request for a surface-compatible field)doc";
+static const char *__doc_mitsuba_ObjectType_Texture = R"doc(Parser role request for a surface-compatible field)doc";
 
 static const char *__doc_mitsuba_ObjectType_Unknown = R"doc(The default returned by `Object` subclasses)doc";
 
-static const char *__doc_mitsuba_ObjectType_Volume = R"doc(Compatibility request for a volume-compatible field)doc";
+static const char *__doc_mitsuba_ObjectType_Volume = R"doc(Parser role request for a volume-compatible field)doc";
 
 static const char *__doc_mitsuba_Object_Object = R"doc(Import default constructors)doc";
 
