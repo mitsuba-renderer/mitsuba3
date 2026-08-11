@@ -49,9 +49,6 @@ enum class RayFlags : uint32_t {
     /// `RayFlags.NormalPartials`
     Default = Shading,
 
-    /// Deprecated alias for `RayFlags.Shading`
-    All [[deprecated("Deprecated, change to RayFlags::Default.")]] = Shading,
-
     // =============================================================
     //               Differentiability compute flags
     // =============================================================

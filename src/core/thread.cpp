@@ -15,16 +15,8 @@ Thread::Thread() { }
 
 Thread::~Thread() { }
 
-FileResolver *Thread::file_resolver() {
-    return mitsuba::file_resolver();
-}
-
 Logger *Thread::logger() {
     return mitsuba::logger();
-}
-
-void Thread::set_logger(Logger *logger) {
-    mitsuba::set_logger(logger);
 }
 
 Thread *Thread::thread() {

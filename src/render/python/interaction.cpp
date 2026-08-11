@@ -7,8 +7,6 @@ MI_PY_EXPORT(RayFlags) {
         .def_value(RayFlags, Shading)
         .def_value(RayFlags, NormalPartials)
         .def_value(RayFlags, Default)
-        // Spelled out to avoid a deprecation warning for ``RayFlags::All``
-        .value("All", RayFlags::Shading, D(RayFlags, All))
         .def_value(RayFlags, FollowShape)
         .def_value(RayFlags, DetachShape);
 }

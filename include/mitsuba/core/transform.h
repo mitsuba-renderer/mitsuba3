@@ -494,10 +494,6 @@ struct Transform {
         return result;
     }
 
-    template <typename T>
-    [[deprecated("Please use operator*")]]
-    auto transform_affine(const T &value) const { return operator*(value); }
-
     DRJIT_STRUCT(Transform, matrix, inverse_transpose)
 
     // =============================================================

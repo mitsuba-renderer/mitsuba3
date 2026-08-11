@@ -144,34 +144,6 @@ MI_PY_EXPORT(Object) {
                     }
                  },
                  "name"_a, "value"_a, "flags"_a,
-                 "Unified method to register both objects and values with the traversal callback")
-            // Deprecated put_value - forwards to put()
-            .def("put_value",
-                 [] (nb::handle self, std::string_view name, nb::handle value, uint32_t flags) {
-                    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                                     "TraversalCallback.put_value() is deprecated, use put() instead", 1) < 0)
-                        nb::raise_python_error();
-
-                    // Forward to put() method
-                    self.attr("put")(name, value, flags);
-                 },
-                 "name"_a, "value"_a, "flags"_a,
-                 "Register a value with the traversal callback.\n\n"
-                 ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.")
-            // Deprecated put_object - forwards to put()
-            .def("put_object",
-                 [] (nb::handle self, std::string_view name, Object *obj, uint32_t flags) {
-                    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                                     "TraversalCallback.put_object() is deprecated, use put() instead", 1) < 0)
-                        nb::raise_python_error();
-
-                    // Forward to put() method
-                    self.attr("put")(name, cast_object(obj), flags);
-                 },
-                 "name"_a, "obj"_a, "flags"_a,
-                 "Register an object with the traversal callback.\n\n"
-                 ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.");
+                 "Unified method to register both objects and values with the traversal callback");
     }
 }
