@@ -1360,6 +1360,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
 
+    dr::scoped_eval_scope<Float> guard;
+
     DynamicBuffer<Float> area = interleaved<1, DynamicBuffer<Float>>(
         m_face_count, [&](const UInt32 &f) {
             Vector3u fi = face_indices(f);
