@@ -1,19 +1,14 @@
-.. image:: ../../resources/data/docs/images/banners/banner_03.jpg
-    :width: 100%
-    :align: center
+.. .. image:: ../../resources/data/docs/images/banners/banner_03.jpg
+..     :width: 100%
+..     :align: center
 
 Rendering tutorials
 ===================
 
-The best place to start is with user-friendly tutorials that will show you how
-to use Mitsuba 3 with complete, end-to-end examples. The following tutorials
-cover the basic operations ones might need to know when it comes to rendering
-with Mitsuba 3:
+The following tutorial shows you how to use misuka to render the energy-time curve (ETC)
+of a shoebox room with individual materials for each wall.
+More examples will follow.
 
 .. nbgallery::
 
-    quickstart/mitsuba_quickstart
-    rendering/editing_a_scene
-    rendering/multi_view_rendering
-    rendering/scripting_renderer
-    rendering/polarized_rendering
+    rendering/shoebox_scene
