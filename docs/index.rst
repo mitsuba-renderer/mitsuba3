@@ -26,17 +26,22 @@ misuka inherits from Mitsuba 3 and Dr.Jit.
 Installation
 ------------
 
-misuka can be installed via :monosp:`pip` from `PyPI
-<https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
+A PyPi package will be released very soon!
+For now, either :ref:`install from source <sec-installing-from-source>` or
+follow the :ref:`compilation guide <sec-compiling>` if you plan on working on
+the code.
 
-.. code-block:: bash
+.. misuka can be installed via :monosp:`pip` from `PyPI
+.. <https://pypi.org/project/misuka/>`_. This is the recommended method of installation.
 
-    pip install misuka
+.. .. code-block:: bash
 
-This command will also install :monosp:`Dr.Jit` on your system if not already available.
+..     pip install misuka
 
-See the :ref:`developer guide <sec-compiling>` for complete instructions on building
-from the git source tree.
+.. This command will also install :monosp:`Dr.Jit` on your system if not already available.
+
+.. See the :ref:`developer guide <sec-compiling>` for complete instructions on building
+.. from the git source tree.
 
 Requirements
 ^^^^^^^^^^^^

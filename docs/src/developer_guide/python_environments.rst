@@ -14,6 +14,8 @@ If you only want to use misuka with the default variant set and never modify
 it, install it from PyPI as described in :doc:`Getting started </index>` and
 ignore this page.
 
+.. _sec-installing-from-source:
+
 Installing from source
 ----------------------
 
