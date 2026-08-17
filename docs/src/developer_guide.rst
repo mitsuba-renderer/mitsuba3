@@ -1,6 +1,6 @@
-.. image:: ../resources/data/docs/images/banners/banner_05.jpg
-    :width: 100%
-    :align: center
+.. .. image:: ../resources/data/docs/images/banners/banner_05.jpg
+..     :width: 100%
+..     :align: center
 
 Developer's Guide
 =================
@@ -12,30 +12,40 @@ This section is addressed to the users interested in modifying the core of the
 system or even contributing to the codebase.
 
 New developers will want to begin by thoroughly reading the documentation of
-Dr.Jit before looking at any Mitsuba code. Dr.Jit is a Just-In-Time compiler
-that constitutes the foundation of Mitsuba 3. It drives the code transformations
-that enable systematic vectorization and automatic differentiation of the
-renderer.
+Dr.Jit before looking at any misuka code. Dr.Jit is a Just-In-Time compiler
+that constitutes the foundation of Mitsuba 3, and therefore of misuka. It drives
+the code transformations that enable systematic vectorization and automatic
+differentiation of the renderer.
+
+misuka is a compatible extension to Mitsuba 3 rather than a rewrite, so the
+codebase, the build system, and the plugin architecture are Mitsuba's. What
+misuka adds is a set of acoustic variants and plugins. See
+:ref:`sec-acoustic-rendering` for what they do.
 
 Code structure
 --------------
 
-The Mitsuba codebase is split into 3 basic support folders:
+The codebase is split into 3 basic support folders:
 
-* The core folder (in `src/core`) implements basic functionality such as
+* The core folder (in ``src/core``) implements basic functionality such as
   cross-platform file and bitmap I/O, data structures, scheduling, as well as
   logging and plugin management.
 
-* The rendering folder (in `src/render`) contains abstractions needed to
+* The rendering folder (in ``src/render``) contains abstractions needed to
   load and represent scenes containing light sources, shapes, materials, and
   participating media.
 
-* The python folder (in `src/python`) contains components of the system that are
-  written in Python, and which access Mitsuba through bindings. This includes
+* The python folder (in ``src/python``) contains components of the system that are
+  written in Python, and which access misuka through bindings. This includes
   statistical tests (Chi^2, etc.) and tooling for differentiable rendering.
 
-All other folders in `src` implement Mitsuba 3 plugins such as `bsdf`, `shapes`,
-etc.
+All other folders in `src` implement plugins such as `bsdf`, `shapes`, etc. Note
+that misuka inherits Mitsuba's full set of optical plugins, most of which are
+not used for acoustic rendering and are therefore left out of the
+:ref:`plugin reference <sec-plugins>`. The acoustic plugins live alongside them:
+``src/bsdfs/acousticbsdf.cpp``, ``src/integrators/acoustic_path.cpp``,
+``src/sensors/microphone.cpp``, ``src/films/tape.cpp``, and the differentiable
+integrators in ``src/python/python/ad/integrators/acoustic_*.py``.
 
 Coding style
 ------------
@@ -48,9 +58,9 @@ Contributing
 ------------
 
 All contributions, bug reports, bug fixes, documentation improvements,
-enhancements, and ideas are welcome. If you are brand new to Mitsuba or
-open-source development, we recommend going through the GitHub “issues” tracker
-to find issues that interest you.
+enhancements, and ideas are welcome. If you are brand new to misuka or
+open-source development, we recommend going through the “issues” tracker
+on `Github <https://github.com/misuka-renderer/misuka/>`_ to find issues that interest you.
 
 Going further
 -------------
@@ -60,6 +70,7 @@ Going further
     :glob:
 
     developer_guide/compiling
+    developer_guide/python_environments
     developer_guide/documentation
     developer_guide/variants_cpp
     developer_guide/writing_plugin

@@ -3,7 +3,7 @@
 Writing documentation
 =====================
 
-Mitsuba uses a multi-stage documentation generation process that combines C++ docstring extraction, plugin documentation generation, and Sphinx-based HTML generation. This guide explains how the system works and how to build documentation.
+misuka uses a multi-stage documentation generation process that combines C++ docstring extraction, plugin documentation generation, and Sphinx-based HTML generation. This guide explains how the system works and how to build documentation.
 
 Prerequisites
 -------------
@@ -20,9 +20,9 @@ Documentation sources
 Documentation comes from several sources:
 
 1. **C++ headers** (``include/mitsuba/{core,render}/*.h``): API documentation extracted via docstrings
-2. **C++ plugin sources** (``src/{bsdfs,shapes,emitters,...}/*.cpp``): Plugin descriptions and parameters
+2. **C++ plugin sources** (``src/{bsdfs,shapes,sensors,films,integrators,...}/*.cpp``): Plugin descriptions and parameters. The built plugin reference is filtered to misuka's acoustic thin fork (see ``docs/generate_plugin_doc.py``). Shared sections like ``shapes``/``textures``/``spectra`` are kept whole, while ``bsdfs``/``sensors``/``films``/``integrators`` are allow-listed down to the acoustic plugins.
 3. **RST files** (``docs/src/``): User guides, tutorials, and manual content
-4. **Jupyter notebooks** (``docs/tutorials/``): Interactive tutorials rendered with nbsphinx
+4. **Jupyter notebooks** (``tutorials_acoustic/``, symlinked into ``docs/src/rendering`` and ``docs/src/inverse_rendering``): Interactive tutorials rendered with nbsphinx
 
 Build process overview
 ----------------------
@@ -41,7 +41,20 @@ Detailed build steps
 
 1. **Docstring extraction** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using ``pybind11_mkdoc`` to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
 
-2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings—required before generating API documentation.
+   .. note::
+
+       ``pybind11_mkdoc`` looks for libclang under ``/usr/lib*/llvm-*/lib/libclang.so.1``,
+       a layout that only Debian-style distributions use. On distributions that install
+       libclang directly into ``/usr/lib``, such as Arch, this step fails with
+       ``Failed to find a LLVM installation``. Point it at the system LLVM instead by adding these environment variables
+       to your ``.bashrc`` or ``.zshrc``:
+
+       .. code-block:: bash
+
+           export LLVM_DIR_PATH=/usr
+           export LIBCLANG_PATH=/usr/lib/libclang.so
+
+2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings, required before generating API documentation.
 
 3. **API documentation** (``ninja mkdoc-api``): Introspects Python modules to generate API reference in ``build/html_api/``.
 

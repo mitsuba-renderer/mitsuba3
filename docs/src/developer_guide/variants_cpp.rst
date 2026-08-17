@@ -3,7 +3,8 @@
 Variants in C++
 ===============
 
-As described in the section on :ref:`choosing variants <sec-variants>`, Mitsuba
+As described in the upstream section on
+:external+mitsuba:ref:`choosing variants <sec-variants>`, Mitsuba
 3 code can be compiled into different variants, which are parameterized by
 their computational backend and representation of color. To enable such
 retargeting from a single implementation, the system relies on C++ templates
@@ -14,8 +15,8 @@ templates with the following two type parameters:
 - ``Spectrum``.
 
 These two parameters exactly correspond to the previously mentioned
-computational backend and color representation. During compilation, Mitsuba's
-build system reads the ``mitsuba.conf`` file and substitutes the types of
+computational backend and color representation. During compilation, misuka's
+build system reads the ``misuka.conf`` file and substitutes the types of
 selected variants into these template parameters. For example,
 
 .. code-block:: text
@@ -87,7 +88,7 @@ When dealing with vectorized computational backends (e.g. ``llvm_*``,
 particular, ``if`` statements).
 
 Consider the result of a ray intersection in scalar mode. The resulting
-:py:class:`~mitsuba.SurfaceInteraction3f` record holds information
+:py:class:`~misuka.SurfaceInteraction3f` record holds information
 concerning a single surface intersection. In this case, conditional logic works
 fine using normal ``if`` statements.
 
@@ -98,8 +99,8 @@ logic can no longer be carried out using ordinary ``if`` statements.
 
 The alternative operation ``dr::select(mask, arg1, arg2)`` takes a *mask*
 argument (typically the result of a comparison) and evaluates ``(mask ? arg1 :
-arg2)`` in parallel for each lane. We refer to `Dr.Jit's documentation
-<https://enoki.readthedocs.io/en/master/basics.html#working-with-masks>`_ for
+arg2)`` in parallel for each lane. We refer to `Dr.Jit's documentation on mask operations
+<https://drjit.readthedocs.io/en/v1.5.0/basics.html#mask-operations>`_ for
 further information on working with masks. The following shows an example
 contrasting these two cases:
 
@@ -146,8 +147,8 @@ then reads:
 JIT backend synchronization point
 ---------------------------------
 
-As described in `Dr.Jit's documentation
-<https://enoki.readthedocs.io/en/master/gpu.html#suggestions-regarding-horizontal-operations>`_,
+As described in `Dr.Jit's documentation on evaluation
+<https://drjit.readthedocs.io/en/v1.5.0/eval.html#why-is-it-needed>`_,
 the ``cuda`` and ``llvm`` computational backends rely on a JIT compiler that
 dynamically generates kernels using NVIDIA's PTX intermediate language. This JIT
 compiler is highly efficient for *vertical* operations (additions,
@@ -205,7 +206,8 @@ pointer aliases are used as follows:
     bsdf->eval(..., active);
 
 More information on vectorized method calls is provided in the `Dr.Jit
-documentation <https://enoki.readthedocs.io/en/master/calls.html>`_.
+documentation on indirect calls
+<https://drjit.readthedocs.io/en/v1.5.0/cflow.html#indirect-calls>`_.
 
 Variant-specific code
 ---------------------
