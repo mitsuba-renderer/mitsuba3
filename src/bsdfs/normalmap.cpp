@@ -101,7 +101,7 @@ public:
         m_normalmap = props.get_surface_field<Field>("normalmap");
         FieldValueType type = m_normalmap->out_type();
         uint32_t dim = m_normalmap->out_dim();
-        bool rgb_spectrum = !is_spectral_v<Spectrum> &&
+        bool rgb_spectrum = is_rgb_v<Spectrum> &&
                             type == FieldValueType::Spectrum && dim == 3;
         if (!((type == FieldValueType::Color3 ||
                type == FieldValueType::Array3) && dim == 3) &&

@@ -487,12 +487,17 @@ Field<Float, Spectrum>::eval_3(const SurfaceInteraction3f &si,
     FieldValueType type = out_type();
     if (type == FieldValueType::Color3)
         return eval_color3(si, Args{}, active);
+    if constexpr (is_rgb_v<Spectrum>) {
+        if (type == FieldValueType::Spectrum)
+            return eval_spec(si, Args{}, active);
+    }
     if (type == FieldValueType::Array3) {
         Array3f value = eval_array3(si, Args{}, active);
         return Color3f(value.x(), value.y(), value.z());
     }
     uint32_t dim = out_dim();
-    Throw("Field::eval_3(): expected Color3[3] or Array3[3], got %s[%u].",
+    Throw("Field::eval_3(): expected Color3[3], Array3[3], or RGB "
+          "Spectrum[3], got %s[%u].",
           field_value_type_name(type), dim);
 }
 

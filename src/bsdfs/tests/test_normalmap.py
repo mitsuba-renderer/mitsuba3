@@ -292,3 +292,57 @@ def test08_non_vector_normalmap_fails_during_construction(variant_scalar_rgb):
                 "type": "diffuse",
             },
         })
+
+
+def test09_generic_field_outputs_work_as_normalmaps(variant_scalar_rgb):
+    class GenericNormalField(mi.Field):
+        def __init__(self, out_type):
+            super().__init__(mi.Properties("generic_normal_field"))
+            self._out_type = out_type
+
+        def out_type(self):
+            return self._out_type
+
+        def domain(self):
+            return mi.FieldDomain.Surface
+
+        def supports_scalar(self):
+            return True
+
+        # Deliberately implement only the generic entry point to exercise
+        # Field's typed fallback instead of a user-provided eval_3().
+        def eval(self, si, args=None, active=True):
+            return mi.ArrayXf([
+                dr.select(active, 0.5, 0.0),
+                dr.select(active, 0.5, 0.0),
+                dr.select(active, 1.0, 0.0),
+            ])
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.n = mi.Normal3f(0, 0, 1)
+    si.sh_frame = mi.Frame3f(si.n)
+    si.dp_du = mi.Vector3f(1, 0, 0)
+    si.dp_dv = mi.Vector3f(0, 1, 0)
+    si.wi = mi.Vector3f(0, 0, 1)
+    ctx = mi.BSDFContext()
+    wo = mi.Vector3f(0, 0, 1)
+
+    nested = mi.load_dict({
+        "type": "diffuse",
+        "reflectance": 0.6,
+    })
+
+    for out_type in (mi.FieldValueType.Color3,
+                     mi.FieldValueType.Spectrum):
+        field = GenericNormalField(out_type)
+        dr.assert_allclose(field.eval_3(si), [0.5, 0.5, 1.0])
+
+        bsdf = mi.load_dict({
+            "type": "normalmap",
+            "normalmap": field,
+            "nested_bsdf": nested,
+            "use_shadowing_function": False,
+        })
+
+        assert dr.allclose(bsdf.eval(ctx, si, wo),
+                           nested.eval(ctx, si, wo), atol=1e-6)

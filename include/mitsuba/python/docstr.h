@@ -8813,8 +8813,6 @@ should be computed when calling `Shape.compute_surface_interaction()`.
 It also specifies differentiation behavior with respect to shape
 parameters.)doc";
 
-static const char *__doc_mitsuba_RayFlags_All = R"doc(Deprecated alias for `RayFlags.Shading`)doc";
-
 static const char *__doc_mitsuba_RayFlags_Default =
 R"doc(The detail level requested by default, i.e. everything but
 `RayFlags.NormalPartials`)doc";
@@ -12216,24 +12214,16 @@ static const char *__doc_mitsuba_Thread =
 R"doc(Dummy thread class for backward compatibility
 
 This class has been largely stripped down and only maintains essential
-methods for file resolver and logger access, plus static initialization.
+methods for logger access, task tracking, and static initialization.
 Use std::thread or the nanothread-based thread pool for actual threading needs.)doc";
 
 static const char *__doc_mitsuba_Thread_Thread = R"doc(Create a dummy thread object (for compatibility))doc";
 
 static const char *__doc_mitsuba_Thread_class_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Thread_file_resolver = R"doc(Return the global file resolver)doc";
-
 static const char *__doc_mitsuba_Thread_logger = R"doc(Return the global logger instance)doc";
 
 static const char *__doc_mitsuba_Thread_register_task = R"doc(Register nanothread Task to prevent internal resources leakage)doc";
-
-static const char *__doc_mitsuba_Thread_set_logger =
-R"doc(Set the global logger used by Mitsuba
-
-Deprecated:
-    Use `set_logger()` directly)doc";
 
 static const char *__doc_mitsuba_Thread_static_initialization = R"doc(Initialize the threading system)doc";
 
@@ -12394,8 +12384,6 @@ static const char *__doc_mitsuba_Transform_rotate_2 = R"doc(Create a rotation tr
 static const char *__doc_mitsuba_Transform_scale = R"doc(Create a scale transformation)doc";
 
 static const char *__doc_mitsuba_Transform_to_frame = R"doc(Creates a transformation that converts from the standard basis to ``frame``)doc";
-
-static const char *__doc_mitsuba_Transform_transform_affine = R"doc()doc";
 
 static const char *__doc_mitsuba_Transform_translate = R"doc(Create a translation transformation)doc";
 
