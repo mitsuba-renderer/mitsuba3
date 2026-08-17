@@ -27,45 +27,15 @@ SHAPE_ORDERING = [
 ]
 
 BSDF_ORDERING = [
-    'diffuse',
-    'dielectric',
-    'thindielectric',
-    'roughdielectric',
-    'conductor',
-    'roughconductor',
-    'hair',
-    'measured',
-    'measured_polarized',
-    'plastic',
-    'roughplastic',
-    'bumpmap',
-    'normalmap',
-    'blendbsdf',
-    'mask',
-    'twosided',
-    'null',
-    'polarizer',
-    'retarder',
-    'circular',
-    'pplastic'
+    'acousticbsdf',
 ]
 
 EMITTER_ORDERING = [
     'area',
-    'point',
-    'constant',
-    'envmap',
-    'sunsky',
-    'spot',
-    'projector'
-    'directional',
-    'directionalarea',
 ]
 
 SENSOR_ORDERING = [
-    'orthographic',
-    'perspective',
-    'thinlens'
+    'microphone',
 ]
 
 TEXTURE_ORDERING = [
@@ -78,11 +48,7 @@ TEXTURE_ORDERING = [
 SPECTRUM_ORDERING = [
     'uniform',
     'regular',
-    'irregular',
-    'srgb',
-    'd65',
-    'blackbody'
-    'rawconstant'
+    'irregular'
 ]
 
 SAMPLER_ORDERING = [
@@ -95,21 +61,14 @@ SAMPLER_ORDERING = [
 
 INTEGRATOR_ORDERING = [
     'acoustic_path',
-    'direct',
-    'path',
-    'aov',
-    'volpath',
-    'volpathmis',
-    '../src/python/python/ad/integrators/prb.py',
-    '../src/python/python/ad/integrators/prb_basic.py',
-    '../src/python/python/ad/integrators/direct_projective.py',
-    '../src/python/python/ad/integrators/prb_projective.py',
-    '../src/python/python/ad/integrators/prbvolpath.py',
+    '../src/python/python/ad/integrators/acoustic_ad.py',
+    '../src/python/python/ad/integrators/acoustic_prb.py',
+    '../src/python/python/ad/integrators/acoustic_ad_threepoint.py',
+    '../src/python/python/ad/integrators/acoustic_prb_threepoint.py',
 ]
 
 FILM_ORDERING = [
-    'hdrfilm',
-    'specfilm'
+    'tape',
 ]
 
 RFILTER_ORDERING = [
@@ -119,22 +78,6 @@ RFILTER_ORDERING = [
     'mitchell',
     'catmullrom',
     'lanczos'
-]
-
-MEDIUM_ORDERING = [
-    'homogeneous',
-    'heterogeneous',
-]
-
-PHASE_ORDERING = [
-    'isotropic',
-    'hg',
-    'sggx'
-]
-
-VOLUME_ORDERING = [
-    'constvolume',
-    'gridvolume'
 ]
 
 
@@ -189,7 +132,7 @@ def extract_python(target, filename):
 
 # Traverse source directories and process any found plugin code
 
-def process(path, target, ordering):
+def process(path, target, ordering, allowlist=None):
     def capture(file_list, dirname, files):
         suffix = os.path.split(dirname)[1]
         if 'lib' in suffix or suffix == 'tests' \
@@ -198,6 +141,9 @@ def process(path, target, ordering):
             return
         for filename in files:
             if '.cpp' == os.path.splitext(filename)[1]:
+                if allowlist is not None and \
+                        os.path.splitext(filename)[0] not in allowlist:
+                    continue
                 fname = os.path.join(dirname, filename)
                 file_list += [fname]
 
@@ -219,38 +165,38 @@ def process(path, target, ordering):
             extract(target, entry[1])
 
 
-def process_src(target, src_subdir, ordering=None):
+def process_src(target, src_subdir, ordering=None, allowlist=None):
     section = "section_" + src_subdir
 
     # Copy paste the contents of the appropriate section file
     with open('src/plugin_reference/' + section + '.rst', 'r', encoding='utf-8') as f:
         target.write(f.read())
-    process('../src/{0}'.format(src_subdir), target, ordering)
+    process('../src/{0}'.format(src_subdir), target, ordering, allowlist)
 
 
 def generate(build_dir):
     original_wd = os.getcwd()
     os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
+    # Sections shared with upstream Mitsuba, kept in full.
+    # Sections filtered down to misuka's acoustic plugins only (thin fork:
+    # optical bsdfs/sensors/films/integrators are documented upstream).
     sections = [
-        ('shapes',      SHAPE_ORDERING),
-        ('bsdfs',       BSDF_ORDERING),
-        ('media',       MEDIUM_ORDERING),
-        ('phase',       PHASE_ORDERING),
-        ('emitters',    EMITTER_ORDERING),
-        ('sensors',     SENSOR_ORDERING),
-        ('textures',    TEXTURE_ORDERING),
-        ('spectra',     SPECTRUM_ORDERING),
-        ('integrators', INTEGRATOR_ORDERING),
-        ('samplers',    SAMPLER_ORDERING),
-        ('films',       FILM_ORDERING),
-        ('rfilters',    RFILTER_ORDERING),
-        ('volumes',     VOLUME_ORDERING)
+        ('shapes',      SHAPE_ORDERING,     None),
+        ('bsdfs',       BSDF_ORDERING,      BSDF_ORDERING),
+        ('emitters',    EMITTER_ORDERING,   EMITTER_ORDERING),
+        ('sensors',     SENSOR_ORDERING,    SENSOR_ORDERING),
+        ('textures',    TEXTURE_ORDERING,   None),
+        ('spectra',     SPECTRUM_ORDERING,  SPECTRUM_ORDERING),
+        ('integrators', INTEGRATOR_ORDERING, INTEGRATOR_ORDERING),
+        ('samplers',    SAMPLER_ORDERING,   None),
+        ('films',       FILM_ORDERING,      FILM_ORDERING),
+        ('rfilters',    RFILTER_ORDERING,   None),
     ]
 
-    for section, ordering in sections:
+    for section, ordering, allowlist in sections:
         with open(os.path.join(build_dir, f'plugins_{section}.rst'), 'w', encoding='utf-8') as f:
-            process_src(f, section, ordering)
+            process_src(f, section, ordering, allowlist)
 
     os.chdir(original_wd)
 

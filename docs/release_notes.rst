@@ -598,7 +598,7 @@ Mitsuba 3.7.0
   as Dr.Jit tensor instances in Python/C++ code (PR `#1705
   <https://github.com/mitsuba-renderer/mitsuba3/pull/1705>`__).
 
-- The :ref:`rawconstant <texture-rawconstant>` texture plugin stores raw 1D/3D values without
+- The :external+mitsuba:ref:`rawconstant <spectrum-rawconstant>` texture plugin stores raw 1D/3D values without
   any color space conversion or spectral upsampling, useful when exact numerical values need to
   be preserved.  (PR `#1496 <https://github.com/mitsuba-renderer/mitsuba3/pull/1496>`__,
   contributed by `Merlin Nimier-David <https://merlin.nimierdavid.fr>`__).

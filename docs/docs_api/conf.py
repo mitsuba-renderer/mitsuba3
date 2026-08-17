@@ -89,9 +89,14 @@ autoclass_content = 'both'
 autodoc_member_order = 'bysource'
 
 # Set Mitsuba variant for autodoc
-import mitsuba
+import sys
+import misuka as mitsuba
+
+# The Python package was renamed from 'mitsuba' to 'misuka' (misuka-renderer/misuka#11).
+# The generated API reference displays everything under the real, importable
+# `misuka.*` name so readers can copy-paste it directly.
+
 mitsuba.set_variant('llvm_ad_rgb')
-variant_prefix = 'mitsuba.llvm_ad_rgb.'
 drjit_variant_alias = 'drjit.llvm'
 
 # -- Event callback for processing the docstring ----------------------------------------------
@@ -143,101 +148,100 @@ extracted_rst_filename = join(docs_path, 'generated/extracted_rst_api.rst')
 
 # List of patterns defining element that shouldn't be added to the API documentation
 excluded_api = [
-    r'mitsuba.test.scenes.([\w]+)', 'mitsuba.ad.contextmanager',
-    r'mitsuba.ad.(.*).annotations', r'mitsuba.ad.prb(.*)', r'mitsuba.ad.integrators.prb(.*)',
-    r'mitsuba.ad.direct_projective(.*)', r'mitsuba.ad.integrators.direct_projective(.*)',
-    'mitsuba.float_dtype', 'mitsuba.casters', 'mitsuba.cast_object',
-    'mitsuba.get_property', 'mitsuba.set_property', 'mitsuba.PyObjectWrapper',
-    'mitsuba.xml.WriteXML', 'mitsuba.xml.Files',
+    r'misuka.test.scenes.([\w]+)', 'misuka.ad.contextmanager',
+    r'misuka.ad.(.*).annotations', r'misuka.ad.prb(.*)', r'misuka.ad.integrators.prb(.*)',
+    r'misuka.ad.direct_projective(.*)', r'misuka.ad.integrators.direct_projective(.*)',
+    r'misuka.ad.acoustic(.*)', r'misuka.ad.integrators.acoustic(.*)',
+    'misuka.float_dtype', 'misuka.casters', 'misuka.cast_object',
+    'misuka.get_property', 'misuka.set_property', 'misuka.PyObjectWrapper',
+    'misuka.xml.WriteXML', 'misuka.xml.Files',
 ]
 
 # Define the structure of the generated reference pages for the different libraries.
 api_doc_structure = {
-    'Core': ['mitsuba.render', 'mitsuba.set_variant', 'mitsuba.variant',
-             'mitsuba.traverse', 'mitsuba.SceneParameters',
-             'mitsuba.variants', 'mitsuba.set_log_level',
-             'mitsuba.ArgParser', 'mitsuba.AtomicFloat',
-             'mitsuba.DefaultFormatter', r'mitsuba.([\w]*)Stream([\w]*)',
-             'mitsuba.FileResolver', 'mitsuba.Formatter', 'mitsuba.Log',
-             'mitsuba.Loop', 'mitsuba.MemoryMappedFile',
-             'mitsuba.ParamFlags', 'mitsuba.PluginManager', r'mitsuba.Scoped([\w]+)',
-             'mitsuba.Spiral', r'mitsuba.Struct([\w]*)',
-             r'mitsuba.Thread([\w]*)', 'mitsuba.Timer',
-             r'mitsuba.filesystem.([\w]+)', 'mitsuba.has_flag',
-             r'mitsuba.register_([\w]+)', 'mitsuba.TraversalCallback'],
-    'Parsing': [r'mitsuba.load_([\w]+)', r'mitsuba.xml.([\w]+)'],
-    'Object': [r'mitsuba.Object([\w]*)', 'mitsuba.Class'],
-    'Properties': ['mitsuba.Properties'],
-    'Bitmap': [r'mitsuba.Bitmap([\w]*)', 'mitsuba.Resampler'],
-    'Warp': [r'mitsuba.warp.([\w]+)'],
-    'Distributions': [r'mitsuba.([\w]*)Distribution([\w]*)',
-                      r'mitsuba.Hierarchical2D\d',
-                      r'mitsuba.Marginal([\w]+)2D\d'],
-    'Math': [r'mitsuba.math.([\w]+)', r'mitsuba.spline.([\w]+)', r'mitsuba.quad.([\w]+)',
-             'mitsuba.RadicalInverse', 'mitsuba.radical_inverse_2',
-             'mitsuba.coordinate_system', 'mitsuba.reflect', 'mitsuba.refract',
-             'mitsuba.fresnel(.*)', 'mitsuba.perspective_projection'],
-    'Random': [r'mitsuba.sample_tea_([\w]+)', 'mitsuba.PCG32',
-               r'mitsuba.permute([\w]*)', 'mitsuba.sobol_2'],
-    'Log': [r'mitsuba.Log([\w]+)', 'mitsuba.Appender', ],
-    'Types': [r'mitsuba.Scalar([\w]+)',
-              r'mitsuba.Bool([\w]*)',
-              r'mitsuba.UInt([\w]*)',
-              r'mitsuba.Int([\w]*)',
-              r'mitsuba.Float([\w]*)',
-              r'mitsuba.Tensor([\w]+)',
-              r'mitsuba.Vector([\w]+)',
-              r'mitsuba.Point([\w]+)',
-              r'mitsuba.Normal([\w]+)',
-              r'mitsuba.Matrix([\w]+)',
-              r'mitsuba.Quaternion([\w]+)',
-              r'mitsuba.Texture([\w]+)',
-              r'mitsuba.Bounding([\w]+)',
-              r'mitsuba.Transform([\w]+)',
-              r'mitsuba.Chain([\w]*)Transform([\w]+)',
-              r'mitsuba.Frame([\w]+)',
-              r'mitsuba.Color([\w]+)',
-              r'mitsuba.Ray([\w]+)'],
-    'Constants': [r'mitsuba.MI_([\w]+)', r'mitsuba.is_([\w]+)', 'mitsuba.DEBUG'],
-    'Denoiser': ['mitsuba.OptixDenoiser'],
-    'BSDF': [r'mitsuba.BSDF([\w]*)', 'mitsuba.TransportMode',
-             r'mitsuba.Microfacet([\w]+)'],
-    'Integrator': [r'mitsuba.(.*)Integrator([\w]*)', 'mitsuba.ad.common.mis_weight'],
-    'Endpoint': ['mitsuba.Endpoint'],
-    'Emitter': [r'mitsuba.Emitter([\w]*)'],
-    'Sensor': ['mitsuba.Sensor([\w]+|)', 'mitsuba.ProjectiveCamera', 'mitsuba.parse_fov'],
-    'Medium': [r'mitsuba.Medium([\w]*)', r'mitsuba.PhaseFunction([\w]+)'],
-    'Shape': ['mitsuba.Shape([\w]+|)', 'mitsuba.Mesh([\w]+|)'],
-    'Texture': ['mitsuba.Texture'],
-    'Volume': [r'mitsuba.Volume([\w]*)'],
-    'PhaseFunction': [r'mitsuba.PhaseFunction([\w]*)'],
-    'Film': ['mitsuba.Film([\w]+|)', 'mitsuba.ImageBlock'],
-    'Filter': [r'mitsuba.([\w]*)Filter([\w]*)'],
-    'Sampler': ['mitsuba.Sampler'],
-    'Scene': ['mitsuba.Scene', 'mitsuba.ShapeKDTree', 'mitsuba.cornell_box'],
-    'Record': ['mitsuba.PositionSample3f', 'mitsuba.DirectionSample3f',
-               r'mitsuba.([\w]+)Interaction([\w]+)',
-               r'mitsuba.([\w]+)Intersection([\w]+)', ],
-    'Spectrum': [r'mitsuba.spectrum_([\w]+)', r'mitsuba.srgb_([\w]+)',
-                 r'mitsuba.cie1931([\w]+)', 'mitsuba.cie_d65',
-                 'mitsuba.xyz_to_srgb',
-                 'mitsuba.pdf_rgb_spectrum', 'mitsuba.luminance',
-                 'mitsuba.eval_reflectance', 'mitsuba.linear_rgb_rec',
-                 'mitsuba.sample_rgb_spectrum'],
-    'Polarization': [r'mitsuba.mueller.([\w]+)', 'mitsuba.depolarizer', 'mitsuba.unpolarized_spectrum'],
-    'Util': [r'mitsuba.util.([\w]+)'],
-    'Chi2': [r'mitsuba.chi2.([\w]+)'],
-    'Autodiff': [r'mitsuba.ad.([\w]+)'],
+    'Core': ['misuka.render', 'misuka.set_variant', 'misuka.variant',
+             'misuka.traverse', 'misuka.SceneParameters',
+             'misuka.variants', 'misuka.set_log_level',
+             'misuka.ArgParser', 'misuka.AtomicFloat',
+             'misuka.DefaultFormatter', r'misuka.([\w]*)Stream([\w]*)',
+             'misuka.FileResolver', 'misuka.Formatter', 'misuka.Log',
+             'misuka.Loop', 'misuka.MemoryMappedFile',
+             'misuka.ParamFlags', 'misuka.PluginManager', r'misuka.Scoped([\w]+)',
+             'misuka.Spiral', r'misuka.Struct([\w]*)',
+             r'misuka.Thread([\w]*)', 'misuka.Timer',
+             r'misuka.filesystem.([\w]+)', 'misuka.has_flag',
+             r'misuka.register_([\w]+)', 'misuka.TraversalCallback'],
+    'Parsing': [r'misuka.load_([\w]+)', r'misuka.xml.([\w]+)'],
+    'Object': [r'misuka.Object([\w]*)', 'misuka.Class'],
+    'Properties': ['misuka.Properties'],
+    'Bitmap': [r'misuka.Bitmap([\w]*)', 'misuka.Resampler'],
+    'Warp': [r'misuka.warp.([\w]+)'],
+    'Distributions': [r'misuka.([\w]*)Distribution([\w]*)',
+                      r'misuka.Hierarchical2D\d',
+                      r'misuka.Marginal([\w]+)2D\d'],
+    'Math': [r'misuka.math.([\w]+)', r'misuka.spline.([\w]+)', r'misuka.quad.([\w]+)',
+             'misuka.RadicalInverse', 'misuka.radical_inverse_2',
+             'misuka.coordinate_system', 'misuka.reflect', 'misuka.refract',
+             'misuka.fresnel(.*)', 'misuka.perspective_projection'],
+    'Random': [r'misuka.sample_tea_([\w]+)', 'misuka.PCG32',
+               r'misuka.permute([\w]*)', 'misuka.sobol_2'],
+    'Log': [r'misuka.Log([\w]+)', 'misuka.Appender', ],
+    'Types': [r'misuka.Scalar([\w]+)',
+              r'misuka.Bool([\w]*)',
+              r'misuka.UInt([\w]*)',
+              r'misuka.Int([\w]*)',
+              r'misuka.Float([\w]*)',
+              r'misuka.Tensor([\w]+)',
+              r'misuka.Vector([\w]+)',
+              r'misuka.Point([\w]+)',
+              r'misuka.Normal([\w]+)',
+              r'misuka.Matrix([\w]+)',
+              r'misuka.Quaternion([\w]+)',
+              r'misuka.Texture([\w]+)',
+              r'misuka.Bounding([\w]+)',
+              r'misuka.Transform([\w]+)',
+              r'misuka.Chain([\w]*)Transform([\w]+)',
+              r'misuka.Frame([\w]+)',
+              r'misuka.Color([\w]+)',
+              r'misuka.Ray([\w]+)'],
+    'Constants': [r'misuka.MI_([\w]+)', r'misuka.is_([\w]+)', 'misuka.DEBUG'],
+    'Denoiser': ['misuka.OptixDenoiser'],
+    'BSDF': [r'misuka.BSDF([\w]*)', 'misuka.TransportMode',
+             r'misuka.Microfacet([\w]+)'],
+    'Integrator': [r'misuka.(.*)Integrator([\w]*)', 'misuka.ad.common.mis_weight'],
+    'Endpoint': ['misuka.Endpoint'],
+    'Emitter': [r'misuka.Emitter([\w]*)'],
+    'Sensor': ['misuka.Sensor([\w]+|)', 'misuka.ProjectiveCamera', 'misuka.parse_fov'],
+    'Medium': [r'misuka.Medium([\w]*)', r'misuka.PhaseFunction([\w]+)'],
+    'Shape': ['misuka.Shape([\w]+|)', 'misuka.Mesh([\w]+|)'],
+    'Texture': ['misuka.Texture'],
+    'Volume': [r'misuka.Volume([\w]*)'],
+    'PhaseFunction': [r'misuka.PhaseFunction([\w]*)'],
+    'Film': ['misuka.Film([\w]+|)', 'misuka.ImageBlock'],
+    'Filter': [r'misuka.([\w]*)Filter([\w]*)'],
+    'Sampler': ['misuka.Sampler'],
+    'Scene': ['misuka.Scene', 'misuka.ShapeKDTree', 'misuka.cornell_box'],
+    'Record': ['misuka.PositionSample3f', 'misuka.DirectionSample3f',
+               r'misuka.([\w]+)Interaction([\w]+)',
+               r'misuka.([\w]+)Intersection([\w]+)', ],
+    'Spectrum': [r'misuka.spectrum_([\w]+)', r'misuka.srgb_([\w]+)',
+                 r'misuka.cie1931([\w]+)', 'misuka.cie_d65',
+                 'misuka.xyz_to_srgb',
+                 'misuka.pdf_rgb_spectrum', 'misuka.luminance',
+                 'misuka.eval_reflectance', 'misuka.linear_rgb_rec',
+                 'misuka.sample_rgb_spectrum'],
+    'Polarization': [r'misuka.mueller.([\w]+)', 'misuka.depolarizer', 'misuka.unpolarized_spectrum'],
+    'Util': [r'misuka.util.([\w]+)'],
+    'Chi2': [r'misuka.chi2.([\w]+)'],
+    'Autodiff': [r'misuka.ad.([\w]+)'],
 }
 
 
 # TODO this shouldn't be needed
 def sanitize_types(s):
-    """ Replaces C++ type with Python type in signature. For Python types,
-        removes variant prefix.
+    """ Replaces C++ type with Python type in signature.
     """
-    s = re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'mitsuba.\1', s)
-    s = re.sub(fr'{variant_prefix}([a-zA-Z\_0-9]+)', r'mitsuba.\1', s)
+    s = re.sub(r'mitsuba::([a-zA-Z\_0-9]+)[a-zA-Z\_0-9<, :>]+>', r'misuka.\1', s)
     return s
 
 
@@ -472,7 +476,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
     global last_block_name
 
     # True if the documentation wasn't generated with pybind11 (e.g. python script)
-    is_python_doc = name.startswith('mitsuba.python.')
+    is_python_doc = name.startswith('misuka.python.')
 
     if type(obj) in (int, float, bool, str):
         what = 'data'
@@ -490,7 +494,7 @@ def process_docstring_callback(app, what, name, obj, options, lines):
             # Add information about the base class if it is a Mitsuba type
             if len(obj.__bases__) > 0:
                 full_base_name = str(obj.__bases__[0])[8:-2]
-                if full_base_name.startswith('mitsuba'):
+                if full_base_name.startswith('misuka'):
                     lines.insert(0, 'Base class: %s' % sanitize_types(full_base_name))
                     lines.insert(1, '')
 
@@ -573,8 +577,12 @@ def process_docstring_callback(app, what, name, obj, options, lines):
 
         # Add cross-reference
         if not in_code_block:
-            lines[i] = re.sub(r'(?<!`)(mitsuba(?:\.[a-zA-Z\_0-9]+)+)',
-                              r':py:obj:`\1`', lines[i])
+            lines[i] = re.sub(r'(?<!`)mitsuba((?:\.[a-zA-Z\_0-9]+)+)',
+                              r':py:obj:`misuka\1`', lines[i])
+            # Mentions already wrapped in a code span (`` `mitsuba.Foo` ``)
+            # are skipped above to avoid double-wrapping; still rename them.
+            lines[i] = re.sub(r'`mitsuba((?:\.[a-zA-Z\_0-9]+)+)`',
+                              r'`misuka\1`', lines[i])
 
 
     #----------------------------
@@ -698,7 +706,7 @@ def write_rst_file_callback(app, exception):
             if block_name in added_block:
                 continue
 
-            #if not block_name.startswith('mitsuba.%s' % lib):
+            #if not block_name.startswith('misuka.%s' % lib):
             #    continue
 
             write_block(f, block_name)
@@ -727,10 +735,10 @@ def generate_list_api_callback(app):
               (isfunction(obj) and obj.__module__.startswith(drjit_variant_alias))):
             # Do not ignore "aliased" DrJit imports
             pass
-        elif ((ismodule(obj) and not obj.__name__.startswith('mitsuba.')) or
-              (isclass(obj) and not obj.__module__.startswith('mitsuba')) or
-              (ismethod(obj) and not obj.__module__.startswith('mitsuba')) or
-              (isfunction(obj) and not obj.__module__.startswith('mitsuba'))
+        elif ((ismodule(obj) and not obj.__name__.startswith('misuka.')) or
+              (isclass(obj) and not obj.__module__.startswith('misuka')) or
+              (ismethod(obj) and not obj.__module__.startswith('misuka')) or
+              (isfunction(obj) and not obj.__module__.startswith('misuka'))
               ):
             # Handles imports from external packages
             return
@@ -738,7 +746,7 @@ def generate_list_api_callback(app):
         if ismodule(obj):
             if name in mitsuba.variants():
                 return
-            elif obj.__name__ in [f'mitsuba.{variant}' for variant in mitsuba.variants()]:
+            elif obj.__name__ in [f'misuka.{variant}' for variant in mitsuba.variants()]:
                 # Handles recursive imports of 'mi'
                 return
             elif name == 'python':
@@ -748,7 +756,7 @@ def generate_list_api_callback(app):
                 for x in dir(obj):
                     process(getattr(obj, x), '%s.%s' % (lib, name), x)
         else:
-            full_name = 'mitsuba%s.%s' % (lib, name)
+            full_name = 'misuka%s.%s' % (lib, name)
 
             # Check if this block should be excluded from the API documentation
             for pattern in excluded_api:
@@ -759,7 +767,7 @@ def generate_list_api_callback(app):
                 obj_module = str(obj.__module__)
                 obj_name = obj.__name__
             else:
-                obj_module = 'mitsuba%s' % lib
+                obj_module = 'misuka%s' % lib
                 obj_name = name
 
             key = (obj_module, obj_name, name)
@@ -772,7 +780,7 @@ def generate_list_api_callback(app):
 
 
     print('Generate API list file: %s' % list_api_filename)
-    module = importlib.import_module('mitsuba')
+    module = importlib.import_module('misuka')
     for x in dir(module):
         process(getattr(module, x), '', x)
 

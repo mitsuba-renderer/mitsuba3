@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 #
-# Mitsuba 3 documentation build configuration file
+# misuka documentation build configuration file
 #
 # The documentation can be built by invoking "make mkdoc"
 # from the build directory
@@ -20,20 +20,11 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('src/quickstart/'):
-    os.symlink('../../tutorials/quickstart', 'src/quickstart', target_is_directory=True)
-
 if not os.path.exists('src/rendering'):
-    os.symlink('../../tutorials/rendering', 'src/rendering', target_is_directory=True)
+    os.symlink('../../tutorials_acoustic/rendering', 'src/rendering', target_is_directory=True)
 
 if not os.path.exists('src/inverse_rendering'):
-    os.symlink('../../tutorials/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
-
-if not os.path.exists('src/others'):
-    os.symlink('../../tutorials/others', 'src/others', target_is_directory=True)
-
-if not os.path.exists('src/how_to_guides/'):
-    os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
+    os.symlink('../../tutorials_acoustic/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
 
 if not os.path.exists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
@@ -135,6 +126,8 @@ language = 'en'
 # directories to ignore when looking for source files.
 exclude_patterns = ['.build',
                     'release.rst',
+                    'porting_3_6.rst',
+                    'src/gallery.rst',
                     'src/plugin_reference/section_*.rst',
                     'docs_api/*',
                     'generated/*.rst',
@@ -180,7 +173,7 @@ html_logo = "images/logo.png"
 html_title = "Mitsuba 3"
 html_theme = 'furo'
 html_static_path = ['_static']
-html_js_files = []
+html_js_files = ['external_links_new_tab.js']
 
 # Register the theme as an extension to generate a sitemap.xml
 extensions = []
@@ -205,12 +198,10 @@ extensions.append('sphinx_design')
 
 extensions.append('nbsphinx')
 
-intersphinx_mapping = { 
-    "python": ("https://docs.python.org/3", None),
-    "drjit" : (
-        "https://drjit.readthedocs.io/en/latest/", 
-        ("https://drjit.readthedocs.io/en/v0.4.6/", None)
-    )
+intersphinx_mapping = {
+    "python" : ("https://docs.python.org/3", None),
+    "drjit"  : ("https://drjit.readthedocs.io/en/v1.5.0/", None),
+    "mitsuba": ("https://mitsuba.readthedocs.io/en/v3.9.1/", None)
 }
 
 nbsphinx_execute = 'never'
@@ -272,7 +263,7 @@ nbsphinx_prolog = """
     </style>
 
     <div style="display: block; width: 100%; text-align: center;">
-        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
+        <a href="https://raw.githubusercontent.com/misuka-renderer/misuka-tutorials/main/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
             <button id="nb_btn">Download notebook</button>
         </a>
 
@@ -283,9 +274,7 @@ nbsphinx_prolog = """
 
 """
 
-nbsphinx_thumbnails = {
-    'src/getting_started/quickstart/drjit_quickstart': '_static/drjit-logo-dark.png',
-}
+nbsphinx_thumbnails = {}
 
 extensions.append('sphinx_copybutton')
 
@@ -439,7 +428,7 @@ html_show_sourcelink = False
 #html_search_scorer = 'scorer.js'
 
 # Output file base name for HTML help builder.
-htmlhelp_basename = 'mitsuba3_doc'
+htmlhelp_basename = 'misuka_doc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
@@ -461,7 +450,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'mitsuba3.tex', 'Mitsuba 3 Documentation',
+    (master_doc, 'misuka.tex', 'misuka Documentation',
      author, 'manual'),
 ]
 
@@ -491,7 +480,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
+    (master_doc, 'misuka', 'misuka Documentation',
      [author], 1)
 ]
 
@@ -505,8 +494,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'mitsuba3', 'Mitsuba 3 Documentation',
-     author, 'mitsuba3', 'One line description of project.',
+    (master_doc, 'misuka', 'misuka Documentation',
+     author, 'misuka', 'Differentiable room acoustic renderer.',
      'Miscellaneous'),
 ]
 
