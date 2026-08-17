@@ -25,17 +25,17 @@ When no reconstruction filter is explicitly requested, this is the default
 choice in Mitsuba.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'gaussian',
+        'stddev': 0.25
+
     .. code-tab::  xml
         :name: gaussian-rfilter
 
         <rfilter type="gaussian">
             <float name="stddev" value="0.25"/>
         </rfilter>
-
-    .. code-tab:: python
-
-        'type': 'gaussian',
-        'stddev': 0.25
 
  */
 

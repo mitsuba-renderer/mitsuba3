@@ -23,39 +23,6 @@ many times using the :ref:`shape-instance` plugin. This is useful for rendering 
 where only a few distinct types of trees have to be kept in memory. An example is given below:
 
 .. tabs::
-    .. code-tab:: xml
-        :name: shapegroup
-
-        <!-- Declare a named shape group containing two objects -->
-        <shape type="shapegroup" id="my_shape_group">
-            <shape type="ply">
-                <string name="filename" value="data.ply"/>
-                <bsdf type="roughconductor"/>
-            </shape>
-            <shape type="sphere">
-                <transform name="to_world">
-                    <translate y="20"/>
-                    <scale value="5"/>
-                </transform>
-                <bsdf type="diffuse"/>
-            </shape>
-        </shape>
-
-        <!-- Instantiate the shape group without any kind of transformation -->
-        <shape type="instance">
-            <ref id="my_shape_group"/>
-        </shape>
-
-        <!-- Create instance of the shape group, but rotated, scaled, and translated -->
-        <shape type="instance">
-            <ref id="my_shape_group"/>
-            <transform name="to_world">
-                <translate z="10"/>
-                <scale value="1.5"/>
-                <rotate x="1" angle="45"/>
-            </transform>
-        </shape>
-
     .. code-tab:: python
 
         # Declare a named shape group containing two objects
@@ -94,6 +61,39 @@ where only a few distinct types of trees have to be kept in memory. An example i
                 'id': 'my_shape_group'
             }
         }
+
+    .. code-tab:: xml
+        :name: shapegroup
+
+        <!-- Declare a named shape group containing two objects -->
+        <shape type="shapegroup" id="my_shape_group">
+            <shape type="ply">
+                <string name="filename" value="data.ply"/>
+                <bsdf type="roughconductor"/>
+            </shape>
+            <shape type="sphere">
+                <transform name="to_world">
+                    <translate y="20"/>
+                    <scale value="5"/>
+                </transform>
+                <bsdf type="diffuse"/>
+            </shape>
+        </shape>
+
+        <!-- Instantiate the shape group without any kind of transformation -->
+        <shape type="instance">
+            <ref id="my_shape_group"/>
+        </shape>
+
+        <!-- Create instance of the shape group, but rotated, scaled, and translated -->
+        <shape type="instance">
+            <ref id="my_shape_group"/>
+            <transform name="to_world">
+                <translate z="10"/>
+                <scale value="1.5"/>
+                <rotate x="1" angle="45"/>
+            </transform>
+        </shape>
 
  */
 

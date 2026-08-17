@@ -63,6 +63,17 @@ To change the disk scale, rotation, or translation, use the
 The following XML snippet instantiates an example of a textured disk shape:
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'disk',
+        'material': {
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'checkerboard',
+                'to_uv': mi.ScalarAffineTransform4f([2, 10, 0])
+            }
+        }
+
     .. code-tab:: xml
         :name: disk
 
@@ -75,17 +86,6 @@ The following XML snippet instantiates an example of a textured disk shape:
                 </texture>
             </bsdf>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'disk',
-        'material': {
-            'type': 'diffuse',
-            'reflectance': {
-                'type': 'checkerboard',
-                'to_uv': mi.ScalarAffineTransform4f([2, 10, 0])
-            }
-        }
  */
 
 template <typename Float, typename Spectrum>

@@ -50,17 +50,17 @@ on the order of the machine epsilon (:math:`6\cdot 10^{-8}`) in single precision
    :label: fig-independent-pattern
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'independent',
+        'sample_count': '64'
+
     .. code-tab:: xml
         :name: independent-sampler
 
         <sampler type="independent">
             <integer name="sample_count" value="64"/>
         </sampler>
-
-    .. code-tab:: python
-
-        'type': 'independent',
-        'sample_count': '64'
 
  */
 

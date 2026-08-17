@@ -28,14 +28,7 @@ determined by looking up the corresponding value in the referenced `volume`.
 This is done in world space and potentially requires using the volume's
 `to_world` transformation to align the volume with the object using the texture.
 
-.. tabs:: .. code-tab:: xml
-
-        <texture type="volume">
-            <volume name="volume" type="gridvolume">
-                <string name="filename" value="my_volume.vol"/>
-            </volume>
-        </texture>
-
+.. tabs::
     .. code-tab:: python
 
         'type': 'volume',
@@ -43,6 +36,14 @@ This is done in world space and potentially requires using the volume's
             'type': 'gridvolume',
             'filename': 'my_volume.vol'
         }
+
+    .. code-tab:: xml
+
+        <texture type="volume">
+            <volume name="volume" type="gridvolume">
+                <string name="filename" value="my_volume.vol"/>
+            </volume>
+        </texture>
 
  */
 

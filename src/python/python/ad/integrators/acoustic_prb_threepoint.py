@@ -18,6 +18,39 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
 
     .. pluginparameters::
 
+     * - speed_of_sound
+       - |float|
+       - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+       - |float|
+       - Stopping criterion for the maximum propagation time in seconds.
+         Paths whose accumulated travel distance exceeds ``max_time *
+         speed_of_sound`` are terminated.
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         audible sound sources. 2 will lead to first-order reflections, and so
+         on. (Default: -1)
+
+     * - rr_depth
+       - |int|
+       - Russian roulette path termination is not yet supported. Setting this
+         to any value other than the default raises an error. Use
+         ``max_energy_loss`` instead. (Default: 100000)
+
+     * - max_energy_loss
+       - |float|
+       - Maximum energy loss in dB before a path is terminated. Set to -1 to
+         disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+         contribution from sound sources. (Default: no, i.e. |false|)
+
      * - track_time_derivatives
        - |bool|
        - Whether to track derivatives with respect to time/distance, needed
@@ -25,16 +58,13 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
          scene parameters. Takes effect during the adjoint (gradient) pass
          only. (Default: |true|)
 
-    Also inherits all other parameters from
-    :ref:`acoustic_ad <integrator-acoustic_ad>`.
-
     This integrator behaves similarly to
     :ref:`acoustic_prb <integrator-acoustic_prb>`, but can also handle
     **non-static scenes** with moving geometry. Moving geometry causes two
     challenges:
 
     1. Moving geometry can cause discontinuities in the integrand whose
-       locations depend on the scene parameters -- for example, when a small
+       locations depend on the scene parameters. An example is when a small
        displacement of a surface causes a ray to start or stop intersecting it.
        Even if the derivative of the integral with respect to a scene parameter
        is continuous, it cannot be estimated by differentiating the individual
@@ -52,15 +82,22 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
     surface points in the scene (which inherently move with the geometry).
     This:
 
-    1. Removes some of the discontinuities in the rendering integral, leaving
+    1. Removes most of the discontinuities in the rendering integral, leaving
        discontinuities only where visibility in the scene changes (e.g., at
        shadow boundaries).
     2. Ensures that the influence of the geometry on the ray path is local,
        i.e., only affecting immediate neighbor vertices on a path.
 
-    .. note:: This integrator does not handle participating media or polarized
-       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
-       type.
+    .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this
+       integrator is unbiased even with moving geometry, though its gradient
+       estimates are noisier.
+
+    .. warning:: Gradients with respect to geometry need the time derivatives
+       that ``track_time_derivatives`` enables, so leave it at |true| when
+       optimizing geometry. The film's reconstruction filter also has to be
+       differentiable for those time gradients to be correct: a ``gaussian``
+       filter with ``stddev`` set to 0.25 time bins is recommended, as it
+       enables gradient estimation without significant smoothing of the ETC.
 
     .. tabs::
         .. code-tab:: python
@@ -69,6 +106,8 @@ class AcousticPRBThreePointIntegrator(AcousticADIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+            'max_energy_loss': 60.0,
+            'track_time_derivatives': True,
     """
 
     def __init__(self, props):

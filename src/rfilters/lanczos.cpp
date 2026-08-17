@@ -29,17 +29,17 @@ instance have black fringing artifacts around it). This is also the
 computationally slowest reconstruction filter.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'lanczos',
+        'lobes': 4
+
     .. code-tab:: xml
         :name: lanczos-rfilter
 
         <rfilter type="lanczos">
             <integer name="lobes" value="4"/>
         </rfilter>
-
-    .. code-tab:: python
-
-        'type': 'lanczos',
-        'lobes': 4
 
  */
 

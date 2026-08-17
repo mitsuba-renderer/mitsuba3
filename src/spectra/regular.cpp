@@ -40,18 +40,26 @@ Regular spectrum (:monosp:`regular`)
  * - range
    - |string|
    - Spectral emission range (wavelengths or frequencies).
-   - |exposed|, |differentiable|
+   - |exposed|
 
 This spectrum returns linearly interpolated reflectance or emission values from *regularly*
 placed samples. You can specify either wavelengths or frequencies as the domain.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: regular
+    .. code-tab:: python Python (acoustic)
+
+        'type': 'regular',
+        'frequency_min': 250,
+        'frequency_max': 500,
+        'values': '0.1, 0.2'
+
+    .. code-tab:: xml XML (acoustic)
+        :name: regular-acoustic
 
         <spectrum type="regular">
-            <string name="range" value="400, 700">
-            <string name="values" value="0.1, 0.2">
+            <float name="frequency_min" value="250"/>
+            <float name="frequency_max" value="500"/>
+            <string name="values" value="0.1, 0.2"/>
         </spectrum>
 
     .. code-tab:: python
@@ -61,13 +69,14 @@ placed samples. You can specify either wavelengths or frequencies as the domain.
         'wavelength_max': 700,
         'values': '0.1, 0.2'
 
-    .. code-tab:: python Python (acoustic)
-        :name: regular-acoustic
+    .. code-tab:: xml
+        :name: regular
 
-        'type': 'regular',
-        'frequency_min': 250,
-        'frequency_max': 500,
-        'values': '0.1, 0.2'
+        <spectrum type="regular">
+            <float name="wavelength_min" value="400"/>
+            <float name="wavelength_max" value="700"/>
+            <string name="values" value="0.1, 0.2"/>
+        </spectrum>
  */
 
 template <typename Float, typename Spectrum>

@@ -68,23 +68,6 @@ A sphere can either be configured using a linear :monosp:`to_world` transformati
 The two declarations below are equivalent.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sphere
-
-        <shape type="sphere">
-            <transform name="to_world">
-                <translate x="1" y="0" z="0"/>
-                <scale value="2"/>
-            </transform>
-            <bsdf type="diffuse"/>
-        </shape>
-
-        <shape type="sphere">
-            <point name="center" x="1" y="0" z="0"/>
-            <float name="radius" value="2"/>
-            <bsdf type="diffuse"/>
-        </shape>
-
     .. code-tab:: python
 
         'sphere_1': {
@@ -103,6 +86,23 @@ The two declarations below are equivalent.
                 'type': 'diffuse'
             }
         }
+
+    .. code-tab:: xml
+        :name: sphere
+
+        <shape type="sphere">
+            <transform name="to_world">
+                <translate x="1" y="0" z="0"/>
+                <scale value="2"/>
+            </transform>
+            <bsdf type="diffuse"/>
+        </shape>
+
+        <shape type="sphere">
+            <point name="center" x="1" y="0" z="0"/>
+            <float name="radius" value="2"/>
+            <bsdf type="diffuse"/>
+        </shape>
 
 When a :ref:`sphere <shape-sphere>` shape is turned into an :ref:`area <emitter-area>`
 light source, Mitsuba 3 switches to an efficient

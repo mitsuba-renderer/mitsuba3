@@ -50,12 +50,13 @@ The lobe width is controlled by the `specular_lobe_width` parameter.
 Small `specular_lobe_width` values (default or lower) approximate ideal specular reflections (see left figure) while remaining continuously differentiable.
 Larger values increase the specular lobe width (see right figure).
 Under the hood, this BSDF uses the microfacet-based model from
-:ref:`roughconductor <bsdf-roughconductor>` with a Beckmann distribution. The parameter `specular_lobe_width` corresponds to the parameter `alpha` in the
-:ref:`roughconductor <bsdf-roughconductor>` BSDF.
+:external+mitsuba:ref:`roughconductor <bsdf-roughconductor>`
+with a Beckmann distribution. The parameter `specular_lobe_width` corresponds to the parameter `alpha` in the
+:external+mitsuba:ref:`roughconductor <bsdf-roughconductor>` BSDF.
 Note that microfacet models are not validated for the application to sound propagation, although any non-finite surface will exhibit specular lobes with non-zero width.
 
-The diffuse component follows Lambertian scattering (see :ref:`diffuse
-<bsdf-diffuse>`).
+The diffuse component follows Lambertian scattering (see
+:external+mitsuba:ref:`diffuse <bsdf-diffuse>`).
 
 .. subfigstart::
 .. subfigure:: ../../resources/data_acoustic/docs/images/bsdf/acoustic_bsdf-1.png
@@ -67,18 +68,10 @@ The diffuse component follows Lambertian scattering (see :ref:`diffuse
 
 
 The following XML snippet describes an acoustic material with spectrally varying
-absorption and scattering values, given in frequency-value pairs (see :ref:`sec-spectra`).
+absorption and scattering values, given in frequency-value pairs (see
+:ref:`frequency-domain spectra <sec-spectra-acoustic>`).
 
 .. tabs::
-    .. code-tab:: xml
-        :name: acousticbsdf
-
-        <bsdf type="acousticbsdf">
-            <spectrum name="absorption" value="20:0.2, 1000.:0.5, 20000:0.8"/>
-            <spectrum name="scattering" value="20:0.1, 1000.:0.6, 20000:0.9"/>
-            <float name="specular_lobe_width" value="0.001"/>
-        </bsdf>
-
     .. code-tab:: python
 
         'type': 'acousticbsdf',
@@ -91,6 +84,15 @@ absorption and scattering values, given in frequency-value pairs (see :ref:`sec-
             'value': [(20, 0.1), (1000, 0.6), (20000, 0.9)],
         },
         'specular_lobe_width': 0.001
+
+    .. code-tab:: xml
+        :name: acousticbsdf
+
+        <bsdf type="acousticbsdf">
+            <spectrum name="absorption" value="20:0.2, 1000.:0.5, 20000:0.8"/>
+            <spectrum name="scattering" value="20:0.1, 1000.:0.6, 20000:0.9"/>
+            <float name="specular_lobe_width" value="0.001"/>
+        </bsdf>
 */
 
 template <typename Float, typename Spectrum>

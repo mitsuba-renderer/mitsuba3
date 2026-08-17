@@ -15,14 +15,14 @@ to match the Catmull-Rom spline. It usually does a better job at at preserving s
 features at the cost of more ringing.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'catmullrom',
+
     .. code-tab:: xml
         :name: catmullrom-rfilter
 
         <rfilter type="catmullrom"/>
-
-    .. code-tab:: python
-
-        'type': 'catmullrom',
 
  */
 

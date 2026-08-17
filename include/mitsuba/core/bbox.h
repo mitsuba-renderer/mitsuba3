@@ -178,8 +178,8 @@ template <typename Point_> struct BoundingBox {
      * \brief Check whether a specified bounding box lies \a on or \a within
      * the current bounding box
      *
-     * Note that by definition, an 'invalid' bounding box (where min=\f$\infty\f$
-     * and max=\f$-\infty\f$) does not cover any space. Hence, this method will always
+     * Note that by definition, an 'invalid' bounding box (where min = \f$\infty\f$
+     * and max = \f$-\infty\f$) does not cover any space. Hence, this method will always
      * return \a true when given such an argument.
      *
      * \tparam Strict Set this parameter to \c true if the bounding

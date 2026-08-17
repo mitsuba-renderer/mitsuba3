@@ -119,6 +119,12 @@ e.g. when textured data is already in linear space or does not represent colors
 at all.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'bitmap',
+        'filename': 'texture.png',
+        'wrap_mode': 'mirror'
+
     .. code-tab:: xml
         :name: bitmap-texture
 
@@ -126,12 +132,6 @@ at all.
             <string name="filename" value="texture.png"/>
             <string name="wrap_mode" value="mirror"/>
         </texture>
-
-    .. code-tab:: python
-
-        'type': 'bitmap',
-        'filename': 'texture.png',
-        'wrap_mode': 'mirror'
 
 */
 

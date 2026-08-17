@@ -66,6 +66,11 @@ specified to translate, rotate, scale or skew it as desired. The parameterizatio
 of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'cube',
+        'to_world': mi.ScalarAffineTransform4f([2, 10, 1])
+
     .. code-tab:: xml
         :name: cube
 
@@ -74,11 +79,6 @@ of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
                 <scale x="2" y="10" z="1"/>
             </transform>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'cube',
-        'to_world': mi.ScalarAffineTransform4f([2, 10, 1])
 */
 
 MI_VARIANT class Cube final : public Mesh<Float, Spectrum> {

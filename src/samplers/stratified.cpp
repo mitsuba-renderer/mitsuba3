@@ -49,17 +49,17 @@ the independent sampler, as well as better convergence.
    :label: fig-stratified-pattern
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'stratified',
+        'sample_count': '4'
+
     .. code-tab:: xml
         :name: stratified-sampler
 
         <sampler type="stratified">
             <integer name="sample_count" value="64"/>
         </sampler>
-
-    .. code-tab:: python
-
-        'type': 'stratified',
-        'sample_count': '4'
 
  */
 

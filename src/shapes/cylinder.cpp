@@ -78,6 +78,14 @@ desirable, consider using the :ref:`twosided <bsdf-twosided>` plugin.
 A simple example for instantiating a cylinder, whose interior is visible:
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'cylinder',
+        'radius': 0.3,
+        'material': {
+            'type': 'diffuse'
+        }
+
     .. code-tab:: xml
         :name: cylinder
 
@@ -87,14 +95,6 @@ A simple example for instantiating a cylinder, whose interior is visible:
                 <bsdf type="diffuse"/>
             </bsdf>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'cylinder',
-        'radius': 0.3,
-        'material': {
-            'type': 'diffuse'
-        }
  */
 
 template <typename Float, typename Spectrum>

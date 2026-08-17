@@ -178,14 +178,6 @@ at the end of the file, which specifies the starting position of each sub-mesh:
           - Total number of meshes in the :monosp:`.serialized` file
 
 .. tabs::
-    .. code-tab:: xml
-        :name: serialized
-
-        <shape type="serialized">
-            <string name="filename" value="shape.serialized"/>
-            <bsdf type='diffuse'/>
-        </shape>
-
     .. code-tab:: python
 
         'type': 'serialized',
@@ -193,6 +185,14 @@ at the end of the file, which specifies the starting position of each sub-mesh:
         'material': {
             'type': 'diffuse',
         }
+
+    .. code-tab:: xml
+        :name: serialized
+
+        <shape type="serialized">
+            <string name="filename" value="shape.serialized"/>
+            <bsdf type='diffuse'/>
+        </shape>
  */
 
 #define MI_FILEFORMAT_HEADER     0x041C

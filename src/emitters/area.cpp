@@ -13,8 +13,8 @@ NAMESPACE_BEGIN(mitsuba)
 
 .. _emitter-area:
 
-Area light (:monosp:`area`)
----------------------------
+Area emitter (:monosp:`area`)
+-----------------------------
 
 .. pluginparameters::
 
@@ -23,36 +23,36 @@ Area light (:monosp:`area`)
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
-This plugin implements an area light, i.e. a light source that emits
-diffuse illumination from the exterior of an arbitrary shape.
-Since the emission profile of an area light is completely diffuse, it
-has the same apparent brightness regardless of the observer's viewing
-direction. Furthermore, since it occupies a nonzero amount of space, an
-area light generally causes scene objects to cast soft shadows.
+This plugin implements an area emitter, i.e. a source that emits from the
+exterior of an arbitrary shape. Since its emission profile is completely
+diffuse, the emitted radiance is the same regardless of the direction from
+which the emitter is observed. Furthermore, since it occupies a nonzero amount
+of space, an area emitter generally causes scene objects to cast soft rather
+than hard-edged shadows.
 
-To create an area light source, simply instantiate the desired
-emitter shape and specify an :monosp:`area` instance as its child:
+To create an area emitter, simply instantiate the desired emitter shape and
+specify an :monosp:`area` instance as its child:
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sphere-light
-
-        <shape type="sphere">
-            <emitter type="area">
-                <rgb name="radiance" value="1.0"/>
-            </emitter>
-        </shape>
-
     .. code-tab:: python
 
         'type': 'sphere',
         'emitter': {
             'type': 'area',
             'radiance': {
-                'type': 'rgb',
+                'type': 'uniform',
                 'value': 1.0,
             }
         }
+
+    .. code-tab:: xml
+        :name: sphere-emitter
+
+        <shape type="sphere">
+            <emitter type="area">
+                <spectrum name="radiance" value="1.0"/>
+            </emitter>
+        </shape>
 
  */
 
@@ -65,7 +65,7 @@ public:
     AreaLight(const Properties &props) : Base(props) {
         if (props.has_property("to_world"))
             Throw("Found a 'to_world' transformation -- this is not allowed. "
-                  "The area light inherits this transformation from its parent "
+                  "The area emitter inherits this transformation from its parent "
                   "shape.");
 
         m_radiance = props.get_emissive_texture<Texture>("radiance", 1.f);

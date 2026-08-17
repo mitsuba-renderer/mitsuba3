@@ -24,17 +24,17 @@ otherwise, negative-lobed filters may be preferable (e.g. Mitchell-Netravali
 or Lanczos Sinc).
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'tent',
+        'radius': 1.25,
+
     .. code-tab:: xml
         :name: tent-rfilter
 
         <rfilter type="tent">
             <float name="radius" value="1.25"/>
         </rfilter>
-
-    .. code-tab:: python
-
-        'type': 'tent',
-        'radius': 1.25,
 
  */
 

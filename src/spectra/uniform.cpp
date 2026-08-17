@@ -30,18 +30,25 @@ This spectrum returns a constant reflectance or emission value over the spectral
 dimension. It implements a uniform sampling method on a finite spectral range
 controlled by the ``wavelength_min`` and ``wavelength_max`` parameters.
 
+.. note::
+
+    ``wavelength_min`` and ``wavelength_max`` only affect wavelength
+    importance sampling in continuous spectral (optical) rendering. They have
+    no effect on acoustic rendering: the sensor picks each ray's frequency
+    directly from the film's frequency bins.
+
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'uniform',
+        'value': 0.1
+
     .. code-tab:: xml
         :name: uniform
 
         <spectrum type="uniform">
             <float name="value" value="0.1"/>
         </spectrum>
-
-    .. code-tab:: python
-
-        'type': 'uniform',
-        'value': 0.1
 
  */
 

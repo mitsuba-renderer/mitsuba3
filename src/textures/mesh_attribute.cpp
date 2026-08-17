@@ -38,6 +38,18 @@ The following XML snippet describes a mesh with diffuse material,
 whose reflectance is specified using the ``vertex_color`` attribute of that mesh:
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'ply',
+        'filename': 'my_mesh_with_vertex_color_attr.ply',
+        'bsdf': {
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'mesh_attribute',
+                'name': 'vertex_color'
+            }
+        }
+
     .. code-tab:: xml
         :name: mesh-attribute
 
@@ -50,18 +62,6 @@ whose reflectance is specified using the ``vertex_color`` attribute of that mesh
                 </texture>
             </bsdf>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'ply',
-        'filename': 'my_mesh_with_vertex_color_attr.ply',
-        'bsdf': {
-            'type': 'diffuse',
-            'reflectance': {
-                'type': 'mesh_attribute',
-                'name': 'vertex_color'
-            }
-        }
 
 .. note::
 

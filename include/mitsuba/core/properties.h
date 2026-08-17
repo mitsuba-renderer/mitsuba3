@@ -276,7 +276,7 @@ public:
      *   ``int32_t``, ``uint64_t``, ``int64_t``, ``size_t``).
      *
      * - Points/vectors (``ScalarPoint2f``, ``ScalarPoint3f``,
-     *   `ScalarVector2f``, or ``ScalarVector3f``).
+     *   ``ScalarVector2f``, or ``ScalarVector3f``).
      *
      * - Tri-stimulus color values (``ScalarColor3f``).
      *

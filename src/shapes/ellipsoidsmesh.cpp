@@ -103,19 +103,19 @@ This shape is designed for use with volumetric primitive integrators, as
 detailed in :cite:`Condor2024Gaussians`.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sphere
-
-        <shape type="ellipsoidsmesh">
-            <string name="filename" value="my_primitives.ply"/>
-        </shape>
-
     .. code-tab:: python
 
         'primitives': {
             'type': 'ellipsoidsmesh',
             'filename': 'my_primitives.ply'
         }
+
+    .. code-tab:: xml
+        :name: sphere
+
+        <shape type="ellipsoidsmesh">
+            <string name="filename" value="my_primitives.ply"/>
+        </shape>
  */
 
 template <typename Float, typename Spectrum>

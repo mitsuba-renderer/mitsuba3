@@ -57,17 +57,17 @@ which is a quality criterion on their spatial distribution.
 
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'ldsampler',
+        'sample_count': '64'
+
     .. code-tab:: xml
         :name: ldsampler-sampler
 
         <sampler type="ldsampler">
             <integer name="sample_count" value="64"/>
         </sampler>
-
-    .. code-tab:: python
-
-        'type': 'ldsampler',
-        'sample_count': '64'
 
  */
 

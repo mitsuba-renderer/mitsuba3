@@ -25,6 +25,12 @@ Separable cubic spline reconstruction filter by Mitchell and Netravali
 and ringing.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'mitchell',
+        'A': 0.25,
+        'B': 0.55
+
     .. code-tab:: xml
         :name: mitchell-rfilter
 
@@ -32,12 +38,6 @@ and ringing.
             <float name="A" value="0.25"/>
             <float name="B" value="0.55"/>
         </rfilter>
-
-    .. code-tab:: python
-
-        'type': 'mitchell',
-        'A': 0.25,
-        'B': 0.55
 
  */
 

@@ -108,6 +108,12 @@ or ``{red|green|blue|alpha}``. Those attributes will be group together under a s
 multidimensional attribute named ``{vertex|face}_color``.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'ply',
+        'filename': 'my_shape.ply',
+        'flip_normals': True
+
     .. code-tab:: xml
         :name: ply
 
@@ -115,12 +121,6 @@ multidimensional attribute named ``{vertex|face}_color``.
             <string name="filename" value="my_shape.ply"/>
             <boolean name="flip_normals" value="true"/>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'ply',
-        'filename': 'my_shape.ply',
-        'flip_normals': True
 
 .. note::
 

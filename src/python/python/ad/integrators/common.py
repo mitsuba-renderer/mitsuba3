@@ -919,7 +919,7 @@ class PSIntegrator(ADIntegrator):
         Renders and accumulates the outputs of the primarily visible
         discontinuities, indirect discontinuities and continuous derivatives.
         It outputs an attached tensor which should subsequently be traversed by
-        a call to `dr.forward`/`dr.backward`/`dr.enqueue`/`dr.traverse`.
+        a call to ``dr.forward``/``dr.backward``/``dr.enqueue``/``dr.traverse``.
 
         Note: The continuous derivatives are only attached if
         `radiative_backprop` is `False`. When using RB for the continuous
@@ -1159,7 +1159,7 @@ class PSIntegrator(ADIntegrator):
                                    wavelengths, active):
         """
         Sample the radiance difference of two rays that hit and miss the
-        silhouette point `ss.p` with direction `ss.d`.
+        silhouette point ``ss.p`` with direction ``ss.d``.
 
         Parameter ``scene`` (``mi.Scene``)
             Reference to the scene being rendered in a differentiable manner.
@@ -1194,8 +1194,8 @@ class PSIntegrator(ADIntegrator):
     def sample_importance(self, scene, sensor, ss, max_depth, sampler,
                           wavelengths, active):
         """
-        Sample the incident importance at the silhouette point `ss.p` with
-        direction `-ss.d`. If multiple connections to the sensor are valid, this
+        Sample the incident importance at the silhouette point ``ss.p`` with
+        direction ``-ss.d``. If multiple connections to the sensor are valid, this
         method uses reservoir sampling to pick one.
 
         Parameter ``scene`` (``mi.Scene``)

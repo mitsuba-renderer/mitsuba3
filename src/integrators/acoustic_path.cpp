@@ -58,27 +58,33 @@ Acoustic Path Tracer (:monosp:`acoustic_path`)
 
 This integrator implements an acoustic path tracer that simulates sound
 propagation in a scene by tracing paths from the sensor (microphone) to
-the emitters (sound sources). It computes an energy-based impulse response
-(echogram) by accumulating path contributions into time bins determined by the
-total path length and the speed of sound.
+the emitters (sound sources). It computes an energy-time curve (ETC) by
+accumulating path contributions into time bins determined by the total path
+length and the speed of sound.
 
 At each surface interaction, the integrator uses multiple importance sampling
 (MIS) to combine BSDF and emitter samples, analogous to the optical
-:ref:`path tracer <integrator-path>`. The key difference is that energy
+:external+mitsuba:ref:`path tracer <integrator-path>`.
+The key difference is that energy
 transport is not assumed to be instantaneous, but at the speed of sound. Instead
 of producing an image, the output is stored in a ``Tape``, where the first axis
-corresponds to frequency bins and the second axis to time bins.
+corresponds to time bins and the second axis to frequency bands.
 
 Sound paths are terminated when any of the following conditions are met:
 
 - The maximum path depth (``max_depth``) is reached.
 - The accumulated path distance exceeds ``max_time * speed_of_sound``.
-- The path throughput drops below the energy loss threshold (``max_energy_loss``).
-
-.. note:: This integrator does not handle participating media or polarized
-   rendering. It requires a ``Microphone`` sensor with a ``Tape`` film type.
+- The path throughput drops below the energy loss threshold
+  (``max_energy_loss``).
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'acoustic_path',
+        'max_time': 1.0,
+        'speed_of_sound': 343.0,
+        'max_depth': -1,
+
     .. code-tab::  xml
         :name: acoustic-path-integrator
 
@@ -87,13 +93,6 @@ Sound paths are terminated when any of the following conditions are met:
             <float name="speed_of_sound" value="343.0"/>
             <integer name="max_depth" value="-1"/>
         </integrator>
-
-    .. code-tab:: python
-
-        'type': 'acoustic_path',
-        'max_time': 1.0,
-        'speed_of_sound': 343.0,
-        'max_depth': -1,
 
  */
 
@@ -474,7 +473,7 @@ public:
 
             /*
             Calculate path segment length. spawn_ray() offsets rays by a small
-            epsilon to prevent self-intersection. This moves the origin towards
+            epsilon to prevent self-intersection. This moves the origin toward
             the intersection point and reduces si.t slightly.
             Use true geometric distance instead:
             */
@@ -736,7 +735,7 @@ protected:
                        const Film *film,
                        Sampler *sampler,
                        ImageBlock *block,
-                       Float *aovs, /* just passed through towards sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
+                       Float *aovs, /* just passed through toward sample(), putting data into the block needs to happen inside sample() to avoid storing copies of entire histograms. */
                        const Vector2f &pos,
                        Mask active = true) const {
         Log(Debug, "Running render_sample() ..");

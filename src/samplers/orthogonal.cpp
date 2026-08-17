@@ -62,17 +62,17 @@ stratification of 2D projections of those samples wouldn't be ensured anymore.
    :label: fig-orthogonal-pattern
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'orthogonal',
+        'sample_count': '4'
+
     .. code-tab:: xml
         :name: orthogonal-sampler
 
         <sampler type="orthogonal">
             <integer name="sample_count" value="4"/>
         </sampler>
-
-    .. code-tab:: python
-
-        'type': 'orthogonal',
-        'sample_count': '4'
 
  */
 

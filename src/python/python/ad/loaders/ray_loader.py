@@ -8,10 +8,10 @@ import drjit as dr
 
 class FlatSensor(mi.Sensor):
     """
-    Sensor used internally by :py:class:`~mitsuba.ad.RayDataLoader`.
+    Sensor used internally by :py:class:`~misuka.ad.RayDataLoader`.
 
     Its film has one row with ``pixels_per_batch`` pixels. Before each render
-    call, :py:meth:`~mitsuba.ad.RayDataLoader.next()` stores the selected flat
+    call, :py:meth:`~misuka.ad.RayDataLoader.next()` stores the selected flat
     source pixel indices in ``pixel_idx``. Sampling this sensor then remaps
     those flat indices to the corresponding source sensor and pixel
     coordinates.
@@ -173,7 +173,7 @@ class RayDataLoader:
 
         Parameter ``pixels_per_batch`` (``int``):
             Number of flattened pixels returned by each
-            :py:meth:`~mitsuba.ad.RayDataLoader.next()` call. It must be
+            :py:meth:`~misuka.ad.RayDataLoader.next()` call. It must be
             positive and no larger than ``total_pixels``.
 
         Parameter ``seed`` (``int``):

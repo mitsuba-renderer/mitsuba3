@@ -90,14 +90,6 @@ selected as the default approach to ensure continuity across grid cells.
     <https://github.com/rgl-epfl/differentiable-sdf-rendering>`_.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sdfgrid
-
-        <shape type="sdfgrid">
-            <string name="filename" value="data.sdf"/>
-            <bsdf type="diffuse"/>
-        </shape>
-
     .. code-tab:: python
 
         'type': 'sdfgrid',
@@ -105,6 +97,14 @@ selected as the default approach to ensure continuity across grid cells.
         'bsdf': {
             'type': 'diffuse'
         }
+
+    .. code-tab:: xml
+        :name: sdfgrid
+
+        <shape type="sdfgrid">
+            <string name="filename" value="data.sdf"/>
+            <bsdf type="diffuse"/>
+        </shape>
  */
 
 template <typename Float, typename Spectrum>

@@ -88,17 +88,17 @@ and texture coordinates.
 Loading an ordinary OBJ file is as simple as writing:
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'obj',
+        'filename': 'my_shape.obj'
+
     .. code-tab:: xml
         :name: obj
 
         <shape type="obj">
             <string name="filename" value="my_shape.obj"/>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'obj',
-        'filename': 'my_shape.obj'
 
 .. note:: Importing geometry via OBJ files should only be used as an absolutely
           last resort. Due to inherent limitations of this format, the files

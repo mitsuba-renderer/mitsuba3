@@ -109,19 +109,19 @@ It is designed for use with volumetric primitive integrators, as detailed in
 :cite:`Condor2024Gaussians`.
 
 .. tabs::
-    .. code-tab:: xml
-        :name: sphere
-
-        <shape type="ellipsoids">
-            <string name="filename" value="my_primitives.ply"/>
-        </shape>
-
     .. code-tab:: python
 
         'primitives': {
             'type': 'ellipsoids',
             'filename': 'my_primitives.ply'
         }
+
+    .. code-tab:: xml
+        :name: sphere
+
+        <shape type="ellipsoids">
+            <string name="filename" value="my_primitives.ply"/>
+        </shape>
  */
 
 #if defined(MI_ENABLE_METAL)

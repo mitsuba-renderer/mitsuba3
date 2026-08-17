@@ -97,6 +97,14 @@ points and increasing radii::
      4.0 0.0 2.3 6
 
 .. tabs::
+    .. code-tab:: python
+
+        'curves': {
+            'type': 'linearcurve',
+            'to_world': mi.ScalarAffineTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
+            'filename': 'curves.txt'
+        },
+
     .. code-tab:: xml
         :name: linearcurve
 
@@ -107,14 +115,6 @@ points and increasing radii::
             </transform>
             <string name="filename" type="curves.txt"/>
         </shape>
-
-    .. code-tab:: python
-
-        'curves': {
-            'type': 'linearcurve',
-            'to_world': mi.ScalarAffineTransform4f().scale([2, 2, 2]).translate([1, 0, 0]),
-            'filename': 'curves.txt'
-        },
 
 .. note:: The backfaces of curves are always culled. It is therefore impossible
           to intersect the curve with a ray that's origin is inside of the curve.

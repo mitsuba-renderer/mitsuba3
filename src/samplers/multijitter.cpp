@@ -58,17 +58,17 @@ columns and the rows.
    :label: fig-multijitter-pattern
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'multijitter',
+        'sample_count': '64'
+
     .. code-tab:: xml
         :name: multijitter-sampler
 
         <sampler type="multijitter">
             <integer name="sample_count" value="64"/>
         </sampler>
-
-    .. code-tab:: python
-
-        'type': 'multijitter',
-        'sample_count': '64'
 
  */
 

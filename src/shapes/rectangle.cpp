@@ -55,6 +55,17 @@ To change the rectangle scale, rotation, or translation, use the
 The following XML snippet showcases a simple example of a textured rectangle:
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'rectangle',
+        'material': {
+            'type': 'diffuse',
+            'reflectance': {
+                'type': 'checkerboard',
+                'to_uv': mi.ScalarAffineTransform4f().scale([5, 5, 1])
+            }
+        }
+
     .. code-tab:: xml
         :name: rectangle
 
@@ -67,17 +78,6 @@ The following XML snippet showcases a simple example of a textured rectangle:
                 </texture>
             </bsdf>
         </shape>
-
-    .. code-tab:: python
-
-        'type': 'rectangle',
-        'material': {
-            'type': 'diffuse',
-            'reflectance': {
-                'type': 'checkerboard',
-                'to_uv': mi.ScalarAffineTransform4f().scale([5, 5, 1])
-            }
-        }
 
  */
 

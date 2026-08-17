@@ -365,9 +365,9 @@ public:
      *
      * This method is only useful when using automatic differentiation. The
      * immediate/primal return value of this method is exactly equal to
-     * \`si.p\`.
+     * ``si.p``.
      *
-     * The input `si` does not need to be explicitly detached, it is done by the
+     * The input ``si`` does not need to be explicitly detached, it is done by the
      * method itself.
      *
      * If the shape cannot be differentiated, this method will return the
@@ -395,7 +395,7 @@ public:
      * \brief Projects a point on the surface of the shape to its silhouette
      * as seen from a specified viewpoint.
      *
-     * This method only projects the `si.p` point within its primitive.
+     * This method only projects the ``si.p`` point within its primitive.
      *
      * Not all of the fields of the \ref SilhouetteSample3f might be filled by
      * this method. Each shape will at the very least fill its return value with

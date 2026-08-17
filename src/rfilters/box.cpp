@@ -16,14 +16,14 @@ since it is prone to severe aliasing. It is included mainly for completeness,
 though some rare situations may warrant its use.
 
 .. tabs::
+    .. code-tab:: python
+
+        'type': 'box',
+
     .. code-tab:: xml
         :name: box-rfilter
 
         <rfilter type="box"/>
-
-    .. code-tab:: python
-
-        'type': 'box',
 
  */
 

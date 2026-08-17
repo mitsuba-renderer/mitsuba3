@@ -17,10 +17,39 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
     ---------------------------------------------------------------
 
     .. pluginparameters::
-        :extra-rows: 0
 
-        (Inherits all parameters from
-        :ref:`acoustic_ad <integrator-acoustic_ad>`.)
+     * - speed_of_sound
+       - |float|
+       - Speed of sound in meters per second. (Default: 343.0)
+
+     * - max_time
+       - |float|
+       - Stopping criterion for the maximum propagation time in seconds.
+         Paths whose accumulated travel distance exceeds ``max_time *
+         speed_of_sound`` are terminated.
+
+     * - max_depth
+       - |int|
+       - Specifies the longest path depth (where -1
+         corresponds to :math:`\infty`). A value of 1 will only render directly
+         audible sound sources. 2 will lead to first-order reflections, and so
+         on. (Default: -1)
+
+     * - rr_depth
+       - |int|
+       - Russian roulette path termination is not yet supported. Setting this
+         to any value other than the default raises an error. Use
+         ``max_energy_loss`` instead. (Default: 100000)
+
+     * - max_energy_loss
+       - |float|
+       - Maximum energy loss in dB before a path is terminated. Set to -1 to
+         disable this criterion. (Default: 60.0)
+
+     * - hide_emitters
+       - |bool|
+       - Hide directly visible emitters, i.e. skip the direct (line-of-sight)
+         contribution from sound sources. (Default: no, i.e. |false|)
 
     This integrator behaves similarly to
     :ref:`acoustic_prb <integrator-acoustic_prb>`, but uses a three-point-form
@@ -41,9 +70,15 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
     implementation. For differentiable rendering of non-static scenes, use
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>`.
 
-    .. note:: This integrator does not handle participating media or polarized
-       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
-       type.
+    .. note:: Unlike :ref:`acoustic_prb <integrator-acoustic_prb>`, this
+       integrator is unbiased even with moving geometry, though its gradient
+       estimates are noisier.
+
+    .. warning:: Because time derivatives are always tracked, the film's
+       reconstruction filter has to be differentiable for those time gradients
+       to be correct: a ``gaussian`` filter with ``stddev`` set to 0.25 time
+       bins is recommended, as it enables gradient estimation without
+       significant smoothing of the ETC.
 
     .. tabs::
         .. code-tab:: python
@@ -52,6 +87,7 @@ class AcousticADThreePointIntegrator(AcousticADIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+            'max_energy_loss': 60.0,
     """
 
     @dr.syntax

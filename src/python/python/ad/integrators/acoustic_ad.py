@@ -53,7 +53,8 @@ class AcousticADIntegrator(RBIntegrator):
      * - is_detached
        - |bool|
        - Whether the sampling strategy should be detached from the optimized
-         parameters. (Default: |true|)
+         parameters. This is the only acoustic AD integrator that acts on it.
+         The others accept it and ignore it. (Default: |true|)
 
     This is the base class for differentiable acoustic integrators. It extends
     the :ref:`acoustic path tracer <integrator-acoustic_path>` with automatic
@@ -62,9 +63,8 @@ class AcousticADIntegrator(RBIntegrator):
 
     Like the acoustic path tracer, it simulates sound propagation by tracing
     paths from the sensor (microphone) to the emitters (sound sources), and
-    computes an energy-based impulse response (echogram) by accumulating path
-    contributions into time bins determined by the total path length and the
-    speed of sound.
+    computes an energy-time curve (ETC) by accumulating path contributions into
+    time bins determined by the total path length and the speed of sound.
 
     This class is not meant to be used in practice, but mostly exists for
     debugging purposes and as a reference implementation.
@@ -73,9 +73,19 @@ class AcousticADIntegrator(RBIntegrator):
     :ref:`acoustic_prb_threepoint <integrator-acoustic_prb_threepoint>` for
     non-static scenes.
 
-    .. note:: This integrator does not handle participating media or polarized
-       rendering. It requires a ``Microphone`` sensor with a ``Tape`` film
-       type.
+    .. warning:: With the default ``is_detached`` setting, this integrator is
+       biased when used with moving geometry. It omits the gradient
+       contributions that the :ref:`three-point variants
+       <integrator-acoustic_prb_threepoint>` compute explicitly. The time
+       derivatives it does track carry overlapping information, though, so
+       geometry optimization can still converge in practice, depending on
+       the scene and optimization setting.
+
+    .. warning:: Because time derivatives are always tracked, the film's
+       reconstruction filter has to be differentiable for those time gradients
+       to be correct: a ``gaussian`` filter with ``stddev`` set to 0.25 time
+       bins is recommended, as it enables gradient estimation without
+       significant smoothing of the ETC.
 
     .. tabs::
         .. code-tab:: python
@@ -84,6 +94,7 @@ class AcousticADIntegrator(RBIntegrator):
             'max_time': 1.0,
             'speed_of_sound': 343.0,
             'max_depth': -1,
+            'max_energy_loss': 60.0,
     """
 
     def __init__(self, props):
@@ -372,7 +383,7 @@ class AcousticADIntegrator(RBIntegrator):
                                         coherent=(depth == 0))
 
             # Calculate path segment length. si.t includes a spawn-ray epsilon,
-            # which moves the origin towards the intersection point and reduces
+            # which moves the origin toward the intersection point and reduces
             # si.t slightly. Use true geometric distance instead:
             τ = dr.select(depth == 0, dr.norm(si.p - ray.o), dr.norm(si.p - prev_si.p))
 
@@ -421,7 +432,7 @@ class AcousticADIntegrator(RBIntegrator):
             with dr.suspend_grad(when=not self.is_detached):
                 ds, em_weight = scene.sample_emitter_direction(si, sampler.next_2d(), True, active_em)
 
-            # Retrace the ray towards the emitter because ds is directly sampled
+            # Retrace the ray toward the emitter because ds is directly sampled
             # from the emitter shape instead of tracing a ray against it.
             # This contradicts the definition of "sampling of *directions*"
             # Only retrace when gradients are needed (AD mode); in primal mode

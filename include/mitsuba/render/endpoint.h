@@ -25,9 +25,9 @@ NAMESPACE_BEGIN(mitsuba)
  * the emission/response profile, and to compute probability densities
  * associated with the provided sampling techniques.
  *
- * In addition to :py:meth:`mitsuba.Endpoint.sample_ray`, which generates a
+ * In addition to :py:meth:`misuka.Endpoint.sample_ray`, which generates a
  * sample from the profile, subclasses also provide a specialized <em>direction
- * sampling</em> method in :py:meth:`mitsuba.Endpoint.sample_direction`. This is
+ * sampling</em> method in :py:meth:`misuka.Endpoint.sample_direction`. This is
  * a generalization of direct illumination techniques to both emitters \a and
  * sensors. A direction sampling method is given an arbitrary reference position
  * in the scene and samples a direction from the reference point towards the
