@@ -36,7 +36,7 @@ div.sphinxsidebar h4 {
     font-size: 14px;
     font-weight: bold;
     text-transform: uppercase;
-    color: #606060;
+    color: var(--color-foreground-secondary);
 }
 
 .paramtype {
@@ -57,11 +57,11 @@ div.sidebar-wrapper {
 }
 
 .paramstable {
-    background-color: #f0f0f0;
+    background-color: var(--color-background-hover);
 }
 
 .paramstable .row-even {
-    background-color: #f9f9f9;
+    background-color: var(--color-background-secondary);
 }
 
 abbr[title], abbr[data-original-title] {
@@ -92,8 +92,8 @@ div.body td.align-middle {
     vertical-align: middle;
 }
 table.docutils th {
-	border-bottom: 2px solid #AAA;
-	border-top: 2px solid #AAA;
+	border-bottom: 2px solid var(--color-foreground-border);
+	border-top: 2px solid var(--color-foreground-border);
 }
 table.docutils td {
     border: 0;
@@ -101,7 +101,7 @@ table.docutils td {
     line-height: 130%;
 }
 table.docutils {
-    border-bottom: 2px solid #AAA;
+    border-bottom: 2px solid var(--color-foreground-border);
     margin: 0 0 1em 0;
     padding: 0 -0.5em 0 -0.5em;
 }
@@ -127,13 +127,13 @@ a:hover, div.related ul li a:hover, div.body a:hover {
     color: #0071aa;
 }
 h1, h2 {
-	color: #333;
+	color: var(--color-content-foreground);
 }
 
 /* no background for top bar since it's orange */
 div.related ul {
 	background-image: none;
-	background-color: #fff;
+	background-color: var(--color-background-primary);
 }
 
 /* give figures a nice rounded box style */
@@ -141,7 +141,7 @@ div.figure {
 	margin: 20px 0px;
 	padding: 3px 7px;
 	/* padding-top: 10px; */
-	border: 1px solid #DDD;
+	border: 1px solid var(--color-background-border);
 	-webkit-border-radius: 3px;
 	-moz-border-radius: 3px;
 	border-radius: 3px;
@@ -160,11 +160,11 @@ div.figure:target > p.caption,
 div.subfigure:target > p.caption,
 div.figure:target > center > p.caption,
 div.math:target span.eqno {
-    background-color: #FFA;
+    background-color: var(--color-highlight-on-target);
 }
 div.figure:target,
 div.subfigure:target {
-	border: 1px dashed #333;
+	border: 1px dashed var(--color-foreground-border);
 }
 div.figure.compound {
 	padding: 0;
@@ -216,7 +216,7 @@ span:target + h3
 span:target + h2,
 span:target + h1
 {
-	background-color: #FFA;
+	background-color: var(--color-highlight-on-target);
 }
 
 /* description lists */
@@ -236,7 +236,7 @@ dd {
 }
 
 div#bibliography span.brackets {
-    color: #333;
+    color: var(--color-content-foreground);
 }
 
 /* margins for images */
@@ -266,10 +266,6 @@ img {
     padding: 0.01rem;
 }
 
-.theme-toggle-container {
-    display: none;
-}
-
 #plugin-reference .toctree-wrapper { column-count: 2; }
 
 #plugin-reference .toctree-wrapper > ul { margin: 0; }
@@ -281,42 +277,6 @@ img {
     break-inside: avoid-column;
 }
 
-
-/* Override to disable dark theme support in sphinx_tabs */
-@media (prefers-color-scheme: dark) {
-    body[data-theme="auto"] .page .sphinx-tabs-panel {
-        color: auto;
-        background-color: white;
-    }
-
-    body[data-theme="auto"] .page .sphinx-tabs-tab {
-        color: #1D5C87;
-        background-color: rgba(255, 255, 255, 0);
-    }
-
-    body[data-theme="auto"] .page .sphinx-tabs-tab[aria-selected="true"] {
-        border-bottom: 1px solid white;
-        background-color: white;
-    }
-}
-
-/* Explicit dark theme styling: okay to keep */
-/*
-body[data-theme="dark"] .sphinx-tabs-panel {
-    color: white;
-    background-color: rgb(50, 50, 50);
-  }
-
-  body[data-theme="dark"] .sphinx-tabs-tab {
-    color: white;
-    background-color: rgba(255, 255, 255, 0.05);
-  }
-
-  body[data-theme="dark"] .sphinx-tabs-tab[aria-selected="true"] {
-    border-bottom: 2px solid rgb(50, 50, 50);
-    background-color: rgb(50, 50, 50);
-  }
-*/
 
 /* Copybutton: disable on the "prompt numbering" cell in notebooks */
 .nbinput .prompt.highlight-none .copybtn,
