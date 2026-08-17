@@ -3,82 +3,58 @@
 Emitters
 ========
 
-    .. image:: ../../resources/data/docs/images/emitter/emitter_overview.jpg
-        :width: 70%
-        :align: center
+*Emitters* are the sound sources of a scene. misuka reuses Mitsuba's emitter
+plugins unchanged, so an emitter's spectrum is interpreted in the frequency
+domain like every other spectrum in an acoustic variant (see
+:ref:`Frequency-domain spectra <sec-spectra-acoustic>`).
 
-    Schematic overview of the emitters in Mitsuba 3. The arrows indicate
-    the directional distribution of light.
-
-Mitsuba 3 supports a number of different emitters/light sources, which can be
-classified into two main categories: emitters which are located somewhere within the scene, and emitters that surround the scene to simulate a distant environment.
-
-Generally, light sources are specified as children of the ``<scene>`` element; for instance,
-the following snippet instantiates a point light emitter that illuminates a sphere:
+**In practice, use a spherical emitter.** Attach an :ref:`area <emitter-area>`
+emitter to a :ref:`sphere <shape-sphere>` shape and give the sphere a radius that
+is small compared to the room, but not so small that rays rarely find it. This is
+what the tutorials and the getting-started example do.
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <!-- .. scene contents .. -->
-
-            <emitter type="point">
-                <rgb name="intensity" value="1"/>
-                <point name="position" x="0" y="0" z="-2"/>
-            </emitter>
-
-            <shape type="sphere"/>
-        </scene>
-
     .. code-tab:: python
 
         'type': 'scene',
 
         # .. scene contents ..
 
-        'emitter_id': {
-            'type': 'point',
-            'position': [0, 0, -2],
-            'intensity': {
-                'type': 'spectrum',
-                'value': 1.0,
-            }
+        'source': {
+            'type': 'sphere',
+            'radius': 0.2,
+            'center': [3, 6, 1.2],
+            'emitter': {
+                'type': 'area',
+                'radiance': {'type': 'spectrum', 'value': [(100, 1), (20000, 1)]},
+            },
         },
 
-        'shape_id': {
-            'type': 'sphere'
-        }
-
-An exception to this are area lights, which turn a geometric object into a light source.
-These are specified as children of the corresponding ``<shape>`` element:
-
-.. tabs::
     .. code-tab:: xml
 
         <scene version="3.0.0">
             <!-- .. scene contents .. -->
 
             <shape type="sphere">
+                <float name="radius" value="0.2"/>
+                <point name="center" x="3" y="6" z="1.2"/>
+
                 <emitter type="area">
-                    <rgb name="radiance" value="1"/>
+                    <spectrum name="radiance" value="100:1, 20000:1"/>
                 </emitter>
             </shape>
         </scene>
 
-    .. code-tab:: python
+.. warning:: While Mitsuba 3 also includes a
+    :external+mitsuba:ref:`point <emitter-point>` emitter, that plugin silently yields an ETC that is missing the direct sound.
+    A contribution that reaches the receiver without touching a surface can only be
+    recorded when the traced ray hits the emitter itself, and a point emitter has no
+    geometry to hit. Reflected contributions still arrive, because emitter sampling
+    runs at every surface interaction, so a point source produces an ETC whose first
+    arrival is a first-order reflection instead of the direct path. In light
+    transport this is the intended behavior. In sound transport it usually is not.
+    An acoustic point emitter is planned.
 
-        'type': 'scene',
-
-        # .. scene contents ..
-
-        'shape_id': {
-            'type': 'sphere',
-            'emitter': {
-                'type': 'area',
-                'radiance': {
-                    'type': 'rgb',
-                    'value': 1.0,
-                }
-            }
-        }
-
+Emitters that model a distant environment, such as ``constant``, ``envmap`` and
+``directional``, have no acoustic counterpart and are documented upstream in the
+:external+mitsuba:ref:`Mitsuba emitter reference <sec-emitters>`.

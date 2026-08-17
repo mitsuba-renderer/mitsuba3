@@ -1,8 +1,8 @@
 .. _sec-plugins:
 
-.. image:: ../resources/data/docs/images/banners/banner_06.jpg
-    :width: 100%
-    :align: center
+.. .. image:: ../resources/data/docs/images/banners/banner_06.jpg
+..     :width: 100%
+..     :align: center
 
 Plugin reference
 ================
@@ -16,9 +16,20 @@ Plugin reference
 Overview
 --------
 
-The subsections above describe the available Mitsuba 3 plugins, usually along with example
+The subsections above describe the available misuka plugins, usually along with example
 renderings and a description of what each parameter does. They are separated into subsections
 covering textures, surface scattering models, etc.
+
+.. note::
+
+    Because misuka is a compatible extension to Mitsuba 3, it inherits Mitsuba's full set of
+    plugins. This reference documents the acoustic ones plus the generic plugins that acoustic
+    scenes typically use, so the purely optical plugins (the optical BSDFs and integrators, cameras,
+    image films, participating media, and most emitters) are left out of this documentation. They still
+    load, and they are documented in the
+    :external+mitsuba:ref:`Mitsuba plugin reference <sec-plugins>`.
+    You will need to select an optical variant in order to do optical renderings.
+    See :ref:`sec-acoustic-rendering` for which components acoustic rendering replaces.
 
 The documentation of a plugin always starts with a table similar to the one below:
 
@@ -35,16 +46,9 @@ The documentation of a plugin always starts with a table similar to the one belo
    - A nested integrator which does the actual hard work
 
 Suppose this hypothetical plugin is an integrator named ``amazing``. Then, based on this
-description, it can be instantiated from an XML scene file using a custom configuration such as:
+description, it can be instantiated with a custom configuration such as:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <integrator type="amazing">
-            <boolean name="softer_rays" value="true"/>
-            <float name="dark_matter" value="0.44"/>
-        </integrator>
-
     .. code-tab:: python
 
         {
@@ -52,6 +56,13 @@ description, it can be instantiated from an XML scene file using a custom config
             'softer_rays': True,
             'dark_matter': 0.44
         }
+
+    .. code-tab:: xml
+
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+        </integrator>
 
 In some cases, plugins also indicate that they accept nested plugins as input arguments. These can
 either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the following two parameters:
@@ -69,19 +80,6 @@ either be *named* or *unnamed*. If the ``amazing`` integrator also accepted the 
 then it can be instantiated e.g. as follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <integrator type="amazing">
-            <boolean name="softer_rays" value="true"/>
-            <float name="dark_matter" value="0.44"/>
-            <!-- Nested unnamed integrator -->
-            <integrator type="path"/>
-            <!-- Nested texture named puppies -->
-            <texture name="puppies" type="bitmap">
-                <string name="filename" value="cute.jpg"/>
-            </texture>
-        </integrator>
-
     .. code-tab:: python
 
         {
@@ -99,6 +97,19 @@ then it can be instantiated e.g. as follows:
             }
         }
 
+    .. code-tab:: xml
+
+        <integrator type="amazing">
+            <boolean name="softer_rays" value="true"/>
+            <float name="dark_matter" value="0.44"/>
+            <!-- Nested unnamed integrator -->
+            <integrator type="path"/>
+            <!-- Nested texture named puppies -->
+            <texture name="puppies" type="bitmap">
+                <string name="filename" value="cute.jpg"/>
+            </texture>
+        </integrator>
+
 Flags
 ^^^^^^
 
@@ -106,7 +117,7 @@ Each parameter optionally has flags that are listed in the last column.
 These flags indicate whether the parameter is differentiable or not, or whether it introduces
 discontinuities and thus needs special treatment.
 
-See :py:class:`mitsuba.ParamFlags` for their documentation.
+See :py:class:`misuka.ParamFlags` for their documentation.
 
 
 Scene-wide attributes
@@ -146,12 +157,6 @@ has no effect in scalar or LLVM variants.
 When creating a scene, the scene-wide attributes can be specified as follows:
 
 .. tabs::
-    .. code-tab:: xml
-
-        <scene version="3.0.0">
-            <boolean name="embree_use_robust_intersections" value="true"/>
-        </scene>
-
     .. code-tab:: python
 
         {
@@ -159,3 +164,9 @@ When creating a scene, the scene-wide attributes can be specified as follows:
             'embree_use_robust_intersections': True,
             'allow_thread_reordering': True,
         }
+
+    .. code-tab:: xml
+
+        <scene version="3.0.0">
+            <boolean name="embree_use_robust_intersections" value="true"/>
+        </scene>
