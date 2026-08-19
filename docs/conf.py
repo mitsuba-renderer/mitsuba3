@@ -204,6 +204,17 @@ intersphinx_mapping = {
     "mitsuba": ("https://mitsuba.readthedocs.io/en/v3.9.1/", None)
 }
 
+# Base URL of the Mitsuba documentation, usable as ``{MI_DOCS}`` in .rst
+# sources. Toctree entries are parsed literally and accept neither intersphinx
+# roles nor substitutions, so links to Mitsuba pages that should appear in the
+# sidebar have to be written as plain URLs. Expanding this placeholder at
+# read time keeps the version pinned in a single place.
+MI_DOCS = intersphinx_mapping["mitsuba"][0].rstrip("/")
+
+
+def expand_mi_docs(app, docname, source):
+    source[0] = source[0].replace("{MI_DOCS}", MI_DOCS)
+
 nbsphinx_execute = 'never'
 
 # Inject javascript at the top of tutorial pages to add Download buttons
@@ -487,4 +498,5 @@ def setup(app):
                         "versions provided in `docs/requirements.txt`!")
     # Texinfo
     app.connect("builder-inited", custom_step)
+    app.connect("source-read", expand_mi_docs)
     app.add_css_file('theme_overrides.css')

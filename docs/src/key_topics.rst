@@ -26,5 +26,6 @@ documentation. Both are linked below.
     :glob:
 
     key_topics/*
-    Choosing variants <https://mitsuba.readthedocs.io/en/v3.9.1/src/key_topics/variants.html>
-    Scene format <https://mitsuba.readthedocs.io/en/v3.9.1/src/key_topics/scene_format.html>
+    Choosing variants <{MI_DOCS}/src/key_topics/variants.html>
+    Scene XML file format <{MI_DOCS}/src/key_topics/scene_format.html>
+    Dictionary-based scene format <{MI_DOCS}/src/key_topics/scene_format.html#dictionary-based-scene-format>
