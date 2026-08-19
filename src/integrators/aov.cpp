@@ -348,7 +348,7 @@ class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
     MI_IMPORT_TYPES(Scene, Shape, Sensor, Sampler, Medium, BSDFPtr, ShapePtr, Film, ImageBlock)
-    using AOVIntegratorImpl = AOVIntegratorImpl<Float, Spectrum>;
+    using Impl = AOVIntegratorImpl<Float, Spectrum>;
 
     AOVIntegrator(const Properties &props) : Base(props),
         m_nested_aovs_count(0) {
@@ -372,7 +372,7 @@ public:
 
         std::string_view aovs = props.get<std::string_view>("aovs");
         if (!aovs.empty()) {
-            ref<AOVIntegratorImpl> aov_integrator = new AOVIntegratorImpl(aovs);
+            ref<Impl> aov_integrator = new Impl(aovs);
             if (!aov_integrator->aov_names().empty()) {
                 m_aov_integrator = aov_integrator;
                 for (const auto &name : m_aov_integrator->aov_names())
