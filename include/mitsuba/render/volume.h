@@ -60,6 +60,31 @@ public:
      */
     virtual void max_per_channel(ScalarFloat *out) const;
 
+    /**
+     * \brief Returns conservative per-cell upper bounds ("local majorants")
+     * of the volume, at a resolution coarsened by \c resolution_factor along
+     * each axis relative to \ref resolution().
+     *
+     * The returned buffer stores one value per cell in x-fastest order, i.e.
+     * <tt>index = (z * res.y() + y) * res.x() + x</tt>, where \c res is
+     * written to \c res_out. Each value bounds the *interpolated* volume
+     * anywhere inside the corresponding cell of the volume's local unit cube
+     * (see \ref to_local()).
+     *
+     * The default implementation returns a single cell holding \ref max(),
+     * i.e. a global majorant. Discretized volumes (e.g. \c gridvolume)
+     * override this with exact per-cell maxima, which media use to build
+     * majorant supergrids for delta tracking.
+     *
+     * The result is detached from the AD graph: majorants only shape the
+     * sampling density and must not carry derivatives.
+     */
+    virtual DynamicBuffer<Float>
+    local_majorants(uint32_t resolution_factor, ScalarVector3u &res_out) const;
+
+    /// Returns the world-to-local transform used by this volume
+    const ScalarAffineTransform4f &to_local() const { return m_to_local; }
+
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 

@@ -131,7 +131,8 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
+    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
+                   m_phase_function, m_majorant_resolution_factor)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
@@ -140,6 +141,14 @@ public:
         m_sigmat = props.get_volume<Volume>("sigma_t", 1.0f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
+        /* The base class enables a majorant supergrid by default, which is
+           meaningless here: the extinction is uniform, so the global majorant
+           is already exact. Silently disable it, but reject an explicit
+           request rather than ignoring it. */
+        if (props.get<int>("majorant_resolution_factor", 0) > 0)
+            Throw("The homogeneous medium does not support a majorant "
+                  "supergrid (majorant_resolution_factor must be 0)");
+        m_majorant_resolution_factor = 0;
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
     }
 
@@ -173,6 +182,12 @@ public:
         UnpolarizedSpectrum sigman = 0.f;
 
         return { sigmas & active, sigman, sigmat & active };
+    }
+
+    UnpolarizedSpectrum
+    get_albedo(const MediumInteraction3f &mi, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        return m_albedo->eval(mi, active) & active;
     }
 
     std::tuple<Mask, Float, Float>

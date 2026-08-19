@@ -62,6 +62,14 @@ Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);
 }
 
+MI_VARIANT DynamicBuffer<Float>
+Volume<Float, Spectrum>::local_majorants(uint32_t /*resolution_factor*/,
+                                         ScalarVector3u &res_out) const {
+    // Fallback: a single cell holding the global maximum
+    res_out = ScalarVector3u(1u, 1u, 1u);
+    return dr::full<DynamicBuffer<Float>>(max(), 1);
+}
+
 // =======================================================================
 
 MI_INSTANTIATE_CLASS(Volume)

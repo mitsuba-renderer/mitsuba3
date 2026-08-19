@@ -32,6 +32,11 @@ public:
         NB_OVERRIDE_PURE(get_scattering_coefficients, mi, active);
     }
 
+    UnpolarizedSpectrum get_albedo(const MediumInteraction3f &mi,
+                                   Mask active = true) const override {
+        NB_OVERRIDE(get_albedo, mi, active);
+    }
+
     std::string to_string() const override {
         NB_OVERRIDE_PURE(to_string);
     }
@@ -73,6 +78,12 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_majorant(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_majorant))
+       .def("get_albedo",
+            [](Ptr ptr, const MediumInteraction3f &mi, Mask active) {
+                return ptr->get_albedo(mi, active); },
+            "mi"_a, "active"_a=true,
+            "Returns the single-scattering albedo (Sigma_s / Sigma_t) "
+            "evaluated at a given MediumInteraction mi")
        .def("intersect_aabb",
             [](Ptr ptr, const Ray3f &ray) {
                 return ptr->intersect_aabb(ray); },
@@ -83,6 +94,14 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->sample_interaction(ray, sample, channel, active); },
             "ray"_a, "sample"_a, "channel"_a, "active"_a,
             D(Medium, sample_interaction))
+       .def("sample_real_interaction",
+            [](Ptr ptr, const Ray3f &ray, Float maxt, UInt32 seed,
+               UInt32 channel, Mask active) {
+                return ptr->sample_real_interaction(ray, maxt, seed, channel,
+                                                    active); },
+            "ray"_a, "maxt"_a, "seed"_a, "channel"_a, "active"_a,
+            "Sample the next real medium interaction (null collisions are "
+            "consumed internally); returns (mei, weight, scatter_prob)")
        .def("transmittance_eval_pdf",
             [](Ptr ptr, const MediumInteraction3f &mi,
                const SurfaceInteraction3f &si, Mask active) {
