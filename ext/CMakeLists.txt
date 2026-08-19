@@ -387,12 +387,15 @@ endif()
 #  Fast floating point parser (interface library)
 # ----------------------------------------------------------
 
+set(FASTFLOAT_INSTALL OFF CACHE BOOL " " FORCE)
 add_subdirectory(fastfloat EXCLUDE_FROM_ALL)
 mark_as_advanced(
+  FASTFLOAT_BENCHMARKS
+  FASTFLOAT_CXX_STANDARD
+  FASTFLOAT_INSTALL
   FASTFLOAT_SANITIZE
   FASTFLOAT_TEST
 )
-unset(CMAKE_CXX_STANDARD CACHE)
 
 # ----------------------------------------------------------
 #  Nanobind headers
