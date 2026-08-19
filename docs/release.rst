@@ -27,7 +27,8 @@ How to make a new release?
 8. If the action failed, fix whatever broke in the build process. If it succeded
    continue.
 
-9. Update the version number in ``include/mitsuba/mitsuba.h``.
+9. Update the version number in ``include/mitsuba/mitsuba.h`` and set
+   ``MI_VERSION_DEV`` to an empty string.
 
 10. Add release number and date to ``docs/release_notes.rst``.
 

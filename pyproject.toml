@@ -3,7 +3,7 @@ requires = [
     "scikit-build-core",
     "nanobind==3.0.0.dev2",
     "nanobind-backend>=1.0.0.dev2",
-    "drjit==1.5.0",
+    "drjit==1.6.0.dev1",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -16,7 +16,7 @@ dynamic = ["version", "readme"]
 description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.5.0",
+  "drjit==1.6.0.dev1",
   "nanobind-backend>=1.0.0.dev2",
 ]
 requires-python = ">=3.10"
@@ -109,8 +109,9 @@ regex = '''(?sx)
 \#define \s+ MI_VERSION_MAJOR \s+ (?P<major>\d+) .*?
 \#define \s+ MI_VERSION_MINOR \s+ (?P<minor>\d+) .*?
 \#define \s+ MI_VERSION_PATCH \s+ (?P<patch>\d+) .*?
+\#define \s+ MI_VERSION_DEV \s+ "(?P<dev>[^"]*)" .*?
 '''
-result = "{major}.{minor}.{patch}"
+result = "{major}.{minor}.{patch}{dev}"
 
 # Build PyPI compliant README file from original README.md
 [tool.hatch.metadata.hooks.fancy-pypi-readme]

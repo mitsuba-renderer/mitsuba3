@@ -80,8 +80,8 @@ CODE_BLOCK_RE = re.compile(r"^(\s*)\.\. code-block:: *(\w*)\s*$")
 # Start of a list item, capturing the indentation and the bullet marker.
 BULLET_RE = re.compile(r"^(\s*)([-*]\s+)(.*)$")
 
-# Dr.Jit pin in pyproject.toml, e.g. 'drjit==1.5.0'.
-DRJIT_PIN_RE = re.compile(r"""drjit==(\d+\.\d+\.\d+)""")
+# Dr.Jit pin in pyproject.toml, e.g. 'drjit==1.5.0' or 'drjit==1.6.0.dev1'.
+DRJIT_PIN_RE = re.compile(r"""drjit==(\d+\.\d+\.\d+(?:\.[a-zA-Z]+\d*)?)""")
 
 
 def extract(text: str, version: str) -> tuple[str, str]:
