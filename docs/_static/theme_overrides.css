@@ -305,3 +305,6 @@ img {
     margin-top: 0;
     margin-bottom: 10px;
 }
+
+/* Disable bold text in powershell so "--" flags render correctly */
+.highlight-powershell .highlight .p { font-weight: normal; }
