@@ -4,10 +4,10 @@ How to make a new release?
 1. Ensure that the most recent version of Mitsuba is checked out (including all
    submodules).
 
-2. Regenerate the documentation using the `mkoc`, `mkdoc-api` and `docstrings`
+2. Regenerate the documentation using the `docstrings`, `mkdoc-api` and `mkdoc`
    targets and commit the result. Do this with the following command in your
    build folder: ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
-   Do this on a Linux box, with ``docs/requirement.txt`` installed (UV)
+   Do this on a Linux box, with ``docs/requirements.txt`` installed (UV)
    and pandoc installed (apt).
 
 3. Check that the ``nanobind`` dependency version in ``pyroject.toml`` (build
