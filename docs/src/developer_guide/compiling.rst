@@ -154,6 +154,8 @@ following variants for differentiable rendering:
     In short, if a disallowed combination of variants is selected, a compilation
     error will report what variant should be added to remove any ambiguity.
 
+.. _sec-compiling-linux:
+
 Linux
 -----
 
@@ -214,6 +216,8 @@ without modifications in those cases.
 | - python 3.10.12         | - python 3.12.3          |
 +--------------------------+--------------------------+
 
+.. _sec-compiling-windows:
+
 Windows
 -------
 
@@ -258,6 +262,8 @@ command:
 * git 2.34.1 (64bit)
 * Python 3.11.1 (64bit)
 
+
+.. _sec-compiling-macos:
 
 macOS
 -----

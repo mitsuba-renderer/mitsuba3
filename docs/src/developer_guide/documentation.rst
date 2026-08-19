@@ -35,57 +35,44 @@ The complete documentation build requires multiple steps in a specific order:
 
 .. tabs::
 
-    .. code-tab:: bash Linux
+    .. code-tab:: bash Linux / macOS
 
         ninja docstrings    # Extract C++ docstrings → include/mitsuba/python/docstr.h
         ninja               # Build main library and Python bindings
         ninja mkdoc-api     # Generate API reference documentation
         ninja mkdoc         # Build final HTML documentation
 
-    .. code-tab:: bash macOS
+    .. code-tab:: powershell Windows
 
-        # Docstring extraction skipped (see below)
-        ninja               # Build main library and Python bindings
-        ninja mkdoc-api     # Generate API reference documentation
-        ninja mkdoc         # Build final HTML documentation
-
-    .. code-tab:: powershell PowerShell
-
-        # Docstring extraction skipped (see below)
-        cmake --build . --config Release                    # Build main library and Python bindings
-        cmake --build . --config Release --target mkdoc-api # Generate API reference documentation
-        cmake --build . --config Release --target mkdoc     # Build final HTML documentation
-
-    .. code-tab:: batch cmd
-
-        rem Docstring extraction skipped (see below)
+        # Docstring extraction not available on Windows - see below.
         cmake --build . --config Release
         cmake --build . --config Release --target mkdoc-api
         cmake --build . --config Release --target mkdoc
 
-Only the Linux tab starts at ``docstrings``.
-Everywhere else the build picks up the committed ``docstr.h`` and starts at the second step.
-If you edit a C++ header and don't have access to a Linux machine, make a note in your pull request that the docstrings need to be regenerated.
+The ``docstrings`` target is only defined on Unix, so the Windows tab starts at the second step and picks up the committed ``docstr.h``.
+If you edit a C++ header on Windows, make a note in your pull request that the docstrings need to be regenerated.
 
 Detailed build steps
 --------------------
 
-1. **Docstring extraction – Linux only** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using `pybind11_mkdoc <https://github.com/pybind/pybind11_mkdoc>`_ to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
+1. **Docstring extraction -- Unix only** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using `pybind11_mkdoc <https://github.com/pybind/pybind11_mkdoc>`_ to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
 
-   `docstr.h` is tracked by git, run this command and commit the result whenever you edit a header comment.
+   ``docstr.h`` is tracked by git, run this command and commit the result whenever you edit a header comment.
+   This step is not available on Windows.
+   If you have edited a header file and don't have access to a Unix-based machine (Linux or macOS), make a note in your pull request.
 
-   .. warning::
+   .. important::
 
-       Do this only on a Linux machine with a ``cuda`` variant enabled.
-       The target is only available on Unix systems, so it won't work on Windows.
-       On macOS, a regeneration silently deletes around 800 lines of OptiX docstrings.
-       If you edit a header file and don't have access to a Linux machine, make a note in your pull request that the docstrings need to be regenerated.
+       The generated file depends on the *enabled variants*, not just on the headers.
+       ``MI_EXTERN_CLASS`` and ``MI_EXTERN_STRUCT`` expand to one ``extern template`` declaration per enabled variant, and ``pybind11_mkdoc`` emits a numbered ``__doc_mitsuba_<Name>_<N>`` entry for each of them.
+       Regenerating with a shortened or extended ``"enabled"`` list therefore adds or removes empty entries for every class declared with those macros, which buries the real changes in hundreds of lines of noise.
+       Restore the default variant set before regenerating.
 
    .. note::
 
        ``pybind11_mkdoc`` looks for libclang under ``/usr/lib*/llvm-*/lib/libclang.so.1``, a layout that only Debian-style distributions use.
        On distributions that install libclang directly into ``/usr/lib``, such as Arch, this step fails with ``Failed to find a LLVM installation``.
-       Point it at the system LLVM instead by adding these environment variables to your ``.bashrc`` or ``.zshrc``:
+       Point it at the system LLVM instead by adding these environment variables to your ``.bashrc`` or ``.zshrc`` (note that the error message names ``LIBLLVM_DIR_PATH`` while the code actually reads ``LLVM_DIR_PATH``):
 
        .. code-block:: bash
 
@@ -93,7 +80,11 @@ Detailed build steps
            export LLVM_DIR_PATH=/usr
            export LIBCLANG_PATH=/usr/lib/libclang.so
 
-       macOS needs no configuration, ``pybind11_mkdoc`` finds Xcode's libclang on its own.
+       macOS needs no configuration, ``pybind11_mkdoc`` finds Xcode's libclang on its own as long as the full Xcode is installed (see :ref:`compiling - macOS <sec-compiling-macos>`), the command line tools alone are not enough.
+
+       The libclang version also affects how symbols are named.
+       A regeneration on a different LLVM release can rename entries, for example ``__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_Array`` to ``__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_drjit_Array``.
+       Such renames are harmless as long as nothing references the entry, but they make the diff harder to read.
 
 
 2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings, required before generating API documentation.
@@ -106,6 +97,11 @@ Detailed build steps
        has sourced ``setpath`` (see :ref:`sec-python-environments`), otherwise
        Sphinx aborts with ``ModuleNotFoundError: No module named 'misuka'``. It
        also needs the ``llvm_ad_rgb`` variant, which is enabled by default.
+
+   .. important::
+
+       This step rewrites the tracked file ``docs/generated/extracted_rst_api.rst``.
+       Its contents are read off the built binary and differ per platform and variant set, so discard the diff unless you are regenerating on Linux with the default variants.
 
 4. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
 
