@@ -1,3 +1,6 @@
+import subprocess
+import sys
+
 import pytest
 import mitsuba as mi
 
@@ -52,3 +55,20 @@ def test01_variants_callbacks(variants_all_backends_once):
     with mi.util.scoped_set_variant(next_variant):
         pass
     assert len(expected) == len_e
+
+
+def test02_builtin_field_registration_precedes_user_callbacks():
+    code = """
+import mitsuba as mi
+
+mi.detail.clear_variant_callbacks()
+observed = []
+
+def callback(old_variant, new_variant):
+    observed.append(mi.PluginManager.instance().plugin_type("hashgridfield"))
+
+mi.detail.add_variant_callback(callback)
+mi.set_variant("scalar_rgb")
+assert observed == [mi.ObjectType.Field]
+"""
+    subprocess.run([sys.executable, "-c", code], check=True)

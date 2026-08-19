@@ -220,6 +220,33 @@ def read_args(args):
     return parameters, filenames
 
 
+def allocate_doc_names(comments):
+    """Yield sorted comments with globally unique C++ identifiers.
+
+    Overloads normally receive a numerical suffix. That suffix can itself be
+    the name of another declaration: the third overload of ``eval`` and a
+    method literally named ``eval_3`` both start out as ``__doc_*_eval_3``.
+    Track every emitted identifier and advance the suffix until an unused one
+    is found.
+    """
+    used_names = set()
+    next_suffix = {}
+
+    # Sort documented entries first so DOC() resolves to one with a comment.
+    for name, filename, comment in sorted(
+            comments, key=lambda x: (x[0], not x[2], x[1])):
+        suffix = next_suffix.get(name, 1)
+        while True:
+            unique_name = name if suffix == 1 else '%s_%i' % (name, suffix)
+            suffix += 1
+            if unique_name not in used_names:
+                break
+
+        next_suffix[name] = suffix
+        used_names.add(unique_name)
+        yield unique_name, filename, comment
+
+
 def write_header(comments, out_file=sys.stdout):
     print('''/*
   This file contains docstrings for use in the Python bindings.
@@ -246,15 +273,7 @@ def write_header(comments, out_file=sys.stdout):
 #endif
 ''', file=out_file)
 
-    # Colliding names (overloads, forward declarations) get a numbered suffix.
-    # Sort documented entries first so DOC() resolves to one with a comment.
-    name_ctr, name_prev = 1, None
-    for name, _, comment in sorted(comments, key=lambda x: (x[0], not x[2], x[1])):
-        if name == name_prev:
-            name_ctr += 1
-            name = name + '_%i' % name_ctr
-        else:
-            name_prev, name_ctr = name, 1
+    for name, _, comment in allocate_doc_names(comments):
         print('\nstatic const char *%s =%sR"doc(%s)doc";' %
               (name, '\n' if '\n' in comment else ' ', comment), file=out_file)
 

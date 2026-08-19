@@ -150,12 +150,16 @@ class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
                     m_phase_function)
-    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
+    MI_IMPORT_TYPES(Field, Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
-        m_albedo = props.get_volume<Volume>("albedo", 0.75f);
-        m_sigmat = props.get_volume<Volume>("sigma_t", 1.0f);
+        m_albedo = props.get_volume_field<Field>("albedo", 0.75f);
+        m_sigmat = props.get_volume_field<Field>("sigma_t", 1.0f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            require_field_spectral_evaluable(m_albedo.get(), "albedo");
+            require_field_spectral_evaluable(m_sigmat.get(), "sigma_t");
+        }
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
@@ -212,7 +216,7 @@ public:
 
     MI_DECLARE_CLASS(HeterogeneousMedium)
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Field> m_sigmat, m_albedo;
     ScalarFloat m_scale;
     Float m_max_density;
 

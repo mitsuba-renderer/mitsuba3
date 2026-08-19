@@ -25,7 +25,7 @@ D65 spectrum (:monosp:`d65`)
 
  * - (Nested plugin)
    - :paramtype:`texture`
-   - Underlying texture/spectra to be multiplied by D65.
+   - Underlying texture or spectrum to be multiplied by D65.
    - |exposed|, |differentiable|
 
  * - color
@@ -42,7 +42,7 @@ The D65 spectrum can be multiplied by a color value specified using the ``color`
 parameters.
 
 Alternatively, it is possible to modulate the D65 illuminant with a spectrally
-or\and spatially varying signal defined by a nested texture plugin. This is used
+or spatially varying signal defined by a nested texture plugin. This is used
 in many emitter plugins when the radiance quantity might be driven by a 2D
 texture but also needs to be multiplied with the D65 spectrum.
 
@@ -71,27 +71,37 @@ product isn't required in this case.
  */
 
 template <typename Float, typename Spectrum>
-class D65Spectrum final : public Texture<Float, Spectrum> {
+class D65Spectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Texture)
-    MI_IMPORT_TYPES()
+    MI_IMPORT_BASE(SurfaceField)
+    MI_IMPORT_TYPES(Field)
+
+    using FieldType = typename Field::FieldType;
 
     D65Spectrum(const Properties &props) : Base(props) {
         m_scale = props.get<ScalarFloat>("scale", 1.f);
 
         for (auto &prop : props.objects()) {
-            Base *texture = prop.try_get<Base>();
-            if (!texture)
-                Throw("Child object should be a texture object.");
+            ref<Object> object = prop.get<ref<Object>>();
             if (m_nested_texture)
-                Throw("Only a single texture child object can be specified.");
-            m_nested_texture = texture;
+                Throw("Only a single texture-role field child object can be "
+                      "specified.");
+            ref<Object> texture =
+                make_texture_object_for_variant(Base::Variant, object);
+            if (FieldType *field = dynamic_cast<FieldType *>(texture.get())) {
+                if constexpr (is_spectral_v<Spectrum>)
+                    require_field_spectral_evaluable(field,
+                                                     "D65 nested texture");
+                m_nested_texture = field;
+            } else {
+                Throw("Child object should be a texture-role field object.");
+            }
         }
 
         if (props.has_property("color")) {
             if (m_nested_texture)
-                Throw("Color and child texture object shouldn't be specified at "
-                      "the same time.");
+                Throw("Color and child texture-role field object shouldn't "
+                      "be specified at the same time.");
 
             ScalarColor3f color = props.get<ScalarColor3f>("color");
 
@@ -125,7 +135,12 @@ public:
                       Properties::Spectrum(std::move(data), (double) MI_CIE_MIN,
                                            (double) MI_CIE_MAX));
 
-        m_d65 = (Base *) PluginManager::instance()->create_object<Base>(props_d65);
+        ref<Object> d65 =
+            create_texture_role_object_for_variant(props_d65, Base::Variant);
+        FieldType *field = dynamic_cast<FieldType *>(d65.get());
+        if (!field)
+            Throw("D65Spectrum: expected a texture-compatible field.");
+        m_d65 = field;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -144,11 +159,11 @@ public:
     std::vector<ref<Object>> expand() const override {
         if constexpr (is_spectral_v<Spectrum>) {
             if (!m_nested_texture && !m_has_value)
-                return { (Object *) m_d65.get() };
+                return { ref<Object>(const_cast<FieldType *>(m_d65.get())) };
             return { };
         } else {
             if (m_nested_texture)
-                 return { (Object *) m_nested_texture.get() };
+                return { ref<Object>(const_cast<FieldType *>(m_nested_texture.get())) };
 
             Properties props;
             if (m_has_value) {
@@ -160,7 +175,8 @@ public:
                 props.set("value", m_scale);
             }
 
-            return { (Object *) PluginManager::instance()->create_object<Base>(props) };
+            return { create_texture_role_object_for_variant(
+                props, Base::Variant) };
         }
     }
 
@@ -263,13 +279,13 @@ public:
 
     ScalarVector2i resolution() const override {
         if (m_nested_texture)
-            return m_nested_texture->resolution();
+            return m_nested_texture->resolution_2d();
         else
             return Base::resolution();
     }
 
     ScalarFloat spectral_resolution() const override {
-        return (MI_CIE_MAX - MI_CIE_MAX) / (MI_CIE_SAMPLES - 1);
+        return (MI_CIE_MAX - MI_CIE_MIN) / (MI_CIE_SAMPLES - 1);
     }
 
     ScalarVector2f wavelength_range() const override {
@@ -314,8 +330,8 @@ public:
     MI_DECLARE_CLASS(D65Spectrum)
 private:
     Color<Float, 3> m_value;
-    ref<Base> m_nested_texture;
-    ref<Base> m_d65;
+    ref<FieldType> m_nested_texture;
+    ref<FieldType> m_d65;
 
     ScalarFloat m_scale;
 

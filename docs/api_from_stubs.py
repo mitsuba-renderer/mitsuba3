@@ -83,7 +83,7 @@ RENDER_SECTIONS: dict[str, list[str]] = {
     'BSDFs': [r'BSDF(Ptr|Context|Flags)?', 'TransportMode', r'Microfacet\w*',
               r'fresnel\w*', 'reflect', 'refract', 'eval_reflectance',
               'lookup_ior'],
-    'Textures and volumes': [r'Texture\w*', r'Volume\w*'],
+    'Fields': [r'Field\w*', 'VolumeGrid'],
     'Participating media': [r'Medium(Ptr)?', r'PhaseFunction\w*',
                             'SGGXPhaseFunctionParams', r'sggx_\w+'],
     'Emitters and sensors': ['Endpoint', r'Emitter\w*', r'Sensor\w*',

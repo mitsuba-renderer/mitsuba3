@@ -6,7 +6,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
-#include <mitsuba/core/field.h>
+#include <mitsuba/core/synced.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/scene_ir.h>
 #include <drjit/packet.h>
@@ -198,9 +198,9 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
  *
  * Two types of attributes can be associated with a shape:
  *
- * 1. Texture attributes (`Shape.add_texture_attribute`), which must be
- *    a `Texture` instance but can have arbitrary resolution. The UV
- *    parametrization of the shape is used to look up texture attribute values.
+ * 1. Field attributes (`Shape.add_texture_attribute`), which must be a
+ *    surface-compatible `Field` instance but can have arbitrary resolution.
+ *    The UV parametrization of the shape is used to look up attribute values.
  *
  * 2. Mesh attributes (`Mesh.add_attribute`), which can only be added
  *    to mesh-type Shapes. They must be either per-vertex or per-face attributes,
@@ -213,7 +213,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Shape : public JitObject<Shape<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
+    MI_IMPORT_TYPES(Field, BSDF, Medium, Emitter, Sensor, MeshAttribute, Texture)
 
     // Use 32 bit indices to keep track of indices to conserve memory
     using ScalarIndex = uint32_t;
@@ -666,16 +666,16 @@ public:
      * Args:
      *     name: Name of the attribute
      *
-     *     texture: `Texture` to store. The dimensionality of the attribute
-     *         is simply the channel count of the texture.
+     *     texture: Surface-compatible `Field` to store. The dimensionality of
+     *         the attribute is the field's output dimension.
      */
-    virtual void add_texture_attribute(std::string_view name, Texture *texture);
+    virtual void add_texture_attribute(std::string_view name, Field *field);
 
-    /// Return the texture attribute associated with ``name``.
-    Texture *texture_attribute(std::string_view name);
+    /// Return the field attribute associated with ``name``.
+    Field *texture_attribute(std::string_view name);
 
-    /// Return the texture attribute associated with ``name``.
-    const Texture *texture_attribute(std::string_view name) const;
+    /// Return the field attribute associated with ``name``.
+    const Field *texture_attribute(std::string_view name) const;
 
     /**
      * Remove a texture attribute with the given ``name``.
@@ -936,10 +936,10 @@ protected:
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
+    tsl::robin_map<std::string, ref<Field>, std::hash<std::string_view>,
                    std::equal_to<>> m_texture_attributes;
 
-    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    synced<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
     /// True if the shape is used in a ``ShapeGroup``
     bool m_is_instance = false;

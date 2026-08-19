@@ -136,6 +136,10 @@ def set_variant(*args: str) -> None:
                                 'mitsuba.python.ad.loaders'):
                 _importlib.reload(_importlib.import_module(module_name))
 
+        # Built-in Python plugins must be ready before user callbacks observe
+        # the newly active variant.
+        _mitsuba_register_python_fields(old_variant, _variant)
+
         # Invoke user-provided callbacks once the modules above have reloaded
         for callback in list(detail._variant_callbacks):
             callback(old_variant, _variant)
@@ -162,6 +166,16 @@ _import_symbols(mitsuba_ext)
 
 from . import python
 _import_symbols(python)
+
+
+def _mitsuba_register_python_fields(_old_variant=None, _new_variant=None):
+    if variant() is None:
+        return
+    fields = _importlib.import_module("mitsuba.python.fields")
+    fields._register_variant_fields(_sys.modules[__name__])
+
+
+_mitsuba_register_python_fields()
 
 
 if _os.environ.get('NB_STUBGEN'):

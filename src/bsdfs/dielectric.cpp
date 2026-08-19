@@ -205,7 +205,7 @@ template <typename Float, typename Spectrum>
 class SmoothDielectric final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     SmoothDielectric(const Properties &props) : Base(props) {
 
@@ -222,9 +222,17 @@ public:
         m_eta = int_ior / ext_ior;
 
         if (props.has_property("specular_reflectance"))
-            m_specular_reflectance   = props.get_texture<Texture>("specular_reflectance", 1.f);
+            m_specular_reflectance   = props.get_surface_field<Field>("specular_reflectance", 1.f);
         if (props.has_property("specular_transmittance"))
-            m_specular_transmittance = props.get_texture<Texture>("specular_transmittance", 1.f);
+            m_specular_transmittance = props.get_surface_field<Field>("specular_transmittance", 1.f);
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (m_specular_reflectance)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+            if (m_specular_transmittance)
+                require_field_spectral_evaluable(m_specular_transmittance.get(),
+                                                 "specular_transmittance");
+        }
 
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
@@ -394,8 +402,8 @@ public:
     MI_DECLARE_CLASS(SmoothDielectric)
 private:
     ScalarFloat m_eta;
-    ref<Texture> m_specular_reflectance;
-    ref<Texture> m_specular_transmittance;
+    ref<Field> m_specular_reflectance;
+    ref<Field> m_specular_transmittance;
 
     MI_TRAVERSE_CB(Base, m_eta, m_specular_reflectance,m_specular_transmittance)
 };

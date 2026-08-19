@@ -75,7 +75,7 @@ template <typename Float, typename Spectrum>
 class BlendBSDF final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     BlendBSDF(const Properties &props) : Base(props) {
         int bsdf_index = 0;
@@ -87,7 +87,7 @@ public:
             }
         }
 
-        m_weight = props.get_texture<Texture>("weight");
+        m_weight = props.get_surface_field<Field>("weight");
         if (bsdf_index != 2)
             Throw("BlendBSDF: Two child BSDFs must be specified!");
 
@@ -254,7 +254,7 @@ public:
 
     MI_DECLARE_CLASS(BlendBSDF)
 protected:
-    ref<Texture> m_weight;
+    ref<Field> m_weight;
     ref<Base> m_nested_bsdf[2];
 
     MI_TRAVERSE_CB(Base, m_weight, m_nested_bsdf[0], m_nested_bsdf[1])

@@ -7,6 +7,7 @@ from typing import Any, Optional, Union
 import drjit as dr
 import mitsuba as mi
 
+
 class SceneParameters(Mapping):
     """
     Dictionary-like object that references various parameters used in a Mitsuba

@@ -166,7 +166,7 @@ template <typename Float, typename Spectrum>
 class RoughPlastic final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_TYPES(Field, Texture, MicrofacetDistribution)
 
     RoughPlastic(const Properties &props) : Base(props) {
         /// Specifies the internal index of refraction at the interface
@@ -181,10 +181,17 @@ public:
 
         m_eta = int_ior / ext_ior;
 
-        m_diffuse_reflectance  = props.get_texture<Texture>("diffuse_reflectance",  .5f);
+        m_diffuse_reflectance  = props.get_surface_field<Field>("diffuse_reflectance",  .5f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_diffuse_reflectance.get(),
+                                             "diffuse_reflectance");
 
-        if (props.has_property("specular_reflectance"))
-            m_specular_reflectance = props.get_texture<Texture>("specular_reflectance", 1.f);
+        if (props.has_property("specular_reflectance")) {
+            m_specular_reflectance = props.get_surface_field<Field>("specular_reflectance", 1.f);
+            if constexpr (is_spectral_v<Spectrum>)
+                require_field_spectral_evaluable(m_specular_reflectance.get(),
+                                                 "specular_reflectance");
+        }
 
         m_nonlinear = props.get<bool>("nonlinear", false);
 
@@ -526,8 +533,8 @@ public:
 
     MI_DECLARE_CLASS(RoughPlastic)
 private:
-    ref<Texture> m_diffuse_reflectance;
-    ref<Texture> m_specular_reflectance;
+    ref<Field> m_diffuse_reflectance;
+    ref<Field> m_specular_reflectance;
     MicrofacetType m_type;
     Float m_eta;
     Float m_inv_eta_2;

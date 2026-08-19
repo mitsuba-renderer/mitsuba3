@@ -39,6 +39,12 @@ def test01_eval(variant_scalar_rgb, name):
     are constant per face."""
     mesh = create_rectangle()
     texture = mi.load_dict({"type": "mesh_attribute", "name": name})
+    if name.endswith("_color"):
+        assert texture.out_type() == mi.FieldValueType.Spectrum
+        assert texture.out_dim() == dr.size_v(mi.UnpolarizedSpectrum)
+    else:
+        assert texture.out_type() == mi.FieldValueType.Float
+        assert texture.out_dim() == 1
 
     for u, v in UV_PROBES:
         si = mesh.eval_parameterization([u, v])
@@ -124,3 +130,9 @@ def test04_missing_or_mismatched_reads_zero(variant_scalar_rgb):
     texture = mi.load_dict({"type": "mesh_attribute",
                             "name": "vertex_mono"})
     dr.assert_allclose(texture.eval_3(si), 0)
+
+    with pytest.raises(RuntimeError, match="must start with either"):
+        mi.load_dict({
+            "type": "mesh_attribute",
+            "name": "foo_vertex_color",
+        })

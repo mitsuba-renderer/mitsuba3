@@ -82,7 +82,7 @@ Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum & /* spec */,
     NotImplementedError("prepare_sample");
 }
 
-MI_VARIANT const typename Film<Float, Spectrum>::Texture *
+MI_VARIANT const typename Film<Float, Spectrum>::Field *
 Film<Float, Spectrum>::sensor_response_function() {
     return m_srf.get();
 }

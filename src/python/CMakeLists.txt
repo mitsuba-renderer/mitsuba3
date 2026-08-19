@@ -230,7 +230,9 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
                          "python.ad.projective"
                          "python.ad.loaders.ray_loader"
                          "python.ad.integrators.common"
-                         "python.chi2" "python.math_py" "python.util"
+                         "python.chi2" "python.fields" "python.fields.common"
+                         "python.fields.hashgrid" "python.fields.neural"
+                         "python.fields.permuto" "python.math_py" "python.util"
                          "python.tensor_io" "python.testing" "parser")
 
   nanobind_add_stub(

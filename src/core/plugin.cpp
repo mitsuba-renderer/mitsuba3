@@ -224,6 +224,7 @@ std::string_view plugin_type_name(ObjectType ot) {
         case ObjectType::Shape: return "shape";
         case ObjectType::Texture: return "texture";
         case ObjectType::Volume: return "volume";
+        case ObjectType::Field: return "field";
         case ObjectType::Medium: return "medium";
         case ObjectType::BSDF: return "bsdf";
         case ObjectType::Integrator: return "integrator";
@@ -271,11 +272,17 @@ ref<Object> PluginManager::create_object(const Properties &props,
         string::starts_with(variant, "metal_"))
         dr::eval();
 #endif
-
     return object;
 }
 
 ObjectType PluginManager::plugin_type(std::string_view name) {
+    // Plugin types are variant-independent. ``scalar_rgb`` is always compiled
+    // in (enforced by ``resources/configure.py``) and requires no device.
+    return plugin_type(name, "scalar_rgb");
+}
+
+ObjectType PluginManager::plugin_type(std::string_view name,
+                                      std::string_view variant) {
     if (name.empty())
         return ObjectType::Unknown;
 
@@ -285,20 +292,15 @@ ObjectType PluginManager::plugin_type(std::string_view name) {
 
     std::lock_guard<std::mutex> guard(d->mutex);
 
-    // The object type of a plugin is variant-independent, so we can query it
-    // using any compiled-in variant. We use 'scalar_rgb', which is always
-    // available (enforced in 'resources/configure.py') and requires no device.
-    constexpr const char *query_variant = "scalar_rgb";
-
     // Try to find an already loaded variant using direct hash table lookup
-    std::pair<std::string, std::string> key(name, query_variant);
+    std::pair<std::string, std::string> key(name, variant);
     auto it = d->plugins.find(key);
     if (it != d->plugins.end())
         return it->second.type;
 
-    // If not found with the query variant, try to load it
+    // If not found with the requested variant, try to load it
     try {
-        PluginInfo info = d->load_plugin_impl(name, query_variant);
+        PluginInfo info = d->load_plugin_impl(name, variant);
         return info.type;
     } catch (...) {
         return ObjectType::Unknown;

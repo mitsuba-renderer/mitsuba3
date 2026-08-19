@@ -3,13 +3,14 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/profiler.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/render/field.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * Base class of all surface texture implementations
+ * Base class of fields that provide the surface texture role
  *
  * This class implements a generic texture map that supports evaluation at
  * arbitrary surface positions and wavelengths (if compiled in spectral mode).
@@ -20,9 +21,17 @@ NAMESPACE_BEGIN(mitsuba)
  * the underlying function is not required to be smooth or even continuous.
  */
 template <typename Float, typename Spectrum>
-class MI_EXPORT_LIB Texture : public JitObject<Texture<Float, Spectrum>> {
+class MI_EXPORT_LIB SurfaceField : public Field<Float, Spectrum> {
 public:
+    MI_IMPORT_BASE(Field)
     MI_IMPORT_TYPES()
+
+    using FloatStorage = typename Field<Float, Spectrum>::FloatStorage;
+    using Args         = typename Field<Float, Spectrum>::Args;
+    using Array2f      = typename Field<Float, Spectrum>::Array2f;
+    using Array3f      = typename Field<Float, Spectrum>::Array3f;
+    using Array6f      = typename Field<Float, Spectrum>::Array6f;
+    using FieldType    = typename Field<Float, Spectrum>::FieldType;
 
     // =============================================================
     // Standard sampling interface
@@ -37,8 +46,8 @@ public:
      * Returns:
      *     An unpolarized spectral power distribution or reflectance value
      */
-    virtual UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
-                                     Mask active = true) const;
+    UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
+                             Mask active = true) const override;
 
     /**
      * Importance sample a set of wavelengths proportional to the
@@ -59,10 +68,10 @@ public:
      *     2. The Monte Carlo importance weight (Spectral power
      *        distribution value divided by the sampling density)
      */
-    virtual std::pair<Wavelength, UnpolarizedSpectrum>
+    std::pair<Wavelength, UnpolarizedSpectrum>
     sample_spectrum(const SurfaceInteraction3f &si,
                     const Wavelength &sample,
-                    Mask active = true) const;
+                    Mask active = true) const override;
 
     /**
      * Evaluate the density function of the `sample_spectrum()`
@@ -78,8 +87,8 @@ public:
      *     A density value for each wavelength in ``si.wavelengths``
      *     (hence the ``Wavelength`` type).
      */
-    virtual Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
-                                    Mask active = true) const;
+    Wavelength pdf_spectrum(const SurfaceInteraction3f &si,
+                            Mask active = true) const override;
 
     /**
      * Importance sample a surface position proportional to the
@@ -100,11 +109,11 @@ public:
      *
      *     2. The associated probability per unit area in UV space
      */
-    virtual std::pair<Point2f, Float> sample_position(const Point2f &sample,
-                                                      Mask active = true) const;
+    std::pair<Point2f, Float> sample_position(const Point2f &sample,
+                                              Mask active = true) const override;
 
     /// Returns the probability per unit area of `sample_position()`
-    virtual Float pdf_position(const Point2f &p, Mask active = true) const;
+    Float pdf_position(const Point2f &p, Mask active = true) const override;
 
     // ======================================================================
 
@@ -127,8 +136,8 @@ public:
      * Returns:
      *     A scalar intensity or reflectance value
      */
-    virtual Float eval_1(const SurfaceInteraction3f &si,
-                         Mask active = true) const;
+    Float eval_1(const SurfaceInteraction3f &si,
+                 Mask active = true) const override;
 
     /**
      * Monochromatic evaluation of the texture gradient at the given
@@ -140,8 +149,8 @@ public:
      * Returns:
      *     A (u,v) pair of intensity or reflectance value gradients
      */
-    virtual Vector2f eval_1_grad(const SurfaceInteraction3f &si,
-                                 Mask active = true) const;
+    Vector2f eval_1_grad(const SurfaceInteraction3f &si,
+                         Mask active = true) const override;
 
     /**
      * Trichromatic evaluation of the texture at the given surface
@@ -158,8 +167,8 @@ public:
      * Returns:
      *     A trichromatic intensity or reflectance value
      */
-    virtual Color3f eval_3(const SurfaceInteraction3f &si,
-                           Mask active = true) const;
+    Color3f eval_3(const SurfaceInteraction3f &si,
+                   Mask active = true) const override;
 
     /**
      * Return the mean value of the spectrum over the support
@@ -170,7 +179,7 @@ public:
      *
      * Even if the operation is provided, it may only return an approximation.
      */
-    virtual Float mean() const;
+    Float mean() const override;
 
     /**
      * Returns the resolution of the texture, assuming that it is based
@@ -180,20 +189,22 @@ public:
      */
     virtual ScalarVector2i resolution() const;
 
+    ScalarVector2i resolution_2d() const override;
+
     /**
      * Returns the resolution of the spectrum in nanometers (if discretized)
      *
      * Not every implementation necessarily provides this function. The default
      * implementation throws an exception.
      */
-    virtual ScalarFloat spectral_resolution() const;
+    ScalarFloat spectral_resolution() const override;
 
     /**
      * Returns the range of wavelengths covered by the spectrum
      *
      * The default implementation returns ``(MI_CIE_MIN, MI_CIE_MAX)``
      */
-    virtual ScalarVector2f wavelength_range() const;
+    ScalarVector2f wavelength_range() const override;
 
     /**
      * Return the maximum value of the spectrum
@@ -203,36 +214,103 @@ public:
      *
      * Even if the operation is provided, it may only return an approximation.
      */
-    virtual ScalarFloat max() const;
+    ScalarFloat max() const override;
 
     // ======================================================================
 
-    /// Does this texture evaluation depend on the UV coordinates
-    virtual bool is_spatially_varying() const { return false; }
+    // =============================================================
+    // Field compatibility interface
+    // =============================================================
 
-    /// Convenience function returning the standard D65 illuminant
-    static ref<Texture> D65(ScalarFloat scale = 1.f);
+    FieldValueType out_type() const override;
+    FieldDomain domain() const override;
+    uint32_t out_dim() const override;
+    uint32_t args_dim() const override;
+    bool supports_scalar() const override;
+    bool supports_jit() const override;
+    bool supports_surface_queries() const override;
+    bool supports_interaction_queries() const override;
 
-    /// Convenience function to create a product texture of a texture and the
-    /// standard D65 illuminant
-    static ref<Texture> D65(ref<Texture> texture);
+    FloatStorage eval(const SurfaceInteraction3f &si,
+                      Args args,
+                      Mask active) const override;
+    FloatStorage eval(const Interaction3f &it,
+                      Args args,
+                      Mask active) const override;
+    Float eval_1(const SurfaceInteraction3f &si,
+                 Args args,
+                 Mask active) const override;
+    Float eval_1(const Interaction3f &it,
+                 Args args,
+                 Mask active) const override;
+    Color3f eval_color3(const SurfaceInteraction3f &si,
+                        Args args,
+                        Mask active) const override;
+    Color3f eval_color3(const Interaction3f &it,
+                        Args args,
+                        Mask active) const override;
+    Array2f eval_array2(const SurfaceInteraction3f &si,
+                        Args args,
+                        Mask active) const override;
+    Array2f eval_array2(const Interaction3f &it,
+                        Args args,
+                        Mask active) const override;
+    Array3f eval_array3(const SurfaceInteraction3f &si,
+                        Args args,
+                        Mask active) const override;
+    Array3f eval_array3(const Interaction3f &it,
+                        Args args,
+                        Mask active) const override;
+    UnpolarizedSpectrum eval_spec(const SurfaceInteraction3f &si,
+                                  Args args,
+                                  Mask active) const override;
+    UnpolarizedSpectrum eval_spec(const Interaction3f &it,
+                                  Args args,
+                                  Mask active) const override;
+    Array6f eval_array6(const SurfaceInteraction3f &si,
+                        Args args,
+                        Mask active) const override;
+    Array6f eval_array6(const Interaction3f &it,
+                        Args args,
+                        Mask active) const override;
+    void eval_n(const SurfaceInteraction3f &si,
+                Float *out,
+                uint32_t count,
+                Args args,
+                Mask active) const override;
+    void eval_n(const Interaction3f &it,
+                Float *out,
+                uint32_t count,
+                Args args,
+                Mask active) const override;
 
-    MI_DECLARE_PLUGIN_BASE_CLASS(Texture)
+    // ======================================================================
+
+    /// Does this texture evaluation depend on the UV coordinates.
+    bool is_spatially_varying() const override { return false; }
+
+    MI_DECLARE_CLASS(SurfaceField)
+    static constexpr const char *Variant =
+        detail::variant<Float, Spectrum>::name;
+    static constexpr const char *Domain = "Field";
+    static constexpr ObjectType Type = ObjectType::Field;
+    std::string_view variant_name() const override { return Variant; }
+    ObjectType type() const override { return Type; }
 
 protected:
-    Texture(const Properties &);
+    SurfaceField(const Properties &);
 
     MI_TRAVERSE_CB(Object)
 };
 
-MI_EXTERN_CLASS(Texture)
+MI_EXTERN_CLASS(SurfaceField)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-// Enables vectorized method calls on Dr.Jit arrays of Textures
+// Enables vectorized method calls on Dr.Jit arrays of surface fields
 // -----------------------------------------------------------------------
 
-DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
+DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::SurfaceField)
     DRJIT_CALL_METHOD(eval)
     DRJIT_CALL_METHOD(sample_spectrum)
     DRJIT_CALL_METHOD(pdf_spectrum)

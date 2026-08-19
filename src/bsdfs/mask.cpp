@@ -88,11 +88,11 @@ template <typename Float, typename Spectrum>
 class MaskBSDF final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, component_count, m_components, m_flags)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     MaskBSDF(const Properties &props) : Base(props) {
         // Scalar-typed opacity texture
-        m_opacity = props.get_texture<Texture>("opacity", .5f);
+        m_opacity = props.get_surface_field<Field>("opacity", .5f);
 
         for (auto &prop : props.objects()) {
             if (Base *bsdf = prop.try_get<Base>()) {
@@ -242,7 +242,7 @@ public:
 
     MI_DECLARE_CLASS(MaskBSDF)
 private:
-    ref<Texture> m_opacity;
+    ref<Field> m_opacity;
     ref<Base> m_nested_bsdf;
 
     MI_TRAVERSE_CB(Base, m_opacity, m_nested_bsdf)

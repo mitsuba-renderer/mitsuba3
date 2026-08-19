@@ -183,31 +183,33 @@ template <typename Float, typename Spectrum>
 class Principled final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture, MicrofacetDistribution)
+    MI_IMPORT_TYPES(Field, Texture, MicrofacetDistribution)
 
     using GTR1 = GTR1Isotropic<Float, Spectrum>;
 
     Principled(const Properties &props) : Base(props) {
         // Parameter definitions
-        m_base_color = props.get_texture<Texture>("base_color", 0.5f);
-        m_roughness = props.get_texture<Texture>("roughness", 0.5f);
+        m_base_color = props.get_surface_field<Field>("base_color", 0.5f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_base_color.get(), "base_color");
+        m_roughness = props.get_surface_field<Field>("roughness", 0.5f);
         m_has_anisotropic = get_flag("anisotropic", props);
-        m_anisotropic = props.get_texture<Texture>("anisotropic", 0.0f);
+        m_anisotropic = props.get_surface_field<Field>("anisotropic", 0.0f);
         m_has_spec_trans = get_flag("spec_trans", props);
-        m_spec_trans = props.get_texture<Texture>("spec_trans", 0.0f);
+        m_spec_trans = props.get_surface_field<Field>("spec_trans", 0.0f);
         m_has_sheen = get_flag("sheen", props);
-        m_sheen = props.get_texture<Texture>("sheen", 0.0f);
+        m_sheen = props.get_surface_field<Field>("sheen", 0.0f);
         m_has_sheen_tint = get_flag("sheen_tint", props);
-        m_sheen_tint = props.get_texture<Texture>("sheen_tint", 0.0f);
+        m_sheen_tint = props.get_surface_field<Field>("sheen_tint", 0.0f);
         m_has_flatness = get_flag("flatness", props);
-        m_flatness = props.get_texture<Texture>("flatness", 0.0f);
+        m_flatness = props.get_surface_field<Field>("flatness", 0.0f);
         m_has_spec_tint = get_flag("spec_tint", props);
-        m_spec_tint = props.get_texture<Texture>("spec_tint", 0.0f);
+        m_spec_tint = props.get_surface_field<Field>("spec_tint", 0.0f);
         m_has_metallic = get_flag("metallic", props);
-        m_metallic = props.get_texture<Texture>("metallic", 0.0f);
+        m_metallic = props.get_surface_field<Field>("metallic", 0.0f);
         m_has_clearcoat = get_flag("clearcoat", props);
-        m_clearcoat = props.get_texture<Texture>("clearcoat", 0.0f);
-        m_clearcoat_gloss = props.get_texture<Texture>("clearcoat_gloss", 0.0f);
+        m_clearcoat = props.get_surface_field<Field>("clearcoat", 0.0f);
+        m_clearcoat_gloss = props.get_surface_field<Field>("clearcoat_gloss", 0.0f);
         m_spec_srate = props.get("main_specular_sampling_rate", 1.0f);
         m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
         m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 1.0f);
@@ -865,17 +867,17 @@ public:
     MI_DECLARE_CLASS(Principled)
 private:
     /// Parameters
-    ref<Texture> m_base_color;
-    ref<Texture> m_roughness;
-    ref<Texture> m_anisotropic;
-    ref<Texture> m_sheen;
-    ref<Texture> m_sheen_tint;
-    ref<Texture> m_spec_trans;
-    ref<Texture> m_flatness;
-    ref<Texture> m_spec_tint;
-    ref<Texture> m_clearcoat;
-    ref<Texture> m_clearcoat_gloss;
-    ref<Texture> m_metallic;
+    ref<Field> m_base_color;
+    ref<Field> m_roughness;
+    ref<Field> m_anisotropic;
+    ref<Field> m_sheen;
+    ref<Field> m_sheen_tint;
+    ref<Field> m_spec_trans;
+    ref<Field> m_flatness;
+    ref<Field> m_spec_tint;
+    ref<Field> m_clearcoat;
+    ref<Field> m_clearcoat_gloss;
+    ref<Field> m_metallic;
     Float m_eta;
     Float m_specular;
     bool m_eta_specular;

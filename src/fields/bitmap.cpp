@@ -159,9 +159,9 @@ constexpr const char *bitmap_class_name() {
 NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum>
-class BitmapTexture final : public Texture<Float, Spectrum> {
+class BitmapTexture final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
     /// Storage precision of the texture (resolved from the `format` property)
     enum class Format {
@@ -171,7 +171,7 @@ public:
         UInt8     ///< 8 bits per channel (optionally sRGB-decoded on lookup)
     };
 
-    BitmapTexture(const Properties &props) : Texture(props) {
+    BitmapTexture(const Properties &props) : SurfaceField(props) {
         m_transform = props.get<ScalarAffineTransform3f>("to_uv", ScalarAffineTransform3f());
 
         // Should Mitsuba disable transformations to the stored color data?
@@ -285,7 +285,7 @@ protected:
     }
 
     /**
-     * Resolve `Format::Auto` to a concrete storage precision
+     * Resolve `Format.Auto` to a concrete storage precision
      *
      * ``auto`` matches the storage to the source bit depth: 8-bit sources are
      * stored losslessly as 8-bit (and decoded from sRGB on lookup), 16-bit
@@ -350,7 +350,7 @@ protected:
     /**
      * Bring the source bitmap into the exact format the texture needs
      *
-     * The (potentially expensive) `Bitmap::convert()` is skipped entirely
+     * The (potentially expensive) `Bitmap.convert()` is skipped entirely
      * when the bitmap already matches the target pixel format, component type,
      * and gamma -- e.g. an sRGB 8-bit PNG stored as ``uint8``. Sub-2x2 images are
      * up-sampled so that bilinear interpolation has at least one cell.
@@ -425,13 +425,13 @@ private:
     mutable ref<Bitmap> m_bitmap;
     TensorXf m_tensor;
 
-    MI_TRAVERSE_CB(Texture, m_bitmap, m_tensor)
+    MI_TRAVERSE_CB(SurfaceField, m_bitmap, m_tensor)
 };
 
 template <typename Float, typename Spectrum, typename StoredType>
-class BitmapTextureImpl final : public Texture<Float, Spectrum> {
+class BitmapTextureImpl final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
     using StoredScalar           = dr::scalar_t<StoredType>;
     using StoredColor3f          = Color<StoredType, 3>;
@@ -449,7 +449,7 @@ public:
                       bool accel,
                       bool srgb,
                       Tensor&& tensor) :
-        Texture(props),
+        SurfaceField(props),
         m_name(name),
         m_transform(transform),
         m_raw(raw),
@@ -491,6 +491,26 @@ public:
 
         if ((keys.empty() || string::contains(keys, "to_uv")) && m_distr2d)
             check_sampling_transform();
+    }
+
+    FieldValueType out_type() const override {
+        const size_t channels = m_texture.channel_count();
+        if (channels == 1)
+            return FieldValueType::Float;
+        if constexpr (is_spectral_v<Spectrum>)
+            return m_raw ? FieldValueType::Color3 : FieldValueType::Spectrum;
+        else
+            return FieldValueType::Color3;
+    }
+
+    uint32_t out_dim() const override {
+        switch (out_type()) {
+            case FieldValueType::Float: return 1;
+            case FieldValueType::Spectrum:
+                return (uint32_t) dr::size_v<UnpolarizedSpectrum>;
+            case FieldValueType::Color3: return 3;
+            default: return 0;
+        }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si,
@@ -594,9 +614,9 @@ public:
 
         // Partials w.r.t. u and v (include uv transform by transpose multiply)
         const auto &tm = m_transform.matrix;
-        return Vector2f{ dr::fmadd(tm.entry(0, 0),  df_st.x(),
+        return Vector2f{ dr::fmadd(tm.entry(0, 0), df_st.x(),
                                    tm.entry(1, 0) * df_st.y()),
-                         dr::fmadd(tm.entry(0, 1),  df_st.x(),
+                         dr::fmadd(tm.entry(0, 1), df_st.x(),
                                    tm.entry(1, 1) * df_st.y()) };
     }
 
@@ -730,6 +750,8 @@ public:
     }
 
     Float mean() const override { return m_mean; }
+
+    ScalarFloat max() const override { return m_max; }
 
     bool is_spatially_varying() const override { return true; }
 
@@ -898,8 +920,19 @@ protected:
                     values = srgb_model_mean(c3);
                 else
                     values = luminance(c3);
+
+                if (init_mean) {
+                    if constexpr (is_spectral_v<Spectrum>)
+                        m_max = !m_raw
+                                    ? (ScalarFloat) dr::max_nested(values)
+                                    : (ScalarFloat) dr::max_nested(c3);
+                    else
+                        m_max = (ScalarFloat) dr::max_nested(c3);
+                }
             } else {
                 values = decode(tensor.array());
+                if (init_mean)
+                    m_max = (ScalarFloat) dr::max_nested(values);
             }
 
             if (init_mean)
@@ -918,28 +951,36 @@ protected:
             }
 
             auto reduce = [&](auto texel_value) {
-                ScalarFloat mean = 0;
+                ScalarFloat mean = 0,
+                            max = -dr::Infinity<ScalarFloat>;
                 for (size_t i = 0; i < pixel_count; ++i) {
-                    ScalarFloat v = texel_value(ptr);
+                    auto [v, texel_max] = texel_value(ptr);
                     if (out)
                         *out++ = v;
                     mean += v;
+                    max = dr::maximum(max, texel_max);
                     range_issue |= v < 0 || v > 1;
                 }
                 m_mean = mean / pixel_count;
+                m_max = max;
             };
 
             if (channels == 3) {
                 reduce([&](StoredScalar *&p) {
                     Color3f c3(decode(p[0]), decode(p[1]), decode(p[2]));
                     p += 3;
+                    ScalarFloat value = ScalarFloat(luminance(c3));
                     if (is_spectral_v<Spectrum> && !m_raw)
-                        return ScalarFloat(srgb_model_mean(c3));
-                    return ScalarFloat(luminance(c3));
+                        value = ScalarFloat(srgb_model_mean(c3));
+                    ScalarFloat texel_max = is_spectral_v<Spectrum> && !m_raw
+                                                ? value
+                                                : ScalarFloat(dr::max(c3));
+                    return std::pair(value, texel_max);
                 });
             } else {
                 reduce([&](StoredScalar *&p) {
-                    return ScalarFloat(decode(*p++));
+                    ScalarFloat value = ScalarFloat(decode(*p++));
+                    return std::pair(value, value);
                 });
             }
         }
@@ -998,13 +1039,14 @@ protected:
     bool m_raw;
     bool m_srgb;
     Float m_mean;
+    ScalarFloat m_max;
     StoredTexture2f m_texture;
 
     // Optional: distribution for importance sampling
     mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 
-    MI_TRAVERSE_CB(Texture, m_mean, m_texture, m_distr2d)
+    MI_TRAVERSE_CB(SurfaceField, m_mean, m_texture, m_distr2d)
 };
 
 MI_EXPORT_PLUGIN(BitmapTexture)

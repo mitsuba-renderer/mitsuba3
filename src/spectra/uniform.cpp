@@ -46,11 +46,11 @@ controlled by the ``wavelength_min`` and ``wavelength_max`` parameters.
  */
 
 template <typename Float, typename Spectrum>
-class UniformSpectrum final : public Texture<Float, Spectrum> {
+class UniformSpectrum final : public SurfaceField<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(SurfaceField, Texture)
 
-    UniformSpectrum(const Properties &props) : Texture(props) {
+    UniformSpectrum(const Properties &props) : SurfaceField(props) {
         m_value = dr::opaque<Float>(props.get<ScalarFloat>("value"));
         m_range = ScalarVector2f(props.get<ScalarFloat>("wavelength_min", MI_CIE_MIN),
                                  props.get<ScalarFloat>("wavelength_max", MI_CIE_MAX));
@@ -132,7 +132,7 @@ private:
     Float m_value;
     ScalarVector2f m_range;
 
-    MI_TRAVERSE_CB(Texture, m_value)
+    MI_TRAVERSE_CB(SurfaceField, m_value)
 };
 
 MI_EXPORT_PLUGIN(UniformSpectrum)

@@ -85,10 +85,12 @@ template <typename Float, typename Spectrum>
 class SmoothDiffuse final : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(BSDF, m_flags, m_components)
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     SmoothDiffuse(const Properties &props) : Base(props) {
-        m_reflectance = props.get_texture<Texture>("reflectance", .5f);
+        m_reflectance = props.get_surface_field<Field>("reflectance", .5f);
+        if constexpr (is_spectral_v<Spectrum>)
+            require_field_spectral_evaluable(m_reflectance.get(), "reflectance");
         m_flags = BSDFFlags::DiffuseReflection | BSDFFlags::FrontSide;
         m_components.push_back(m_flags);
     }
@@ -193,7 +195,7 @@ public:
 
     MI_DECLARE_CLASS(SmoothDiffuse)
 private:
-    ref<Texture> m_reflectance;
+    ref<Field> m_reflectance;
 
     MI_TRAVERSE_CB(Base, m_reflectance)
 };

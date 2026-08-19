@@ -271,7 +271,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB BSDF : public JitObject<BSDF<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Field, Texture)
 
     /**
      * Importance sample the BSDF model
