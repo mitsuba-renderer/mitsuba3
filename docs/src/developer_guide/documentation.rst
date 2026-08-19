@@ -14,49 +14,98 @@ Install required Python packages:
 
     pip install -r docs/requirements.txt
 
+Then reconfigure with CMake. The ``mkdoc`` and ``mkdoc-api`` targets are only
+defined if ``sphinx-build`` was on ``PATH`` at configure time, and a build
+directory configured before that fails with ``ninja: error: unknown target 'mkdoc'``.
+
 Documentation sources
 ---------------------
 
 Documentation comes from several sources:
 
-1. **C++ headers** (``include/mitsuba/{core,render}/*.h``): API documentation extracted via docstrings
-2. **C++ plugin sources** (``src/{bsdfs,shapes,sensors,films,integrators,...}/*.cpp``): Plugin descriptions and parameters. The built plugin reference is filtered to misuka's acoustic thin fork (see ``docs/generate_plugin_doc.py``). Shared sections like ``shapes``/``textures``/``spectra`` are kept whole, while ``bsdfs``/``sensors``/``films``/``integrators`` are allow-listed down to the acoustic plugins.
+1. **C++ headers** (``include/mitsuba/{core,render,ui}/*.h``): API documentation extracted via docstrings
+2. **C++ plugin sources** (``src/{bsdfs,shapes,sensors,films,integrators,...}/*.cpp``): Plugin descriptions and parameters. The built plugin reference is filtered to misuka's acoustic thin fork (see ``docs/generate_plugin_doc.py``). ``shapes``, ``textures``, ``samplers`` and ``rfilters`` are kept whole, the rest are allow-listed down to the plugins misuka ships.
 3. **RST files** (``docs/src/``): User guides, tutorials, and manual content
-4. **Jupyter notebooks** (``tutorials_acoustic/``, symlinked into ``docs/src/rendering`` and ``docs/src/inverse_rendering``): Interactive tutorials rendered with nbsphinx
+4. **Jupyter notebooks** (``tutorials_acoustic/``, symlinked by ``docs/conf.py`` into ``docs/src/rendering`` and ``docs/src/inverse_rendering``): Interactive tutorials rendered with nbsphinx
 
 Build process overview
 ----------------------
 
 The complete documentation build requires multiple steps in a specific order:
 
-.. code-block:: bash
+.. tabs::
 
-    ninja docstrings    # Extract C++ docstrings → include/mitsuba/python/docstr.h
-    ninja               # Build main library and Python bindings
-    ninja mkdoc-api     # Generate API reference documentation
-    ninja mkdoc         # Build final HTML documentation
+    .. code-tab:: bash Linux
+
+        ninja docstrings    # Extract C++ docstrings → include/mitsuba/python/docstr.h
+        ninja               # Build main library and Python bindings
+        ninja mkdoc-api     # Generate API reference documentation
+        ninja mkdoc         # Build final HTML documentation
+
+    .. code-tab:: bash macOS
+
+        # Docstring extraction skipped (see below)
+        ninja               # Build main library and Python bindings
+        ninja mkdoc-api     # Generate API reference documentation
+        ninja mkdoc         # Build final HTML documentation
+
+    .. code-tab:: powershell PowerShell
+
+        # Docstring extraction skipped (see below)
+        cmake --build . --config Release                    # Build main library and Python bindings
+        cmake --build . --config Release --target mkdoc-api # Generate API reference documentation
+        cmake --build . --config Release --target mkdoc     # Build final HTML documentation
+
+    .. code-tab:: batch cmd
+
+        rem Docstring extraction skipped (see below)
+        cmake --build . --config Release
+        cmake --build . --config Release --target mkdoc-api
+        cmake --build . --config Release --target mkdoc
+
+Only the Linux tab starts at ``docstrings``.
+Everywhere else the build picks up the committed ``docstr.h`` and starts at the second step.
+If you edit a C++ header and don't have access to a Linux machine, make a note in your pull request that the docstrings need to be regenerated.
 
 Detailed build steps
 --------------------
 
-1. **Docstring extraction** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using ``pybind11_mkdoc`` to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
+1. **Docstring extraction – Linux only** (``ninja docstrings``): Parses C++ headers in ``include/mitsuba/`` using `pybind11_mkdoc <https://github.com/pybind/pybind11_mkdoc>`_ to generate ``include/mitsuba/python/docstr.h`` for Python bindings.
+
+   `docstr.h` is tracked by git, run this command and commit the result whenever you edit a header comment.
+
+   .. warning::
+
+       Do this only on a Linux machine with a ``cuda`` variant enabled.
+       The target is only available on Unix systems, so it won't work on Windows.
+       On macOS, a regeneration silently deletes around 800 lines of OptiX docstrings.
+       If you edit a header file and don't have access to a Linux machine, make a note in your pull request that the docstrings need to be regenerated.
 
    .. note::
 
-       ``pybind11_mkdoc`` looks for libclang under ``/usr/lib*/llvm-*/lib/libclang.so.1``,
-       a layout that only Debian-style distributions use. On distributions that install
-       libclang directly into ``/usr/lib``, such as Arch, this step fails with
-       ``Failed to find a LLVM installation``. Point it at the system LLVM instead by adding these environment variables
-       to your ``.bashrc`` or ``.zshrc``:
+       ``pybind11_mkdoc`` looks for libclang under ``/usr/lib*/llvm-*/lib/libclang.so.1``, a layout that only Debian-style distributions use.
+       On distributions that install libclang directly into ``/usr/lib``, such as Arch, this step fails with ``Failed to find a LLVM installation``.
+       Point it at the system LLVM instead by adding these environment variables to your ``.bashrc`` or ``.zshrc``:
 
        .. code-block:: bash
 
+           # replace with your system's paths
            export LLVM_DIR_PATH=/usr
            export LIBCLANG_PATH=/usr/lib/libclang.so
+
+       macOS needs no configuration, ``pybind11_mkdoc`` finds Xcode's libclang on its own.
+
 
 2. **Main build** (``ninja``): Compiles the C++ library, plugins, and Python bindings with embedded docstrings, required before generating API documentation.
 
 3. **API documentation** (``ninja mkdoc-api``): Introspects Python modules to generate API reference in ``build/html_api/``.
+
+   .. note::
+
+       This step imports the built ``misuka`` package, so run it from a shell that
+       has sourced ``setpath`` (see :ref:`sec-python-environments`), otherwise
+       Sphinx aborts with ``ModuleNotFoundError: No module named 'misuka'``. It
+       also needs the ``llvm_ad_rgb`` variant, which is enabled by default.
 
 4. **Main documentation** (``ninja mkdoc``): Builds the complete documentation website in ``build/html/`` by running plugin extraction, processing notebooks, and combining all sources.
 
