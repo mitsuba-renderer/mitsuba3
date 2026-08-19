@@ -15,7 +15,7 @@
 MI_VARIANT class PyPhaseFunction : public PhaseFunction<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(PhaseFunction, PhaseFunctionContext)
-    NB_TRAMPOLINE(PhaseFunction, 7);
+    NB_TRAMPOLINE(PhaseFunction);
 
     PyPhaseFunction(const Properties &props) : PhaseFunction(props) {}
 

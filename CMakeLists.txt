@@ -43,8 +43,12 @@ endif()
 option(MI_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
 option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 
-option(MI_STABLE_ABI "Build Python extension using the CPython stable ABI? (Only relevant when using scikit-build)" OFF)
-mark_as_advanced(MI_STABLE_ABI)
+option(MI_SPLIT_MODE "Build the Python extension in nanobind split mode? This requires the 'nanobind-backend' package at runtime." ON)
+
+# Wheels are always built in split mode
+if (SKBUILD)
+  set(MI_SPLIT_MODE ON)
+endif()
 
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early

@@ -61,6 +61,9 @@ public:
         }
 
         nb::gil_scoped_acquire gil;
+        if (!gil.is_valid())
+            return;
+
         m_display_html(html_string, "raw"_a = true);
         m_flush();
     }
@@ -69,6 +72,8 @@ public:
         std::string_view /* formatted */, std::string_view eta,
         const void * /* ptr */) override {
         nb::gil_scoped_acquire gil;
+        if (!gil.is_valid())
+            return;
 
         // Heuristic: display the bar when it is created,
         // or when progress starts over.

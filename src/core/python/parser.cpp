@@ -304,10 +304,10 @@ static nb::object single_object_or_list(std::vector<ref<Object>> &objects) {
     if (objects.size() == 1)
         return cast_object(objects[0]);
 
-    nb::list l;
+    nb::list_builder l(objects.size());
     for (ref<Object> &obj : objects)
-        l.append(cast_object(obj));
-    return l;
+        l.put(cast_object(obj));
+    return l.commit();
 }
 
 /// Get the current variant

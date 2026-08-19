@@ -13,7 +13,7 @@
 MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
-    NB_TRAMPOLINE(Texture, 17);
+    NB_TRAMPOLINE(Texture);
 
     PyTexture(const Properties &props) : Texture(props) {}
 

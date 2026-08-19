@@ -16,7 +16,7 @@ struct type_caster<mitsuba::field<DeviceType, HostType>> {
     template <typename T> using Cast = Value;
     static constexpr auto Name       = Caster::Name;
 
-    bool from_python(handle src, uint8_t flags,
+    bool from_python(handle src, uint32_t flags,
                      cleanup_list *cleanup) noexcept {
         return caster.from_python(src, flags, cleanup);
     }

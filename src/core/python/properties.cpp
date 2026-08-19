@@ -63,9 +63,10 @@ static nb::object get_property(const Properties& p, std::string_view key) {
 
             // Use nanobind's internal API to find an existing Python object
             // from the C++ pointer and type embedded within the Any instance.
-            nb::handle py_obj = nanobind::detail::nb_type_put(
-                &any_val.type(), const_cast<void*>(any_val.data()),
-                nanobind::rv_policy::none, nullptr);
+            nb::handle py_obj = NB_CALL(nb_type_put)(
+                NB_CTX, &any_val.type(), nullptr,
+                const_cast<void *>(any_val.data()), nb::rv_policy::none_v,
+                nullptr, nullptr);
 
             if (!py_obj.is_valid())
                 Throw("Property \"%s\" is not a known Python object.", key);
@@ -209,19 +210,19 @@ MI_PY_EXPORT(Properties) {
             return p.remove_property(key);
         })
         .def("keys", [](const Properties& p) {
-            nb::list names;
+            nb::list_builder names(p.size());
             for (const auto &key : p)
-                names.append(key.name());
-            return names;
+                names.put(key.name());
+            return names.commit();
         }, "Return a list of property names")
         .def("__iter__", [](nb::handle self) {
             return nb::iter(self.attr("keys")());
         }, "Return a list of property names")
         .def("items", [](const Properties& p) {
-            nb::list result;
+            nb::list_builder result(p.size());
             for (const auto &key : p)
-                result.append(nb::make_tuple(key.name(), get_property(p, key.name())));
-            return result;
+                result.put(nb::make_tuple(key.name(), get_property(p, key.name())));
+            return result.commit();
         }, "Return a list of (key, value) tuples")
         .def("as_string",
             [](const Properties& p, std::string_view key) { return p.as_string(key); },

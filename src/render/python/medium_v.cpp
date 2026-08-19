@@ -15,7 +15,7 @@
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Medium, Sampler, Scene)
-    NB_TRAMPOLINE(Medium, 6);
+    NB_TRAMPOLINE(Medium);
 
     PyMedium(const Properties &props) : Medium(props) {}
 

@@ -11,7 +11,7 @@
 MI_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Emitter, Scene, Medium, Shape)
-    NB_TRAMPOLINE(Emitter, 16);
+    NB_TRAMPOLINE(Emitter);
 
     PyEmitter(const Properties &props) : Emitter(props) { }
 

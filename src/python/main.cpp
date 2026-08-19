@@ -92,7 +92,8 @@ NB_MODULE(mitsuba_ext, m) {
                 return;
 
             nb::gil_scoped_acquire guard;
-            Py_DECREF(o);
+            if (guard.is_valid())
+                Py_DECREF(o);
         }
     );
 

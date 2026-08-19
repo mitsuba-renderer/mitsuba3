@@ -11,7 +11,7 @@
 MI_VARIANT class PySampler : public Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Sampler)
-    NB_TRAMPOLINE(Sampler, 10);
+    NB_TRAMPOLINE(Sampler);
 
     PySampler(const Properties &props) : Sampler(props) {}
 

@@ -14,7 +14,7 @@
 MI_VARIANT class PySensor : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Sensor)
-    NB_TRAMPOLINE(Sensor, 13);
+    NB_TRAMPOLINE(Sensor);
 
     PySensor(const Properties &props) : Sensor(props) { }
 

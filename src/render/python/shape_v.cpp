@@ -62,7 +62,7 @@ MI_PY_EXPORT(SilhouetteSample) {
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Mesh)
-    NB_TRAMPOLINE(Mesh, 1);
+    NB_TRAMPOLINE(Mesh);
 
     using IndexBuffer = typename Mesh::IndexBuffer;
 

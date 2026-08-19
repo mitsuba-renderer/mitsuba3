@@ -17,7 +17,7 @@
 MI_VARIANT class PyFilm : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Film, ImageBlock)
-    NB_TRAMPOLINE(Film, 11);
+    NB_TRAMPOLINE(Film);
 
     PyFilm(const Properties &props) : Film(props) { }
 

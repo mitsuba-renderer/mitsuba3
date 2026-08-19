@@ -43,7 +43,7 @@ ray tracing on NVIDIA GPUs.
 Requirements
 ^^^^^^^^^^^^
 
-- ``Python >= 3.9``
+- ``Python >= 3.10``
 - (optional) For computation on the GPU: ``Nvidia driver >= 535``
 - (optional) For vectorized / parallel computation on the CPU: ``LLVM >= 11.1``
 

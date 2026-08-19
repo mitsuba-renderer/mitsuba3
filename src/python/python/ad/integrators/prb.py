@@ -296,7 +296,7 @@ class PRBIntegrator(RBIntegrator):
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
 
-                    attached_contrib = dr.flag(dr.JitFlag.VCallRecord) and not dr.grad_enabled(Lo)
+                    attached_contrib = dr.flag(dr.JitFlag.SymbolicCalls) and not dr.grad_enabled(Lo)
                     if dr.hint(attached_contrib, mode='scalar'):
                         raise Exception(
                             "The contribution computed by the differential "

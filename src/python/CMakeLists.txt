@@ -2,17 +2,21 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
-  set(MI_DIST_FLAGS "")
+set(MI_DIST_FLAGS "")
 if (SKBUILD)
   # Enable LTO only for release builds targeting PyPI (~5% binary size reduction)
   set(MI_DIST_FLAGS LTO)
-
-  if (MI_STABLE_ABI)
-    list(APPEND MI_DIST_FLAGS STABLE_ABI)
-  endif()
 endif()
 
 set(MI_NB_DOMAIN drjit)
+
+# Split mode delegates to a backend module from a separate Python package, the
+# non-split configuration to a shared libnanobind. Both use Dr.Jit's domain.
+if (MI_SPLIT_MODE)
+  list(APPEND MI_DIST_FLAGS BACKEND_MODULE nanobind_backend)
+else()
+  list(APPEND MI_DIST_FLAGS NB_SHARED)
+endif()
 
 include_directories(
   ${PNG_INCLUDE_DIRS}
@@ -31,7 +35,6 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 
   nanobind_add_module(${TARGET_NAME}
       NB_DOMAIN ${MI_NB_DOMAIN}
-      NB_SHARED
       ${MI_DIST_FLAGS}
       main_v.cpp
       ${CORE_PY_V_SRC}
@@ -59,24 +62,22 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   )
 endforeach()
 
-set(nanobind_lib_name "nanobind")
-if (STABLE_ABI IN_LIST MI_DIST_FLAGS)
-    set(nanobind_lib_name "${nanobind_lib_name}-abi3")
+# The shared 'libnanobind' of the non-split build ships alongside the
+# extensions. Split mode imports the backend from a separate package instead.
+if (NOT MI_SPLIT_MODE)
+  set_target_properties(nanobind
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+    RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+    FOLDER python
+  )
+  install(TARGETS nanobind
+    LIBRARY DESTINATION mitsuba
+  )
 endif()
-set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
-set_target_properties(${nanobind_lib_name}
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  FOLDER python
-)
-install(TARGETS ${nanobind_lib_name}
-  LIBRARY DESTINATION mitsuba
-)
 
 nanobind_add_module(mitsuba_ext
   NB_DOMAIN ${MI_NB_DOMAIN}
-  NB_SHARED
   ${MI_DIST_FLAGS}
   main.cpp
   ${CORE_PY_SRC}

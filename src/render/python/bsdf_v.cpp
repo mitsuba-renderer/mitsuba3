@@ -35,7 +35,7 @@ MI_PY_EXPORT(BSDFSample) {
 MI_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(BSDF)
-    NB_TRAMPOLINE(BSDF, 12);
+    NB_TRAMPOLINE(BSDF);
 
     PyBSDF(const Properties &props) : BSDF(props) { }
 
