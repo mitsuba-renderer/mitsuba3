@@ -313,7 +313,12 @@ set(ENABLE_SHARED   ON  CACHE BOOL " " FORCE)
 set(ENABLE_STATIC   OFF CACHE BOOL " " FORCE)
 set(WITH_TURBOJPEG  OFF CACHE BOOL " " FORCE)
 set(WITH_TOOLS      OFF CACHE BOOL " " FORCE)
+
+# libjpeg-turbo caps its policy range at CMake 3.28, leaving CMP0219 unset and
+# warning. cmake_policy(SET) would not survive its cmake_minimum_required().
+set(CMAKE_POLICY_DEFAULT_CMP0219 NEW)
 add_subdirectory(libjpeg-turbo)
+unset(CMAKE_POLICY_DEFAULT_CMP0219)
 set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
 
 # Public headers live in src/; the generated jconfig.h lands in the build dir.

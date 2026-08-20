@@ -1,8 +1,8 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind==3.0.0.dev2",
-    "nanobind-backend>=1.0.0.dev2",
+    "nanobind==3.0.0.dev4",
+    "nanobind-backend==1.0.0.dev4",
     "drjit==1.6.0.dev1",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
@@ -17,7 +17,7 @@ description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
   "drjit==1.6.0.dev1",
-  "nanobind-backend>=1.0.0.dev2",
+  "nanobind-backend==1.0.0.dev4",
 ]
 requires-python = ">=3.10"
 authors = [
