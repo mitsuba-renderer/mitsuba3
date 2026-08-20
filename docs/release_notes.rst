@@ -8,7 +8,7 @@ misuka 0.1.0
 ~~~~~~~~~~~~
 *Unreleased*
 
-- **Mitsuba update**. misuka now builds on Mitsuba 3.9.0, so all of its features
+- **Mitsuba update**. misuka now builds on Mitsuba 3.9.1, so all of its features
   are available (e.g. function freezing, Dr.Jit's new gradient-based optimizers, and
   the Metal backend for GPU rendering on macOS). `[PR #7] <https://github.com/misuka-renderer/misuka/pull/7>`_
 
@@ -52,6 +52,73 @@ misuka 0.0.0
 Mitsuba release notes
 ----------------------
 
+Mitsuba 3.9.1
+~~~~~~~~~~~~~
+*August 7, 2026*
+
+- Upgrade to `Dr.Jit 1.5.0
+  <https://github.com/mitsuba-renderer/drjit/releases/tag/v1.5.0>`__ and
+  nanobind 2.14.0.
+
+  ⚠️ :py:func:`dr.minimum() <drjit.minimum>` and :py:func:`dr.maximum()
+  <drjit.maximum>` now propagate NaNs, while the new :py:func:`dr.fmin()
+  <drjit.fmin>` and :py:func:`dr.fmax() <drjit.fmax>` suppress them.
+  :py:func:`dr.clip() <drjit.clip>` follows the same convention. Code that
+  relied on ``dr.maximum(x, 0)`` to sanitize NaNs must switch to
+  ``dr.fmax()``. See the `Dr.Jit changelog
+  <https://drjit.readthedocs.io/en/latest/changelog.html>`__ for the
+  remaining changes. (commit `b46a13 <https://github.com/mitsuba-renderer/mitsuba3/commit/b46a1307e2a685e312ff545d14e274df8a62570c>`__).
+
+- **Metal backend**:
+
+  - Fixed a race condition during parallel scene loading, where computation
+    performed by the main thread was not yet committed to the Metal queue when
+    other threads read it. (commit `5f090a <https://github.com/mitsuba-renderer/mitsuba3/commit/5f090a15fdfba7630783b176006ded645f78c15d>`__).
+
+  - Removed a stale ``world_space_data`` tag from the intersection shaders and
+    rebuilt the ``.metallib``. (commits `5a9d41 <https://github.com/mitsuba-renderer/mitsuba3/commit/5a9d41249c19980f565f916a64cb5c7f5e93264c>`__,
+    `c36933 <https://github.com/mitsuba-renderer/mitsuba3/commit/c369336b4ac5afa20374d186a739fcdd30da570e>`__,
+    contributed by `Boris Zhestiankin <https://github.com/zhestyatsky>`__).
+
+- **Textures and bitmaps**:
+
+  - Added ``Bitmap::pad_to()``, which fixes the preparation of ``uint8``
+    textures. (commit `d4f015 <https://github.com/mitsuba-renderer/mitsuba3/commit/d4f015b38d2a2992ad58bc985c9a882c05142a42>`__,
+    contributed by `Christian Döring <https://github.com/DoeringChristian>`__).
+
+  - The :ref:`envmap <emitter-envmap>` emitter now pads environment maps to a
+    minimum size. (commit `4f3339 <https://github.com/mitsuba-renderer/mitsuba3/commit/4f3339d47815674e4fea748a2c55c4f9626ed5e0>`__,
+    contributed by `Delio Vicini <https://github.com/dvicini>`__).
+
+  - The :ref:`bitmap <texture-bitmap>` texture no longer warns about 1×1 pixel
+    images. (commit `3f00b7 <https://github.com/mitsuba-renderer/mitsuba3/commit/3f00b72372a24d0811a56186f137a817c9174f1f>`__).
+
+- **Differential geometry**. Two shapes reported tangent vectors that were
+  inconsistent with their own UV parameterization:
+
+  - Meshes without vertex texture coordinates report barycentric coordinates in
+    ``si.uv``. The associated ``si.dp_du`` and ``si.dp_dv`` previously held an
+    arbitrary orthonormal basis and now match that parameterization. This
+    changes the shading frame of such meshes, which is observable with
+    anisotropic BSDFs. (commit `886077 <https://github.com/mitsuba-renderer/mitsuba3/commit/886077b6ec814a57303d80e17185103495062130>`__).
+
+  - The :ref:`disk <shape-disk>` shape reports ``si.uv = (r, phi/(2*pi))``. Its
+    ``dp_dv`` was missing a factor of ``2*pi*r``, and ``eval_parameterization()``
+    used a concentric instead of a polar map. (commit `e6d34f <https://github.com/mitsuba-renderer/mitsuba3/commit/e6d34f89d90f9363973e9a82c1fa626c1ede07ca>`__).
+
+- Fixed a numerical issue in the :ref:`hair <bsdf-hair>` BSDF that could
+  introduce NaNs. (commit `6e783e <https://github.com/mitsuba-renderer/mitsuba3/commit/6e783edb9729f16b15a3f01260ac3e39938fee79>`__).
+
+- ``mi.Thread.wait_for_tasks()`` now releases the GIL. (commit `6bfb31 <https://github.com/mitsuba-renderer/mitsuba3/commit/6bfb31efe7a35bbcd7b5ea3b1771ebdba256a542>`__,
+  contributed by `Delio Vicini <https://github.com/dvicini>`__).
+
+- Added Python aliases for further Dr.Jit types (``Array0f`` through
+  ``Array4f`` and their integer counterparts, the ``f8u`` texture storage
+  variants, ``Philox4x32``, ``ScalarPCG32``, and ``Event``). (commit `55e8a7 <https://github.com/mitsuba-renderer/mitsuba3/commit/55e8a75a97873069ba7468eca16133f9c83cc452>`__).
+
+- Documentation links now point to the Dr.Jit documentation. (commit `582781 <https://github.com/mitsuba-renderer/mitsuba3/commit/5827819ec6e78abac8bff6ab467cac74c90ff01b>`__,
+  contributed by `Leonard Eyer <https://github.com/LeonardEyer>`__).
+
 Mitsuba 3.9.0
 ~~~~~~~~~~~~~
 *June 26, 2026*
@@ -94,8 +161,7 @@ Mitsuba 3.9.0
     existing optimizations that use LDR textures for initialization (e.g.,
     loaded from JPEGs or PNGs). Add a ``<string name="format"
     value="variant"/>`` XML or "'formt' : 'variant' dictionary attribute to
-    promote them to the variant's precision. (commit `56ec0f
-    <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
+    promote them to the variant's precision. (commit `56ec0f <https://github.com/mitsuba-renderer/mitsuba3/commit/56ec0f12bc3718b8a0ac09155bae74a57feb7c57>`__).
 
   - **Faster tracing and code generation**. A comprehensive
     optimization pass in `Dr.Jit 1.4.0
@@ -115,8 +181,7 @@ Mitsuba 3.9.0
     instances was reduced as well.
     (PR `#201
     <https://github.com/mitsuba-renderer/drjit-core/pull/201>`__, commit
-    `83207d
-    <https://github.com/mitsuba-renderer/drjit-core/commit/83207d5aeeb8fab27473c606b6a71349bce4157c>`__).
+    `83207d <https://github.com/mitsuba-renderer/drjit-core/commit/83207d5aeeb8fab27473c606b6a71349bce4157c>`__).
 
   - **Faster Python bindings**. The Python bindings are now faster thanks to
     improvements in `nanobind 2.13

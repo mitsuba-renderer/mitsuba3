@@ -1,8 +1,8 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind==2.13.0",
-    "drjit==1.4.0",
+    "nanobind==2.14.0",
+    "drjit==1.5.0",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -16,7 +16,7 @@ description = "misuka: A Differentiable Room Acoustic Renderer"
 readme = "README.md"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.4.0",
+  "drjit==1.5.0",
 ]
 requires-python = ">=3.9"
 authors = [

@@ -1577,10 +1577,12 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     // Texture coordinates (if available)
     si.uv = Point2f(b1, b2);
 
-    std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
-
     Vector3f dp0 = p1 - p0,
              dp1 = p2 - p0;
+
+    // Without texture coordinates the parameterization is barycentric
+    si.dp_du = p1 - p0;
+    si.dp_dv = p2 - p0;
 
     if (has_vertex_texcoords() &&
         likely(has_flag(ray_flags, RayFlags::UV) ||
@@ -1597,6 +1599,9 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
         si.uv = dr::fmadd(uv2, b2, dr::fmadd(uv1, b1, uv0 * b0));
 
         if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
+            // Fall back to an arbitrary basis for degenerate parameterizations
+            std::tie(si.dp_du, si.dp_dv) = coordinate_system(si.n);
+
             Vector2f duv0 = uv1 - uv0,
                      duv1 = uv2 - uv0;
 

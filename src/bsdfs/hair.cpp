@@ -258,6 +258,9 @@ public:
             dr::masked(u[0][1], sample_p) = u[0][0] / a_p_pdf[i + 1];
         }
 
+        // Rounding in the rescaling above can push 'u[0][1]' out of [0, 1]
+        u[0][1] = dr::clip(u[0][1], 0.f, 1.f);
+
         // Account for scales on hair surface
         Float sin_theta_ip(0.f);
         Float cos_theta_ip(0.f);
@@ -275,6 +278,10 @@ public:
         for (size_t i = 0; i < P_MAX; i++)
             dr::masked(cos_theta, p == i) =
                 1 + m_v[i] * dr::log(u[1][0] + (1.f - u[1][0]) * dr::exp(-2.f / m_v[i]));
+
+        // 'exp(-2/m_v)' underflows for small roughness, giving 'log(0)'
+        cos_theta = dr::clip(cos_theta, -1.f, 1.f);
+
         Float sin_theta = dr::safe_sqrt(1.f - dr::square(cos_theta));
         Float cos_phi = dr::cos(2 * dr::Pi<ScalarFloat> * u[1][1]);
         Float sin_theta_o =

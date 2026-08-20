@@ -321,8 +321,15 @@ if (UNIX)
   endforeach()
 
   foreach (value ${MKDOC_COMPILE_DEFINITIONS})
-    list(APPEND MKDOC_CXXFLAGS -D${value})
+    if (NOT value MATCHES "^MI_ENABLE_")
+      list(APPEND MKDOC_CXXFLAGS -D${value})
+    endif()
   endforeach()
+
+  # Turn on every optional backend so that the generated docstrings don't
+  # depend on the platform and configuration used to generate them
+  list(APPEND MKDOC_CXXFLAGS -DMI_ENABLE_AUTODIFF=1 -DMI_ENABLE_CUDA=1
+       -DMI_ENABLE_LLVM=1 -DMI_ENABLE_METAL=1 -DMI_ENABLE_EMBREE=1)
 
   add_custom_target(docstrings USES_TERMINAL COMMAND
     ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++ -ferror-limit=100000
