@@ -5,12 +5,12 @@ on:
       upload_pypi:
         description: Upload wheels to PyPI
         type: boolean
-        required: false
+        required: true
         default: false
       upload_testpypi:
         description: Upload wheels to TestPyPI
         type: boolean
-        required: false
+        required: true
         default: false
 
 env:
@@ -123,7 +123,7 @@ jobs:
   upload_testpypi:
     name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_testpypi }}
+    if: ${{ github.event.inputs.upload_testpypi == 'true' }}
     needs: [build_wheels]
     permissions:
       contents: read
@@ -145,7 +145,7 @@ jobs:
   upload_pypi:
     name: Upload wheels to PyPI
     runs-on: ubuntu-latest
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_pypi }}
+    if: ${{ github.event.inputs.upload_pypi == 'true' }}
     needs: [build_wheels]
 
     steps:
