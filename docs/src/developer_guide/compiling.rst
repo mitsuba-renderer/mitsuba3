@@ -229,18 +229,38 @@ installer:
 
 * *Desktop development with C++*
 * *MSVC v143* build tools for x64/x86
+* *C++ CMake tools for Windows*
 
-Some tools such as git, CMake, or Python might need to be installed manually.
-misuka's build system *requires* access to Python >= 3.9 even if you do not plan
-to use misuka's python interface.
+The last of these provides CMake and `Ninja <https://ninja-build.org/>`_. Some
+tools such as git or Python might still need to be installed manually. misuka's
+build system *requires* access to Python >= 3.9 even if you do not plan to use
+misuka's python interface.
 
-From the root `misuka` directory, the build can be configured with:
+Ninja needs the MSVC toolchain on ``PATH``, so run the build from a *Developer
+Command Prompt for VS 2022* or a *Developer PowerShell for VS 2022* rather than
+a plain shell. Both are installed alongside Visual Studio. From the root
+`misuka` directory:
+
+.. code-block:: bash
+
+    mkdir build
+    cd build
+    cmake -GNinja -DCMAKE_BUILD_TYPE=Release ..
+    ninja
+
+This matches the Linux and macOS instructions above, and places the
+``setpath`` scripts directly in ``build``.
+
+Building from Visual Studio
+^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+If you would rather work inside the IDE, configure the Visual Studio generator
+instead:
 
 .. code-block:: bash
 
     # To be safe, explicitly ask for the 64 bit version of Visual Studio
     cmake -G "Visual Studio 17 2022" -A x64 -B build
-
 
 Afterwards, open the generated ``mitsuba.sln`` file in the build folder and
 proceed building as usual from within Visual Studio. You will probably also
@@ -252,6 +272,10 @@ command:
 .. code-block:: bash
 
     cmake --build build --config Release
+
+Note that this generator is multi-config: the build mode is chosen per build
+rather than at configure time, and the working ``setpath`` scripts end up in a
+``Release`` subdirectory of ``build``.
 
 
 **Tested version**
@@ -323,20 +347,26 @@ required to run misuka.
     # On Linux / Mac OS
     source setpath.sh
 
-    # On Windows (cmd)
+    # On Windows, Ninja build (cmd)
+    C:/.../misuka/build> setpath
+
+    # On Windows, Ninja build (powershell)
+    C:/.../misuka/build> .\setpath.ps1
+
+    # On Windows, Visual Studio build (cmd)
     C:/.../misuka/build/Release> setpath
 
-    # On Windows (powershell)
+    # On Windows, Visual Studio build (powershell)
     C:/.../misuka/build/Release> .\setpath.ps1
 
 .. note::
 
-    On Windows, note the ``Release`` in those paths. The Visual Studio compiler
-    writes the working scripts into that subdirectory, while the ``setpath``
-    scripts sitting directly in ``build`` do not set the environment up
-    correctly. Running the wrong one fails silently, and the symptom appears
-    later as a ``ModuleNotFoundError`` for ``drjit`` or an unrecognised
-    ``misuka`` command.
+    On Windows, the ``Release`` in those paths only applies to builds made with
+    the Visual Studio generator, which writes the working scripts into that
+    subdirectory. A Ninja build puts them directly in ``build``. Running the
+    wrong one fails silently, and the symptom appears later as a
+    ``ModuleNotFoundError`` for ``drjit`` or an unrecognised ``misuka``
+    command.
 
 Sourcing this script in every new shell gets old quickly. See
 :ref:`sec-python-environments` for how to run it automatically whenever your
