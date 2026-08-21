@@ -95,8 +95,6 @@ public:
     using Sensor::m_needs_sample_3;
     using Sensor::m_film;
     using Sensor::m_to_world;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Sensor)
 };
 
 template <typename Ptr, typename Cls> void bind_sensor_generic(Cls &cls) {

@@ -77,8 +77,6 @@ public:
     using Film::m_sample_border;
     using Film::m_filter;
     using Film::m_srf;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Film)
 };
 
 MI_PY_EXPORT(Film) {

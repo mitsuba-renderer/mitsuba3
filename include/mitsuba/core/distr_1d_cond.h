@@ -30,7 +30,7 @@ NAMESPACE_BEGIN(mitsuba)
  * each wavelength conditions the underlying distribution.
  */
 template <typename Value>
-class ConditionalIrregular1D : drjit::TraversableBase {
+class ConditionalIrregular1D : public drjit::TraversableBase {
     using Float        = std::conditional_t<dr::is_static_array_v<Value>,
                                             dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;
@@ -641,7 +641,7 @@ std::ostream &operator<<(std::ostream &os,
  * This distribution can be used in the context of spectral rendering, where
  * each wavelength conditions the underlying distribution.
  */
-template <typename Value> class ConditionalRegular1D : drjit::TraversableBase {
+template <typename Value> class ConditionalRegular1D : public drjit::TraversableBase {
     using Float        = std::conditional_t<dr::is_static_array_v<Value>,
                                             dr::value_t<Value>, Value>;
     using FloatStorage = DynamicBuffer<Float>;

@@ -435,12 +435,20 @@ protected:
                               uint32_t block_id,
                               uint32_t block_size) const;
 
+    /**
+     * \brief Render a single sample at the given pixel position
+     *
+     * \c scale and \c offset map pixel coordinates to the unit square of the
+     * crop window (\c 1 / crop_size and \c -crop_offset / crop_size).
+     */
     void render_sample(const Scene *scene,
                        const Sensor *sensor,
                        Sampler *sampler,
                        ImageBlock *block,
                        Float *aovs,
                        const Vector2f &pos,
+                       const Vector2f &scale,
+                       const Vector2f &offset,
                        ScalarFloat diff_scale_factor,
                        Mask active = true) const;
 

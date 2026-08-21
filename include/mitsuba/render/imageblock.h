@@ -56,7 +56,8 @@ public:
      *
      *     channel_count: Specifies the desired number of image channels.
      *
-     *     rfilter: The desired reconstruction filter to be used in `read()` and `put()`. A box filter will be used if ``rfilter==nullptr``.
+     *     rfilter: The desired reconstruction filter to be used in `read()` and `put()`.
+     *     A box filter will be used if ``rfilter==nullptr``.
      *
      *     border: Should `ImageBlock` add an additional border region around
      *         the image boundary to capture contributions to neighboring pixels
@@ -156,8 +157,9 @@ public:
      *
      * Note:
      *     This variant of the `put()` function assumes that the ImageBlock
-     *     has a standard layout, namely: ``RGB``, potentially ``alpha``, and a ``weight`` channel. Use the other variant if the channel configuration
-     *     deviates from this default.
+     *     has a standard layout, namely: ``RGB``, potentially ``alpha``,
+     *     and a ``weight`` channel. Use the other variant if the channel
+     *     configuration deviates from this default.
      */
     void put(const Point2f &pos,
              const Wavelength &wavelengths,
@@ -233,10 +235,23 @@ public:
      * This corresponds to the offset from the top-left corner of a larger
      * image (e.g. a `Film`) to the top-left corner of this ImageBlock instance.
      */
-    void set_offset(const ScalarPoint2i &offset) { m_offset = offset; }
+    void set_offset(const ScalarPoint2i &offset) {
+        m_offset = offset;
+        update_opaque();
+    }
 
     /// Set the block size. This potentially destroys the block's content.
     void set_size(const ScalarVector2u &size);
+
+    /**
+     * \brief Replace the opaque size/offset used by \ref put() and \ref read()
+     * so that frozen functions do not bake in the geometry (see \ref
+     * Film::launch_params()). The values must match \ref size() and \ref offset().
+     */
+    void set_opaque_geometry(const Vector2u &size, const Point2i &offset) {
+        m_size_o = size;
+        m_offset_o = offset;
+    }
 
     /// Return the current block offset
     const ScalarPoint2i &offset() const { return m_offset; }
@@ -311,6 +326,10 @@ protected:
                       UInt32 index, Bool active);
 
 protected:
+    /// Refresh the opaque copies of the block size and offset
+    void update_opaque();
+
+protected:
     ScalarPoint2i m_offset;
     ScalarVector2u m_size;
     uint32_t m_channel_count;
@@ -322,7 +341,11 @@ protected:
     bool m_warn_negative;
     bool m_warn_invalid;
 
-    MI_TRAVERSE_CB(Object, m_tensor)
+    /// Opaque copies of m_offset and m_size used by put() and read()
+    Point2i m_offset_o;
+    Vector2u m_size_o;
+
+    MI_TRAVERSE_CB(Object, m_tensor, m_offset_o, m_size_o)
 };
 
 MI_EXTERN_CLASS(ImageBlock)

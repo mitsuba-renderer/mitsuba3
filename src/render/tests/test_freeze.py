@@ -65,11 +65,15 @@ def assert_render(
     input,
     n,
     update: Optional[Callable] = None,
-    n_recordings=2,
+    n_recordings: Optional[int] = None,
     tmp_path=None,
     spp=1,
     auto_opaque: bool = True,
 ):
+    if n_recordings is None:
+        # A rendering step is captured by a single recording.
+        n_recordings = 1
+
     def func(scene: mi.Scene) -> mi.TensorXf:
         with dr.profile_range("render"):
             result = mi.render(scene, spp=spp)
@@ -115,6 +119,41 @@ def test01_cornell_box(variants_vec_rgb, auto_opaque):
         params[k].x = value + 10.0 * i
 
     assert_render(scene, n, update, auto_opaque=auto_opaque)
+
+
+@pytest.mark.parametrize("aovs", [False, True])
+def test01b_single_recording(variants_vec_rgb, aovs):
+    """
+    Rendering a scene repeatedly should only ever require a single recording.
+    This is a regression test for state that a rendering step used to leave
+    behind: the film only allocated its storage block while rendering, the
+    sensor's sampler kept the RNG state that was allocated when seeding it,
+    and ``mi.render()`` bound the sensor to a Python object. All three showed
+    up as changed inputs in the second call and forced a re-recording.
+    """
+    scene = mi.cornell_box()
+    scene["sensor"]["film"]["width"] = 16
+    scene["sensor"]["film"]["height"] = 16
+    if aovs:
+        # The film cannot know the AOV count ahead of the first ``prepare()``
+        # call, and allocates a storage block of the wrong width. Only the
+        # presence of that block matters, so a single recording still suffices.
+        scene["integrator"] = {
+            "type": "aov",
+            "aovs": "dd.y:depth,nn:sh_normal",
+            "integrator": { "type": "path" }
+        }
+    scene = mi.load_dict(scene, parallel=True)
+
+    def func(scene):
+        return mi.render(scene, spp=4)
+
+    frozen = dr.freeze(func)
+
+    for i in range(3):
+        assert dr.allclose(frozen(scene), func(scene))
+
+    assert frozen.n_recordings == 1
 
 
 @pytest.mark.parametrize("auto_opaque", [False, True])
@@ -286,7 +325,11 @@ def test02_pose_estimation(variants_vec_rgb, integrator, auto_opaque):
 
     assert dr.allclose(trans_ref, trans_frozen, atol = 0.001)
     assert dr.allclose(angle_ref, angle_frozen, atol = 0.001)
-    assert frozen.n_recordings == 2
+    # ``auto_opaque`` promotes a literal on the second call, and the ``direct``
+    # integrator differentiates through the scene, whose parameters carry
+    # gradients from the first call on. Either costs one more recording.
+    assert frozen.n_recordings == (2 if auto_opaque or integrator == "direct"
+                                     else 1)
     # if integrator != "prb_projective":
     #     assert dr.allclose(img_ref, img_frozen, atol=0.001)
 
@@ -388,7 +431,7 @@ def test03_optimize_color(variants_vec_rgb, auto_opaque):
 
     image_frozen, param_frozen = run(n, frozen)
 
-    assert frozen.n_recordings == 2
+    assert frozen.n_recordings == (2 if auto_opaque else 1)
     # Optimizing the reflectance is not as prone to divergence,
     # therefore we can test if the two methods produce the same results
     assert dr.allclose(param_ref, param_frozen)
@@ -919,7 +962,7 @@ def test09_shape(variants_vec_rgb, tmp_path, shape, auto_opaque):
             params["shape.control_points"][0] = i * 0.1
 
     scene = load_scene()
-    assert_render(scene, n, update, tmp_path=tmp_path, auto_opaque = auto_opaque)
+    assert_render(scene, n, update, tmp_path=tmp_path, auto_opaque=auto_opaque)
 
 
 @pytest.mark.parametrize("shape", SHAPES)
@@ -1024,13 +1067,9 @@ def test11_optimizer(variants_vec_rgb, optimizer, auto_opaque):
 
     image_frozen, param_frozen = run(n, frozen)
 
-    if auto_opaque:
-        if optimizer == "adam":
-            assert frozen.n_recordings == 3
-        else:
-            assert frozen.n_recordings == 2
-    else:
-        assert frozen.n_recordings == 2
+    # The first call enables gradients on a scene parameter, which changes the
+    # structure of the input and is captured by a second recording
+    assert frozen.n_recordings == 2
 
     # Optimizing the reflectance is not as prone to divergence,
     # therefore we can test if the two methods produce the same results

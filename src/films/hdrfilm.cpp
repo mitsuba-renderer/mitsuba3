@@ -223,6 +223,13 @@ public:
                       "accumulation) parameter has been removed and is now "
                       "ignored.");
         }
+
+        alloc_storage(storage_channels());
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        Base::parameters_changed(keys);
+        alloc_storage(storage_channels());
     }
 
     size_t base_channels_count() const override {
@@ -255,10 +262,7 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
-            if (dr::is_jit_v<Float> && m_storage == nullptr)
-                jit_freeze_discard(drjit::detail::backend<Float>::value, "Image Block was allocated");
-            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
-                                       (uint32_t) channels.size());
+            alloc_storage(channels.size());
             m_channels = channels;
         }
 
@@ -277,7 +281,7 @@ public:
 
         bool default_config = dr::all(size == ScalarVector2u(0));
 
-        return new ImageBlock(default_config ? m_crop_size : size,
+        ref<ImageBlock> block = new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
@@ -285,6 +289,13 @@ public:
                               dr::is_jit_v<Float> /* coalesce */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */);
+
+        if (default_config) {
+            typename Base::LaunchParams lp = this->launch_params();
+            block->set_opaque_geometry(lp.crop_size, Point2i(lp.crop_offset));
+        }
+
+        return block;
     }
 
     void put_block(const ImageBlock *block) override {
@@ -299,8 +310,9 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
-        if (!m_storage)
-            Throw("No storage allocated, was prepare() called first?");
+        if (m_channels.empty())
+            Throw("develop(): channel information unavailable, prepare() must "
+                  "be called first.");
 
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -412,8 +424,9 @@ public:
     }
 
     ref<Bitmap> bitmap(bool raw = false) const override {
-        if (!m_storage)
-            Throw("No storage allocated, was prepare() called first?");
+        if (m_channels.empty())
+            Throw("bitmap(): channel information unavailable, prepare() must "
+                  "be called first.");
 
         std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
@@ -598,6 +611,26 @@ public:
     }
 
     MI_DECLARE_CLASS(HDRFilm)
+protected:
+    /// Channel count of the last `prepare()` call, or a default before the first one
+    size_t storage_channels() const {
+        if (!m_channels.empty())
+            return m_channels.size();
+        return has_flag(m_flags, FilmFlags::Alpha) ? 5 : 4;
+    }
+
+    /// Eagerly allocate the storage block
+    void alloc_storage(size_t channel_count) {
+        if (m_storage != nullptr &&
+            m_storage->channel_count() == channel_count &&
+            dr::all(m_storage->size() == m_crop_size) &&
+            dr::all(m_storage->offset() == m_crop_offset))
+            m_storage->clear();
+        else
+            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
+                                       (uint32_t) channel_count);
+    }
+
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;

@@ -107,8 +107,6 @@ public:
 
     using BSDF::m_flags;
     using BSDF::m_components;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(BSDF);
 };
 
 template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {

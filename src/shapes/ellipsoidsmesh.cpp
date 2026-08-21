@@ -325,43 +325,16 @@ public:
         return oss.str();
     }
 
-    void traverse_1_cb_ro(void *payload, dr::detail::traverse_callback_ro fn) const override {
-        // Only traverse the scene for frozen functions, since accidentally
-        // traversing the scene in loops or vcalls can cause errors with variable
-        // size mismatches, and backpropagation of gradients.
-        if (!jit_flag(JitFlag::EnableObjectTraversal))
+    void traverse_cb(void *payload, const dr::TraverseVisitor &cb) override {
+        if (cb.role != dr::TraverseRole::Freeze)
             return;
 
-        Object::traverse_1_cb_ro(payload, fn);
-        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-            dr::traverse_1_fn_ro(x, payload, fn);
-        });
-
-        dr::traverse_1_fn_ro(m_ellipsoids.data(), payload, fn);
-        dr::traverse_1_fn_ro(m_ellipsoids.extents_data(), payload, fn);
+        Base::traverse_cb(payload, cb);
+        dr::traverse_fn(m_ellipsoids.data(), payload, cb, "m_ellipsoids");
+        dr::traverse_fn(m_ellipsoids.extents_data(), payload, cb, "m_ellipsoids_extents");
         auto &attr_map = m_ellipsoids.attributes();
         for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
-            dr::traverse_1_fn_ro(it.value(), payload, fn);
-        }
-    }
-
-    void traverse_1_cb_rw(void *payload, dr::detail::traverse_callback_rw fn) override {
-        // Only traverse the scene for frozen functions, since accidentally
-        // traversing the scene in loops or vcalls can cause errors with variable
-        // size mismatches, and backpropagation of gradients.
-        if (!jit_flag(JitFlag::EnableObjectTraversal))
-            return;
-
-        Object::traverse_1_cb_rw(payload, fn);
-        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-            dr::traverse_1_fn_rw(x, payload, fn);
-        });
-
-        dr::traverse_1_fn_rw(m_ellipsoids.data(), payload, fn);
-        dr::traverse_1_fn_rw(m_ellipsoids.extents_data(), payload, fn);
-        auto &attr_map = m_ellipsoids.attributes();
-        for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
-            dr::traverse_1_fn_rw(it.value(), payload, fn);
+            dr::traverse_fn(it.value(), payload, cb, "m_ellipsoids_attributes");
         }
     }
 

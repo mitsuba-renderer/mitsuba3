@@ -193,8 +193,15 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
 
+        // Principal point offset expressed in crop window coordinates
+        m_scaled_principal_point_offset =
+            m_principal_point_offset *
+            Vector2f(ScalarVector2f(m_film->size()) /
+                     ScalarVector2f(m_film->crop_size()));
+
         dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_x_fov,
-                        m_image_rect, m_normalization, m_principal_point_offset);
+                        m_image_rect, m_normalization, m_principal_point_offset,
+                        m_scaled_principal_point_offset);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -211,13 +218,10 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
-                                 position_sample.y() + scaled_principal_point_offset.y(),
+                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
+                                 position_sample.y() + m_scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -248,13 +252,10 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
-                                 position_sample.y() + scaled_principal_point_offset.y(),
+                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
+                                 position_sample.y() + m_scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -296,12 +297,9 @@ public:
         if (dr::none_or<false>(active))
             return { ds, dr::zeros<Spectrum>() };
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         Point3f screen_sample = m_sample_to_camera.inverse() * ref_p;
-        ds.uv = Point2f(screen_sample.x() - scaled_principal_point_offset.x(),
-                        screen_sample.y() - scaled_principal_point_offset.y());
+        ds.uv = Point2f(screen_sample.x() - m_scaled_principal_point_offset.x(),
+                        screen_sample.y() - m_scaled_principal_point_offset.y());
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
                   (ds.uv.y() <= 1);
         if (dr::none_or<false>(active))
@@ -412,11 +410,11 @@ private:
     Float m_normalization;
     Float m_x_fov;
     Vector3f m_dx, m_dy;
-    Vector2f m_principal_point_offset;
+    Vector2f m_principal_point_offset, m_scaled_principal_point_offset;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect,
                    m_normalization, m_x_fov, m_dx, m_dy,
-                   m_principal_point_offset)
+                   m_principal_point_offset, m_scaled_principal_point_offset)
 };
 
 MI_EXPORT_PLUGIN(PerspectiveCamera)

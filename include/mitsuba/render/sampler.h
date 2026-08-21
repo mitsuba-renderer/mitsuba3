@@ -157,8 +157,7 @@ protected:
     UInt32 m_sample_index;
 
 public:
-    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
-    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override;
 };
 
 /// Interface for sampler plugins based on the PCG32 random number generator
@@ -182,8 +181,7 @@ protected:
     PCG32 m_rng;
 
 public:
-    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
-    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override;
 };
 
 MI_EXTERN_CLASS(Sampler)
