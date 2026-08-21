@@ -2,15 +2,16 @@ name: Build Python wheels
 on:
   workflow_dispatch:
     inputs:
-      upload:
-        description: 'Upload wheels to PyPI? (0: no, 1: yes)'
-        required: true
-        default: '0'
-
-  pull_request:
-    types:
-      - opened
-      - synchronize
+      upload_pypi:
+        description: Upload wheels to PyPI
+        type: boolean
+        required: false
+        default: false
+      upload_testpypi:
+        description: Upload wheels to TestPyPI
+        type: boolean
+        required: false
+        default: false
 
 env:
   VARIANTS: "scalar_rgb,scalar_acoustic,cuda_ad_rgb,cuda_ad_acoustic,llvm_ad_rgb,llvm_ad_acoustic,metal_ad_rgb,metal_ad_acoustic"
@@ -122,6 +123,7 @@ jobs:
   upload_testpypi:
     name: Upload wheels to TestPyPI
     runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_testpypi }}
     needs: [build_wheels]
     permissions:
       contents: read
@@ -140,23 +142,23 @@ jobs:
           user: __token__
           password: ${{secrets.TESTPYPI_TOKEN}}
 
-  # upload_pypi:
-  #   name: Upload wheels to PyPI
-  #   runs-on: ubuntu-latest
-  #   if: ${{ github.event.inputs.upload == '1'}}
-  #   needs: [build_wheels]
+  upload_pypi:
+    name: Upload wheels to PyPI
+    runs-on: ubuntu-latest
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.upload_pypi }}
+    needs: [build_wheels]
 
-  #   steps:
-  #     #########################
-  #     # Fetch and upload wheels
-  #     #########################
-  #     - uses: actions/download-artifact@v4
-  #       with:
-  #         pattern: wheels-*
-  #         merge-multiple: true
-  #         path: dist
+    steps:
+      #########################
+      # Fetch and upload wheels
+      #########################
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          merge-multiple: true
+          path: dist
 
-  #     - uses: pypa/gh-action-pypi-publish@release/v1
-  #       with:
-  #         user: __token__
-  #         password: ${{ secrets.PYPI_PASSWORD }}
+      - uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          user: __token__
+          password: ${{ secrets.PYPI_PASSWORD }}
