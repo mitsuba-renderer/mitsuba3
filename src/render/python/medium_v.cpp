@@ -116,6 +116,7 @@ MI_PY_EXPORT(Medium) {
         dr::ArrayBinding b;
         auto medium_ptr = dr::bind_array_t<MediumPtr>(b, m, "MediumPtr");
         bind_medium_generic<MediumPtr>(medium_ptr);
+        medium_ptr.freeze();
     }
 
 }

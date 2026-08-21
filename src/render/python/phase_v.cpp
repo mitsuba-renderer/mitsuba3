@@ -124,6 +124,7 @@ MI_PY_EXPORT(PhaseFunction) {
         dr::ArrayBinding b;
         auto phase_ptr = dr::bind_array_t<PhaseFunctionPtr>(b, m, "PhaseFunctionPtr");
         bind_phase_generic<PhaseFunctionPtr>(phase_ptr);
+        phase_ptr.freeze();
     }
 
 }

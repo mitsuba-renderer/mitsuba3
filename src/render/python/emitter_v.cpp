@@ -173,6 +173,7 @@ MI_PY_EXPORT(Emitter) {
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
+        emitter_ptr.freeze();
     }
 
 }

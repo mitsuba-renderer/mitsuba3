@@ -190,6 +190,7 @@ MI_PY_EXPORT(Sensor) {
         dr::ArrayBinding b;
         auto sensor_ptr = dr::bind_array_t<SensorPtr>(b, m, "SensorPtr");
         bind_sensor_generic<SensorPtr>(sensor_ptr);
+        sensor_ptr.freeze();
     }
 
 

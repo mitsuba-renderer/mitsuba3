@@ -503,6 +503,7 @@ MI_PY_EXPORT(Shape) {
         dr::ArrayBinding b;
         auto shape_ptr = dr::bind_array_t<ShapePtr>(b, m, "ShapePtr");
         bind_shape_generic<ShapePtr>(shape_ptr);
+        shape_ptr.freeze();
     }
 
     using PyMesh = PyMesh<Float, Spectrum>;
@@ -614,6 +615,7 @@ MI_PY_EXPORT(Shape) {
         dr::ArrayBinding b;
         auto mesh_ptr = dr::bind_array_t<MeshPtr>(b, m, "MeshPtr");
         bind_mesh_generic<MeshPtr>(mesh_ptr);
+        mesh_ptr.freeze();
     }
 
     drjit::bind_traverse(mesh_cls);
