@@ -182,9 +182,9 @@ public:
             if (dr::any_or<true>(skip_emitters)) {
                 SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
                     ls.ray, +RayFlags::Minimal, skip_emitters);
-                Ray3f ray = si.spawn_ray(ls.ray.d);
+                Ray3f skip_ray = si.spawn_ray(ls.ray.d);
                 PreliminaryIntersection3f pi_after_skip =
-                    Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                    Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
                 dr::masked(ls.pi, skip_emitters) = pi_after_skip;
             }
         }

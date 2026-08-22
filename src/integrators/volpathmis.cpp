@@ -370,11 +370,11 @@ public:
                                          intersect;
 
                     if (dr::any_or<true>(skip_emitters)) {
-                        Ray3f ray = si.spawn_ray(ls.ray.d);
+                        Ray3f skip_ray = si.spawn_ray(ls.ray.d);
                         PreliminaryIntersection3f pi =
-                            Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                            Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
                         SurfaceInteraction3f si_after_skip =
-                            pi.compute_surface_interaction(ray, +RayFlags::Default, skip_emitters);
+                            pi.compute_surface_interaction(skip_ray, +RayFlags::Default, skip_emitters);
                         dr::masked(si, skip_emitters) = si_after_skip;
                     }
                 }

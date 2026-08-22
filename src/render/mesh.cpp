@@ -30,7 +30,7 @@
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN()
+namespace {
 
 // ---------------------------------------------------------------------------
 // Helpers to unify JIT and scalar code paths in several Mesh functions
@@ -160,7 +160,7 @@ static IndexBuffer build_rep(const IndexBuffer &map, size_t groups) {
     return rep;
 }
 
-NAMESPACE_END()
+}
 
 MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     // Use per-face instead of per-vertex normals? This will give a faceted appearance.

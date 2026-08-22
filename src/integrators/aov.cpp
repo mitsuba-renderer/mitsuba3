@@ -434,7 +434,7 @@ public:
         }
         if (m_aov_integrator) {
             copy_channels_slice(aovs_raw_tensor, raw_channel_count, assembled_raw, dst_offset, m_nested_aovs_count);
-            dst_offset += m_nested_aovs_count;
+            dst_offset += (uint32_t) m_nested_aovs_count;
         }
         film->prepare(m_aov_names);
         film->clear();

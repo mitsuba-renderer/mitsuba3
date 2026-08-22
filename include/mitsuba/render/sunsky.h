@@ -628,7 +628,7 @@ protected:
 
         } else {
             Wavelength normalized_wavelengths =
-                (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / WAVELENGTH_STEP;
+                (wavelengths - WAVELENGTHS<ScalarFloat>[0]) / ScalarFloat(WAVELENGTH_STEP);
             USpecMask valid_idx = (0.f <= normalized_wavelengths) &
                                  (normalized_wavelengths <= CHANNEL_COUNT - 1);
 
