@@ -1,8 +1,8 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind==3.0.0.dev6",
-    "nanobind-backend==1.0.0.dev6",
+    "nanobind==3.0.0",
+    "nanobind-backend>=1.0.0",
     "drjit==1.6.0.dev1",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
@@ -17,7 +17,7 @@ description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
   "drjit==1.6.0.dev1",
-  "nanobind-backend==1.0.0.dev6",
+  "nanobind-backend>=1.0.0",
 ]
 requires-python = ">=3.10"
 authors = [
@@ -66,8 +66,6 @@ build-verbosity = 1
 build = "cp310-*"
 archs = ["auto64"]
 
-# The 'nanobind-backend' package needs a shared C++ runtime, which rules out
-# musl. Its wheels furthermore target manylinux_2_28.
 skip = "*-musllinux* pp*"
 manylinux-x86_64-image = "manylinux_2_28"
 manylinux-aarch64-image = "manylinux_2_28"
