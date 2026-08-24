@@ -222,13 +222,13 @@ without modifications in those cases.
 Windows
 -------
 
-On Windows, a recent version of `Visual Studio 2022
-<https://visualstudio.microsoft.com/vs/>`_ is required. The Community Edition is
-free and sufficient. Two components have to be selected in the Visual Studio
-installer:
+On Windows, a recent version of `Visual Studio
+<https://visualstudio.microsoft.com/vs/>`_ is required; 2022 and 2026 both work.
+The Community Edition is free and sufficient. The following components have to
+be selected in the Visual Studio installer:
 
 * *Desktop development with C++*
-* *MSVC v143* build tools for x64/x86
+* *MSVC* build tools for x64/x86
 * *C++ CMake tools for Windows*
 
 The last of these provides CMake and `Ninja <https://ninja-build.org/>`_. Some
@@ -237,9 +237,9 @@ build system *requires* access to Python >= 3.9 even if you do not plan to use
 misuka's python interface.
 
 Ninja needs the MSVC toolchain on ``PATH``, so run the build from a *Developer
-Command Prompt for VS 2022* or a *Developer PowerShell for VS 2022* rather than
-a plain shell. Both are installed alongside Visual Studio. From the root
-`misuka` directory:
+Command Prompt* or a *Developer PowerShell* for your Visual Studio version
+rather than a plain shell. Both are installed alongside Visual Studio. From the
+root `misuka` directory:
 
 .. code-block:: bash
 
@@ -251,6 +251,15 @@ a plain shell. Both are installed alongside Visual Studio. From the root
 This matches the Linux and macOS instructions above, and places the
 ``setpath`` scripts directly in ``build``.
 
+.. .. note::
+
+..    The ``llvm_*`` variants currently abort on Windows: LLVM's RuntimeDyld does
+..    not resolve the COFF constant-pool symbols the JIT emits, so every kernel
+..    fails to materialise. Applying ``.github/patches/drjit-core-elf-triple.patch``
+..    to ``ext/drjit/ext/drjit-core`` before configuring makes the JIT emit ELF
+..    instead and works around it. See `issue #22
+..    <https://github.com/misuka-renderer/misuka/issues/22>`_.
+
 Building from Visual Studio
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -260,7 +269,15 @@ instead:
 .. code-block:: bash
 
     # To be safe, explicitly ask for the 64 bit version of Visual Studio
+
+    # Visual Studio 2022
     cmake -G "Visual Studio 17 2022" -A x64 -B build
+
+    # Visual Studio 2026 (requires CMake 4.2 or newer)
+    cmake -G "Visual Studio 18 2026" -A x64 -B build
+
+Naming a generator that is not installed fails with ``could not find any
+instance of Visual Studio``.
 
 Afterwards, open the generated ``mitsuba.sln`` file in the build folder and
 proceed building as usual from within Visual Studio. You will probably also
@@ -280,12 +297,16 @@ rather than at configure time, and the working ``setpath`` scripts end up in a
 
 **Tested version**
 
-* Windows 10
-* Visual Studio 17 2022 (Community Edition)
-* MSVC 19.41.34123.0
-* cmake 3.28.1 (64bit)
-* git 2.34.1 (64bit)
-* Python 3.11.1 (64bit)
+This is the configuration exercised by the Windows CI job on every pull request.
+
+* Windows Server 2025
+* Visual Studio 18 2026
+* MSVC toolset 14.51.36231
+* LLVM 18.1.8
+* cmake 4.4.2
+* ninja 1.13.0
+* git 2.55.0
+* Python 3.14.3
 
 
 .. _sec-compiling-macos:
