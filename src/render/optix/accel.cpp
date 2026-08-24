@@ -116,7 +116,7 @@ static void optix_fill_build_input(OptixBuildInput &build_input,
             ptr_storage[0] = (void *) g.vertex_ptr;
             build_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
             build_input.triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
-            build_input.triangleArray.vertexStrideInBytes = g.vertex_stride;
+            build_input.triangleArray.vertexStrideInBytes = (unsigned int) g.vertex_stride;
             build_input.triangleArray.indexFormat         = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
             build_input.triangleArray.numVertices         = (unsigned int) g.vertex_count;
             build_input.triangleArray.vertexBuffers       = (CUdeviceptr *) &ptr_storage[0];

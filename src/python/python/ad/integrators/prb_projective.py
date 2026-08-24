@@ -415,7 +415,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
 
-                    attached_contrib = dr.flag(dr.JitFlag.VCallRecord) and not dr.grad_enabled(Lo)
+                    attached_contrib = dr.flag(dr.JitFlag.SymbolicCalls) and not dr.grad_enabled(Lo)
                     if dr.hint(attached_contrib, mode='scalar'):
                         raise Exception(
                             "The contribution computed by the differential "
@@ -598,7 +598,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             si_loop[active_loop] = scene.ray_intersect(ray_next,
                                                        ray_flags=mi.RayFlags.Default,
                                                        coherent=False,
-                                                       reorder=dr.flag(dr.JitFlag.LoopRecord),
+                                                       reorder=dr.flag(dr.JitFlag.SymbolicLoops),
                                                        active=active_loop)
 
             # Update the active lanes

@@ -7,10 +7,21 @@ Cloning the repository
 ----------------------
 
 Compiling Mitsuba 3 from scratch requires recent versions of CMake (at least
-**3.9.0**) and Python (at least **3.9**). Further platform-specific dependencies
+**3.9.0**) and Python (at least **3.10**). Further platform-specific dependencies
 and compilation instructions are provided below for each operating system. Some
 additional steps are required for GPU-based backends that are described at the
 end of this section.
+
+The Python bindings are built in nanobind's *split mode*, where the extension
+modules delegate to a backend that ships as a separate Python package. Install
+it into the environment you build against:
+
+.. code-block:: bash
+
+    pip install nanobind-backend
+
+Passing ``-DMI_SPLIT_MODE=OFF`` to CMake builds the bindings without this
+dependency, at the cost of a Python-version-specific extension.
 
 Mitsuba depends on several external dependencies, and its repository directly
 refers to specific versions of them using a Git feature called *submodules*.
@@ -172,7 +183,7 @@ Windows
 On Windows, a recent version of `Visual Studio 2022
 <https://visualstudio.microsoft.com/vs/>`_ is required. Some tools such as git,
 CMake, or Python might need to be installed manually. Mitsuba's build system
-*requires* access to Python >= 3.9 even if you do not plan to use Mitsuba's
+*requires* access to Python >= 3.10 even if you do not plan to use Mitsuba's
 python interface.
 
 From the root `mitsuba3` directory, the build can be configured with:

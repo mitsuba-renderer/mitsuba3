@@ -13,7 +13,7 @@ void bind_dr(nb::module_ &m, const char *name) {
     }
 
     dr::ArrayBinding b;
-    dr::bind_array_t<Array>(b, m, name);
+    dr::bind_array<Array>(b, m, name);
 }
 
 template <typename Type, size_t Size, bool IsDouble>

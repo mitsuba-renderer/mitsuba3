@@ -14,7 +14,7 @@
 MI_VARIANT class PyVolume : public Volume<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Volume)
-    NB_TRAMPOLINE(Volume, 8);
+    NB_TRAMPOLINE(Volume);
 
     PyVolume(const Properties &props) : Volume(props) { };
 

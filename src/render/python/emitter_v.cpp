@@ -11,7 +11,7 @@
 MI_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Emitter, Scene, Medium, Shape)
-    NB_TRAMPOLINE(Emitter, 16);
+    NB_TRAMPOLINE(Emitter);
 
     PyEmitter(const Properties &props) : Emitter(props) { }
 
@@ -173,6 +173,7 @@ MI_PY_EXPORT(Emitter) {
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
+        emitter_ptr.freeze();
     }
 
 }

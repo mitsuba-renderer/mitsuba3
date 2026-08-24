@@ -30,7 +30,7 @@
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
-NAMESPACE_BEGIN()
+namespace {
 
 // ---------------------------------------------------------------------------
 // Helpers to unify JIT and scalar code paths in several Mesh functions
@@ -160,7 +160,7 @@ static IndexBuffer build_rep(const IndexBuffer &map, size_t groups) {
     return rep;
 }
 
-NAMESPACE_END()
+}
 
 MI_VARIANT Mesh<Float, Spectrum>::Mesh(const Properties &props) : Base(props) {
     // Use per-face instead of per-vertex normals? This will give a faceted appearance.
@@ -1359,6 +1359,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
     if (m_face_count == 0)
         Throw("Cannot create sampling table for an empty mesh: %s", to_string());
+
+    dr::scoped_eval_scope<Float> guard;
 
     DynamicBuffer<Float> area = interleaved<1, DynamicBuffer<Float>>(
         m_face_count, [&](const UInt32 &f) {

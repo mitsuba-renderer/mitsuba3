@@ -54,6 +54,7 @@ NB_MODULE(mitsuba_ext, m) {
     m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
     m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
     m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
+    m.attr("MI_VERSION_DEV")   = MI_VERSION_DEV;
     m.attr("MI_YEAR")          = MI_YEAR;
     m.attr("MI_AUTHORS")       = MI_AUTHORS;
 
@@ -92,7 +93,8 @@ NB_MODULE(mitsuba_ext, m) {
                 return;
 
             nb::gil_scoped_acquire guard;
-            Py_DECREF(o);
+            if (guard.is_valid())
+                Py_DECREF(o);
         }
     );
 

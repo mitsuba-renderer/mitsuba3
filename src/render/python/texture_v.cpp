@@ -13,7 +13,7 @@
 MI_VARIANT class PyTexture : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
-    NB_TRAMPOLINE(Texture, 17);
+    NB_TRAMPOLINE(Texture);
 
     PyTexture(const Properties &props) : Texture(props) {}
 
@@ -172,6 +172,7 @@ MI_PY_EXPORT(Texture) {
         dr::ArrayBinding b;
         auto texture_ptr = dr::bind_array_t<TexturePtr>(b, m, "TexturePtr");
         bind_texture_generic<TexturePtr>(texture_ptr);
+        texture_ptr.freeze();
     }
 
     drjit::bind_traverse(texture);

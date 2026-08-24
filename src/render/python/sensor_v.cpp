@@ -14,7 +14,7 @@
 MI_VARIANT class PySensor : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Sensor)
-    NB_TRAMPOLINE(Sensor, 13);
+    NB_TRAMPOLINE(Sensor);
 
     PySensor(const Properties &props) : Sensor(props) { }
 
@@ -190,6 +190,7 @@ MI_PY_EXPORT(Sensor) {
         dr::ArrayBinding b;
         auto sensor_ptr = dr::bind_array_t<SensorPtr>(b, m, "SensorPtr");
         bind_sensor_generic<SensorPtr>(sensor_ptr);
+        sensor_ptr.freeze();
     }
 
 

@@ -4,7 +4,7 @@ import pytest
 
 @pytest.mark.parametrize("recorded", [True, False])
 def test01_dispatch(variants_vec_rgb, recorded):
-    dr.set_flag(dr.JitFlag.VCallRecord, recorded)
+    dr.set_flag(dr.JitFlag.SymbolicCalls, recorded)
 
     bsdf1 = mi.load_dict({'type': 'diffuse'})
     bsdf2 = mi.load_dict({'type': 'conductor'})
@@ -32,7 +32,7 @@ def test01_dispatch(variants_vec_rgb, recorded):
 
 @pytest.mark.parametrize("recorded", [True, False])
 def test02_dispatch_sparse_registry(variants_vec_rgb, recorded):
-    dr.set_flag(dr.JitFlag.VCallRecord, recorded)
+    dr.set_flag(dr.JitFlag.SymbolicCalls, recorded)
 
     bsdf1 = mi.load_dict({'type': 'diffuse'})
     bsdf2 = mi.load_dict({'type': 'plastic'})
