@@ -1,0 +1,39 @@
+diff --git a/src/llvm_orcv2.cpp b/src/llvm_orcv2.cpp
+index 485cc68..4be7cd6 100644
+--- a/src/llvm_orcv2.cpp
++++ b/src/llvm_orcv2.cpp
+@@ -3,6 +3,7 @@
+ #include "llvm.h"
+ #include "log.h"
+ #include "eval.h"
++#include <cstdio>
+ 
+ static LLVMOrcLLJITRef jitc_llvm_lljit = nullptr;
+ static LLVMOrcJITDylibRef jitc_llvm_lljit_dylib = nullptr;
+@@ -29,9 +30,16 @@ bool jitc_llvm_orcv2_init() {
+     if (jitc_llvm_lljit)
+         return true;
+ 
++    const char *triple = jitc_llvm_target_triple;
++#if defined(_WIN32)
++    static char elf_triple[128];
++    snprintf(elf_triple, sizeof(elf_triple), "%s-elf", jitc_llvm_target_triple);
++    triple = elf_triple;
++#endif
++
+     LLVMTargetRef target_ref;
+     char *err_str = nullptr;
+-    if (LLVMGetTargetFromTriple(jitc_llvm_target_triple, &target_ref, &err_str)) {
++    if (LLVMGetTargetFromTriple(triple, &target_ref, &err_str)) {
+         LLVMDisposeMessage(err_str);
+         jitc_log(Warn,
+                  "jitc_llvm_init(): could not obtain target, ORCv2 "
+@@ -43,7 +51,7 @@ bool jitc_llvm_orcv2_init() {
+     for (int i = 0; i < 2; ++i) {
+         // Create twice -- once for pass manager, once for LLJIT
+         tm = LLVMCreateTargetMachine(
+-            target_ref, jitc_llvm_target_triple, jitc_llvm_target_cpu,
++            target_ref, triple, jitc_llvm_target_cpu,
+             jitc_llvm_target_features, LLVMCodeGenLevelAggressive, LLVMRelocPIC,
+             LLVMCodeModelSmall);
+         if (i == 0)
