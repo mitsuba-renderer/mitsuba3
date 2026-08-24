@@ -1,0 +1,159 @@
+name: Compile and test (reusable)
+
+on:
+  workflow_call:
+    inputs:
+      os:
+        description: Runner image to build and test on
+        type: string
+        required: true
+
+env:
+  VARIANTS: "scalar_rgb,scalar_acoustic,llvm_ad_rgb,llvm_ad_acoustic"
+  PYTHON_VERSION: "3.14.3"
+  CMAKE_VERSION: "4.4.2"
+  NINJA_VERSION: "1.13.0"
+  LLVM_VERSION: "18.1.8"
+  XCODE_VERSION: "26.6"
+
+jobs:
+  build_and_test:
+    name: ${{ inputs.os }}
+    runs-on: ${{ inputs.os }}
+    timeout-minutes: 180
+
+    steps:
+      - uses: Wandalen/wretry.action@v1.2.0
+        with:
+          action: actions/checkout@v3
+          with: |
+            submodules: recursive
+          attempt_limit: 3
+          attempt_delay: 2000
+
+      - uses: astral-sh/setup-uv@v10.0.1
+        name: Install uv
+
+      - name: Create the build environment
+        shell: bash
+        run: |
+          uv venv --prompt misukadev --python ${{ env.PYTHON_VERSION }}
+          if [ "$RUNNER_OS" = "Windows" ]; then
+            echo "$GITHUB_WORKSPACE/.venv/Scripts" >> "$GITHUB_PATH"
+          else
+            echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+          fi
+          echo "VIRTUAL_ENV=$GITHUB_WORKSPACE/.venv" >> "$GITHUB_ENV"
+
+      ###########################################################
+      # Platform specific build dependencies
+      ###########################################################
+      - name: Install dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++-13 nasm libllvm18
+          echo "CC=gcc-13" >> $GITHUB_ENV
+          echo "CXX=g++-13" >> $GITHUB_ENV
+
+      - name: Select Xcode (macOS)
+        if: runner.os == 'macOS'
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: ${{ env.XCODE_VERSION }}
+
+      - name: Install dependencies (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew install nasm llvm@18
+          echo "DRJIT_LIBLLVM_PATH=$(brew --prefix llvm@18)/lib/libLLVM.dylib" >> $GITHUB_ENV
+
+      - name: Install LLVM (Windows)
+        if: runner.os == 'Windows'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: ${{ env.LLVM_VERSION }}
+
+      - name: Prepare compiler environment (Windows)
+        if: runner.os == 'Windows'
+        uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: x64
+
+      - name: Install dependencies (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          choco install nasm -y
+          echo "C:\Program Files\NASM" >> $env:GITHUB_PATH
+          echo "DRJIT_LIBLLVM_PATH=$env:LLVM_PATH\bin\LLVM-C.dll" >> $env:GITHUB_ENV
+          echo "CC=cl" >> $env:GITHUB_ENV
+          echo "CXX=cl" >> $env:GITHUB_ENV
+
+      - name: Install pinned build tools
+        run: |
+          uv pip install "cmake==${{ env.CMAKE_VERSION }}" "ninja==${{ env.NINJA_VERSION }}"
+
+      - name: Record toolchain versions
+        shell: bash
+        run: |
+          cmake --version
+          ninja --version
+          python --version
+          which python
+
+      ###########################################################
+      # Configure and build
+      ###########################################################
+      - name: Configure
+        run: |
+          cmake -GNinja -B build -DCMAKE_BUILD_TYPE=Release -DMI_DEFAULT_VARIANTS="${{ env.VARIANTS }}"
+
+      - name: Build
+        run: |
+          cmake --build build
+
+      ###########################################################
+      # Run the test suite
+      ###########################################################
+      - name: Install test dependencies
+        run: |
+          uv pip install "pytest>=8" pytest-xdist numpy
+
+      - name: Smoke-test the variants (UNIX)
+        if: runner.os != 'Windows'
+        timeout-minutes: 5
+        shell: bash
+        run: |
+          source build/setpath.sh
+          for variant in ${VARIANTS//,/ }; do
+            echo "-- $variant"
+            python -c "import misuka as mi; mi.set_variant('$variant'); print(mi.variant())"
+          done
+
+      - name: Smoke-test the variants (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 5
+        shell: pwsh
+        run: |
+          .\build\Release\setpath.ps1
+          foreach ($variant in $env:VARIANTS -split ',') {
+            Write-Host "-- $variant"
+            python -c "import misuka as mi; mi.set_variant('$variant'); print(mi.variant())"
+            if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          }
+
+      - name: Run tests (UNIX)
+        if: runner.os != 'Windows'
+        timeout-minutes: 45
+        shell: bash
+        run: |
+          source build/setpath.sh
+          pytest src -m "not slow" -n auto
+
+      - name: Run tests (Windows)
+        if: runner.os == 'Windows'
+        timeout-minutes: 45
+        shell: pwsh
+        run: |
+          .\build\Release\setpath.ps1
+          pytest src -m "not slow" -n auto

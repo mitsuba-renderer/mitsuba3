@@ -4,15 +4,21 @@
 
 # misuka
 
-|  Documentation  |       PyPI      |
-|      :---:      |      :---:      |
-| [![docs][1]][2] | [![pypi][3]][4] |
+|  Documentation  | Linux | macOS | Windows |       PyPI      |
+|      :---:      | :---: | :---: | :---: |      :---:      |
+| [![docs][1]][2] | [![Linux][6]][7] | [![macOS][8]][9] | [![Windows][10]][11] | [![pypi][3]][4] |
 
-[1]: https://readthedocs.org/projects/misuka/badge/?version=latest
+[1]: https://img.shields.io/readthedocs/misuka/latest
 [2]: https://misuka.readthedocs.io/en/latest/
 [3]: https://img.shields.io/pypi/v/misuka.svg?color=orange
 [4]: https://pypi.org/project/misuka/
 [5]: https://dl.acm.org/doi/pdf/10.1145/3730900
+[6]: https://img.shields.io/github/actions/workflow/status/misuka-renderer/misuka/tests-linux.yml?branch=master&label=build
+[7]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-linux.yml
+[8]: https://img.shields.io/github/actions/workflow/status/misuka-renderer/misuka/tests-macos-arm.yml?branch=master&label=build
+[9]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-macos-arm.yml
+[10]: https://img.shields.io/github/actions/workflow/status/misuka-renderer/misuka/tests-windows.yml?branch=master&label=build
+[11]: https://github.com/misuka-renderer/misuka/actions/workflows/tests-windows.yml
 
 ## Introduction
 

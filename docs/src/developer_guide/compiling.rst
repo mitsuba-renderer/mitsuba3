@@ -197,23 +197,24 @@ inside the :monosp:`misuka` root directory:
     ninja
 
 
-**Tested versions**
+**Tested version**
 
 The above procedure will likely work on many different flavors of Linux (with
 slight adjustments for the package manager and package names). We have mainly
 worked with software environments listed below, and our instructions should work
 without modifications in those cases.
 
-.. tabularcolumns:: |p{0.33\width}|p{0.33\width}|
+.. tabularcolumns:: |p{0.49\width}|p{0.49\width}|
 
 +--------------------------+--------------------------+
-| **Jammy**                | **Noble**                |
+| **Noble**                | **Arch**                 |
 |                          |                          |
-| - Ubuntu 22.04           | - Ubuntu 24.04           |
-| - clang 17.0.6           | - g++ 13.2.0             |
-| - cmake 3.22.1           | - cmake 3.28.3           |
-| - ninja 1.10.1           | - ninja 1.11.1           |
-| - python 3.10.12         | - python 3.12.3          |
+| - Ubuntu 24.04           | - Omarchy 4.0.0          |
+| - g++ 13                 | - clang 22.1.8           |
+| - LLVM 18.1.8            | - LLVM 22.1.8            |
+| - cmake 4.4.2            | - cmake 4.4.2            |
+| - ninja 1.13.0           | - ninja 1.13.2           |
+| - python 3.14.3          | - python 3.14.7          |
 +--------------------------+--------------------------+
 
 .. _sec-compiling-windows:
@@ -294,11 +295,20 @@ Now, compilation should be as simple as running the following from inside the
 
 **Tested version**
 
-* macOS Big Sur 11.5.2
-* AppleClang 13.2.0.0.1.1638488800
-* Xcode 12.0.5
-* cmake 3.24.2
-* Python 3.9.5
+* macOS 26.5.2
+* Xcode 26.6
+* AppleClang 21.0.0
+* LLVM 22.1.7
+* cmake 4.3.0
+* ninja 1.12.1
+* Python 3.14.3
+
+The ``Noble`` column above describes a GitHub Actions runner. The workflows in
+``.github/workflows`` build misuka on Ubuntu 24.04, macOS 26 (Apple Silicon) and
+Windows with the same variants (``scalar_rgb``, ``scalar_acoustic``,
+``llvm_ad_rgb``, ``llvm_ad_acoustic``) and run the test suite with
+``pytest -m 'not slow'``. The compiler is the one shipped by the runner image and
+cannot be pinned; every other tool version is fixed by the workflow.
 
 
 After compiling
