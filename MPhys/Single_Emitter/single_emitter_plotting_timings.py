@@ -5,11 +5,12 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
-if len(sys.argv) != 2:
-    sys.exit("Usage: python single_emitter_plotting_timings.py variant \n")
+if len(sys.argv) != 3:
+    sys.exit("Usage: python single_emitter_plotting_timings.py variant csv_dir \n")
 
 variant = sys.argv[1]
-timing_data = np.loadtxt("csv/"+variant+"_full_timing_for_n_photons.csv", delimiter=",")
+csv_dir = sys.argv[2]
+timing_data = np.loadtxt(csv_dir+"/"+variant+"_full_timing_for_n_photons.csv", delimiter=",")
 
 print("----- full timing_data -----")
 print(timing_data)
@@ -85,7 +86,7 @@ for n in range(len(stats_timing_vs_nphotons_data)):
         max_time = max_generate
 
 # Save timing data to CSV files
-np.savetxt('csv/' + variant + '_stats_timing_for_n_photons.csv', np.array(stats_timing_vs_nphotons_data), delimiter=',')
+np.savetxt(csv_dir + '/' + variant + '_stats_timing_for_n_photons.csv', np.array(stats_timing_vs_nphotons_data), delimiter=',')
 
 fixed_w = 0.1
 width = lambda p, w: 10**(np.log10(p)+w/2.)-10**(np.log10(p)-w/2.)

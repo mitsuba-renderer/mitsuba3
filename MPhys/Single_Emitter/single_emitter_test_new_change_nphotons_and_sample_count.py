@@ -155,7 +155,11 @@ photon_lists = []
 generate_times = {}
 volume_times = {}
 
-for n_photons in [10**n_size for n_size in range(9)]:
+n_sizes = [1e2, 1e3, 1e4, 1e5, 1e6, 5e6,
+           1e7, 2e7, 5e7, 7e7]
+for n_photons in n_sizes:
+    n_photons = int(n_photons)
+# for n_photons in [10**n_size for n_size in range(9)]:
     # If the size is bigger than the whole dataset then pandas is sensible and just gives you the whole dataset
     start_time = time.time()
     gen_photon_data = generate_emitter_data(photon_detected.head(n_photons))
