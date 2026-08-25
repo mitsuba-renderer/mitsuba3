@@ -166,11 +166,20 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     MI_PY_IMPORT(DrJit);
 
-    // TODO: Add documentation
+    // Properties of the color representation used by this variant
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
+
+    // Properties of the computational backend used by this variant
+    constexpr JitBackend Backend = dr::backend_v<Float>;
+    m.attr("is_scalar") = !dr::is_jit_v<Float>;
+    m.attr("is_llvm") = Backend == JitBackend::LLVM;
+    m.attr("is_cuda") = Backend == JitBackend::CUDA;
+    m.attr("is_metal") = Backend == JitBackend::Metal;
+    m.attr("is_jit") = dr::is_jit_v<Float>;
+    m.attr("is_ad") = dr::is_diff_v<Float>;
 
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
