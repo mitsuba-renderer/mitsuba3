@@ -136,6 +136,9 @@ def set_variant(*args: str) -> None:
                                 'mitsuba.python.ad.loaders'):
                 _importlib.reload(_importlib.import_module(module_name))
 
+        # Modules of external plugin packages are (re)imported the same way
+        detail.load_plugins()
+
         # Invoke user-provided callbacks once the modules above have reloaded
         for callback in list(detail._variant_callbacks):
             callback(old_variant, _variant)

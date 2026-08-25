@@ -62,6 +62,10 @@ struct Version {
         : major_version(major), minor_version(minor), patch_version(patch) { }
 
     Version(std::string_view value) {
+        // Ignore the ".dev*" suffix of a pre-release
+        size_t pos = value.rfind(".dev");
+        if (pos != std::string_view::npos)
+            value = value.substr(0, pos);
         auto list = string::tokenize(value, " .");
         if (list.size() != 3)
             Throw("Version number must consist of three period-separated parts!");
