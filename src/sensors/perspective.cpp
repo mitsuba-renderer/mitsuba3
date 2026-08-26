@@ -280,7 +280,10 @@ public:
     }
 
     ProjectiveTransform4f projection_transform() const override {
-        return m_sample_to_camera.inverse();
+        return ProjectiveTransform4f::translate(
+                   Vector3f(-m_scaled_principal_point_offset.x(),
+                            -m_scaled_principal_point_offset.y(), 0.f)) *
+               m_sample_to_camera.inverse();
     }
 
     std::pair<DirectionSample3f, Spectrum>
