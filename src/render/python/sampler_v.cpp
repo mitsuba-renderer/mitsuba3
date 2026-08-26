@@ -52,8 +52,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         NB_OVERRIDE(parameters_changed, keys);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Sampler);
 };
 
 MI_PY_EXPORT(Sampler) {

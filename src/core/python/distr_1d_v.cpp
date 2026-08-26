@@ -14,7 +14,8 @@ MI_PY_EXPORT(DiscreteDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(DiscreteDistribution, "DiscreteDistribution") {
-        auto discrete_distr = MI_PY_STRUCT(DiscreteDistribution)
+        auto discrete_distr = nb::class_<DiscreteDistribution, drjit::TraversableBase>(
+            m, "DiscreteDistribution", D(DiscreteDistribution))
             .def(nb::init<>(), D(DiscreteDistribution))
             .def(nb::init<const DiscreteDistribution &>(), "Copy constructor")
             .def(nb::init<const FloatStorage &>(), "pmf"_a,
@@ -66,7 +67,8 @@ MI_PY_EXPORT(ContinuousDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(ContinuousDistribution, "ContinuousDistribution") {
-        auto continuous_distr = MI_PY_STRUCT(ContinuousDistribution)
+        auto continuous_distr = nb::class_<ContinuousDistribution, drjit::TraversableBase>(
+            m, "ContinuousDistribution", D(ContinuousDistribution))
             .def(nb::init<>(), D(ContinuousDistribution))
             .def(nb::init<const ContinuousDistribution &>(), "Copy constructor")
             .def(nb::init<const ScalarVector2f &, const FloatStorage &>(),
@@ -118,7 +120,8 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(IrregularContinuousDistribution, "IrregularContinuousDistribution") {
-        auto irregular_distr = MI_PY_STRUCT(IrregularContinuousDistribution)
+        auto irregular_distr = nb::class_<IrregularContinuousDistribution, drjit::TraversableBase>(
+            m, "IrregularContinuousDistribution", D(IrregularContinuousDistribution))
             .def(nb::init<>(), D(IrregularContinuousDistribution))
             .def(nb::init<const IrregularContinuousDistribution &>(), "Copy constructor")
             .def(nb::init<const FloatStorage &, const FloatStorage &>(),

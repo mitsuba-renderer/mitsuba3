@@ -310,3 +310,60 @@ support double precision, hence ray-tracing operations will run in reduced
 including ray tracing is to render on the CPU (``scalar`` or ``llvm``) and
 disable Embree in CMake. Also note that double precision arithmetic runs with
 greatly reduced throughput (1/64th of FP32) on recent NVIDIA GPUs.
+
+
+.. _sec-variants-introspection:
+
+Inspecting the active variant
+-----------------------------
+
+Code that must work across several variants can query the name of the active
+one using :py:func:`mitsuba.variant`. Matching on that string is awkward, so
+Mitsuba additionally exposes a set of boolean flags that describe each part of
+the name individually. They become available once a variant is active and
+change value whenever a different one is selected.
+
+.. list-table::
+    :widths: 25 75
+    :header-rows: 1
+
+    * - Flag
+      - Meaning
+    * - ``mi.is_scalar``
+      - The backend evaluates one sample at a time (``scalar``)
+    * - ``mi.is_llvm``
+      - The backend vectorizes onto the CPU via LLVM (``llvm``)
+    * - ``mi.is_cuda``
+      - The backend targets an NVIDIA GPU (``cuda``)
+    * - ``mi.is_metal``
+      - The backend targets a Metal device (``metal``)
+    * - ``mi.is_jit``
+      - Any of the three tracing backends above is in use
+    * - ``mi.is_ad``
+      - Automatic differentiation is enabled (``_ad``)
+    * - ``mi.is_monochromatic``
+      - Color is a single luminance value (``mono``)
+    * - ``mi.is_rgb``
+      - Color is a red, green and blue triplet (``rgb``)
+    * - ``mi.is_spectral``
+      - Color is a set of sampled wavelengths (``spectral``)
+    * - ``mi.is_polarized``
+      - The polarization state of light is tracked (``_polarized``)
+
+A typical use is to select an implementation strategy that only makes sense on
+some backends:
+
+.. code-block:: python
+
+    import mitsuba as mi
+    mi.set_variant('cuda_ad_rgb')
+
+    if mi.is_jit:
+        # Wavefront backends can afford a large precomputed table
+        table = build_table(1024)
+    else:
+        table = build_table(16)
+
+Note that ``mi.is_scalar`` and ``mi.is_jit`` are complements of each other, and
+that exactly one of the four color flags is true at any time. The precision of
+a variant is not covered by a flag, since ``mi.Float`` reports it directly.

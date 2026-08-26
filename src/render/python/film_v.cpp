@@ -77,8 +77,6 @@ public:
     using Film::m_sample_border;
     using Film::m_filter;
     using Film::m_srf;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Film)
 };
 
 MI_PY_EXPORT(Film) {
@@ -108,6 +106,7 @@ MI_PY_EXPORT(Film) {
         .def("crop_size",
              [] (const Film *film) { return ScalarVector2u(film->crop_size()); },
              D(Film, crop_size))
+        .def("set_size", &Film::set_size, D(Film, set_size), "size"_a)
         .def("crop_offset",
              [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); },
              D(Film, crop_offset))

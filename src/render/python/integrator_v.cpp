@@ -128,8 +128,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         NB_OVERRIDE(parameters_changed, keys);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(SamplingIntegrator)
 };
 
 /// Trampoline for derived types implemented in Python
@@ -167,8 +165,6 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(AdjointIntegrator)
 };
 
 /**
@@ -282,8 +278,6 @@ public:
     }
 
     using Base::m_hide_emitters;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Base)
 };
 
 MI_PY_EXPORT(Integrator) {

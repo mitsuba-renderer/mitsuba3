@@ -57,7 +57,7 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  * and GGX models, respectively.
  */
 template <typename Float, typename Spectrum>
-class MicrofacetDistribution : drjit::TraversableBase {
+class MicrofacetDistribution : public drjit::TraversableBase {
 public:
     MI_IMPORT_TYPES()
 

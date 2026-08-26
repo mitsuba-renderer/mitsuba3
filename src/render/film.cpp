@@ -1,4 +1,5 @@
 #include <mitsuba/render/film.h>
+#include <drjit/idiv.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 
@@ -47,6 +48,8 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
         m_filter =
             PluginManager::instance()->create_object<ReconstructionFilter>(
                 Properties("gaussian"));
+
+    update_launch_params();
 }
 
 MI_VARIANT Film<Float, Spectrum>::~Film() { }
@@ -96,6 +99,49 @@ MI_VARIANT void Film<Float, Spectrum>::set_crop_window(const ScalarPoint2u &crop
 
     m_crop_size   = crop_size;
     m_crop_offset = crop_offset;
+    update_launch_params();
+}
+
+MI_VARIANT void Film<Float, Spectrum>::update_launch_params() {
+    if constexpr (dr::is_jit_v<Float>) {
+        // The constructor calls set_crop_window() before the filter exists
+        if (!m_filter)
+            return;
+
+        uint32_t width = m_crop_size.x();
+        if (m_sample_border)
+            width += 2 * m_filter->border_size();
+
+        dr::divisor<uint32_t> div(dr::maximum(width, 1u));
+
+        // Packet gathers need a power of two size, hence the padding
+        uint32_t data[8] = { m_crop_size.x(), m_crop_size.y(), m_crop_offset.x(),
+                             m_crop_offset.y(), div.multiplier, div.shift, 0, 0 };
+
+        m_launch_params = dr::load<UInt32>(data, 8);
+    }
+}
+
+MI_VARIANT typename Film<Float, Spectrum>::LaunchParams
+Film<Float, Spectrum>::launch_params() const {
+    LaunchParams lp;
+    if constexpr (dr::is_jit_v<Float>) {
+        auto p = dr::gather<dr::Array<UInt32, 8>>(m_launch_params, UInt32(0));
+        lp.crop_size   = Vector2u(p[0], p[1]);
+        lp.crop_offset = Point2u(p[2], p[3]);
+        lp.width_mul   = p[4];
+        lp.width_shift = p[5];
+    } else {
+        lp.crop_size   = m_crop_size;
+        lp.crop_offset = m_crop_offset;
+        uint32_t width = m_crop_size.x();
+        if (m_sample_border)
+            width += 2 * m_filter->border_size();
+        dr::divisor<uint32_t> div(width);
+        lp.width_mul   = div.multiplier;
+        lp.width_shift = div.shift;
+    }
+    return lp;
 }
 
 MI_VARIANT void Film<Float, Spectrum>::set_size(const ScalarPoint2u &size) {

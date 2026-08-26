@@ -84,7 +84,7 @@ NAMESPACE_BEGIN(mitsuba)
  * schemes.
  */
 template <typename Float_, size_t Dimension_ = 0>
-class DiscreteDistribution2D : drjit::TraversableBase {
+class DiscreteDistribution2D : public drjit::TraversableBase {
 public:
     using Float                       = Float_;
     using UInt32                      = dr::uint32_array_t<Float>;
@@ -220,7 +220,7 @@ protected:
 
 /// Base class of Hierarchical2D and Marginal2D with common functionality
 template <typename Float_, size_t Dimension_ = 0>
-class Distribution2D : drjit::TraversableBase {
+class Distribution2D : public drjit::TraversableBase {
 public:
     static constexpr size_t Dimension = Dimension_;
     using Float                       = Float_;
@@ -326,25 +326,9 @@ protected:
     uint32_t m_slices;
 
 public:
-    void
-    traverse_1_cb_ro(void *payload,
-                     drjit::detail::traverse_callback_ro fn) const override {
-        if constexpr (!std ::is_same_v<drjit ::TraversableBase,
-                                       drjit ::TraversableBase>)
-            drjit ::TraversableBase ::traverse_1_cb_ro(payload, fn);
-        for (const auto &param_value : m_param_values) {
-            drjit ::traverse_1_fn_ro(param_value, payload, fn);
-        }
-    }
-    void traverse_1_cb_rw(void *payload,
-                          drjit::detail::traverse_callback_rw fn) override {
-        if constexpr (!std ::is_same_v<drjit ::TraversableBase,
-                                       drjit ::TraversableBase>)
-            drjit ::TraversableBase ::traverse_1_cb_rw(payload, fn);
-
-        for (auto &param_value : m_param_values) {
-            drjit ::traverse_1_fn_rw(param_value, payload, fn);
-        }
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override {
+        for (auto &param_value : m_param_values)
+            drjit::traverse_fn(param_value, payload, cb, "m_param_values");
     }
 };
 

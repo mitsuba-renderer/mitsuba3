@@ -57,8 +57,6 @@ public:
 
     using PhaseFunction::m_flags;
     using PhaseFunction::m_components;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(PhaseFunction)
 };
 
 template <typename Ptr, typename Cls> void bind_phase_generic(Cls &cls) {

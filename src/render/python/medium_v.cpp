@@ -47,8 +47,6 @@ public:
     using Medium::m_sample_emitters;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Medium)
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {

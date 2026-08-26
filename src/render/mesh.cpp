@@ -792,9 +792,10 @@ void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox) {
     else
         recompute_bbox();
 
-    // Eagerly build sampling tables for emitters/sensors
+    // Eagerly build sampling tables for emitters/sensors, and keep existing ones
+    bool needs_pmf = m_emitter || m_sensor || !m_area_pmf.empty();
     m_area_pmf = DiscreteDistribution<Float>();
-    if (m_emitter || m_sensor)
+    if (needs_pmf)
         build_pmf();
 
     m_parameterization = nullptr;

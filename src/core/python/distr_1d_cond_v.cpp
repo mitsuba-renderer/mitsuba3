@@ -15,7 +15,7 @@ void bind_conditional_irregular_1d(nb::module_ &m, const char *name) {
     using ConditionalIrregular1D = mitsuba::ConditionalIrregular1D<Type>;
 
     MI_PY_CHECK_ALIAS(ConditionalIrregular1D, name) {
-        nb::class_<ConditionalIrregular1D>(m, name)
+        nb::class_<ConditionalIrregular1D, drjit::TraversableBase>(m, name)
             .def(nb::init<>(), D(ConditionalIrregular1D))
             .def(nb::init<const FloatStorage &, const FloatStorage &,
                           const std::vector<FloatStorage> &>(),
@@ -85,7 +85,7 @@ void bind_conditional_regular_1d(nb::module_ &m, const char *name) {
     using FloatStorage         = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(ConditionalRegular1D, name) {
-        nb::class_<ConditionalRegular1D>(m, name)
+        nb::class_<ConditionalRegular1D, drjit::TraversableBase>(m, name)
             .def(nb::init<>(), D(ConditionalRegular1D))
             .def(nb::init<const FloatStorage &, const ScalarVector2f &,
                           const std::vector<ScalarVector2f> &,

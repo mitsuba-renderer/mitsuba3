@@ -9656,6 +9656,14 @@ to provide each participating worker thread with its own instance (see
 `Sensor.sampler()`). Therefore, this sampler should never be used for
 anything except creating clones.)doc";
 
+static const char *__doc_mitsuba_Sensor_set_film = R"doc(Replace the film)doc";
+
+static const char *__doc_mitsuba_Sensor_set_world_transform =
+R"doc(Replace the sensor-to-world transformation.
+
+This convenience method replaces the camera view matrix with a scalar
+(host-side) value.)doc";
+
 static const char *__doc_mitsuba_Sensor_shutter_open = R"doc(Return the time value of the shutter opening event)doc";
 
 static const char *__doc_mitsuba_Sensor_shutter_open_time = R"doc(Return the length, for which the shutter remains open)doc";

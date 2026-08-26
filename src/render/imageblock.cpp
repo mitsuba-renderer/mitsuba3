@@ -64,9 +64,17 @@ ImageBlock<Float, Spectrum>::ImageBlock(const TensorXf &tensor,
         m_tensor = TensorXf(tensor.array().copy(), 3, tensor.shape().data());
     else
         m_tensor = TensorXf(tensor.array(), 3, tensor.shape().data());
+
+    update_opaque();
 }
 
 MI_VARIANT ImageBlock<Float, Spectrum>::~ImageBlock() { }
+
+MI_VARIANT void ImageBlock<Float, Spectrum>::update_opaque() {
+    m_offset_o = Point2i(m_offset);
+    m_size_o = Vector2u(m_size);
+    dr::make_opaque(m_offset_o, m_size_o);
+}
 
 MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
     using Array = typename TensorXf::Array;
@@ -80,18 +88,18 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::clear() {
 
 MI_VARIANT void
 ImageBlock<Float, Spectrum>::set_size(const ScalarVector2u &size) {
-    using Array = typename TensorXf::Array;
-
     if (dr::all(size == m_size))
         return;
 
-    ScalarVector2u size_ext = size + 2 * m_border_size;
-
-    size_t size_flat = m_channel_count * dr::prod(size_ext);
-    m_tensor = TensorXf(dr::zeros<Array>(size_flat),
-                        { size_ext.y(), size_ext.x(), m_channel_count });
-
     m_size = size;
+    update_opaque();
+    clear();
+
+    // Allocate for real, so that a fresh block looks like one that received
+    // samples when a frozen function traverses the film. `clear()` skips this
+    // on purpose: its literal lets `put_block()` adopt the source buffer.
+    if constexpr (dr::is_jit_v<Float>)
+        dr::make_opaque(m_tensor.array());
 }
 
 MI_VARIANT typename ImageBlock<Float, Spectrum>::TensorXf &ImageBlock<Float, Spectrum>::tensor() {
@@ -226,13 +234,13 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // ===================================================================
 
     if (!m_rfilter) {
-        Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset);
+        Point2u p = Point2u(dr::floor2int<Point2i>(pos) - m_offset_o);
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x());
+        UInt32 index = dr::fmadd(p.y(), m_size_o.x(), p.x());
 
         // The sample could be out of bounds
-        active &= dr::all(p < m_size);
+        active &= dr::all(p < m_size_o);
 
         // Accumulate!
         if constexpr (!JIT) {
@@ -257,7 +265,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     ScalarFloat radius = m_rfilter->radius();
 
     // Size of the underlying image buffer
-    ScalarVector2u size = m_size + 2 * m_border_size;
+    Vector2u size = m_size_o + 2u * m_border_size;
 
     // Check if the operation can be performed using a recorded loop
     bool record_loop = false;
@@ -281,13 +289,13 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
     // ===================================================================
 
     if (!JIT || !m_coalesce) {
-        Point2f pos_f   = pos + ((int) m_border_size - m_offset - .5f),
+        Point2f pos_f   = pos + (Point2f(Point2i((int) m_border_size) - m_offset_o) - .5f),
                 pos_0_f = pos_f - radius,
                 pos_1_f = pos_f + radius;
 
         // Interval specifying the pixels covered by the filter
         Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-                pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+                pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), Point2i(size - 1u))),
                 count_u = pos_1_u - pos_0_u + 1u;
 
         // Base index of the top left corner
@@ -458,7 +466,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::put(const Point2f &pos,
         Point2i pos_i = dr::floor2int<Point2i>(pos) - int(n);
 
         // Account for pixel offset of the image block instance
-        Point2i pos_i_local = pos_i + ((int) m_border_size - m_offset);
+        Point2i pos_i_local = pos_i + (Point2i((int) m_border_size) - m_offset_o);
 
         // Switch over to unsigned integers, compute pixel index
         UInt32 x = UInt32(pos_i_local.x()),
@@ -579,7 +587,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     constexpr bool JIT = dr::is_jit_v<Float>;
 
     // Account for image block offset
-    Point2f pos = pos_ - ScalarVector2f(m_offset);
+    Point2f pos = pos_ - Vector2f(m_offset_o);
 
     // ===================================================================
     //  Fast special case for the box filter
@@ -589,10 +597,10 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
         Point2u p = Point2u(dr::floor2int<Point2i>(pos));
 
         // Switch over to unsigned integers, compute pixel index
-        UInt32 index = dr::fmadd(p.y(), m_size.x(), p.x()) * m_channel_count;
+        UInt32 index = dr::fmadd(p.y(), m_size_o.x(), p.x()) * m_channel_count;
 
         // The sample could be out of bounds
-        active = active && dr::all(p < m_size);
+        active = active && dr::all(p < m_size_o);
 
         // Gather!
         for (uint32_t k = 0; k < m_channel_count; ++k) {
@@ -610,7 +618,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     ScalarFloat radius = m_rfilter->radius();
 
     // Size of the underlying image buffer
-    ScalarVector2u size = m_size + 2 * m_border_size;
+    Vector2u size = m_size_o + 2u * m_border_size;
 
     // Check if the operation can be performed using a recorded loop
     bool record_loop = false;
@@ -629,7 +637,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
     }
 
     // Exclude areas that are outside of the block
-    active &= dr::all(pos >= 0.f) && dr::all(pos < m_size);
+    active &= dr::all(pos >= 0.f) && dr::all(pos < Vector2f(m_size_o));
 
     // Zero-initialize output array
     for (uint32_t i = 0; i < m_channel_count; ++i)
@@ -641,7 +649,7 @@ MI_VARIANT void ImageBlock<Float, Spectrum>::read(const Point2f &pos_,
 
     // Interval specifying the pixels covered by the filter
     Point2u pos_0_u = Point2u(dr::maximum(dr::ceil2int <Point2i>(pos_0_f), ScalarPoint2i(0))),
-            pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), ScalarPoint2i(size - 1))),
+            pos_1_u = Point2u(dr::minimum(dr::floor2int<Point2i>(pos_1_f), Point2i(size - 1u))),
             count_u = pos_1_u - pos_0_u + 1u;
 
     // Base index of the top left corner
