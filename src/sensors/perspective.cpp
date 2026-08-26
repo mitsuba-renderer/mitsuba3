@@ -165,7 +165,6 @@ public:
         if (keys.empty() || string::contains(keys, "to_world")) {
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
-            m_to_world = m_to_world.value().update();
         }
 
         update_camera_transforms();

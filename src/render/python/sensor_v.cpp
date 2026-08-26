@@ -174,6 +174,9 @@ MI_PY_EXPORT(Sensor) {
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)
         .def("film", nb::overload_cast<>(&Sensor::film, nb::const_), D(Sensor, film))
+        .def("set_film", &Sensor::set_film, D(Sensor, set_film), "film"_a)
+        .def("set_world_transform", &Sensor::set_world_transform,
+             D(Sensor, set_world_transform), "to_world"_a)
         .def("sampler", nb::overload_cast<>(&Sensor::sampler, nb::const_), D(Sensor, sampler))
         .def_field(PySensor, m_needs_sample_2, D(Endpoint, m_needs_sample_3))
         .def_field(PySensor, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
