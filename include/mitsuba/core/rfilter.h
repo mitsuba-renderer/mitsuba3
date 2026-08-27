@@ -11,11 +11,12 @@ NAMESPACE_BEGIN(mitsuba)
 #define MI_FILTER_RESOLUTION 31
 
 /**
- * \brief When resampling data to a different resolution using \ref
- * Resampler::resample(), this enumeration specifies how lookups
- * <em>outside</em> of the input domain are handled.
+ * When resampling data to a different resolution using
+ * `Resampler.resample()`, this enumeration specifies how lookups
+ * *outside* of the input domain are handled.
  *
- * \see Resampler
+ * See Also:
+ *     `Resampler`
  */
 enum class FilterBoundaryCondition {
     /// Clamp to the outermost sample position (default)
@@ -35,7 +36,7 @@ enum class FilterBoundaryCondition {
 };
 
 /**
- * \brief Generic interface to separable image reconstruction filters
+ * Generic interface to separable image reconstruction filters
  *
  * When resampling bitmaps or adding samples to a rendering in progress,
  * Mitsuba first convolves them with a image reconstruction filter. Various
@@ -43,7 +44,7 @@ enum class FilterBoundaryCondition {
  *
  * Because image filters are generally too expensive to evaluate for each
  * sample, the implementation of this class internally precomputes an discrete
- * representation, whose resolution given by \ref MI_FILTER_RESOLUTION.
+ * representation, whose resolution given by ``MI_FILTER_RESOLUTION``.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB ReconstructionFilter
@@ -66,7 +67,7 @@ public:
     /// Check whether this is a box filter?
     bool is_box_filter() const;
 
-    /// Evaluate a discretized version of the filter (generally faster than 'eval')
+    /// Evaluate a discretized version of the filter (generally faster than `eval()`)
     MI_INLINE Float eval_discretized(Float x, Mask active = true) const {
         if constexpr (!dr::is_jit_v<Float>) {
             UInt32 index = dr::minimum(UInt32(dr::abs(x * m_scale_factor)),
@@ -83,7 +84,7 @@ protected:
     /// Create a new reconstruction filter
     ReconstructionFilter(const Properties &props);
 
-    /// Mandatory initialization prior to calls to \ref eval_discretized()
+    /// Mandatory initialization prior to calls to `eval_discretized()`
     void init_discretization();
 
 protected:
@@ -93,10 +94,11 @@ protected:
 };
 
 /**
- * \brief Utility class for efficiently resampling discrete datasets to different resolutions
- * \tparam Scalar
- *      Denotes the underlying floating point data type (i.e. <tt>half</tt>, <tt>float</tt>,
- *      or <tt>double</tt>)
+ * Utility class for efficiently resampling discrete datasets to different resolutions
+ *
+ * Template Args:
+ *     Scalar: Denotes the underlying floating point data type (i.e. ``half``, ``float``,
+ *         or ``double``)
  */
 template <typename Scalar_> struct Resampler {
     using Scalar = Scalar_;
@@ -104,16 +106,16 @@ template <typename Scalar_> struct Resampler {
     using ReconstructionFilter = mitsuba::ReconstructionFilter<Float, Color<Float, 3>>;
 
     /**
-     * \brief Create a new Resampler object that transforms between the specified resolutions
+     * Create a new Resampler object that transforms between the specified resolutions
      *
      * This constructor precomputes all information needed to efficiently perform the
      * desired resampling operation. For that reason, it is most efficient if it can
      * be used repeatedly (e.g. to resample the equal-sized rows of a bitmap)
      *
-     * \param source_res
-     *      Source resolution
-     * \param target_res
-     *      Desired target resolution
+     * Args:
+     *     source_res: Source resolution
+     *
+     *     target_res: Desired target resolution
      */
     Resampler(const ReconstructionFilter *rfilter,
               uint32_t source_res, uint32_t target_res)
@@ -125,7 +127,7 @@ template <typename Scalar_> struct Resampler {
               filter_radius = filter_radius_orig,
               scale = 1, inv_scale = 1;
 
-        /* Low-pass filter: scale reconstruction filters when downsampling */
+        // Low-pass filter: scale reconstruction filters when downsampling
         if (target_res < source_res) {
             scale = (Float) source_res / (Float) target_res;
             inv_scale = dr::rcp(scale);
@@ -139,23 +141,23 @@ template <typename Scalar_> struct Resampler {
         if (filter_radius_orig < 1)
             m_taps = std::min(m_taps, source_res);
 
-        if (source_res != target_res) { /* Resampling mode */
+        if (source_res != target_res) { // Resampling mode
             m_start = std::unique_ptr<int32_t[]>(new int32_t[target_res]);
             m_weights = std::unique_ptr<Scalar[]>(new Scalar[m_taps * target_res]);
             m_fast_start = 0;
             m_fast_end = m_target_res;
 
             for (uint32_t i = 0; i < target_res; i++) {
-                /* Compute the fractional coordinates of the new sample i
-                   in the original coordinates */
+                // Compute the fractional coordinates of the new sample i
+                // in the original coordinates
                 Float center = (i + Float(0.5)) / target_res * source_res;
 
-                /* Determine the index of the first original sample
-                   that might contribute */
+                // Determine the index of the first original sample
+                // that might contribute
                 m_start[i] = dr::floor2int<int32_t>(center - filter_radius + Float(0.5));
 
-                /* Determine the size of center region, on which to run
-                   the fast non condition-aware code */
+                // Determine the size of center region, on which to run
+                // the fast non condition-aware code
                 if (m_start[i] < 0)
                     m_fast_start = std::max(m_fast_start, i + 1);
                 else if (m_start[i] + m_taps - 1 >= m_source_res)
@@ -163,14 +165,14 @@ template <typename Scalar_> struct Resampler {
 
                 double sum = 0.0;
                 for (uint32_t j = 0; j < m_taps; j++) {
-                    /* Compute the position where the filter should be evaluated */
+                    // Compute the position where the filter should be evaluated
                     Float pos = m_start[i] + (int32_t) j + Float(0.5) - center;
 
-                    /* Perform the evaluation and record the weight */
+                    // Perform the evaluation and record the weight
                     auto weight = rfilter->eval(pos * inv_scale);
 
-                    /* Handle the (numerical) edge case of the pixel center missing
-                       the filter support when upsampling using the box filter. */
+                    // Handle the (numerical) edge case of the pixel center missing
+                    // the filter support when upsampling using the box filter.
                     if (target_res > source_res && rfilter->is_box_filter())
                         weight = Float(1.0);
                     m_weights[i * m_taps + j] = static_cast<Scalar>(weight);
@@ -181,14 +183,14 @@ template <typename Scalar_> struct Resampler {
                                  "support of some output samples does not contain "
                                  "any input samples!");
 
-                /* Normalize the contribution of each sample */
+                // Normalize the contribution of each sample
                 double normalization = 1.0 / sum;
                 for (uint32_t j = 0; j < m_taps; j++) {
                     Scalar &value = m_weights[i * m_taps + j];
                     value = Scalar(double(value) * normalization);
                 }
             }
-        } else { /* Filtering mode */
+        } else { // Filtering mode
             uint32_t half_taps = m_taps / 2;
             m_weights = std::unique_ptr<Scalar[]>(new Scalar[m_taps]);
 
@@ -213,8 +215,8 @@ template <typename Scalar_> struct Resampler {
                 (dr::ssize_t) m_target_res - (dr::ssize_t) half_taps - 1, (dr::ssize_t) 0);
         }
 
-        /* Avoid overlapping fast start/end intervals when the
-           target image is very small compared to the source image */
+        // Avoid overlapping fast start/end intervals when the
+        // target image is very small compared to the source image
         m_fast_start = std::min(m_fast_start, m_fast_end);
     }
 
@@ -228,21 +230,21 @@ template <typename Scalar_> struct Resampler {
     uint32_t taps() const { return m_taps; }
 
     /**
-     * \brief Set the boundary condition that should be used when
+     * Set the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      *
-     * The default is \ref FilterBoundaryCondition::Clamp
+     * The default is `FilterBoundaryCondition.Clamp`
      */
     void set_boundary_condition(FilterBoundaryCondition bc) { m_bc = bc; }
 
     /**
-     * \brief Return the boundary condition that should be used when
+     * Return the boundary condition that should be used when
      * looking up samples outside of the defined input domain
      */
     FilterBoundaryCondition boundary_condition() const { return m_bc; }
 
     /**
-     * \brief Returns the range to which resampled values will be clamped
+     * Returns the range to which resampled values will be clamped
      *
      * The default is -infinity to infinity (i.e. no clamping is used)
      */
@@ -252,21 +254,21 @@ template <typename Scalar_> struct Resampler {
     void set_clamp(const std::pair<Scalar, Scalar> &value) { m_clamp = value; }
 
     /**
-     * \brief Resample a multi-channel array and clamp the results
+     * Resample a multi-channel array and clamp the results
      * to a specified valid range
      *
-     * \param source
-     *     Source array of samples
-     * \param target
-     *     Target array of samples
-     * \param source_stride
-     *     Stride of samples in the source array. A value
-     *     of '1' implies that they are densely packed.
-     * \param target_stride
-     *     Stride of samples in the source array. A value
-     *     of '1' implies that they are densely packed.
-     * \param channels
-     *     Number of channels to be resampled
+     * Args:
+     *     source: Source array of samples
+     *
+     *     target: Target array of samples
+     *
+     *     source_stride: Stride of samples in the source array. A value
+     *         of ``1`` implies that they are densely packed.
+     *
+     *     target_stride: Stride of samples in the target array. A value
+     *         of ``1`` implies that they are densely packed.
+     *
+     *     channels: Number of channels to be resampled
      */
     void resample(const Scalar *source, uint32_t source_stride,
                   Scalar *target, uint32_t target_stride, uint32_t channels) const {
@@ -313,7 +315,7 @@ private:
         target_stride = channels * (target_stride - 1);
         source_stride *= channels;
 
-        /* Resample the left border region, while accounting for the boundary conditions */
+        // Resample the left border region, while accounting for the boundary conditions
         for (uint32_t i = 0; i < m_fast_start; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);
@@ -333,7 +335,7 @@ private:
                 weights += taps;
         }
 
-        /* Use a faster branch-free loop for resampling the main portion */
+        // Use a faster branch-free loop for resampling the main portion
         for (uint32_t i = m_fast_start; i < m_fast_end; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);
@@ -354,7 +356,7 @@ private:
                 weights += taps;
         }
 
-        /* Resample the right border region, while accounting for the boundary conditions */
+        // Resample the right border region, while accounting for the boundary conditions
         for (uint32_t i = m_fast_end; i < m_target_res; ++i) {
             const int32_t offset =
                 Resample ? (*start++) : ((int32_t) i - half_taps);

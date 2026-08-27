@@ -11,16 +11,18 @@ extern Caster cast_object;
 // Trampoline for derived types implemented in Python
 class PyTraversalCallback : public TraversalCallback {
 public:
-    NB_TRAMPOLINE(TraversalCallback, 2);
+    NB_TRAMPOLINE(TraversalCallback);
 
     void put_value(std::string_view name, void *ptr,
                    uint32_t flags, const std::type_info &type) override {
-        nanobind::detail::ticket nb_ticket(nb_trampoline, "put", true);
+        constexpr uint64_t nb_hash = nanobind::detail::str_hash("put");
+        nanobind::detail::ticket nb_ticket(nb_trampoline, "put", nb_hash, true);
         nb_trampoline.base().attr(nb_ticket.key)(name, ptr, flags, (void *) &type);
     }
 
     void put_object(std::string_view name, Object *obj, uint32_t flags) override {
-        nanobind::detail::ticket nb_ticket(nb_trampoline, "put", true);
+        constexpr uint64_t nb_hash = nanobind::detail::str_hash("put");
+        nanobind::detail::ticket nb_ticket(nb_trampoline, "put", nb_hash, true);
         nb_trampoline.base().attr(nb_ticket.key)(name, cast_object(obj), flags);
     }
 };
@@ -52,12 +54,12 @@ static nb::object get_property(void *ptr, void *type_, nb::handle parent) {
     TRY_SCALAR_GET(uint32_t);
     TRY_SCALAR_GET(int32_t);
 
-    nb::rv_policy rvp = parent.is_valid() ? nb::rv_policy::reference_internal
-                                          : nb::rv_policy::reference;
+    nb::rv_policy rvp = parent.is_valid() ? nb::rv_policy::reference_internal_v
+                                          : nb::rv_policy::reference_v;
     nb::detail::cleanup_list cleanup(parent.ptr());
 
-    nb::object r =
-        nb::steal(nb::detail::nb_type_put(type, ptr, rvp, &cleanup, nullptr));
+    nb::object r = nb::steal(NB_CALL(nb_type_put)(
+        NB_CTX, type, nullptr, ptr, rvp, &cleanup, nullptr));
 
     if (!r.is_valid())
         Throw("get_property(): unsupported type \"%s\"!", type->name());
@@ -144,34 +146,6 @@ MI_PY_EXPORT(Object) {
                     }
                  },
                  "name"_a, "value"_a, "flags"_a,
-                 "Unified method to register both objects and values with the traversal callback")
-            // Deprecated put_value - forwards to put()
-            .def("put_value",
-                 [] (nb::handle self, std::string_view name, nb::handle value, uint32_t flags) {
-                    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                                     "TraversalCallback.put_value() is deprecated, use put() instead", 1) < 0)
-                        nb::raise_python_error();
-
-                    // Forward to put() method
-                    self.attr("put")(name, value, flags);
-                 },
-                 "name"_a, "value"_a, "flags"_a,
-                 "Register a value with the traversal callback.\n\n"
-                 ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.")
-            // Deprecated put_object - forwards to put()
-            .def("put_object",
-                 [] (nb::handle self, std::string_view name, Object *obj, uint32_t flags) {
-                    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-                                     "TraversalCallback.put_object() is deprecated, use put() instead", 1) < 0)
-                        nb::raise_python_error();
-
-                    // Forward to put() method
-                    self.attr("put")(name, cast_object(obj), flags);
-                 },
-                 "name"_a, "obj"_a, "flags"_a,
-                 "Register an object with the traversal callback.\n\n"
-                 ".. deprecated:: 3.7.0\n"
-                 "   Use :py:meth:`~mitsuba.TraversalCallback.put` instead.");
+                 "Unified method to register both objects and values with the traversal callback");
     }
 }

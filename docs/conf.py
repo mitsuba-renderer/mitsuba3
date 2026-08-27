@@ -83,6 +83,7 @@ rst_prolog = r"""
 .. |transform| replace:: :paramtype:`transform`
 .. |volume| replace:: :paramtype:`volume`
 .. |tensor| replace:: :paramtype:`tensor`
+.. |mesh| replace:: :paramtype:`mesh`
 
 .. |drjit| replace:: :monosp:`drjit`
 .. |numpy| replace:: :monosp:`numpy`
@@ -136,14 +137,15 @@ language = 'en'
 exclude_patterns = ['.build',
                     'release.rst',
                     'src/plugin_reference/section_*.rst',
-                    'docs_api/*',
                     'generated/*.rst',
                     'src/generated/*_api.rst',
+                    'src/generated/api/*',
+                    'resources/**.ipynb',
                     '**.ipynb_checkpoints']
 
 # The reST default role (used for this markup: `text`) to use for all
 # documents.
-default_role = 'any'
+default_role = 'py:obj'
 
 # If true, '()' will be appended to :func: etc. cross-reference text.
 #add_function_parentheses = True
@@ -205,13 +207,23 @@ extensions.append('sphinx_design')
 
 extensions.append('nbsphinx')
 
-intersphinx_mapping = { 
+intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
-    "drjit" : (
-        "https://drjit.readthedocs.io/en/latest/", 
-        ("https://drjit.readthedocs.io/en/v0.4.6/", None)
-    )
+    "numpy": ("https://numpy.org/doc/stable/", None),
+    "drjit": ("https://drjit.readthedocs.io/en/latest/", None)
 }
+
+# Silence unavoidable warnings:
+#
+#  - NumPy documents its scalar types (``numpy.float32`` and friends) as
+#    ``py:attribute``, while a type annotation generates ``py:class``
+#  - ``NDArray`` emitted by nanobind
+#  - ``drjit.detail`` is internal to Dr.Jit and absent from its documentation.
+nitpick_ignore_regex = [
+    ('py:.*', r'numpy\..*'),
+    ('py:.*', r'NDArray'),
+    ('py:.*', r'drjit\.detail\..*'),
+]
 
 nbsphinx_execute = 'never'
 
@@ -272,7 +284,7 @@ nbsphinx_prolog = """
     </style>
 
     <div style="display: block; width: 100%; text-align: center;">
-        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None)[4:] }}" target="_blank">
+        <a href="https://raw.githubusercontent.com/mitsuba-renderer/mitsuba-tutorials/master/{{ env.doc2path(env.docname, base=None).as_posix()[4:] }}" target="_blank">
             <button id="nb_btn">Download notebook</button>
         </a>
 
@@ -351,8 +363,8 @@ html_theme_options = {
         'color-code-background': '#f8f9fb',
     },
 
-    # Disable edit button on read the docs
-    "top_of_page_button": None,
+    # Disable the edit button on Read the Docs
+    "top_of_page_buttons": [],
 }
 # Force pygments style in dark mode back to the light variant
 pygments_dark_style = 'tango'
@@ -451,7 +463,7 @@ latex_elements = {
     #'pointsize': '10pt',
 
     # Additional stuff for the LaTeX preamble.
-    'preamble': '\DeclareUnicodeCharacter{00A0}{}',
+    'preamble': r'\DeclareUnicodeCharacter{00A0}{}',
 
     # Latex figure (float) alignment
     #'figure_align': 'htbp',
@@ -522,8 +534,8 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-primary_domain = 'cpp'
-highlight_language = 'cpp'
+primary_domain = 'py'
+highlight_language = 'python'
 
 build_dir = os.path.join(os.path.dirname(
     os.path.abspath(__file__)), 'generated')
@@ -537,6 +549,20 @@ def custom_step(app):
         os.mkdir(build_dir)
     generate_plugin_doc.generate(build_dir)
 
+    # The API reference is rendered from the type stubs
+    try:
+        import api_from_stubs
+    except ImportError as e:
+        print('conf.py: %s, skipping the API reference. Install the '
+              'packages listed in docs/requirements.txt.' % e)
+        return
+    stub_dir = api_from_stubs.find_stub_dir()
+    if stub_dir:
+        api_from_stubs.generate(stub_dir, os.path.join(build_dir, 'api'))
+    else:
+        print('conf.py: no Mitsuba type stubs found, skipping the API '
+              'reference. Install mitsuba, or build it locally.')
+
 
 # -- Register event callbacks ----------------------------------------------
 
@@ -546,6 +572,13 @@ def setup(app):
     if sphinx.__version__ != "8.1.3":
         raise Exception("Please run the documentation with the exact package "
                         "versions provided in `docs/requirements.txt`!")
+    # Register 'enum' as object type so that intersphinx can reference Dr.Jit enums.
+    from sphinx.domains import ObjType
+    from sphinx.domains.python import PythonDomain
+    PythonDomain.object_types['enum'] = ObjType('enum', 'class', 'obj')
+
     # Texinfo
     app.connect("builder-inited", custom_step)
-    app.add_css_file('theme_overrides.css')
+    # The priority places the sheet behind those of the extensions, which is
+    # what lets it refine the gallery styling that nbsphinx ships.
+    app.add_css_file('theme_overrides.css', priority=900)

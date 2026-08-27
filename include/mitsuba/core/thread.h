@@ -7,10 +7,10 @@ extern "C" { struct Task; };
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Dummy thread class for backward compatibility
+ * Dummy thread class for backward compatibility
  *
  * This class has been largely stripped down and only maintains essential
- * methods for file resolver and logger access, plus static initialization.
+ * methods for logger access, task tracking, and static initialization.
  * Use std::thread or the nanothread-based thread pool for actual threading needs.
  */
 class MI_EXPORT_LIB Thread : public Object {
@@ -21,18 +21,8 @@ public:
     /// Destructor
     ~Thread();
 
-    /// Return the global file resolver
-    static FileResolver *file_resolver();
-
     /// Return the global logger instance
     static Logger *logger();
-
-    /**
-     * \brief Set the global logger used by Mitsuba
-     * \deprecated Use mitsuba::set_logger() directly
-     */
-    [[deprecated]]
-    static void set_logger(Logger *logger);
 
     /// Return the current thread (dummy implementation)
     static Thread *thread();

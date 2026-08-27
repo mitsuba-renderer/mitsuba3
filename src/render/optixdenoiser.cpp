@@ -150,8 +150,8 @@ OptixDenoiser<Float, Spectrum>::operator()(
                                         m_state_size, &guide_layer, &layers, 1,
                                         0, 0, m_scratch, m_scratch_size));
 
-    size_t shape[3] = { noisy.shape(0), noisy.shape(1), noisy.shape(2) };
-    return TensorXf(std::move(output_data), 3, shape);
+    return TensorXf(std::move(output_data),
+                    { noisy.shape(0), noisy.shape(1), noisy.shape(2) });
 }
 
 MI_VARIANT
@@ -235,8 +235,8 @@ ref<Bitmap> OptixDenoiser<Float, Spectrum>::operator()(
     auto setup_tensor = [](ref<const Bitmap> &bmp,
                            size_t channel_count) -> TensorXf {
         if (bmp != nullptr) {
-            size_t shape[3] = { bmp->height(), bmp->width(), channel_count };
-            return TensorXf(bmp->data(), 3, shape);
+            return TensorXf(bmp->data(),
+                            { bmp->height(), bmp->width(), channel_count });
         } else {
             return TensorXf();
         }

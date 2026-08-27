@@ -199,7 +199,7 @@ int main(int argc, char *argv[]) {
     std::string error_msg, mode;
 
 #if !defined(_WIN32)
-    /* Initialize signal handlers */
+    // Initialize signal handlers
     struct sigaction sa;
     sa.sa_handler = hup_signal_handler;
     sigemptyset(&sa.sa_mask);
@@ -368,14 +368,6 @@ int main(int argc, char *argv[]) {
 
         while (arg_extra && *arg_extra) {
             fs::path filename(arg_extra->as_string());
-            ref<FileResolver> fr2 = new FileResolver(*fr);
-            set_file_resolver(fr2);
-
-            // Add the scene file's directory to the search path.
-            fs::path scene_dir = filename.parent_path();
-            if (!fr2->contains(scene_dir))
-                fr2->append(scene_dir);
-
             if (*arg_output)
                 filename = fs::path(arg_output->as_string());
 

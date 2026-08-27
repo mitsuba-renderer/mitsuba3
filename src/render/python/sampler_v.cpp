@@ -11,7 +11,7 @@
 MI_VARIANT class PySampler : public Sampler<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Sampler)
-    NB_TRAMPOLINE(Sampler, 10);
+    NB_TRAMPOLINE(Sampler);
 
     PySampler(const Properties &props) : Sampler(props) {}
 
@@ -52,8 +52,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         NB_OVERRIDE(parameters_changed, keys);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Sampler);
 };
 
 MI_PY_EXPORT(Sampler) {

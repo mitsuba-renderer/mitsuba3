@@ -232,7 +232,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -250,7 +250,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -268,7 +268,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -286,7 +286,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 1, 0], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -304,7 +304,7 @@ def test08_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([1, 0, 0], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -496,3 +496,30 @@ def test20_eval_param_consistency(variants_vec_rgb, r):
     assert dr.allclose(si_ray.p, ps.p)
     assert dr.allclose(si_param.uv, ps.uv)
     assert dr.allclose(si_ray.uv, ps.uv)
+
+
+def test21_normal_partials(variant_scalar_rgb):
+    import numpy as np
+    from mitsuba.scalar_rgb.test.util import check_normal_partials
+
+    scene = mi.load_dict({'type': 'scene',
+                          'shape': {'type': 'sphere', 'radius': 0.8}})
+    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
+
+    def normal_field(u, v):
+        phi, theta = 2 * np.pi * u, np.pi * v
+        return np.stack([np.sin(theta) * np.cos(phi),
+                         np.sin(theta) * np.sin(phi),
+                         np.cos(theta)], axis=-1)
+
+    hits = 0
+    for x in dr.linspace(Float, -0.5, 0.5, 6):
+        for y in dr.linspace(Float, -0.5, 0.5, 6):
+            ray = mi.Ray3f(mi.Point3f(x, y, 5), mi.Vector3f(0, 0, -1))
+            si = scene.ray_intersect(ray, flags, True)
+            if not si.is_valid():
+                continue
+            hits += 1
+            check_normal_partials(si, normal_field)
+
+    assert hits > 10, hits

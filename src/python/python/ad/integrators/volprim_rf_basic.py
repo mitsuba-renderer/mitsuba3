@@ -10,7 +10,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
     .. _integrator-volprim_rf_basic:
 
     Basic Volumetric Primitive Radiance Field Integrator (:monosp:`volprim_rf_basic`)
-    ------------------------------------------------------------------------------
+    ---------------------------------------------------------------------------------
 
     .. pluginparameters::
 
@@ -123,7 +123,7 @@ class BasicVolumetricPrimitiveRadianceFieldIntegrator(RBIntegrator):
             si = scene.ray_intersect(
                 ray,
                 coherent=(depth == 0),
-                ray_flags=mi.RayFlags.All,
+                ray_flags=mi.RayFlags.Default,
                 active=active,
             )
 

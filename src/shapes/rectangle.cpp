@@ -85,97 +85,75 @@ template <typename Float, typename Spectrum>
 class Rectangle final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_to_world, m_is_instance,
-                   m_discontinuity_types, m_shape_type, m_flip_normals, initialize,
-                   m_vertex_count, m_face_count, m_faces, m_vertex_positions,
-                   m_vertex_normals, m_vertex_texcoords, get_children_string)
-    using typename Base::FloatStorage;
+                   m_discontinuity_types, m_shape_type, m_flip_normals,
+                   m_packed_faces, m_packed_vertices, m_vertex_count,
+                   m_face_count, m_position_count, m_normal_count, m_layout,
+                   m_built, transform, pack, needs_tangents, drop_views,
+                   get_children_string)
     MI_IMPORT_TYPES()
 
-    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
-    using typename Base::InputPoint3f;
-    using typename Base::InputFloat;
-    using typename Base::InputVector2f;
-    using typename Base::InputNormal3f;
-
-    // Initialize vertices
-    inline static const ScalarIndex s_faces[6] {
-        1, 2, 0,
-        1, 3, 2
-    };
+    using typename Base::FloatBuffer;
+    using typename Base::IndexBuffer;
 
     Rectangle(const Properties &props) : Base(props) {
-        m_vertex_count = 4;
-        m_face_count = 2;
         m_shape_type = ShapeType::Rectangle;
+
+        // This shape rebuilds its records whenever 'to_world' changes, so it
+        // holds on to the flip rather than consuming it during construction
+        m_flipped = m_flip_normals;
+        m_flip_normals = false;
 
         initialize();
     }
 
     void initialize() override {
+        // The unit rectangle is symmetric in z, so mirroring that axis turns
+        // the surface around without moving it
+        AffineTransform4f to_world = m_to_world.value();
+        if (m_flipped)
+            to_world = to_world *
+                AffineTransform4f::scale(Vector3f(1.f, 1.f, -1.f));
+
         // Compute shading frame
-        Normal3f n     = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f)),
-                 dp_du = m_to_world.value() * Vector3f(2.f, 0.f, 0.f),
-                 dp_dv = m_to_world.value() * Vector3f(0.f, 2.f, 0.f);
+        Normal3f n     = dr::normalize(to_world * Normal3f(0.f, 0.f, 1.f)),
+                 dp_du = to_world * Vector3f(2.f, 0.f, 0.f),
+                 dp_dv = to_world * Vector3f(0.f, 2.f, 0.f);
 
         m_frame = Frame3f(dp_du, dp_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
         dr::make_opaque(m_frame, m_inv_surface_area);
 
-        m_faces = dr::load<DynamicBuffer<UInt32>>(s_faces, 6);
+        // (Re-)create the unit rectangle records and map them to world
+        // space. This runs again on every 'to_world' write; in
+        // differentiable variants, transform() keeps the packed state
+        // attached to a gradient-enabled 'to_world'.
+        static const uint32_t face_records[8] = { 1, 2, 0, 0,  1, 3, 2, 0 };
+        static const float vertex_records[32] = {
+            // position  | normal  | uv
+            -1, -1, 0,     0, 0, 1,  0, 0,
+             1, -1, 0,     0, 0, 1,  1, 0,
+            -1,  1, 0,     0, 0, 1,  0, 1,
+             1,  1, 0,     0, 0, 1,  1, 1,
+        };
 
-        if constexpr (dr::is_diff_v<Float>) {
-            // Differentiable case: launch kernels to generate coordinates
-            if (dr::grad_enabled(m_to_world.value())) {
-                UInt32 index = dr::arange<UInt32>(4);
-                Float xf = Float(index & 1),
-                      yf = Float((index & 2) >> 1);
+        m_packed_faces    = dr::load<IndexBuffer>(face_records, 8);
+        m_packed_vertices = dr::load<FloatBuffer>(vertex_records, 32);
+        m_vertex_count    = m_position_count = m_normal_count = 4;
+        m_face_count      = 2;
+        m_layout          = make_layout(true, true);
+        m_built           = true;
 
-                Point3f p =
-                    m_to_world.value() * Point3f(dr::fmadd(xf, 2.f, -1.f),
-                                                 dr::fmadd(yf, 2.f, -1.f), 0.f);
-
-                using Point3fi = dr::replace_scalar_t<Point3f, InputFloat>;
-                using Vector2fi = dr::replace_scalar_t<Vector2f, InputFloat>;
-                using Normal3fi = dr::replace_scalar_t<Normal3f, InputFloat>;
-
-                m_vertex_positions = dr::empty<FloatStorage>(4*3);
-                m_vertex_texcoords = dr::empty<FloatStorage>(4*2);
-                m_vertex_normals = dr::empty<FloatStorage>(4*3);
-
-                scatter(m_vertex_positions, Point3fi(p), index, true, ReduceMode::Permute);
-                scatter(m_vertex_texcoords, Vector2fi(xf, yf), index, true, ReduceMode::Permute);
-                scatter(m_vertex_normals, Normal3fi(n), index, true, ReduceMode::Permute);
-                Base::initialize();
-                return;
-            }
-        }
-
-        // Non-differentiable/scalar case: compute coordinates on CPU, then upload
-        InputFloat vertex_positions[4*3], vertex_normals[4*3], vertex_texcoords[4*2];
-        for (uint32_t index = 0; index < 4; ++index) {
-            ScalarFloat xf = ScalarFloat(index & 1),
-                        yf = ScalarFloat((index & 2) >> 1);
-
-            ScalarPoint3f p = m_to_world.scalar() *
-                              ScalarPoint3f(dr::fmadd(xf, 2.f, -1.f),
-                                            dr::fmadd(yf, 2.f, -1.f), 0.f);
-            ScalarPoint3f ns =
-                normalize(m_to_world.scalar() * ScalarNormal3f(0.f, 0.f, 1.f));
-
-            dr::store(vertex_positions + index * 3, Point<InputFloat, 3>(p));
-            dr::store(vertex_normals   + index * 3, Normal<InputFloat, 3>(ns));
-            dr::store(vertex_texcoords + index * 2, Vector<InputFloat, 2>(xf, yf));
-        }
-
-        m_vertex_positions = dr::load<FloatStorage>(vertex_positions, 4*3);
-        m_vertex_normals   = dr::load<FloatStorage>(vertex_normals, 4*3);
-        m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords, 4*2);
-        Base::initialize();
+        // Encode tangent frames when the attached material consumes them
+        if (needs_tangents())
+            pack(/* regenerate_normals */ false);
+        transform(to_world);
+        // This shape does not expose the mesh fields
+        drop_views();
     }
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -191,9 +169,6 @@ public:
         ps.uv   = sample;
         ps.time = time;
         ps.delta = false;
-
-        if (m_flip_normals)
-            ps.n = -ps.n;
 
         return ps;
     }
@@ -247,7 +222,6 @@ public:
         si.dp_du     = m_frame.s;
         si.dp_dv     = m_frame.t;
         si.uv        = uv;
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
         si.shape    = this;
         si.instance = nullptr;
         si.t        = dr::select(active, 0, dr::Infinity<Float>);
@@ -255,7 +229,7 @@ public:
         /// Zero-initialize remaining fields
         si.time        = 0.f;
         si.wavelengths = Wavelength(0.f);
-        si.dn_du = si.dn_dv = si.wi = Vector3f(0);
+        si.wi          = Vector3f(0);
         si.duv_dx = si.duv_dy = 0;
         si.prim_index = 0;
 
@@ -267,11 +241,10 @@ public:
                dr::grad_enabled(m_to_world.value());
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -498,12 +471,11 @@ public:
         return ss;
     }
 
-    //! @}
     // =============================================================
 
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
@@ -587,7 +559,6 @@ public:
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {
@@ -605,6 +576,9 @@ public:
 private:
     Frame3f m_frame;
     Float m_inv_surface_area;
+
+    /// Should the rectangle be turned inside out?
+    bool m_flipped;
 
     MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area)
 };

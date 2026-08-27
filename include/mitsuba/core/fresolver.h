@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Simple class for resolving paths on Linux/Windows/Mac OS
+ * Simple class for resolving paths on Linux/Windows/Mac OS
  *
  * This convenience class looks for a file or directory given its name
  * and a set of search paths. The implementation walks through the
@@ -73,10 +73,39 @@ private:
     std::vector<fs::path> m_paths;
 };
 
-/// Return the global file resolver instance (this is a process-wide setting)
+/**
+ * Return the file resolver that applies on the calling thread
+ *
+ * This is the override installed by ``ScopedFileResolver`` when one is active,
+ * and the process-wide instance otherwise.
+ */
 extern MI_EXPORT_LIB FileResolver *file_resolver();
 
-/// Set the global file resolver instance (this is a process-wide setting)
+/**
+ * Set the global file resolver instance (this is a process-wide setting)
+ *
+ * Only call this while no scene is being loaded. Plugin construction runs on
+ * several threads that read the global instance, and this function does not
+ * synchronize against them.
+ */
 extern MI_EXPORT_LIB void set_file_resolver(FileResolver *file_resolver);
+
+/**
+ * RAII helper that overrides the resolver returned by `file_resolver()`
+ * on the calling thread
+ *
+ * Callers must keep the provided file resolver alive for as long as this
+ * object exists.
+ */
+struct MI_EXPORT_LIB ScopedFileResolver {
+    ScopedFileResolver(FileResolver *fs);
+    ~ScopedFileResolver();
+
+    ScopedFileResolver(const ScopedFileResolver &) = delete;
+    ScopedFileResolver &operator=(const ScopedFileResolver &) = delete;
+
+private:
+    FileResolver *m_backup;
+};
 
 NAMESPACE_END(mitsuba)

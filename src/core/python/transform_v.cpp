@@ -7,14 +7,6 @@
 #include <nanobind/stl/list.h>
 #include <nanobind/ndarray.h>
 
-inline void transform_affine_is_deprecated_warning() {
-    if (PyErr_WarnEx(PyExc_DeprecationWarning,
-            "transform_affine() is deprecated and will be removed in a future version. "
-            "Use the @ operator instead, which is now optimized for affine transforms.", 1) < 0) {
-        nb::raise_python_error();
-    }
-}
-
 template <typename Transform, typename Float, typename Spectrum, size_t Dimension>
 void bind_transform(nb::module_ &m, const char *name) {
     // Check if already bound, if so just return existing handle
@@ -104,30 +96,11 @@ void bind_transform(nb::module_ &m, const char *name) {
             return a * b;
         }, nb::is_operator());
 
-    // Deprecated transform_affine methods with warnings
-    cls.def("transform_affine", [](const Transform &a, const PointType &b) {
-            transform_affine_is_deprecated_warning();
-            return a * b;
-        }, "p"_a, D(Transform, transform_affine))
-        .def("transform_affine", [](const Transform &a, const VectorType &b) {
-            transform_affine_is_deprecated_warning();
-            return a * b;
-        }, "v"_a, D(Transform, transform_affine))
-        .def("transform_affine", [](const Transform &a, const RayType &b) {
-            transform_affine_is_deprecated_warning();
-            return a * b;
-        }, "ray"_a, D(Transform, transform_affine));
-
     if constexpr (Dimension == 4) {
         // Normal transformation
         cls.def("__matmul__", [](const Transform &a, const Normal3f &b) {
             return a * b;
         }, nb::is_operator());
-
-        cls.def("transform_affine", [](const Transform &a, const Normal3f &b) {
-            transform_affine_is_deprecated_warning();
-            return a * b;
-        }, "n"_a, D(Transform, transform_affine));
     }
 
     // Chain transformations
@@ -181,6 +154,7 @@ void bind_transform(nb::module_ &m, const char *name) {
     cls.def("inverse", &Transform::inverse, D(Transform, inverse))
         .def("translation", &Transform::translation, D(Transform, translation))
         .def("has_scale", &Transform::has_scale, D(Transform, has_scale))
+        .def("is_similarity", &Transform::is_similarity, D(Transform, is_similarity))
         .def_rw("matrix", &Transform::matrix)
         .def_rw("inverse_transpose", &Transform::inverse_transpose)
         .def_repr(Transform);

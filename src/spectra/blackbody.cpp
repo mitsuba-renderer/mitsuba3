@@ -100,8 +100,8 @@ public:
 
     UnpolarizedSpectrum eval_impl(const Wavelength &wavelengths, Mask active_) const {
         if constexpr (is_spectral_v<Spectrum>) {
-            /* The scale factors of 1e-9f are needed to perform a conversion between
-               densities per unit nanometer and per unit meter. */
+            // The scale factors of 1e-9f are needed to perform a conversion between
+            // densities per unit nanometer and per unit meter.
             Wavelength lambda  = wavelengths * 1e-9f,
                        lambda2 = dr::square(lambda),
                        lambda5 = dr::square(lambda2) * lambda;
@@ -110,9 +110,9 @@ public:
             active &= wavelengths >= m_wavelength_range.x()
                    && wavelengths <= m_wavelength_range.y();
 
-            /* Watts per unit surface area (m^-2)
-                     per unit wavelength (nm^-1)
-                     per unit steradian (sr^-1) */
+            // Watts per unit surface area (m^-2)
+            //       per unit wavelength (nm^-1)
+            //       per unit steradian (sr^-1)
             UnpolarizedSpectrum P = 1e-9f * c0 / (lambda5 *
                     (dr::exp(c1 / (lambda * m_temperature)) - 1.f));
 

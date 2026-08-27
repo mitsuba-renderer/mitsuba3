@@ -18,11 +18,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Abstract integrator base class, which does not make any assumptions
+ * Abstract integrator base class, which does not make any assumptions
  * with regards to how radiance is computed.
  *
  * In Mitsuba, the different rendering techniques are collectively referred to
- * as \a integrators, since they perform integration over a high-dimensional
+ * as *integrators*, since they perform integration over a high-dimensional
  * space. Each integrator represents a specific approach for solving the light
  * transport equation---usually favored in certain scenarios, but at the same
  * time affected by its own set of intrinsic limitations. Therefore, it is
@@ -39,37 +39,34 @@ public:
     MI_IMPORT_TYPES(Scene, Sensor)
 
     /**
-     * \brief Render the scene
+     * Render the scene
      *
-     * This function renders the scene from the viewpoint of \c sensor. All
+     * This function renders the scene from the viewpoint of ``sensor``. All
      * other parameters are optional and control different aspects of the
      * rendering process. In particular:
      *
-     * \param seed
-     *     This parameter controls the initialization of the random number
-     *     generator. It is crucial that you specify different seeds (e.g., an
-     *     increasing sequence) if subsequent \c render() calls should produce
-     *     statistically independent images.
+     * Args:
+     *     seed: This parameter controls the initialization of the random number
+     *         generator. It is crucial that you specify different seeds (e.g., an
+     *         increasing sequence) if subsequent ``render()`` calls should produce
+     *         statistically independent images.
      *
-     * \param spp
-     *     Set this parameter to a nonzero value to override the number of
-     *     samples per pixel. This value then takes precedence over whatever
-     *     was specified in the construction of <tt>sensor->sampler()</tt>.
-     *     This parameter may be useful in research applications where an image
-     *     must be rendered multiple times using different quality levels.
+     *     spp: Set this parameter to a nonzero value to override the number of
+     *         samples per pixel. This value then takes precedence over whatever
+     *         was specified in the construction of ``sensor->sampler()``.
+     *         This parameter may be useful in research applications where an image
+     *         must be rendered multiple times using different quality levels.
      *
-     * \param develop
-     *     If set to \c true, the implementation post-processes the data stored
-     *     in <tt>sensor->film()</tt>, returning the resulting image as a
-     *     \ref TensorXf. Otherwise, it returns an empty tensor.
+     *     develop: If set to ``True``, the implementation post-processes the data stored
+     *         in ``sensor->film()``, returning the resulting image as a
+     *         `TensorXf`. Otherwise, it returns an empty tensor.
      *
-     * \param evaluate
-     *     This parameter is only relevant for JIT variants of Mitsuba (LLVM,
-     *     CUDA). If set to \c true, the rendering step evaluates the generated
-     *     image and waits for its completion. A log message also denotes the
-     *     rendering time. Otherwise, the returned tensor
-     *     (<tt>develop=true</tt>) or modified film (<tt>develop=false</tt>)
-     *     represent the rendering task as an unevaluated computation graph.
+     *     evaluate: This parameter is only relevant for JIT variants of Mitsuba (LLVM,
+     *         CUDA). If set to ``True``, the rendering step evaluates the generated
+     *         image and waits for its completion. A log message also denotes the
+     *         rendering time. Otherwise, the returned tensor
+     *         (``develop=true``) or modified film (``develop=false``)
+     *         represent the rendering task as an unevaluated computation graph.
      */
     virtual TensorXf render(Scene *scene,
                             Sensor *sensor,
@@ -79,9 +76,9 @@ public:
                             bool evaluate = true) = 0;
 
     /**
-     * \brief Render the scene
+     * Render the scene
      *
-     * This function is just a thin wrapper around the previous \ref render()
+     * This function is just a thin wrapper around the previous `render()`
      * overload. It accepts a sensor *index* instead and renders the scene
      * using sensor 0 by default.
      */
@@ -94,11 +91,11 @@ public:
 
 
     // =========================================================================
-    //! @{ \name Default backwards and forwards differentiation
+    // Default backwards and forwards differentiation
     // =========================================================================
 
     /**
-     * \brief Evaluates the forward-mode derivative of the rendering step.
+     * Evaluates the forward-mode derivative of the rendering step.
      *
      * Forward-mode differentiation propagates gradients from scene parameters
      * through the simulation, producing a *gradient image* (i.e., the derivative
@@ -107,18 +104,18 @@ public:
      * variance or visualize the region of influence of a scene parameter. It is
      * not particularly useful for simultaneous optimization of many parameters,
      * since multiple differentiation passes are needed to obtain separate
-     * derivatives for each scene parameter. See ``Integrator.render_backward()``
+     * derivatives for each scene parameter. See `render_backward()`
      * for an efficient way of obtaining all parameter derivatives at once, or
-     * simply use the ``mi.render()`` abstraction that hides both
-     * ``Integrator.render_forward()`` and ``Integrator.render_backward()`` behind
+     * simply use the `render()` abstraction that hides both
+     * `render_forward()` and `render_backward()` behind
      * a unified interface.
      *
      * Before calling this function, you must first enable gradient tracking and
      * furthermore associate concrete input gradients with one or more scene
      * parameters, or the function will just return a zero-valued gradient image.
      * This is typically done by invoking ``dr.enable_grad()`` and
-     * ``dr.set_grad()`` on elements of the ``SceneParameters`` data structure
-     * that can be obtained via a call to ``mi.traverse()``.
+     * ``dr.set_grad()`` on elements of the `SceneParameters` data structure
+     * that can be obtained via a call to `traverse()`.
      *
      * Note the default implementation of this functionality relies on naive
      * automatic differentiation (AD), which records a computation graph of the
@@ -130,37 +127,33 @@ public:
      * ``prb`` (Path Replay Backpropagation) that are specifically designed for
      * differentiation can be significantly more efficient.
      *
-     * \param scene
-     *    The scene to be rendered differentially.
+     * Args:
+     *     scene: The scene to be rendered differentially.
      *
-     * \param params
-     *    An arbitrary container of scene parameters that should receive
-     *    gradients. Typically this will be an instance of type
-     *    ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-     *    also be a Python list/dict/object tree (DrJit will traverse it to find
-     *    all parameters). Gradient tracking must be explicitly enabled for each of
-     *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-     *    ``render_forward()`` will not do this for you). Furthermore,
-     *    ``dr.set_grad(...)`` must be used to associate specific gradient values
-     *    with each parameter.
+     *     params: An arbitrary container of scene parameters that should receive
+     *         gradients. Typically this will be an instance of type
+     *         `SceneParameters` obtained via `traverse()`. However, it could
+     *         also be a Python list/dict/object tree (DrJit will traverse it to find
+     *         all parameters). Gradient tracking must be explicitly enabled for each of
+     *         these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+     *         `render_forward()` will not do this for you). Furthermore,
+     *         ``dr.set_grad(...)`` must be used to associate specific gradient values
+     *         with each parameter.
      *
-     * \param sensor
-     *    Specify a sensor or a (sensor index) to render the scene from a
-     *    different viewpoint. By default, the first sensor within the scene
-     *    description (index 0) will take precedence.
+     *     sensor: Specify a sensor or a (sensor index) to render the scene from a
+     *         different viewpoint. By default, the first sensor within the scene
+     *         description (index 0) will take precedence.
      *
-     * \param seed
-     *    This parameter controls the initialization of the random number
-     *    generator. It is crucial that you specify different seeds (e.g., an
-     *    increasing sequence) if subsequent calls should produce statistically
-     *    independent images (e.g. to de-correlate gradient-based optimization
-     *    steps).
-
-    \param ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        differential rendering step. The value provided within the original
-        scene specification takes precedence if ``spp=0``.
-    */
+     *     seed: This parameter controls the initialization of the random number
+     *         generator. It is crucial that you specify different seeds (e.g., an
+     *         increasing sequence) if subsequent calls should produce statistically
+     *         independent images (e.g. to de-correlate gradient-based optimization
+     *         steps).
+     *
+     *     spp: Optional parameter to override the number of samples per pixel for the
+     *         differential rendering step. The value provided within the original
+     *         scene specification takes precedence if ``spp=0``.
+     */
     virtual TensorXf render_forward(Scene* scene,
                                     void* params,
                                     Sensor *sensor,
@@ -168,9 +161,9 @@ public:
                                     uint32_t spp = 0);
 
     /**
-     * \brief Evaluates the forward-mode derivative of the rendering step.
+     * Evaluates the forward-mode derivative of the rendering step.
      *
-     * This function is just a thin wrapper around the previous \ref render_forward()
+     * This function is just a thin wrapper around the previous `render_forward()`
      * function. It accepts a sensor *index* instead and renders the scene
      * using sensor 0 by default.
      */
@@ -192,7 +185,7 @@ public:
     }
 
     /**
-     * \brief Evaluates the reverse-mode derivative of the rendering step.
+     * Evaluates the reverse-mode derivative of the rendering step.
      *
      * Reverse-mode differentiation transforms image-space gradients into scene
      * parameter gradients, enabling simultaneous optimization of scenes with
@@ -204,9 +197,9 @@ public:
      * Before calling this function, you must first enable gradient tracking for
      * one or more scene parameters, or the function will not do anything. This is
      * typically done by invoking ``dr.enable_grad()`` on elements of the
-     * ``SceneParameters`` data structure that can be obtained via a call
-     * to ``mi.traverse()``. Use ``dr.grad()`` to query the resulting gradients of
-     * these parameters once ``render_backward()`` returns.
+     * `SceneParameters` data structure that can be obtained via a call
+     * to `traverse()`. Use ``dr.grad()`` to query the resulting gradients of
+     * these parameters once `render_backward()` returns.
      *
      * Note the default implementation of this functionality relies on naive
      * automatic differentiation (AD), which records a computation graph of the
@@ -218,37 +211,32 @@ public:
      * ``prb`` (Path Replay Backpropagation) that are specifically designed for
      * differentiation can be significantly more efficient.
      *
-     * \param scene
-     *    The scene to be rendered differentially.
+     * Args:
+     *     scene: The scene to be rendered differentially.
      *
-     * \param params
-     *    An arbitrary container of scene parameters that should receive
-     *    gradients. Typically this will be an instance of type
-     *    ``mi.SceneParameters`` obtained via ``mi.traverse()``. However, it could
-     *    also be a Python list/dict/object tree (DrJit will traverse it to find
-     *    all parameters). Gradient tracking must be explicitly enabled for each of
-     *    these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-     *    ``render_backward()`` will not do this for you).
+     *     params: An arbitrary container of scene parameters that should receive
+     *         gradients. Typically this will be an instance of type
+     *         `SceneParameters` obtained via `traverse()`. However, it could
+     *         also be a Python list/dict/object tree (DrJit will traverse it to find
+     *         all parameters). Gradient tracking must be explicitly enabled for each of
+     *         these parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+     *         `render_backward()` will not do this for you).
      *
-     * \param grad_in
-     *    Gradient image that should be back-propagated.
+     *     grad_in: Gradient image that should be back-propagated.
      *
-     * \param sensor
-     *    Specify a sensor or a (sensor index) to render the scene from a
-     *    different viewpoint. By default, the first sensor within the scene
-     *    description (index 0) will take precedence.
+     *     sensor: Specify a sensor or a (sensor index) to render the scene from a
+     *         different viewpoint. By default, the first sensor within the scene
+     *         description (index 0) will take precedence.
      *
-     * \param seed
-     *    This parameter controls the initialization of the random number
-     *    generator. It is crucial that you specify different seeds (e.g., an
-     *    increasing sequence) if subsequent calls should produce statistically
-     *    independent images (e.g. to de-correlate gradient-based optimization
-     *    steps).
-
-     * \param spp
-     *   Optional parameter to override the number of samples per pixel for the
-     *   differential rendering step. The value provided within the original
-     *   scene specification takes precedence if ``spp=0``.
+     *     seed: This parameter controls the initialization of the random number
+     *         generator. It is crucial that you specify different seeds (e.g., an
+     *         increasing sequence) if subsequent calls should produce statistically
+     *         independent images (e.g. to de-correlate gradient-based optimization
+     *         steps).
+     *
+     *     spp: Optional parameter to override the number of samples per pixel for the
+     *         differential rendering step. The value provided within the original
+     *         scene specification takes precedence if ``spp=0``.
      */
     virtual void render_backward(Scene* scene,
                                  void* params,
@@ -258,9 +246,9 @@ public:
                                  uint32_t spp = 0);
 
     /**
-     * \brief Evaluates the reverse-mode derivative of the rendering step.
+     * Evaluates the reverse-mode derivative of the rendering step.
      *
-     * This function is just a thin wrapper around the previous \ref render_backward()
+     * This function is just a thin wrapper around the previous `render_backward()`
      * function. It accepts a sensor *index* instead and renders the scene
      * using sensor 0 by default.
      */
@@ -283,18 +271,17 @@ public:
                                spp);
     }
 
-    //! @}
     // =========================================================================
 
-    /// \brief Cancel a running render job (e.g. after receiving Ctrl-C)
+    /// Cancel a running render job (e.g. after receiving Ctrl-C)
     virtual void cancel();
 
     /**
-     * Indicates whether \ref cancel() or a timeout have occurred. Should be
+     * Indicates whether `cancel()` or a timeout have occurred. Should be
      * checked regularly in the integrator's main loop so that timeouts are
      * enforced accurately.
      *
-     * Note that accurate timeouts rely on \ref m_render_timer, which needs
+     * Note that accurate timeouts rely on ``m_render_timer``, which needs
      * to be reset at the beginning of the rendering phase.
      */
     bool should_stop() const {
@@ -310,31 +297,28 @@ public:
     virtual std::vector<std::string> aov_names() const;
 
     /**
-     * \brief Traces a ray in the scene and returns the first intersection that
+     * Traces a ray in the scene and returns the first intersection that
      * is not an area emitter.
      *
-     * This is a helper method for when the `hide_emitters` flag is set.
+     * This is a helper method for when the ``hide_emitters`` flag is set.
      *
-     * \param scene
-     *    The scene that the ray will intersect.
+     * Args:
+     *     scene: The scene that the ray will intersect.
      *
-     * \param ray
-     *    The ray that determines the direction in which to trace new rays
+     *     ray: The ray that determines the direction in which to trace new rays
      *
-     * \param coherent
-     *    Setting this flag to \c true can noticeably improve performance when
-     *    \c ray contains a coherent set of rays (e.g. primary camera rays),
-     *    and when using <tt>llvm_*</tt> variants of the renderer along with
-     *    Embree. It has no effect in scalar or CUDA/OptiX variants.
-     *    (Default: False)
+     *     coherent: Setting this flag to ``True`` can noticeably improve performance when
+     *         ``ray`` contains a coherent set of rays (e.g. primary camera rays),
+     *         and when using ``llvm_*`` variants of the renderer along with
+     *         Embree. It has no effect in scalar or CUDA/OptiX variants.
+     *         (Default: False)
      *
-     * \param active
-     *    A mask that indicates which lanes are active. Typically, this should
-     *    be set to ``True`` for any lane where the current depth is 0 (for
-     *    ``hide_emitters``). (Default: True)
+     *     active: A mask that indicates which lanes are active. Typically, this should
+     *         be set to ``True`` for any lane where the current depth is 0 (for
+     *         ``hide_emitters``). (Default: True)
      *
-     * \return
-     *    The first intersection that is not an area emitter anlong the ``ray``.
+     * Returns:
+     *     The first intersection that is not an area emitter along the ``ray``.
      */
     PreliminaryIntersection3f skip_area_emitters(const Scene *scene,
                                                  const Ray3f &ray,
@@ -348,11 +332,11 @@ protected:
     Integrator(const Properties & props);
 
 protected:
-    /// Integrators should stop all work when this flag is set to true.
+    /// Integrators should stop all work when this flag is set to ``True``.
     bool m_stop;
 
     /**
-     * \brief Maximum amount of time to spend rendering (excluding scene parsing).
+     * Maximum amount of time to spend rendering (excluding scene parsing).
      *
      * Specified in seconds. A negative values indicates no timeout.
      */
@@ -370,14 +354,15 @@ protected:
     MI_TRAVERSE_CB(Object)
 };
 
-/** \brief Abstract integrator that performs Monte Carlo sampling starting from
+/**
+ * Abstract integrator that performs Monte Carlo sampling starting from
  * the sensor
  *
- * Subclasses of this interface must implement the \ref sample() method, which
+ * Subclasses of this interface must implement the `sample()` method, which
  * performs Monte Carlo integration to return an unbiased statistical estimate
  * of the radiance value along a given ray.
  *
- * The \ref render() method then repeatedly invokes this estimator to compute
+ * The `render()` method then repeatedly invokes this estimator to compute
  * all pixels of the image.
  */
 template <typename Float, typename Spectrum>
@@ -391,43 +376,30 @@ public:
     ~SamplingIntegrator();
 
     /**
-     * \brief Sample the incident radiance along a ray.
+     * Sample the incident radiance along a ray.
      *
-     * \param scene
-     *    The underlying scene in which the radiance function should be sampled
+     * Args:
+     *     scene: The underlying scene in which the radiance function should be sampled
      *
-     * \param sampler
-     *    A source of (pseudo-/quasi-) random numbers
+     *     sampler: A source of (pseudo-/quasi-) random numbers
      *
-     * \param ray
-     *    A ray, optionally with differentials
+     *     ray: A ray, optionally with differentials
      *
-     * \param medium
-     *    If the ray is inside a medium, this parameter holds a pointer to that
-     *    medium
+     *     medium: If the ray is inside a medium, this parameter holds a pointer to that
+     *         medium
      *
-     * \param aov
-     *    Integrators may return one or more arbitrary output variables (AOVs)
-     *    via this parameter. If \c nullptr is provided to this argument, no
-     *    AOVs should be returned. Otherwise, the caller guarantees that space
-     *    for at least <tt>aov_names().size()</tt> entries has been allocated.
+     *     active: A mask that indicates which SIMD lanes are active
      *
-     * \param active
-     *    A mask that indicates which SIMD lanes are active
-     *
-     * \return
-     *    A pair containing a spectrum and a mask specifying whether a surface
-     *    or medium interaction was sampled. False mask entries indicate that
-     *    the ray "escaped" the scene, in which case the returned spectrum
-     *    contains the contribution of environment maps, if present. The mask
-     *    can be used to estimate a suitable alpha channel of a rendered image.
-     *
-     * \remark
-     *    In the Python bindings, this function returns the \c aov output
-     *    argument as an additional return value. In other words:
-     *    <pre>
-     *        (spec, mask, aov) = integrator.sample(scene, sampler, ray, medium, active)
-     *    </pre>
+     * Returns:
+     *     A tuple ``(spec, mask, aovs)`` where ``spec`` and ``mask`` specify the
+     *     sampled spectrum and whether a surface or medium interaction was
+     *     sampled. False mask entries indicate that the ray "escaped" the
+     *     scene, in which case the returned spectrum contains the
+     *     contribution of environment maps, if present. The mask can be used
+     *     to estimate a suitable alpha channel of a rendered image. ``aovs``
+     *     is a list of one or more arbitrary output variables (AOVs)
+     *     returned by the integrator, with as many entries as
+     *     ``aov_names()``.
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
@@ -437,7 +409,7 @@ public:
                                              Mask active = true) const;
 
     // =========================================================================
-    //! @{ \name Integrator interface implementation
+    // Integrator interface implementation
     // =========================================================================
 
     TensorXf render(Scene *scene,
@@ -447,7 +419,6 @@ public:
                     bool develop = true,
                     bool evaluate = true) override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(SamplingIntegrator)
@@ -464,12 +435,20 @@ protected:
                               uint32_t block_id,
                               uint32_t block_size) const;
 
+    /**
+     * \brief Render a single sample at the given pixel position
+     *
+     * \c scale and \c offset map pixel coordinates to the unit square of the
+     * crop window (\c 1 / crop_size and \c -crop_offset / crop_size).
+     */
     void render_sample(const Scene *scene,
                        const Sensor *sensor,
                        Sampler *sampler,
                        ImageBlock *block,
                        Float *aovs,
                        const Vector2f &pos,
+                       const Vector2f &scale,
+                       const Vector2f &offset,
                        ScalarFloat diff_scale_factor,
                        Mask active = true) const;
 
@@ -479,7 +458,7 @@ protected:
     uint32_t m_block_size;
 
     /**
-     * \brief Number of samples to compute for each pass over the image blocks.
+     * Number of samples to compute for each pass over the image blocks.
      *
      * Must be a multiple of the total sample count per pixel.
      * If set to (uint32_t) -1, all the work is done in a single pass (default).
@@ -489,10 +468,11 @@ protected:
     MI_TRAVERSE_CB(Base)
 };
 
-/** \brief Abstract integrator that performs *recursive* Monte Carlo sampling
+/**
+ * Abstract integrator that performs *recursive* Monte Carlo sampling
  * starting from the sensor
  *
- * This class is almost identical to \ref SamplingIntegrator. It stores two
+ * This class is almost identical to `SamplingIntegrator`. It stores two
  * additional fields that are helpful for recursive Monte Carlo techniques:
  * the maximum path depth, and the depth at which the Russian Roulette path
  * termination technique should start to become active.
@@ -518,17 +498,19 @@ protected:
     MI_TRAVERSE_CB(Base)
 };
 
-/** \brief Abstract adjoint integrator that performs Monte Carlo sampling
+/**
+ * Abstract adjoint integrator that performs Monte Carlo sampling
  * starting from the emitters.
  *
- * Subclasses of this interface must implement the \ref sample() method, which
+ * Subclasses of this interface must implement the `sample()` method, which
  * performs recursive Monte Carlo integration starting from an emitter and
  * directly accumulates the product of radiance and importance into the film.
- * The \ref render() method then repeatedly invokes this estimator to compute
+ * The `render()` method then repeatedly invokes this estimator to compute
  * the rendered image.
  *
- * \remark The adjoint integrator does not support renderings with arbitrary
- * output variables (AOVs).
+ * Note:
+ *     The adjoint integrator does not support renderings with arbitrary
+ *     output variables (AOVs).
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB AdjointIntegrator : public Integrator<Float, Spectrum> {
@@ -542,31 +524,27 @@ public:
     ~AdjointIntegrator();
 
     /**
-     * \brief Sample the incident importance and splat the product of
+     * Sample the incident importance and splat the product of
      * importance and radiance to the film.
      *
-     * \param scene
-     *    The underlying scene
+     * Args:
+     *     scene: The underlying scene
      *
-     * \param sensor
-     *    A sensor from which rays should be sampled
+     *     sensor: A sensor from which rays should be sampled
      *
-     * \param sampler
-     *    A source of (pseudo-/quasi-) random numbers
+     *     sampler: A source of (pseudo-/quasi-) random numbers
      *
-     * \param block
-     *    An image block that will be updated during the sampling process
+     *     block: An image block that will be updated during the sampling process
      *
-     * \param sample_scale
-     *    A scale factor that must be applied to each sample to account
-     *    for the film resolution and number of samples.
+     *     sample_scale: A scale factor that must be applied to each sample to account
+     *         for the film resolution and number of samples.
      */
     virtual void sample(const Scene *scene, const Sensor *sensor,
                         Sampler *sampler, ImageBlock *block,
                         ScalarFloat sample_scale) const = 0;
 
     // =========================================================================
-    //! @{ \name Integrator interface implementation
+    // Integrator interface implementation
     // =========================================================================
 
     TensorXf render(Scene *scene,
@@ -576,7 +554,6 @@ public:
                     bool develop = true,
                     bool evaluate = true) override;
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(AdjointIntegrator)
@@ -587,7 +564,7 @@ protected:
 
 protected:
     /**
-     * \brief Number of samples to compute for each pass over the image blocks.
+     * Number of samples to compute for each pass over the image blocks.
      *
      * Must be a multiple of the total sample count per pixel.
      * If set to (size_t) -1, all the work is done in a single pass (default).
@@ -595,9 +572,9 @@ protected:
     uint32_t m_samples_per_pass;
 
     /**
-     * Longest visualized path depth (\c -1 = infinite).
-     * A value of \c 1 will visualize only directly visible light sources.
-     * \c 2 will lead to single-bounce (direct-only) illumination, and so on.
+     * Longest visualized path depth (``-1`` = infinite).
+     * A value of ``1`` will visualize only directly visible light sources.
+     * ``2`` will lead to single-bounce (direct-only) illumination, and so on.
      */
     int m_max_depth;
 

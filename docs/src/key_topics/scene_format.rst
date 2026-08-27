@@ -652,9 +652,10 @@ However, if you are looking to refer to an object that was previously declared,
 you must use an explicit ID.
 
 For example, in the snippet below, the objects receive the following implicit IDs:
+
 - The shape: ``my_shape``
 - The material: ``my_shape.my_material``
-- The texture: ``my_shape.my_material.reflectance`
+- The texture: ``my_shape.my_material.reflectance``
 
 .. code-block:: python
 

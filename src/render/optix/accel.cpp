@@ -20,11 +20,11 @@ MiOptixAccelData::~MiOptixAccelData() {
             jit_free(h.buffer);
 }
 
-/// Allocate (once) \c g's custom-primitive SBT data buffer in \c data_buffers
+/// Allocate (once) ``g``'s custom-primitive SBT data buffer in ``data_buffers``
 /// (indexed by the stable ``g.data_slot``) and return its stable device
 /// pointer, without writing its contents. Triangles, curves, and shape groups
 /// carry no SBT data here and return ``nullptr``. The SBT only needs the stable
-/// pointer at pack time; \ref optix_refresh_shape_data writes the data.
+/// pointer at pack time; `optix_refresh_shape_data()` writes the data.
 static void *optix_shape_data_ptr(const ShapeIR &g,
                                   ShapeDataBuffers &data_buffers) {
     if (g.type == ShapeType::ShapeGroup ||
@@ -94,12 +94,12 @@ void fill_hitgroup_records(const std::vector<BlasEntry> &blases,
 }
 
 /**
- * \brief Fill an \ref OptixBuildInput from a shape's \ref describe()
- * descriptor \c g (triangles, curves or custom primitives).
+ * Fill an `OptixBuildInput` from a shape's `describe()`
+ * descriptor ``g`` (triangles, curves or custom primitives).
  *
- * \c ptr_storage provides stable backing for device-buffer pointers that OptiX
- * references by address. It must outlive the build that consumes \c build_input.
- * For host-AABB custom primitives, \c aabb_ptr is the device address of this
+ * ``ptr_storage`` provides stable backing for device-buffer pointers that OptiX
+ * references by address. It must outlive the build that consumes ``build_input``.
+ * For host-AABB custom primitives, ``aabb_ptr`` is the device address of this
  * shape's slice in the shared AABB pool. Shapes with their own device AABB
  * buffer ignore it.
  */
@@ -115,14 +115,16 @@ static void optix_fill_build_input(OptixBuildInput &build_input,
         case ShapeIR::Kind::TrianglesCulled:
             ptr_storage[0] = (void *) g.vertex_ptr;
             build_input.type = OPTIX_BUILD_INPUT_TYPE_TRIANGLES;
-            build_input.triangleArray.vertexFormat     = OPTIX_VERTEX_FORMAT_FLOAT3;
-            build_input.triangleArray.indexFormat      = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
-            build_input.triangleArray.numVertices      = (unsigned int) g.vertex_count;
-            build_input.triangleArray.vertexBuffers    = (CUdeviceptr *) &ptr_storage[0];
-            build_input.triangleArray.numIndexTriplets = (unsigned int) g.face_count;
-            build_input.triangleArray.indexBuffer      = (CUdeviceptr) g.index_ptr;
-            build_input.triangleArray.flags            = flags_disable_anyhit;
-            build_input.triangleArray.numSbtRecords    = 1;
+            build_input.triangleArray.vertexFormat        = OPTIX_VERTEX_FORMAT_FLOAT3;
+            build_input.triangleArray.vertexStrideInBytes = (unsigned int) g.vertex_stride;
+            build_input.triangleArray.indexFormat         = OPTIX_INDICES_FORMAT_UNSIGNED_INT3;
+            build_input.triangleArray.numVertices         = (unsigned int) g.vertex_count;
+            build_input.triangleArray.vertexBuffers       = (CUdeviceptr *) &ptr_storage[0];
+            build_input.triangleArray.numIndexTriplets    = (unsigned int) g.face_count;
+            build_input.triangleArray.indexBuffer         = (CUdeviceptr) g.index_ptr;
+            build_input.triangleArray.indexStrideInBytes  = (unsigned int) g.index_stride;
+            build_input.triangleArray.flags               = flags_disable_anyhit;
+            build_input.triangleArray.numSbtRecords       = 1;
             break;
 
         case ShapeIR::Kind::BSplineCurve:

@@ -7,12 +7,11 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Stores a three-dimensional orthonormal coordinate frame
+ * Stores a three-dimensional orthonormal coordinate frame
  *
  * This class is used to convert between different cartesian coordinate systems
  * and to efficiently evaluate trigonometric functions in a spherical
- * coordinate system whose pole is aligned with the \c n axis (e.g. \ref
- * cos_theta(), \ref sin_phi(), etc.).
+ * coordinate system whose pole is aligned with the ``n`` axis (e.g. `cos_theta()`, `sin_phi()`, etc.).
  */
 template <typename Float_> struct Frame {
     using Float    = Float_;
@@ -40,50 +39,56 @@ template <typename Float_> struct Frame {
         return dr::fmadd(n, v.z(), dr::fmadd(t, v.y(), s * v.x()));
     }
 
-    /** \brief Give a unit direction, this function returns the cosine of the
-     * elevation angle in a reference spherical coordinate system (see the \ref
-     * Frame description)
+    /**
+     * Give a unit direction, this function returns the cosine of the
+     * elevation angle in a reference spherical coordinate system (see the `Frame3f` description)
      */
     static Float cos_theta(const Vector3f &v) { return v.z(); }
 
-    /** \brief Give a unit direction, this function returns the square cosine
+    /**
+     * Give a unit direction, this function returns the square cosine
      * of the elevation angle in a reference spherical coordinate system (see
-     * the \ref Frame description)
+     * the `Frame3f` description)
      */
     static Float cos_theta_2(const Vector3f &v) { return dr::square(v.z()); }
 
-    /** \brief Give a unit direction, this function returns the sine
+    /**
+     * Give a unit direction, this function returns the sine
      * of the elevation angle in a reference spherical coordinate system (see
-     * the \ref Frame description)
+     * the `Frame3f` description)
      */
     static Float sin_theta(const Vector3f &v) { return dr::safe_sqrt(sin_theta_2(v)); }
 
-    /** \brief Give a unit direction, this function returns the square sine
+    /**
+     * Give a unit direction, this function returns the square sine
      * of the elevation angle in a reference spherical coordinate system (see
-     * the \ref Frame description)
+     * the `Frame3f` description)
      */
     static Float sin_theta_2(const Vector3f &v) { return dr::fmadd(v.x(), v.x(), dr::square(v.y())); }
 
-    /** \brief Give a unit direction, this function returns the tangent
+    /**
+     * Give a unit direction, this function returns the tangent
      * of the elevation angle in a reference spherical coordinate system (see
-     * the \ref Frame description)
+     * the `Frame3f` description)
      */
     static Float tan_theta(const Vector3f &v) {
         Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
         return dr::safe_sqrt(temp) / v.z();
     }
 
-    /** \brief Give a unit direction, this function returns the square tangent
+    /**
+     * Give a unit direction, this function returns the square tangent
      * of the elevation angle in a reference spherical coordinate system (see
-     * the \ref Frame description)
+     * the `Frame3f` description)
      */
     static Float tan_theta_2(const Vector3f &v) {
         Float temp = dr::fnmadd(v.z(), v.z(), 1.f);
         return dr::maximum(temp, 0.f) / dr::square(v.z());
     }
 
-    /** \brief Give a unit direction, this function returns the sine of the
-     * azimuth in a reference spherical coordinate system (see the \ref Frame
+    /**
+     * Give a unit direction, this function returns the sine of the
+     * azimuth in a reference spherical coordinate system (see the `Frame3f`
      * description)
      */
     static Float sin_phi(const Vector3f &v) {
@@ -93,8 +98,9 @@ template <typename Float_> struct Frame {
                           dr::clip(v.y() * inv_sin_theta, -1.f, 1.f));
     }
 
-    /** \brief Give a unit direction, this function returns the cosine of the
-     * azimuth in a reference spherical coordinate system (see the \ref Frame
+    /**
+     * Give a unit direction, this function returns the cosine of the
+     * azimuth in a reference spherical coordinate system (see the `Frame3f`
      * description)
      */
     static Float cos_phi(const Vector3f &v) {
@@ -104,9 +110,9 @@ template <typename Float_> struct Frame {
                           dr::clip(v.x() * inv_sin_theta, -1.f, 1.f));
     }
 
-    /** \brief Give a unit direction, this function returns the sine and cosine
-     * of the azimuth in a reference spherical coordinate system (see the \ref
-     * Frame description)
+    /**
+     * Give a unit direction, this function returns the sine and cosine
+     * of the azimuth in a reference spherical coordinate system (see the `Frame3f` description)
      */
     static std::pair<Float, Float> sincos_phi(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
@@ -121,9 +127,9 @@ template <typename Float_> struct Frame {
         return { result.y(), result.x() };
     }
 
-    /** \brief Give a unit direction, this function returns the squared sine of
-     * the azimuth in a reference spherical coordinate system (see the \ref
-     * Frame description)
+    /**
+     * Give a unit direction, this function returns the squared sine of
+     * the azimuth in a reference spherical coordinate system (see the `Frame3f` description)
      */
     static Float sin_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
@@ -131,9 +137,9 @@ template <typename Float_> struct Frame {
                           dr::clip(dr::square(v.y()) / sin_theta_2, -1.f, 1.f));
     }
 
-    /** \brief Give a unit direction, this function returns the squared cosine of
-     * the azimuth in a reference spherical coordinate system (see the \ref
-     * Frame description)
+    /**
+     * Give a unit direction, this function returns the squared cosine of
+     * the azimuth in a reference spherical coordinate system (see the `Frame3f` description)
      */
     static Float cos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v);
@@ -141,9 +147,10 @@ template <typename Float_> struct Frame {
                           dr::clip(dr::square(v.x()) / sin_theta_2, -1.f, 1.f));
     }
 
-    /** \brief Give a unit direction, this function returns the squared sine
+    /**
+     * Give a unit direction, this function returns the squared sine
      * and cosine of the azimuth in a reference spherical coordinate system
-     * (see the \ref Frame description)
+     * (see the `Frame3f` description)
      */
     static std::pair<Float, Float> sincos_phi_2(const Vector3f &v) {
         Float sin_theta_2 = Frame::sin_theta_2(v),
@@ -182,18 +189,14 @@ std::ostream &operator<<(std::ostream &os, const Frame<Float> &f) {
 }
 
 /**
- * \brief Given a smoothly varying shading normal and a tangent of a shape
+ * Given a smoothly varying shading normal and a tangent of a shape
  * parameterization, compute a smoothly varying orthonormal frame.
  *
- * \param n
- *    A shading normal at a surface position
+ * Args:
+ *     n: A shading normal at a surface position
  *
- * \param dp_du
- *    Position derivative of the underlying parameterization with respect to
- *    the 'u' coordinate
- *
- * \param frame
- *    Used to return the computed frame
+ *     dp_du: Position derivative of the underlying parameterization with respect to
+ *         the 'u' coordinate
  */
 template <typename Normal3f, typename Vector3f,
           typename Float = dr::value_t<Normal3f>,

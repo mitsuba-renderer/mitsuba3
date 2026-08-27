@@ -7,19 +7,22 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Generic n-dimensional bounding box data structure
+ * Generic n-dimensional bounding box data structure
  *
  * Maintains a minimum and maximum position along each dimension and provides
  * various convenience functions for querying and modifying them.
  *
  * This class is parameterized by the underlying point data structure,
  * which permits the use of different scalar types and dimensionalities, e.g.
- * \code
- * BoundingBox<Point3i> integer_bbox(Point3i(0, 1, 3), Point3i(4, 5, 6));
- * BoundingBox<Point2d> double_bbox(Point2d(0.0, 1.0), Point2d(4.0, 5.0));
- * \endcode
  *
- * \tparam T The underlying point data type (e.g. \c Point2d)
+ * .. code-block:: python
+ *
+ *    bbox_3d = mi.BoundingBox3f(mi.Point3f(0, 1, 3), mi.Point3f(4, 5, 6))
+ *    bbox_2d = mi.ScalarBoundingBox2f(mi.ScalarPoint2f(0, 1),
+ *                                     mi.ScalarPoint2f(4, 5))
+ *
+ * Template Args:
+ *     T: The underlying point data type (e.g. ``Point2d``)
  */
 template <typename Point_> struct BoundingBox {
     static constexpr size_t Dimension = dr::size_v<Point_>;
@@ -31,10 +34,10 @@ template <typename Point_> struct BoundingBox {
     using Mask   = dr::mask_t<Value>;
 
     /**
-     * \brief Create a new invalid bounding box
+     * Create a new invalid bounding box
      *
      * Initializes the components of the minimum and maximum position to
-     * \f$\infty\f$ and \f$-\infty\f$, respectively.
+     * :math:`\infty` and :math:`-\infty`, respectively.
      */
     BoundingBox() { reset(); }
 
@@ -62,13 +65,15 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether this is a valid bounding box
+     * Check whether this is a valid bounding box
      *
-     * A bounding box \c bbox is considered to be valid when
-     * \code
-     * bbox.min[i] <= bbox.max[i]
-     * \endcode
-     * holds for each component \c i.
+     * A bounding box ``bbox`` is considered to be valid when
+     *
+     * .. code-block:: python
+     *
+     *    bbox.min[i] <= bbox.max[i]
+     *
+     * holds for each component ``i``.
      */
     Mask valid() const {
         return dr::all(max >= min);
@@ -115,8 +120,10 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the bounding box extents
-     * \return <tt>max - min</tt>
+     * Calculate the bounding box extents
+     *
+     * Returns:
+     *     ``max - min``
      */
     Vector extents() const { return max - min; }
 
@@ -156,15 +163,18 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether a point lies \a on or \a inside the bounding box
+     * Check whether a point lies *on* or *inside* the bounding box
      *
-     * \param p The point to be tested
+     * Args:
+     *     p: The point to be tested
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result contains(const mitsuba::Point<T, Point::Size> &p) const {
@@ -175,18 +185,21 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check whether a specified bounding box lies \a on or \a within
+     * Check whether a specified bounding box lies *on* or *within*
      * the current bounding box
      *
-     * Note that by definition, an 'invalid' bounding box (where min=\f$\infty\f$
-     * and max=\f$-\infty\f$) does not cover any space. Hence, this method will always
-     * return \a true when given such an argument.
+     * Note that by definition, an 'invalid' bounding box (where
+     * ``min`` = :math:`\infty` and ``max`` = :math:`-\infty`) does not cover any
+     * space. Hence, this method will always return *true* when given such an
+     * argument.
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result contains(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -197,15 +210,18 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check two axis-aligned bounding boxes for possible overlap.
+     * Check two axis-aligned bounding boxes for possible overlap.
      *
-     * \param Strict Set this parameter to \c true if the bounding
-     *               box boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         box boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Returns:
+     *     ``True`` If overlap was detected.
      *
-     * \return \c true If overlap was detected.
+     * Note:
+     *     In the Python bindings, the 'strict' argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false, typename T, typename Result = dr::mask_t<dr::expr_t<T, Value>>>
     Result overlaps(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -216,8 +232,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest squared distance between
-     * the axis-aligned bounding box and the point \c p.
+     * Calculate the shortest squared distance between
+     * the axis-aligned bounding box and the point ``p``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result squared_distance(const mitsuba::Point<T, Point::Size> &p) const {
@@ -225,8 +241,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest squared distance between
-     * the axis-aligned bounding box and \c bbox.
+     * Calculate the shortest squared distance between
+     * the axis-aligned bounding box and ``bbox``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result squared_distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -235,8 +251,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest distance between
-     * the axis-aligned bounding box and the point \c p.
+     * Calculate the shortest distance between
+     * the axis-aligned bounding box and the point ``p``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result distance(const mitsuba::Point<T, Point::Size> &p) const {
@@ -244,8 +260,8 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Calculate the shortest distance between
-     * the axis-aligned bounding box and \c bbox.
+     * Calculate the shortest distance between
+     * the axis-aligned bounding box and ``bbox``.
      */
     template <typename T, typename Result = dr::expr_t<T, Value>>
     Result distance(const BoundingBox<mitsuba::Point<T, Point::Size>> &bbox) const {
@@ -253,10 +269,10 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Mark the bounding box as invalid.
+     * Mark the bounding box as invalid.
      *
      * This operation sets the components of the minimum
-     * and maximum position to \f$\infty\f$ and \f$-\infty\f$,
+     * and maximum position to :math:`\infty` and :math:`-\infty`,
      * respectively.
      */
     void reset() {
@@ -294,9 +310,9 @@ template <typename Point_> struct BoundingBox {
     }
 
     /**
-     * \brief Check if a ray intersects a bounding box
+     * Check if a ray intersects a bounding box
      *
-     * Note that this function ignores the <tt>maxt</tt> value
+     * Note that this function ignores the ``maxt`` value
      * associated with the ray.
      */
     template <typename Ray>
@@ -345,13 +361,90 @@ template <typename Point_> struct BoundingBox {
         return { c, dr::norm(c - max) };
     }
 
-    Point min; /// Component-wise minimum
-    Point max; /// Component-wise maximum
+    Point min; ///< Component-wise minimum
+    Point max; ///< Component-wise maximum
+
+    DRJIT_TRAVERSE(BoundingBox, min, max);
 };
 
+/// Compute the bounding box of an interleaved position buffer.
+///
+/// ``data`` is interleaved with ``Stride`` scalars per element and the position
+/// at offsets 0, 1, 2.
+///
+/// If ``RadiusOffset`` >= 0, each point is grown by the scalar at that offset.
+/// This is used by the curve shapes which pass curve control points to this
+/// function.
+///
+/// An empty buffer produces an invalid bounding box. In JIT variants, the
+/// reduction runs on the device.
+template <typename Type, uint32_t Stride, int RadiusOffset = -1,
+          typename StoredFloat>
+BoundingBox<Type> reduce_bbox(const StoredFloat &data, uint32_t count) {
+    BoundingBox<Type> bbox;
+    if (count == 0)
+        return bbox;
+
+    if constexpr (dr::is_jit_v<StoredFloat>) {
+        using Value  = dr::scalar_t<StoredFloat>;
+        using UInt32 = dr::uint32_array_t<StoredFloat>;
+        using Mask   = dr::mask_t<StoredFloat>;
+        using Vec    = dr::Array<StoredFloat, 3>;
+
+        UInt32 base = dr::arange<UInt32>(count) * Stride;
+        Vec pos(dr::gather<StoredFloat>(data, base + 0u),
+                dr::gather<StoredFloat>(data, base + 1u),
+                dr::gather<StoredFloat>(data, base + 2u));
+
+        Vec lo = pos, hi = pos;
+        if constexpr (RadiusOffset >= 0) {
+            StoredFloat r =
+                dr::gather<StoredFloat>(data, base + (uint32_t) RadiusOffset);
+            lo = pos - r;
+            hi = pos + r;
+        }
+
+        // Reduce into a flat buffer holding the minimum and maximum corner
+        constexpr Value inf = dr::Infinity<Value>;
+        Value init[6] = { inf, inf, inf, -inf, -inf, -inf };
+        StoredFloat bounds = dr::load<StoredFloat>(init, 6);
+
+        Mask active = true;
+        for (uint32_t i = 0; i < 3; ++i) {
+            dr::scatter_reduce(ReduceOp::Min, bounds, lo[i], UInt32(i), active,
+                               ReduceMode::Local);
+            dr::scatter_reduce(ReduceOp::Max, bounds, hi[i], UInt32(i + 3),
+                               active, ReduceMode::Local);
+        }
+
+        StoredFloat corners = dr::migrate(bounds, JitBackend::None);
+        dr::sync_thread();
+
+        const Value *c = corners.data();
+        bbox.min = Type(c[0], c[1], c[2]);
+        bbox.max = Type(c[3], c[4], c[5]);
+    } else {
+        using ScalarValue = dr::scalar_t<StoredFloat>;
+        const ScalarValue *ptr = data.data();
+
+        for (uint32_t i = 0; i < count; ++i) {
+            const ScalarValue *p = ptr + (size_t) i * Stride;
+            if constexpr (RadiusOffset >= 0) {
+                ScalarValue r = p[RadiusOffset];
+                bbox.expand(Type(p[0] - r, p[1] - r, p[2] - r));
+                bbox.expand(Type(p[0] + r, p[1] + r, p[2] + r));
+            } else {
+                bbox.expand(Type(p[0], p[1], p[2]));
+            }
+        }
+    }
+
+    return bbox;
+}
+
 /// Print a string representation of the bounding box
-template <typename Point>
-std::ostream &operator<<(std::ostream &os, const BoundingBox<Point> &bbox) {
+template <typename Stream, typename Point>
+Stream &operator<<(Stream &os, const BoundingBox<Point> &bbox) {
     os << "BoundingBox" << type_suffix<Point>();
     if (dr::all(!bbox.valid()))
         os << "[invalid]";

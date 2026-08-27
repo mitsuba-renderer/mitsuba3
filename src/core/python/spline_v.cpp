@@ -68,7 +68,7 @@ void bind_spline(nb::module_ &m) {
                                               (uint32_t) values.size(), y,
                                               eps);
                  },
-                 "min"_a, "max_"_a, "values"_a, "y"_a, "eps"_a = 1e-6f,
+                 "min"_a, "max"_a, "values"_a, "y"_a, "eps"_a = 1e-6f,
                  D(spline, invert_1d))
             .def("invert_1d",
                  [](const FloatX &nodes,

@@ -43,8 +43,12 @@ endif()
 option(MI_PROFILER_ITTNOTIFY "Forward profiler events (to Intel VTune)?" OFF)
 option(MI_PROFILER_NVTX      "Forward profiler events (to NVIDIA Nsight)?" OFF)
 
-option(MI_STABLE_ABI "Build Python extension using the CPython stable ABI? (Only relevant when using scikit-build)" OFF)
-mark_as_advanced(MI_STABLE_ABI)
+option(MI_SPLIT_MODE "Build the Python extension in nanobind split mode? This requires the 'nanobind-backend' package at runtime." ON)
+
+# Wheels are always built in split mode
+if (SKBUILD)
+  set(MI_SPLIT_MODE ON)
+endif()
 
 # ----------------------------------------------------------
 #  Check if submodules have been checked out, or fail early
@@ -471,14 +475,6 @@ if (NOT SKBUILD)
         COMMENT "Building HTML documentation with Sphinx"
         USES_TERMINAL)
 
-    set(SPHINX_INPUT_DIR_API  "${CMAKE_CURRENT_SOURCE_DIR}/docs/docs_api")
-    set(SPHINX_OUTPUT_DIR_API "${CMAKE_CURRENT_BINARY_DIR}/html_api")
-
-    add_custom_target(mkdoc-api
-        ${SPHINX_EXECUTABLE} -b html "${SPHINX_INPUT_DIR_API}" "${SPHINX_OUTPUT_DIR_API}"
-        COMMENT "Building HTML documentation with Sphinx"
-        DEPENDS mitsuba-copy-python-src
-        USES_TERMINAL)
   endif()
 endif()
 

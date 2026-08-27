@@ -11,11 +11,11 @@ namespace dr = drjit;
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Convenience wrapper to simultaneously instantiate a host and a device
+ * Convenience wrapper to simultaneously instantiate a host and a device
  * version of a type
  *
  * This class implements a simple wrapper that replicates instance attributes
- * on the host and device. This is only relevant when \c DeviceType is a
+ * on the host and device. This is only relevant when ``DeviceType`` is a
  * JIT-compiled Dr.Jit array (when compiling the renderer in CUDA/LLVM mode).
  *
  * Why is this needed? Mitsuba plugins represent their internal state using
@@ -66,12 +66,6 @@ struct field<DeviceType, HostType,
     }
 private:
     DeviceType m_scalar;
-
-public:
-    void traverse_1_cb_ro(void * /*payload*/,
-                          drjit::detail::traverse_callback_ro) const {}
-    void traverse_1_cb_rw(void * /*payload*/,
-                          drjit::detail::traverse_callback_rw) {}
 };
 
 template <typename DeviceType, typename HostType>
@@ -120,14 +114,7 @@ private:
     HostType m_scalar;
 
 public:
-    void traverse_1_cb_ro(void *payload,
-                          drjit::detail::traverse_callback_ro fn) const {
-        drjit ::traverse_1_fn_ro(m_value, payload, fn);
-    }
-    void traverse_1_cb_rw(void *payload,
-                          drjit::detail::traverse_callback_rw fn) {
-        drjit ::traverse_1_fn_rw(m_value, payload, fn);
-    }
+    DRJIT_TRAVERSE(field, m_value)
 };
 
 /// Prints the canonical string representation of a field

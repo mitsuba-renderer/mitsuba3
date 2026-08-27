@@ -100,7 +100,7 @@ for details on this.
 
 ### Requirements
 
-- `Python >= 3.9`
+- `Python >= 3.10`
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
 - (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
 
@@ -146,7 +146,7 @@ When using Mitsuba 3 in academic projects, please cite:
     title = {Mitsuba 3 renderer},
     author = {Wenzel Jakob and Sébastien Speierer and Nicolas Roussel and Merlin Nimier-David and Delio Vicini and Tizian Zeltner and Baptiste Nicolet and Miguel Crespo and Vincent Leroy and Ziyi Zhang},
     note = {https://mitsuba-renderer.org},
-    version = {3.8.0},
+    version = {3.9.1},
     year = 2022
 }
 ```

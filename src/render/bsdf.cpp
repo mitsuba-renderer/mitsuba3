@@ -68,6 +68,9 @@ struct AttributeCallback : public TraversalCallback {
     };
 
     std::string name;
+
+    /// Was an attribute of this name found? Attributes that the BSDF does
+    /// not carry leave `result` at zero (see `BSDF::has_attribute()`)
     bool found;
     Type result;
     F1 func_object;
@@ -90,10 +93,6 @@ BSDF<Float, Spectrum>::eval_attribute(const std::string &name,
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
-    if (!cb.found)
-        if constexpr (!dr::is_jit_v<Float>)
-            Throw("Invalid attribute requested %s.", name.c_str());
-
     return cb.result;
 }
 
@@ -107,10 +106,6 @@ BSDF<Float, Spectrum>::eval_attribute_1(const std::string& name,
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
 
-    if (!cb.found)
-        if constexpr (!dr::is_jit_v<Float>)
-            Throw("Invalid attribute requested %s.", name.c_str());
-
     return cb.result;
 }
 
@@ -123,10 +118,6 @@ BSDF<Float, Spectrum>::eval_attribute_3(const std::string& name,
         [&](Texture *texture) { return texture->eval_3(si, active); }
     );
     const_cast<BSDF<Float, Spectrum>*>(this)->traverse((TraversalCallback *) &cb);
-
-    if (!cb.found)
-        if constexpr (!dr::is_jit_v<Float>)
-            Throw("Invalid attribute requested %s.", name.c_str());
 
     return cb.result;
 }
@@ -236,6 +227,11 @@ std::string type_mask_to_string(Index type_mask) {
         add_separator();
         oss << "anisotropic ";
         type_mask = type_mask & ~BSDFFlags::Anisotropic;
+    }
+    if (has_flag(type_mask, BSDFFlags::NormalMapped)) {
+        add_separator();
+        oss << "normal_mapped ";
+        type_mask = type_mask & ~BSDFFlags::NormalMapped;
     }
     if (has_flag(type_mask, BSDFFlags::FrontSide)) {
         add_separator();

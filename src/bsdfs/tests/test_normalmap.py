@@ -180,3 +180,100 @@ def test04_use_shadowing_function(variants_vec_backends_once_rgb):
     assert dr.all(bsdf2.sample(context, si, 0.5, (0.5, 0.5))[1] < 0.05)
     assert dr.all(bsdf2.eval(context, si, wo) < 0.01)
     assert dr.all(bsdf2.eval_pdf(context, si, wo)[0] < 0.01)
+
+
+def test05_degenerate_texels(variants_vec_backends_once_rgb):
+    """A texel decoding to the zero vector leaves the nested BSDF untouched,
+    and one decoding into the tangent plane still yields a finite frame."""
+    nested = mi.load_dict({'type': 'roughconductor', 'alpha_u': 0.4,
+                           'alpha_v': 0.1, 'material': 'Al'})
+
+    def normalmap(rgb):
+        return mi.load_dict({
+            'type': 'normalmap', 'nested_bsdf': nested,
+            'normalmap': {'type': 'bitmap', 'raw': True,
+                          'bitmap': mi.Bitmap(np.full((4, 4, 3), rgb,
+                                                      np.float32))}})
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.n = mi.Normal3f(0, 1, 0)
+    si.sh_frame = mi.Frame3f(si.n)
+    si.wi = mi.Vector3f(0, 0, 1)
+
+    ctx = mi.BSDFContext()
+    wo = dr.normalize(mi.Vector3f([0.3, -0.5], [0.2, 0.1], [0.9, 0.7]))
+
+    # Decodes to (0, 0, 0), leaving the shading frame in place
+    zero = normalmap([0.5, 0.5, 0.5])
+    dr.assert_allclose(zero.eval(ctx, si, wo), nested.eval(ctx, si, wo))
+    dr.assert_allclose(zero.pdf(ctx, si, wo), nested.pdf(ctx, si, wo))
+
+    # Decodes to (1, 0, 0), where the tangent has no projection onto the
+    # perturbed tangent plane, and to (0, 0, -1), which faces away
+    for rgb in [[1.0, 0.5, 0.5], [0.5, 0.5, 0.0]]:
+        bsdf = normalmap(rgb)
+        assert dr.all(dr.isfinite(bsdf.eval(ctx, si, wo)), axis=None)
+        assert dr.all(dr.isfinite(bsdf.pdf(ctx, si, wo)), axis=None)
+        bs, weight = bsdf.sample(ctx, si, 0.4, mi.Point2f(0.3, 0.7))
+        assert dr.all(dr.isfinite(weight), axis=None)
+        assert dr.all(dr.isfinite(bs.pdf), axis=None)
+
+
+def test06_tangent_requirement(variant_scalar_rgb):
+    """The tangent requirement has to survive the wrappers a scene applies."""
+    inner = {'type': 'normalmap',
+             'normalmap': {'type': 'srgb', 'color': [0.5, 0.5, 1.0]},
+             'nested_bsdf': {'type': 'diffuse'}}
+
+    for wrapped in [inner,
+                    {'type': 'twosided', 'a': inner},
+                    {'type': 'mask', 'opacity': 0.5, 'a': inner},
+                    {'type': 'blendbsdf', 'weight': 0.5, 'a': inner,
+                     'b': {'type': 'diffuse'}}]:
+        bsdf = mi.load_dict(wrapped)
+        assert bsdf.flags() & int(mi.BSDFFlags.NeedsTangents), wrapped['type']
+
+
+def test07_rotated_normals(variants_vec_backends_once_rgb):
+    """A normal map encoding a rotation about the shading frame's Y axis has
+    to reproduce exactly that rotation, all the way up to a normal that
+    approaches the tangent plane. An anisotropic lobe observes the tangent,
+    so a frame construction that gives up short of the tangent plane shows up
+    here as a jump."""
+    nested_dict = {'type': 'roughconductor', 'alpha_u': 0.6, 'alpha_v': 0.05,
+                   'material': 'Al'}
+    nested = mi.load_dict(nested_dict)
+    ctx = mi.BSDFContext()
+    identity = mi.Frame3f(mi.Vector3f(1, 0, 0), mi.Vector3f(0, 1, 0),
+                          mi.Vector3f(0, 0, 1))
+
+    # Directions in the perturbed frame, both tilted against the rotation so
+    # that they stay on the front side of the unperturbed frame as well
+    wi = dr.normalize(mi.Vector3f(-0.5, 0.15, 0.85))
+    wo = dr.normalize(mi.Vector3f(-0.2, -0.15, 0.97))
+
+    flat = dr.zeros(mi.SurfaceInteraction3f)
+    flat.sh_frame, flat.wi = identity, wi
+    reference = nested.eval(ctx, flat, wo)
+    assert dr.all(reference > 0.1, axis=None)
+
+    for degrees in [0, 45, 80, 87, 89, 89.9]:
+        theta = np.radians(degrees)
+        s, c = float(np.sin(theta)), float(np.cos(theta))
+        rot = mi.Frame3f(mi.Vector3f(c, 0, -s), mi.Vector3f(0, 1, 0),
+                         mi.Vector3f(s, 0, c))
+        bsdf = mi.load_dict({
+            'type': 'normalmap', 'nested_bsdf': nested_dict,
+            'use_shadowing_function': False,
+            'normalmap': {
+                'type': 'bitmap', 'raw': True,
+                'bitmap': mi.Bitmap(np.full((4, 4, 3),
+                                            [(s + 1) / 2, 0.5, (c + 1) / 2],
+                                            np.float32))}})
+
+        si = dr.zeros(mi.SurfaceInteraction3f)
+        si.n, si.sh_frame = mi.Normal3f(0, 0, 1), identity
+        si.uv, si.wi = mi.Point2f(0.5, 0.5), rot.to_world(wi)
+
+        dr.assert_allclose(bsdf.eval(ctx, si, rot.to_world(wo)), reference,
+                           rtol=1e-4, atol=1e-5)

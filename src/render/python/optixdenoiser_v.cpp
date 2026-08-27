@@ -49,4 +49,61 @@ MI_PY_EXPORT(OptixDenoiser) {
             D(OptixDenoiser, operator_call, 2));
 }
 
+#else // defined(MI_ENABLE_CUDA)
+
+#include <nanobind/nanobind.h>
+#include <mitsuba/core/bitmap.h>
+#include <mitsuba/render/fwd.h>
+#include <mitsuba/python/python.h>
+#include <drjit/tensor.h>
+
+#include <nanobind/stl/string.h>
+
+NAMESPACE_BEGIN(mitsuba)
+
+// Stand-in for the denoiser on builds without CUDA support. It mirrors the
+// interface of the real class so that the generated documentation does not
+// depend on the platform it was produced on, and raises an exception when used.
+template <typename Float, typename Spectrum> struct OptixDenoiserStub : Object {
+    [[noreturn]] static void fail() {
+        Throw("OptixDenoiser is only available in CUDA-enabled builds of Mitsuba.");
+    }
+};
+
+NAMESPACE_END(mitsuba)
+
+MI_PY_EXPORT(OptixDenoiser) {
+    MI_PY_IMPORT_TYPES()
+    using Denoiser = OptixDenoiserStub<Float, Spectrum>;
+
+    nb::class_<Denoiser, Object>(m, "OptixDenoiser", D(OptixDenoiser))
+        .def(
+            "__init__",
+            [](Denoiser *, const ScalarVector2u &, bool, bool, bool, bool) {
+                Denoiser::fail();
+            },
+            "input_size"_a, "albedo"_a = false, "normals"_a = false,
+            "temporal"_a = false, "denoise_alpha"_a = false,
+            D(OptixDenoiser, OptixDenoiser))
+        .def(
+            "__call__",
+            [](const Denoiser &, const TensorXf &, const TensorXf &,
+               const TensorXf &, const nb::object &, const TensorXf &,
+               const TensorXf &) -> TensorXf { Denoiser::fail(); },
+            "noisy"_a, "albedo"_a = TensorXf(), "normals"_a = TensorXf(),
+            "to_sensor"_a = nb::none(), "flow"_a = TensorXf(),
+            "previous_denoised"_a = TensorXf(), D(OptixDenoiser, operator_call))
+        .def(
+            "__call__",
+            [](const Denoiser &, const ref<Bitmap> &, const std::string &,
+               const std::string &, const nb::object &, const std::string &,
+               const std::string &, const std::string &) -> ref<Bitmap> {
+                Denoiser::fail();
+            },
+            "noisy"_a, "albedo_ch"_a = "",
+            "normals_ch"_a = "", "to_sensor"_a = nb::none(), "flow_ch"_a = "",
+            "previous_denoised_ch"_a = "", "noisy_ch"_a = "<root>",
+            D(OptixDenoiser, operator_call, 2));
+}
+
 #endif // defined(MI_ENABLE_CUDA)

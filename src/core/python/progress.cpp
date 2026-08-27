@@ -61,6 +61,9 @@ public:
         }
 
         nb::gil_scoped_acquire gil;
+        if (!gil.is_valid())
+            return;
+
         m_display_html(html_string, "raw"_a = true);
         m_flush();
     }
@@ -69,10 +72,12 @@ public:
         std::string_view /* formatted */, std::string_view eta,
         const void * /* ptr */) override {
         nb::gil_scoped_acquire gil;
+        if (!gil.is_valid())
+            return;
 
-        /* Heuristic: display the bar when it is created,
-         * or when progress starts over.
-         * Otherwise, the bar is only ever shown once. */
+        // Heuristic: display the bar when it is created,
+        // or when progress starts over.
+        // Otherwise, the bar is only ever shown once.
         make_and_display_progress_bar(progress == 0.f);
 
         m_bar.attr("value") = progress;
@@ -118,8 +123,8 @@ private:
 #endif
 
 MI_PY_EXPORT(ProgressReporter) {
-    /* Install a custom appender for log + progress messages if Mitsuba is
-     * running within Jupyter notebook */
+    // Install a custom appender for log + progress messages if Mitsuba is
+    // running within Jupyter notebook
     try {
         nb::object ipython = nb::getattr(nb::builtins(), "get_ipython", nb::none());
         if (ipython.is(nb::none()))

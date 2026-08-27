@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 NAMESPACE_BEGIN(math)
 
 // -----------------------------------------------------------------------
-//! @{ \name Useful constants in various precisions
+// Useful constants in various precisions
 // -----------------------------------------------------------------------
 
 #if (MI_ENABLE_EMBREE)
@@ -22,11 +22,10 @@ template <typename T> constexpr auto RayEpsilon = dr::Epsilon<T> * 1500;
 template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
 template <typename T> constexpr auto ShapeEpsilon = RayEpsilon<T> / 80;
 
-//! @}
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-//! @{ \name Legendre functions
+// Legendre functions
 // -----------------------------------------------------------------------
 
 /// Evaluate the l-th Legendre polynomial using recurrence
@@ -148,15 +147,14 @@ std::pair<Value, Value> legendre_pd_diff(int l, Value x) {
     }
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 // -----------------------------------------------------------------------
-//! @{ \name Miscellaneous mathematical helper functions
+// Miscellaneous mathematical helper functions
 // -----------------------------------------------------------------------
 
 /**
- * \brief Compare the difference in ULPs between a reference value and another
+ * Compare the difference in ULPs between a reference value and another
  * given floating point number
  */
 template <typename T> T ulpdiff(T ref, T val) {
@@ -201,34 +199,32 @@ template <typename T> T log2i_ceil(T value) {
 }
 
 /**
- * \brief Find an interval in an ordered set
+ * Find an interval in an ordered set
  *
- * This function performs a binary search to find an index \c i such that
- * <tt>pred(i)</tt> is \c true and <tt>pred(i+1)</tt> is \c false, where \c pred
+ * This function performs a binary search to find an index ``i`` such that
+ * ``pred(i)`` is ``True`` and ``pred(i+1)`` is ``False``, where ``pred``
  * is a user-specified predicate that monotonically decreases over this range
- * (i.e. max one \c true -> \c false transition).
+ * (i.e. max one ``True`` -> ``False`` transition).
  *
- * The predicate will be evaluated exactly <tt>floor(log2(size)) + 1<tt> times.
- * Note that the template parameter \c Index is automatically inferred from the
- * supplied predicate, which takes an index or an index vector of type \c Index
+ * The predicate will be evaluated exactly ``floor(log2(size)) + 1`` times.
+ * Note that the template parameter ``Index`` is automatically inferred from the
+ * supplied predicate, which takes an index or an index vector of type ``Index``
  * as input argument and can (optionally) take a mask argument as well. In the
  * vectorized case, each vector lane can use different predicate.
- * When \c pred is \c false for all entries, the function returns \c 0, and
- * when it is \c true for all cases, it returns <tt>size-2<tt>.
+ * When ``pred`` is ``False`` for all entries, the function returns ``0``, and
+ * when it is ``True`` for all cases, it returns ``size-2``.
  *
  * The main use case of this function is to locate an interval (i, i+1)
  * in an ordered list.
  *
- * \code
- * float my_list[] = { 1, 1.5f, 4.f, ... };
+ * .. code-block:: python
  *
- * UInt32 index = find_interval(
- *     sizeof(my_list) / sizeof(float),
- *     [](UInt32 index, dr::mask_t<UInt32> active) {
- *         return dr::gather<Float>(my_list, index, active) < x;
- *     }
- * );
- * \endcode
+ *    my_list = mi.Float(1, 1.5, 4, ...)
+ *
+ *    index = mi.math.find_interval(
+ *        len(my_list),
+ *        lambda index: dr.gather(mi.Float, my_list, index) < x
+ *    )
  */
 template <typename Index, typename Predicate>
 MI_INLINE Index find_interval(dr::scalar_t<Index> size,
@@ -237,7 +233,7 @@ MI_INLINE Index find_interval(dr::scalar_t<Index> size,
 }
 
 /**
- * \brief This function computes a suitable middle point for use in the \ref bisect() function
+ * This function computes a suitable middle point for use in the ``bisect()`` function
  *
  * To mitigate the issue of varying density of floating point numbers on the
  * number line, the floats are reinterpreted as unsigned integers. As long as
@@ -273,15 +269,15 @@ Scalar middle(Scalar left, Scalar right) {
 }
 
 /**
- * \brief Bisect a floating point interval given a predicate function
+ * Bisect a floating point interval given a predicate function
  *
- * This function takes an interval [\c left, \c right] and a predicate \c pred
- * as inputs. It assumes that <tt>pred(left)==true</tt> and
- * <tt>pred(right)==false</tt>. It also assumes that there is a single floating
- * point number \c t such that \c pred is \c true for all values in the range
- * [\c left, \c t] and \c false for all values in the range (\c t, \c right].
+ * This function takes an interval [``left``, ``right``] and a predicate ``pred``
+ * as inputs. It assumes that ``pred(left)==true`` and
+ * ``pred(right)==false``. It also assumes that there is a single floating
+ * point number ``t`` such that ``pred`` is ``True`` for all values in the range
+ * [``left``, ``t``] and ``False`` for all values in the range (``t``, ``right``].
  *
- * The bisection search then finds and returns \c t by repeatedly splitting the
+ * The bisection search then finds and returns ``t`` by repeatedly splitting the
  * input interval. The number of iterations is roughly bounded by the number of
  * bits of the underlying floating point representation.
  */
@@ -302,24 +298,24 @@ Scalar bisect(Scalar left, Scalar right, const Predicate &pred) {
 }
 
 /**
- * \brief Compute the Chi^2 statistic and degrees of freedom of the given
+ * Compute the :math:`\chi^2` statistic and degrees of freedom of the given
  * arrays while pooling low-valued entries together
  *
  * Given a list of observations counts (``obs[i]``) and expected observation
- * counts (``exp[i]``), this function accumulates the Chi^2 statistic, that is,
- * ``(obs-exp)^2 / exp`` for each element ``0, ..., n-1``.
+ * counts (``exp[i]``), this function accumulates the :math:`\chi^2`
+ * statistic, that is, ``(obs-exp)^2 / exp`` for each element ``0, ..., n-1``.
  *
- * Minimum expected cell frequency. The Chi^2 test statistic is not useful when
- * when the expected frequency in a cell is low (e.g. less than 5), because
- * normality assumptions break down in this case. Therefore, the implementation
- * will merge such low-frequency cells when they fall below the threshold
- * specified here. Specifically, low-valued cells with ``exp[i] < pool_threshold``
- * are pooled into larger groups that are above the threshold before their
- * contents are added to the Chi^2 statistic.
+ * Minimum expected cell frequency. The :math:`\chi^2` test statistic is not
+ * useful when the expected frequency in a cell is low (e.g. less than 5),
+ * because normality assumptions break down in this case. Therefore, the
+ * implementation will merge such low-frequency cells when they fall below
+ * the threshold specified here. Specifically, low-valued cells with
+ * ``exp[i] < pool_threshold`` are pooled into larger groups that are above
+ * the threshold before their contents are added to the :math:`\chi^2`
+ * statistic.
  *
  * The function returns the statistic value, degrees of freedom, below-threshold
  * entries and resulting number of pooled regions.
- *
  */
 template <typename Scalar> std::tuple<Scalar, size_t, size_t, size_t>
 chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
@@ -352,8 +348,10 @@ chi2(const Scalar *obs, const Scalar *exp, Scalar pool_threshold, size_t n) {
 }
 
 /**
- * \brief Solve a quadratic equation of the form a*x^2 + b*x + c = 0.
- * \return \c true if a solution could be found
+ * Solve a quadratic equation of the form :math:`a x^2 + b x + c = 0`.
+ *
+ * Returns:
+ *     ``True`` if a solution could be found
  */
 template <typename Value>
 MI_INLINE std::tuple<dr::mask_t<Value>, Value, Value>
@@ -361,36 +359,35 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     using Scalar = dr::scalar_t<Value>;
     using Mask = dr::mask_t<Value>;
 
-    /* Is this perhaps a linear equation? */
+    // Is this perhaps a linear equation?
     Mask linear_case = a == Scalar(0);
 
-    /* If so, we require b != 0 */
+    // If so, we require b != 0
     Mask valid_linear = linear_case && (b != Scalar(0));
 
-    /* Initialize solution with that of linear equation */
+    // Initialize solution with that of linear equation
     Value x0, x1;
     x0 = x1 = -c / b;
 
-    /* Check if the quadratic equation is solvable */
+    // Check if the quadratic equation is solvable
     Value discrim = dr::fmsub(b, b, Scalar(4) * a * c);
     Mask valid_quadratic = !linear_case && (discrim >= Scalar(0));
 
     if (likely(dr::any_or<true>(valid_quadratic))) {
         Value sqrt_discrim = dr::sqrt(discrim);
 
-        /* Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
-         *
-         * Based on the observation that one solution is always
-         * accurate while the other is not. Finds the solution of
-         * greater magnitude which does not suffer from loss of
-         * precision and then uses the identity x1 * x2 = c / a
-         */
+        // Numerically stable version of (-b (+/-) sqrt_discrim) / (2 * a)
+        //
+        // Based on the observation that one solution is always
+        // accurate while the other is not. Finds the solution of
+        // greater magnitude which does not suffer from loss of
+        // precision and then uses the identity x1 * x2 = c / a
         Value temp = -Scalar(0.5) * (b + dr::copysign(sqrt_discrim, b));
 
         Value x0p = temp / a,
               x1p = c / temp;
 
-        /* Order the results so that x0 < x1 */
+        // Order the results so that x0 < x1
         Value x0m = dr::minimum(x0p, x1p),
               x1m = dr::maximum(x0p, x1p);
 
@@ -401,7 +398,6 @@ solve_quadratic(const Value &a, const Value &b, const Value &c) {
     return { valid_linear || valid_quadratic, x0, x1 };
 }
 
-//! @}
 // -----------------------------------------------------------------------
 
 template <typename Array, size_t... Index, typename Value = dr::value_t<Array>>
@@ -415,11 +411,11 @@ DRJIT_INLINE Array sample_shifted(const Value &sample, std::index_sequence<Index
 }
 
 /**
- * \brief Map a uniformly distributed sample to an array of samples with shifts
+ * Map a uniformly distributed sample to an array of samples with shifts
  *
- * Given a floating point value \c x on the interval <tt>[0, 1]</tt> return a
- * floating point array with values <tt>[x, x+offset, x+2*offset, ...]</tt>,
- * where \c offset is the reciprocal of the array size. Entries that become
+ * Given a floating point value ``x`` on the interval ``[0, 1]`` return a
+ * floating point array with values ``[x, x+offset, x+2*offset, ...]``,
+ * where ``offset`` is the reciprocal of the array size. Entries that become
  * greater than 1.0 wrap around to the other side of the unit interval.
  *
  * This operation is useful to implement a type of correlated stratification in

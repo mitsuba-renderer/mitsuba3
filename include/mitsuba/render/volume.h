@@ -16,7 +16,7 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     // ======================================================================
-    //! @{ \name Volume interface
+    // Volume interface
     // ======================================================================
 
     /// Evaluate the volume at the given surface interaction, with color processing.
@@ -35,7 +35,7 @@ public:
     virtual dr::Array<Float, 6> eval_6(const Interaction3f &it, Mask active = true) const;
 
     /**
-     * \brief Evaluate this volume as a n-channel float quantity
+     * Evaluate this volume as a n-channel float quantity
      *
      * This interface is specifically intended to encode a variable number of parameters.
      * Pointer allocation/deallocation must be performed by the caller.
@@ -53,7 +53,7 @@ public:
     virtual ScalarFloat max() const;
 
     /**
-     * \brief In the case of a multi-channel volume, this function returns
+     * In the case of a multi-channel volume, this function returns
      * the maximum value for each channel.
      *
      * Pointer allocation/deallocation must be performed by the caller.
@@ -64,22 +64,21 @@ public:
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
     /**
-     * \brief Returns the resolution of the volume, assuming that it is based
+     * Returns the resolution of the volume, assuming that it is based
      * on a discrete representation.
      *
-     * The default implementation returns <tt>(1, 1, 1)</tt>
+     * The default implementation returns ``(1, 1, 1)``
      */
     virtual ScalarVector3i resolution() const;
 
     /**
-     * \brief Returns the number of channels stored in the volume
+     * Returns the number of channels stored in the volume
      *
-     *  When the channel count is zero, it indicates that the volume
-     *  does not support per-channel queries.
+     * When the channel count is zero, it indicates that the volume
+     * does not support per-channel queries.
      */
     uint32_t channel_count() const { return m_channel_count; }
 
-    //! @}
     // ======================================================================
 
     /// Returns a human-reable summary

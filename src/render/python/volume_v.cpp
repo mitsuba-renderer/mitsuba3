@@ -14,7 +14,7 @@
 MI_VARIANT class PyVolume : public Volume<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Volume)
-    NB_TRAMPOLINE(Volume, 8);
+    NB_TRAMPOLINE(Volume);
 
     PyVolume(const Properties &props) : Volume(props) { };
 
@@ -63,8 +63,6 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         NB_OVERRIDE(parameters_changed, keys);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Volume)
 };
 
 MI_PY_EXPORT(Volume) {

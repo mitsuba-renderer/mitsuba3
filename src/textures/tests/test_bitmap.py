@@ -338,3 +338,43 @@ def test11_u8_small_bitmap_upsample(variants_vec_backends_once_rgb, tmpdir):
     si.uv = [0.5, 0.5]
     val = tex.eval_3(si)
     assert dr.all(val > 0)
+
+
+@pytest.mark.parametrize('channels', [1, 3])
+def test12_eval_grad_anisotropic(variant_scalar_rgb, channels):
+    """The gradient follows the ``to_uv`` transform, including when a
+    non-square resolution scales the two axes differently."""
+    import numpy as np
+    h, w = 16, 64
+    r, c = np.meshgrid(np.arange(h), np.arange(w), indexing='ij')
+    plane = 0.3 * c / (w - 1) + 0.7 * r / (h - 1)
+    values = np.float32(plane if channels == 1 else
+                        np.stack([plane, 0.5 * plane[:, ::-1], 0.25 + 0.2 * plane], -1))
+
+    # Keep the unit square fixed so that the probes below stay clear of the
+    # clamped border, where the gradient vanishes and the test says nothing
+    def centered(t):
+        return (mi.ScalarTransform4f().translate([0.5, 0.5, 0]) @ t @
+                mi.ScalarTransform4f().translate([-0.5, -0.5, 0]))
+
+    delta = 1e-3
+    for transform in [mi.ScalarTransform4f(),
+                      centered(mi.ScalarTransform4f().scale([2, 1.8, 1])),
+                      centered(mi.ScalarTransform4f().rotate([0, 0, 1], 30)),
+                      centered(mi.ScalarTransform4f().rotate([0, 0, 1], -50)
+                               .scale([2, 1, 1]))]:
+        tex = mi.load_dict({'type': 'bitmap', 'raw': True, 'to_uv': transform,
+                            'wrap_mode': 'clamp', 'bitmap': mi.Bitmap(values)})
+        si = mi.SurfaceInteraction3f()
+
+        for uv in [(0.37, 0.51), (0.62, 0.28), (0.45, 0.45)]:
+            def eval_at(du, dv):
+                si.uv = mi.Point2f(uv[0] + du, uv[1] + dv)
+                return tex.eval_1(si)
+
+            fd = mi.Vector2f((eval_at(delta, 0) - eval_at(-delta, 0)) / (2 * delta),
+                             (eval_at(0, delta) - eval_at(0, -delta)) / (2 * delta))
+            si.uv = mi.Point2f(*uv)
+            grad = tex.eval_1_grad(si)
+            assert dr.all(dr.abs(grad) > 1e-2), (transform, uv)
+            assert dr.allclose(grad, fd, rtol=1e-3, atol=1e-3)

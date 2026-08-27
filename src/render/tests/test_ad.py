@@ -44,9 +44,9 @@ def make_simple_scene(res=1, integrator="path"):
 
 if hasattr(dr, 'JitFlag'):
     jit_flags_options = [
-        {dr.JitFlag.VCallRecord : False, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
-        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : False, dr.JitFlag.LoopRecord : False},
-        {dr.JitFlag.VCallRecord : True, dr.JitFlag.VCallOptimize : True, dr.JitFlag.LoopRecord : False},
+        {dr.JitFlag.SymbolicCalls : False, dr.JitFlag.OptimizeCalls : False, dr.JitFlag.SymbolicLoops : False},
+        {dr.JitFlag.SymbolicCalls : True, dr.JitFlag.OptimizeCalls : False, dr.JitFlag.SymbolicLoops : False},
+        {dr.JitFlag.SymbolicCalls : True, dr.JitFlag.OptimizeCalls : True, dr.JitFlag.SymbolicLoops : False},
     ]
 else:
     jit_flags_options = []

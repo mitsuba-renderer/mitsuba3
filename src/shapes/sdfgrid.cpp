@@ -152,15 +152,15 @@ public:
                 Log(Error, "\"%s\": file does not exist!", file_path);
             VolumeGrid<float, Color<float, 3>> vol_grid(file_path);
             ScalarVector3i res = vol_grid.size();
-            size_t shape[4]    = { (size_t) res.z(), (size_t) res.y(),
-                                   (size_t) res.x(), 1 };
             if (vol_grid.channel_count() != 1)
                 Throw("SDF grid data source \"%s\" has %lu channels, expected 1.",
                       file_path, vol_grid.channel_count());
 
             m_grid_texture = InputTexture3f(
-                InputTensorXf(vol_grid.data(), 4, shape), true, true,
-                dr::FilterMode::Linear, dr::WrapMode::Clamp);
+                InputTensorXf(vol_grid.data(), { (size_t) res.z(),
+                                                 (size_t) res.y(),
+                                                 (size_t) res.x(), 1 }),
+                true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else if (props.has_property("grid")) {
             const TensorXf& tensor = props.get_any<TensorXf>("grid");
             if (tensor.ndim() != 4)
@@ -280,7 +280,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -308,11 +308,10 @@ public:
         return si;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
@@ -342,7 +341,6 @@ public:
                                 uint32_t ray_flags, uint32_t recursion_depth,
                                 Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
@@ -351,7 +349,6 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         AffineTransform4f to_world  = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
@@ -359,80 +356,34 @@ public:
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
                                       m_grid_texture.value());
 
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local_p =
-                    dr::detach(to_object * ray(pi.t));
-                Vector3f local_grad = dr::detach(sdf_grad(local_p));
-                Normal3f local_n    = dr::normalize(local_grad);
-                Ray3f local_ray = dr::detach(to_object * ray);
+        Point3f local_p = dr::detach(to_object * ray(pi.t));
+        Vector3f local_grad = dr::detach(sdf_grad(local_p));
+        Normal3f local_n = dr::normalize(local_grad);
 
-                /* Note: Only when applying a motion to the entire shape is the
-                 * interaction point truly "glued" to the shape. For a single
-                 * voxel, the motion of the surface is ambiguous and therefore
-                 * the interaction point is not "glued" to the shape. */
+        si.t = pi.t;
+        si.p = dr::detach(to_world) * local_p;
+        si.n = dr::normalize(dr::detach(to_world) * local_n);
 
-                // Capture gradients of `m_grid_texture`
-                Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
-                    rescale_point(local_p)).x();
-                Point3f local_motion =
-                    sdf_value * (-local_n) / dr::dot(local_n, local_grad);
-                local_p = dr::replace_grad(local_p, local_motion);
-
-                // Capture gradients of `m_to_world`
-                si.p = to_world * local_p;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) /
-                                dr::squared_norm(ray.d));
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the grid parameters) and
-                   then compute the corresponding point along the ray. (Instead
-                   of computing an intersection with the SDF, we compute an
-                   intersection with the tangent plane.) */
-                Point3f local_p =
-                    dr::detach(to_object * ray(pi.t));
-                Ray3f local_ray = dr::detach(to_object * ray);
-
-                /// Differentiable tangent plane normal
-                // Capture gradients of `m_grid_texture`
-                Normal3f local_n = dr::normalize(sdf_grad(local_p));
-                // Capture gradients of `m_to_world`
-                Normal3f n = to_world * local_n;
-
-                /// Differentiable tangent plane point
-                // Capture gradients of `m_grid_texture`
-                Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
-                    rescale_point(local_p)).x();
-
-                Float t_diff =
-                    sdf_value / dr::dot(dr::detach(local_n), -local_ray.d);
-                t_diff = dr::replace_grad(pi.t, t_diff);
-                // Capture gradients of `m_to_world`
-                Point3f p = to_world * local_ray(t_diff);
-
-                si.t = dr::dot(p - ray.o, n) / dr::dot(n, ray.d);
-                si.p = ray(si.t);
-            }
-        } else {
-            si.t = pi.t;
-            si.p = ray(si.t);
+        Point3f p_att = si.p;
+        if constexpr (dr::is_diff_v<Float>) {
+            // Position at the detached parameterization. Only a motion of the
+            // entire shape truly glues the interaction point to the surface:
+            // for a single voxel the motion is ambiguous.
+            Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
+                rescale_point(local_p)).x();
+            Point3f local_motion =
+                sdf_value * (-local_n) / dr::dot(local_n, local_grad);
+            p_att = to_world * dr::replace_grad(local_p, local_motion);
         }
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
+        si.attach_motion(ray, p_att, ray_flags);
 
         Vector3f grad = sdf_grad(m_to_world.value().inverse() * si.p);
 
         si.n =
             dr::normalize(m_to_world.value() * Normal3f(grad));
 
-        if (likely(has_flag(ray_flags, RayFlags::ShadingFrame))) {
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
                 case Analytic:
                     si.sh_frame.n = si.n;
@@ -445,11 +396,6 @@ public:
                     Throw("Unknown normal computation.");
             }
         }
-
-        si.uv    = Point2f(0.f, 0.f);
-        si.dp_du = Vector3f(0.f);
-        si.dp_dv = Vector3f(0.f);
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape    = this;
@@ -833,7 +779,7 @@ private:
                  Point<FloatP, 2>(0.f, 0.f), ((uint32_t) -1), prim_index };
     }
 
-    /* \brief Solve cubic polynomial that gives solution to voxel intersection
+    /* Solve cubic polynomial that gives solution to voxel intersection
      *
      *  M ARMITT, G., K LEER , A., WALD , I., AND F RIEDRICH , H.
      *  2004. Fast and accurate ray-voxel intersection techniques for
@@ -911,7 +857,7 @@ private:
         return { active, t };
     }
 
-    /* \brief Given an index of the flat SDFGrid data (voxel corners), return
+    /* Given an index of the flat SDFGrid data (voxel corners), return
      * the associated voxel position
      */
     MI_INLINE ScalarVector3u to_voxel_position(uint32_t index) const {
@@ -931,7 +877,7 @@ private:
         return { x, y, z };
     }
 
-    /* \brief Given a voxel position, returns the corresponding voxel index
+    /* Given a voxel position, returns the corresponding voxel index
      * relative to the flat array of SDFGrid data. In particular, the returned
      * index maps to the bottom-left corner of the associated voxel
      */
@@ -944,7 +890,7 @@ private:
         return v.z() * shape_v[1] * shape_v[0] + v.y() * shape_v[0] + v.x();
     }
 
-    /* \brief Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
+    /* Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
      * its corresponding point in the texture. This is usually necessary because
      * dr::Texture objects assume that the value of a pixel is positionned in
      * the middle of the pixel. For a 3D grid, this means that values are not
@@ -958,7 +904,7 @@ private:
         };
     }
 
-    /* \brief Given the voxel position, returns tight bounding box around the
+    /* Given the voxel position, returns tight bounding box around the
      * surface.
      *
      *  Tight Bounding Boxes for Voxels and Bricks in a Signed Distance Field
@@ -1049,7 +995,7 @@ private:
         return { occupied_mask, bbox };
     };
 
-    /* \brief Only computes AABBs for voxel that contain a surface in it.
+    /* Only computes AABBs for voxel that contain a surface in it.
      * Returns a pointer to the array of AABBs, a pointer to an array of voxel
      * indices of the former AABBs and the count of voxels with surface in them.
      *
@@ -1097,13 +1043,13 @@ private:
                 stride = sizeof(InputScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
             m_jit_bboxes = dr::zeros<InputFloat>(2 * stride * max_voxel_count);
-            dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied);
-            dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied);
-            dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied);
-            dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied);
-            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied);
+            dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied, ReduceMode::NoConflicts);
             dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
             aabbs_ptr = (void *) m_jit_bboxes.data();

@@ -1,5 +1,6 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/zstream.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
@@ -16,7 +17,6 @@ Serialized mesh loader (:monosp:`serialized`)
 ---------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 5
 
  * - filename
    - |string|
@@ -43,40 +43,8 @@ Serialized mesh loader (:monosp:`serialized`)
    - Specifies an optional linear object-to-world transformation.
      (Default: none, i.e. object space = world space)
 
- * - vertex_count
-   - |int|
-   - Total number of vertices
-   - |exposed|
-
- * - face_count
-   - |int|
-   - Total number of faces
-   - |exposed|
-
- * - faces
-   - :paramtype:`uint32[]`
-   - Face indices buffer (flatten)
-   - |exposed|
-
- * - vertex_positions
-   - :paramtype:`float[]`
-   - Vertex positions buffer (flatten) pre-multiplied by the object-to-world transformation.
-   - |exposed|, |differentiable|, |discontinuous|
-
- * - vertex_normals
-   - :paramtype:`float[]`
-   - Vertex normals buffer (flatten)  pre-multiplied by the object-to-world transformation.
-   - |exposed|, |differentiable|, |discontinuous|
-
- * - vertex_texcoords
-   - :paramtype:`float[]`
-   - Vertex texcoords buffer (flatten)
-   - |exposed|, |differentiable|
-
- * - (Mesh attribute)
-   - :paramtype:`float[]`
-   - Mesh attribute buffer (flatten)
-   - |exposed|, |differentiable|
+In addition, this plugin exposes the standard mesh state parameters
+documented in :ref:`sec-shape-mesh-parameters`.
 
 The serialized mesh format represents the most space and time-efficient way
 of getting geometry information into Mitsuba 3. It stores indexed triangle meshes
@@ -89,8 +57,8 @@ Format description
 ******************
 
 The :monosp:`serialized` file format uses the little endian encoding, hence
-all fields below should be interpreted accordingly. The contents are structured as
-follows:
+all fields below should be interpreted accordingly. The contents of a
+version 5 file are structured as follows:
 
 .. figtable::
     :label: table-serialized-format
@@ -104,7 +72,7 @@ follows:
         * - :monosp:`uint16`
           - File format identifier: :code:`0x041C`
         * - :monosp:`uint16`
-          - File version identifier. Currently set to :code:`0x0004`
+          - File version identifier. Currently set to :code:`0x0005`
         * - :math:`\rightarrow`
           - From this point on, the stream is compressed by the :monosp:`DEFLATE` algorithm.
         * - :math:`\rightarrow`
@@ -112,35 +80,60 @@ follows:
         * - :monosp:`uint32`
           - An 32-bit integer whose bits can be used to specify the following flags:
 
-            - :code:`0x0001`: The mesh data includes per-vertex normals
-            - :code:`0x0002`: The mesh data includes texture coordinates
-            - :code:`0x0008`: The mesh data includes vertex colors
+            - :code:`0x0007`: The low bits store the vertex record layout: :code:`0x1`
+              denotes stored shading normals, :code:`0x2` shading tangents, and
+              :code:`0x4` texture coordinates. Tangents occupy no lanes of their own:
+              the frame lanes then hold the whole encoded shading frame instead of
+              just the normal
             - :code:`0x0010`: Use face normals instead of smoothly interpolated vertex normals.
               Equivalent to specifying :monosp:`face_normals=true` to the plugin.
+            - :code:`0x0020`: The stored shading normals were supplied by the user, rather
+              than generated from the positions (in which case a position edit through the
+              parameter interface recomputes them)
             - :code:`0x1000`: The subsequent content is represented in single precision
-            - :code:`0x2000`: The subsequent content is represented in double precision
+              (always set; version 5 files are single precision)
         * - :monosp:`string`
-          - A null-terminated string (utf-8), which denotes the name of the shape.
+          - The name of the shape: a :monosp:`uint32` length followed by that many
+            utf-8 bytes.
         * - :monosp:`uint64`
-          - Number of vertices in the mesh
+          - Number of vertices ``V`` in the mesh
         * - :monosp:`uint64`
-          - Number of triangles in the mesh
+          - Number of triangles ``F`` in the mesh
+        * - :monosp:`uint64`
+          - Number of distinct surface points ``P``, or 0 when the vertex-to-surface-point
+            map is the identity and not stored
+        * - :monosp:`uint64`
+          - Number of normal groups ``N``, or 0 when the vertex-to-normal-group map is
+            the identity and not stored
         * - :monosp:`array`
-          - Array of all vertex positions (X, Y, Z, X, Y, Z, ...) specified in binary single or
-            double precision format (as denoted by the flags)
+          - ``8 V`` single precision floats: the packed vertex records (position in lanes
+            0-2, the shading normal or, with stored tangents, the encoded shading frame
+            in lanes 3-5, texture coordinates in lanes 6-7; unused lanes are zero)
         * - :monosp:`array`
-          - Array of all vertex normal directions (X, Y, Z, X, Y, Z, ...) specified in binary single
-            or double precision format. When the mesh has no vertex normals, this field is omitted.
+          - ``4 F`` :monosp:`uint32` face records: three vertex indices and the per-face
+            BSDF index
         * - :monosp:`array`
-          - Array of all vertex texture coordinates (U, V, U, V, ...) specified in binary single or
-            double precision format. When the mesh has no texture coordinates, this field is omitted.
+          - ``V`` :monosp:`uint32` vertex-to-surface-point indices in ``[0, P)``. Omitted
+            when ``P`` is 0.
         * - :monosp:`array`
-          - Array of all vertex colors (R, G, B, R, G, B, ...) specified in binary single or double
-            precision format. When the mesh has no vertex colors, this field is omitted.
-        * - :monosp:`array`
-          - Indexed triangle data (:code:`[i1, i2, i3]`, :code:`[i1, i2, i3]`, ..) specified in
-            :monosp:`uint32` or in :monosp:`uint64` format (the latter is used when the number of
-            vertices exceeds :code:`0xFFFFFFFF`).
+          - ``V`` :monosp:`uint32` vertex-to-normal-group indices in ``[0, N)``. Omitted
+            when ``N`` is 0.
+        * - :monosp:`uint32`
+          - Number of custom mesh attributes
+        * - :monosp:`attribute`
+          - Per attribute: a length-prefixed name whose ``vertex_`` or ``face_`` prefix
+            selects the domain, a :monosp:`uint8` flag byte (bit 0: the values are
+            sRGB-to-spectrum upsampling coefficients written by a spectral variant rather
+            than raw values), a :monosp:`uint32` channel count ``dim`` in [1, 4], and
+            ``V dim`` (or ``F dim``) single precision floats of attribute data
+
+Version 3 and 4 files instead store a single-indexed triangle mesh: the flag
+word (with :code:`0x0001` denoting normals, :code:`0x0002` texture
+coordinates, :code:`0x0008` vertex colors and :code:`0x2000` double
+precision data), the null-terminated shape name (version 4 only), the vertex and triangle
+counts ``V`` and ``F``, and arrays of per-vertex positions, normals,
+texture coordinates and colors, followed by ``3 F`` :monosp:`uint32` face
+indices.
 
 Multiple shapes
 ***************
@@ -195,66 +188,66 @@ at the end of the file, which specifies the starting position of each sub-mesh:
         }
  */
 
-#define MI_FILEFORMAT_HEADER     0x041C
+/// Legacy format versions; the current one is `SerializedVersion`
 #define MI_FILEFORMAT_VERSION_V3 0x0003
 #define MI_FILEFORMAT_VERSION_V4 0x0004
+
+/// Flag word of the legacy (version 3 and 4) encoding
+enum class TriMeshFlags : uint32_t {
+    HasNormals      = 0x0001,
+    HasTexcoords    = 0x0002,
+    HasTangents     = 0x0004, // unused
+    HasColors       = 0x0008,
+    FaceNormals     = 0x0010,
+    SinglePrecision = 0x1000,
+    DoublePrecision = 0x2000
+};
+
+MI_DECLARE_ENUM_OPERATORS(TriMeshFlags)
+
+/// Read a null-terminated UTF-8 string, as used by the legacy encoding
+static std::string read_cstring(Stream *stream) {
+    std::string result;
+    char ch = 0;
+    while (true) {
+        stream->read(ch);
+        if (ch == 0)
+            return result;
+        result += ch;
+    }
+}
 
 template <typename Float, typename Spectrum>
 class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_face_normals,
-                    has_vertex_normals, has_vertex_texcoords,
-                    recompute_vertex_normals, vertex_position, vertex_normal,
-                    initialize)
+    MI_IMPORT_BASE(Mesh, m_filename, m_source_path, m_to_world,
+                   m_vertex_count, m_face_count, m_face_normals,
+                   m_flip_normals, has_face_normals, from_packed)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
     using typename Base::InputFloat;
-    using typename Base::FloatStorage;
     using typename Base::InputPoint3f;
     using typename Base::InputNormal3f;
-
-    enum class TriMeshFlags {
-        HasNormals      = 0x0001,
-        HasTexcoords    = 0x0002,
-        HasTangents     = 0x0004, // unused
-        HasColors       = 0x0008,
-        FaceNormals     = 0x0010,
-        SinglePrecision = 0x1000,
-        DoublePrecision = 0x2000
-    };
-
-    constexpr bool has_flag(TriMeshFlags flags, TriMeshFlags f) {
-        return (static_cast<uint32_t>(flags) & static_cast<uint32_t>(f)) != 0;
-    }
-    constexpr bool has_flag(uint32_t flags, TriMeshFlags f) {
-        return (flags & static_cast<uint32_t>(f)) != 0;
-    }
+    using typename Base::InputVector2f;
+    using typename Base::InputVector3f;
 
     SerializedMesh(const Properties &props) : Base(props) {
         auto fail = [&](const std::string &descr) {
-            Throw("Error while loading serialized file \"%s\": %s!", m_name, descr);
+            Throw("Error while loading serialized file \"%s\": %s!", m_filename, descr);
         };
 
-        auto fs = file_resolver();
-        fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
-        m_name = file_path.filename().string();
-
-        Log(Debug, "Loading mesh from \"%s\" ..", m_name);
-        if (!fs::exists(file_path))
-            fail("file not found");
+        Log(Debug, "Loading mesh from \"%s\" ..", m_filename);
 
         /// When the file contains multiple meshes, this index specifies which one to load
         int shape_index = props.get<int>("shape_index", 0);
         if (shape_index < 0)
             fail("shape index must be nonnegative!");
 
-        m_name = tfm::format("%s@%i", file_path.filename(), shape_index);
+        m_filename = tfm::format("%s@%i", m_source_path.filename(), shape_index);
 
-        ref<Stream> stream = new FileStream(file_path);
+        ref<Stream> stream = new FileStream(m_source_path);
         ScopedPhase phase(ProfilerPhase::LoadGeometry);
         Timer timer;
         stream->set_byte_order(Stream::ELittleEndian);
@@ -263,30 +256,31 @@ public:
         stream->read(format);
         stream->read(version);
 
-        if (format != MI_FILEFORMAT_HEADER)
+        if (format != SerializedMagic)
             fail("encountered an invalid file format!");
 
         if (version != MI_FILEFORMAT_VERSION_V3 &&
-            version != MI_FILEFORMAT_VERSION_V4)
+            version != MI_FILEFORMAT_VERSION_V4 &&
+            version != SerializedVersion)
             fail("encountered an incompatible file version!");
 
         if (shape_index != 0) {
             size_t file_size = stream->size();
 
-            /* Determine the position of the requested substream. This
-               is stored at the end of the file */
+            // Determine the position of the requested substream. This
+            // is stored at the end of the file
             stream->seek(file_size - sizeof(uint32_t));
 
             uint32_t count = 0;
             stream->read(count);
 
-            if (shape_index > (int) count)
+            if (shape_index >= (int) count)
                 fail(tfm::format("Unable to unserialize mesh, shape index is "
                                  "out of range! (requested %i out of 0..%i)",
                                  shape_index, count - 1));
 
             // Seek to the correct position
-            if (version == MI_FILEFORMAT_VERSION_V4) {
+            if (version >= MI_FILEFORMAT_VERSION_V4) {
                 stream->seek(file_size -
                              sizeof(uint64_t) * (count - shape_index) -
                              sizeof(uint32_t));
@@ -304,21 +298,26 @@ public:
             stream->skip(sizeof(short) * 2); // Skip the header
         }
 
-        stream = new ZStream(stream);
+        if (version == SerializedVersion)
+            load_v5(stream, props);
+        else
+            load_legacy(stream, version);
+
+        Log(Debug, "\"%s\": read %i faces, %i vertices (in %s)",
+            m_filename, m_face_count, m_vertex_count,
+            util::time_string((float) timer.value()));
+    }
+
+    /// Load a version 3 or 4 mesh, which stores one tight array per
+    /// quantity. Every vertex forms its own surface point.
+    void load_legacy(Stream *stream_, short version) {
+        ref<Stream> stream = new ZStream(stream_);
         stream->set_byte_order(Stream::ELittleEndian);
 
         uint32_t flags = 0;
         stream->read(flags);
-        if (version == MI_FILEFORMAT_VERSION_V4) {
-            char ch = 0;
-            m_name = "";
-            do {
-                stream->read(ch);
-                if (ch == 0)
-                    break;
-                m_name += ch;
-            } while (true);
-        }
+        if (version == MI_FILEFORMAT_VERSION_V4)
+            m_filename = read_cstring(stream);
 
         size_t vertex_count, face_count;
         stream->read(vertex_count);
@@ -327,106 +326,159 @@ public:
         m_vertex_count = (ScalarSize) vertex_count;
         m_face_count   = (ScalarSize) face_count;
 
-        std::unique_ptr<uint32_t[]> faces(new uint32_t[m_face_count * 3]);
-        std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 2]);
-
         bool double_precision = has_flag(flags, TriMeshFlags::DoublePrecision);
         bool has_normals      = has_flag(flags, TriMeshFlags::HasNormals);
         bool has_texcoords    = has_flag(flags, TriMeshFlags::HasTexcoords);
         bool has_colors       = has_flag(flags, TriMeshFlags::HasColors);
 
-        read_helper(stream, double_precision, vertex_positions.get(), 3);
+        bool store_normals = has_normals && !has_face_normals();
 
-        if (has_normals) {
-            if (m_face_normals)
-                // Skip over vertex normals provided in the file.
-                advance_helper(stream, double_precision, 3);
-            else
-                read_helper(stream, double_precision, vertex_normals.get(), 3);
+        PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
+                      make_layout(store_normals, has_texcoords));
+        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        m_flip_normals = false;
+        m_to_world = ScalarAffineTransform4f();
+
+        // The temporaries below are interleaved into the packed records
+        // right after; a null destination skips a field
+        std::vector<InputFloat> positions(vertex_count * 3);
+        read_helper(stream, double_precision, positions.data(), 3);
+
+        std::vector<InputFloat> normals;
+        if (store_normals)
+            normals.resize(vertex_count * 3);
+        if (has_normals)
+            read_helper(stream, double_precision,
+                        store_normals ? normals.data() : nullptr, 3);
+
+        std::vector<InputFloat> texcoords;
+        if (has_texcoords) {
+            texcoords.resize(vertex_count * 2);
+            read_helper(stream, double_precision, texcoords.data(), 2);
         }
-
-        if (has_texcoords)
-            read_helper(stream, double_precision, vertex_texcoords.get(), 2);
 
         if (has_colors)
-            advance_helper(stream, double_precision, 3); // TODO
+            read_helper(stream, double_precision, nullptr, 3); // TODO
 
-        stream->read(faces.get(), m_face_count * sizeof(ScalarIndex) * 3);
+        std::vector<uint32_t> faces(face_count * 3);
+        stream->read(faces.data(), face_count * sizeof(ScalarIndex) * 3);
 
-        // Post-processing
-        InputFloat* position_ptr = vertex_positions.get();
-        InputFloat* normal_ptr   = vertex_normals.get();
-        for (ScalarSize i = 0; i < m_vertex_count; ++i) {
-            InputPoint3f p = m_to_world.scalar() * dr::load<InputPoint3f>(position_ptr);
-            dr::store(position_ptr, p);
-            position_ptr += 3;
-            m_bbox.expand(p);
+        for (size_t i = 0; i < vertex_count; ++i) {
+            InputPoint3f p = dr::load<InputPoint3f>(positions.data() + i * 3);
 
-            if (has_normals) {
-                InputNormal3f n = dr::load<InputNormal3f>(normal_ptr);
-                n = dr::normalize(m_to_world.scalar() * n);
-                dr::store(normal_ptr, n);
-                normal_ptr += 3;
-            }
+            InputNormal3f n(0.f, 0.f, 0.f);
+            if (store_normals)
+                n = dr::load<InputNormal3f>(normals.data() + i * 3);
+
+            InputVector2f uv(0.f, 0.f);
+            if (has_texcoords)
+                uv = dr::load<InputVector2f>(texcoords.data() + i * 2);
+
+            pm.set_vertex(i, p, n, uv);
         }
 
-        m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
-        m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        if (!m_face_normals)
-            m_vertex_normals = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
-        if (has_texcoords)
-            m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
+        for (size_t i = 0; i < face_count; ++i)
+            pm.set_face(i, { faces[3 * i], faces[3 * i + 1],
+                             faces[3 * i + 2] });
 
-        size_t vertex_data_bytes = 3 * sizeof(InputFloat);
-        if (!m_face_normals)
-            vertex_data_bytes += 3 * sizeof(InputFloat);
-        if (has_texcoords)
-            vertex_data_bytes += 2 * sizeof(InputFloat);
-
-        Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
-            m_name, m_face_count, m_vertex_count,
-            util::mem_string(m_face_count * 3 * sizeof(ScalarIndex) +
-                             m_vertex_count * vertex_data_bytes),
-            util::time_string((float) timer.value())
-        );
-
-        if (!m_face_normals && !has_normals) {
-            Timer timer2;
-            recompute_vertex_normals();
-            Log(Debug, "\"%s\": computed vertex normals (took %s)", m_name,
-                util::time_string((float) timer2.value()));
-        }
-
-        initialize();
-    }
-
-    void read_helper(Stream *stream, bool dp, InputFloat* dst, size_t dim) {
-        if (dp) {
-            std::unique_ptr<double[]> values(new double[m_vertex_count * dim]);
-            stream->read_array(values.get(), m_vertex_count * dim);
-            for (size_t i = 0; i < m_vertex_count * dim; ++i)
-                dst[i] = (float) values[i];
-        } else {
-            std::unique_ptr<float[]> values(new float[m_vertex_count * dim]);
-            stream->read_array(values.get(), m_vertex_count * dim);
-            memcpy(dst, values.get(), m_vertex_count * sizeof(InputFloat) * dim);
-        }
+        from_packed(std::move(pm));
     }
 
     /**
-     * Simply advances the stream without outputting to the mesh.
-     * Since compressed streams do not provide `tell` and `seek`
-     * implementations, we have to read and discard the data.
+     * Load a version 5 mesh, which stores the packed representation
+     * verbatim: vertex and face records, the vertex -> surface point /
+     * normal group maps, and custom attributes stream directly into the
+     * staging storage. `Mesh::write_serialized()` is the writer.
      */
-    void advance_helper(Stream *stream, bool dp, size_t dim) {
-        if (dp) {
-            std::unique_ptr<double[]> values(new double[m_vertex_count * dim]);
-            stream->read_array(values.get(), m_vertex_count * dim);
+    void load_v5(Stream *stream_, const Properties &props) {
+        ref<Stream> stream = new ZStream(stream_);
+        stream->set_byte_order(Stream::ELittleEndian);
+
+        uint32_t flags = 0;
+        stream->read(flags);
+        stream->read(m_filename);
+
+        if (!(flags & (uint32_t) SerializedFlags::SinglePrecision))
+            Throw("\"%s\": version 5 serialized meshes are stored in single "
+                  "precision.", m_filename);
+
+        Layout layout =
+            (Layout) (flags & (uint32_t) SerializedFlags::LayoutMask);
+        bool normals = has_flag(layout, Layout::Normals);
+
+        uint64_t vertex_count, face_count, position_count, normal_count;
+        stream->read(vertex_count);
+        stream->read(face_count);
+        stream->read(position_count);
+        stream->read(normal_count);
+
+        if (position_count > vertex_count ||
+            normal_count > vertex_count ||
+            (has_flag(layout, Layout::Tangents) && !normals))
+            Throw("\"%s\": invalid serialized mesh header.", m_filename);
+
+        PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
+                      layout, position_count, normal_count);
+
+        stream->read_array(pm.vertices.data(),
+                           vertex_count * MeshVertexStride);
+        stream->read_array(pm.faces.data(), face_count * MeshFaceStride);
+        if (position_count)
+            stream->read_array(pm.position_index.data(), vertex_count);
+        if (normal_count)
+            stream->read_array(pm.normal_index.data(), vertex_count);
+
+        // Custom attributes stream directly into the staging storage
+        uint32_t attr_count = 0;
+        stream->read(attr_count);
+        for (uint32_t i = 0; i < attr_count; ++i) {
+            std::string name;
+            stream->read(name);
+            uint8_t aflags = 0;
+            stream->read(aflags);
+            bool coeffs = (aflags & 1) != 0;
+            uint32_t dim = 0;
+            stream->read(dim);
+            if (coeffs && !is_spectral_v<Spectrum>)
+                Log(Warn, "\"%s\": attribute \"%s\" stores spectral "
+                    "upsampling coefficients; a non-spectral variant "
+                    "cannot reproduce the original colors.",
+                    m_filename, name);
+            float *dst = pm.add_attribute(name, dim, /* upsample_srgb */ !coeffs);
+            stream->read_array(dst, (string::starts_with(name, "face_")
+                                         ? face_count : vertex_count) * dim);
+        }
+
+        // The records arrived in bulk, so they are transformed after the fact
+        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        m_flip_normals = false;
+        m_to_world = ScalarAffineTransform4f();
+        pm.transform_records();
+
+        // The stored FaceNormals flag applies when the scene description
+        // leaves the property unset
+        if ((flags & (uint32_t) SerializedFlags::FaceNormals) &&
+            !props.has_property("face_normals"))
+            m_face_normals = true;
+
+        from_packed(std::move(pm));
+    }
+
+    /// Read ``m_vertex_count * dim`` values. A null ``dst`` discards them:
+    /// compressed streams have no ``seek``, so skipping means reading.
+    void read_helper(Stream *stream, bool dp, InputFloat *dst, size_t dim) {
+        size_t count = m_vertex_count * dim;
+        if (!dp && dst) {
+            stream->read_array(dst, count);
+        } else if (dp) {
+            std::unique_ptr<double[]> values(new double[count]);
+            stream->read_array(values.get(), count);
+            if (dst)
+                for (size_t i = 0; i < count; ++i)
+                    dst[i] = (float) values[i];
         } else {
-            std::unique_ptr<float[]> values(new float[m_vertex_count * dim]);
-            stream->read_array(values.get(), m_vertex_count * dim);
+            std::unique_ptr<float[]> values(new float[count]);
+            stream->read_array(values.get(), count);
         }
     }
 

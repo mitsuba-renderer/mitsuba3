@@ -45,15 +45,18 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
     }
 
     /**
-     * \brief Check whether a point lies \a on or \a inside the bounding sphere
+     * Check whether a point lies *on* or *inside* the bounding sphere
      *
-     * \param p The point to be tested
+     * Args:
+     *     p: The point to be tested
      *
-     * \tparam Strict Set this parameter to \c true if the bounding
-     *                sphere boundary should be excluded in the test
+     * Template Args:
+     *     Strict: Set this parameter to ``True`` if the bounding
+     *         sphere boundary should be excluded in the test
      *
-     * \remark In the Python bindings, the 'Strict' argument is a normal
-     *         function parameter with default value \c False.
+     * Note:
+     *     In the Python bindings, the ``strict`` argument is a normal
+     *     function parameter with default value ``False``.
      */
     template <bool Strict = false>
     Mask contains(const Point &p) const {
@@ -63,7 +66,7 @@ template <typename Point_> struct BoundingSphere: drjit::TraversableBase {
             return dr::squared_norm(p - center) <= dr::square(radius);
     }
 
-    /// Check if a ray intersects a bounding box
+    /// Check if a ray intersects the bounding sphere
     template <typename Ray>
     MI_INLINE auto ray_intersect(const Ray &ray) const {
         typename Ray::Vector o = ray.o - center;

@@ -169,7 +169,7 @@ public:
     MI_DECLARE_CLASS(OrthogonalSampler)
 
 private:
-    /// Compute the digits of decimal value \ref i expressed in base \ref m_strength
+    /// Compute the digits of decimal value ``i`` expressed in base `m_strength`
     std::vector<UInt32> to_base_s(UInt32 i) {
         std::vector<UInt32> digits(m_strength);
         UInt32 tmp = i;
@@ -180,7 +180,7 @@ private:
         return digits;
     }
 
-    /// Evaluate polynomial with coefficients \ref x at location arg
+    /// Evaluate polynomial with coefficients ``x`` at location arg
     UInt32 eval_poly(const std::vector<UInt32> &coef, UInt32 x) {
         UInt32 res = 0;
         for (size_t l = coef.size(); l--; )
@@ -262,40 +262,21 @@ private:
     UInt32 m_permutation_seed;
 
 public:
-    void
-    traverse_1_cb_ro(void *payload,
-                     drjit ::detail ::traverse_callback_ro fn) const override {
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override {
         /**
-         * Traversing the field \c m_sample_index for loop state variables,
+         * Traversing the field ``m_sample_index`` for loop state variables,
          * causes the loop to be re-traced. This incurs significant overhead.
-         * Therefore we gate traversal of the sampler base class behind the
-         * \c JitFlag::EnableObjectTraversal, and otherwise handle
-         * \c m_dimension_index and \c m_rng separately.
+         * Therefore we only traverse the sampler base class as part of a
+         * frozen function, and otherwise handle ``m_dimension_index`` and
+         * ``m_rng`` separately.
          */
-        if (jit_flag(JitFlag::EnableObjectTraversal)) {
-            Base::traverse_1_cb_ro(payload, fn);
+        if (cb.role == drjit::TraverseRole::Freeze) {
+            Base::traverse_cb(payload, cb);
         } else {
-            drjit::traverse_1_fn_ro(m_rng, payload, fn);
-            drjit::traverse_1_fn_ro(m_dimension_index, payload, fn);
+            drjit::traverse_fn(m_rng, payload, cb, "m_rng");
+            drjit::traverse_fn(m_dimension_index, payload, cb, "m_dimension_index");
         }
-        drjit::traverse_1_fn_ro(m_permutation_seed, payload, fn);
-    }
-    void traverse_1_cb_rw(void *payload,
-                          drjit ::detail ::traverse_callback_rw fn) override {
-        /**
-         * Traversing the field \c m_sample_index for loop state variables,
-         * causes the loop to be re-traced. This incurs significant overhead.
-         * Therefore we gate traversal of the sampler base class behind the
-         * \c JitFlag::EnableObjectTraversal, and otherwise handle
-         * \c m_dimension_index and \c m_rng separately.
-         */
-        if (jit_flag(JitFlag::EnableObjectTraversal)) {
-            Base::traverse_1_cb_rw(payload, fn);
-        } else {
-            drjit::traverse_1_fn_rw(m_rng, payload, fn);
-            drjit::traverse_1_fn_rw(m_dimension_index, payload, fn);
-        }
-        drjit::traverse_1_fn_rw(m_permutation_seed, payload, fn);
+        drjit::traverse_fn(m_permutation_seed, payload, cb, "m_permutation_seed");
     }
 };
 

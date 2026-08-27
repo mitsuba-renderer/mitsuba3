@@ -92,9 +92,9 @@ public:
             Spectrum M = m_left_handed ? mueller::left_circular_polarizer<Float>()
                                        : mueller::right_circular_polarizer<Float>();
 
-            /* The `forward` direction here is always along the direction that
-               light travels. This is needed for the coordinate system rotation
-               below. */
+            // The `forward` direction here is always along the direction that
+            // light travels. This is needed for the coordinate system rotation
+            // below.
             Vector3f forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
             // Rotate in/out basis of M s.t. it aligns with BSDF coordinate frame
@@ -130,9 +130,9 @@ public:
             Spectrum M = m_left_handed ? mueller::left_circular_polarizer<Float>()
                                        : mueller::right_circular_polarizer<Float>();
 
-            /* The `forward` direction here is always along the direction that
-               light travels. This is needed for the coordinate system rotation
-               below. */
+            // The `forward` direction here is always along the direction that
+            // light travels. This is needed for the coordinate system rotation
+            // below.
             Vector3f forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
 
             // Rotate in/out basis of M s.t. it alignes with BSDF coordinate frame

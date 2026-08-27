@@ -1,114 +1,89 @@
-# import drjit as dr
-# import pytest
-# import mitsuba
+import pytest
+import drjit as dr
+import mitsuba as mi
 
 
-# def r_inv(divisor, index):
-#     factor = 1
-#     value = 0
-#     recip = 1.0 / divisor
+def r_inv(divisor, index):
+    factor = 1
+    value = 0
+    recip = 1.0 / divisor
 
-#     while index != 0:
-#         next_val = index // divisor
-#         factor *= recip
-#         value = value * divisor + index - next_val * divisor
-#         index = next_val
+    while index != 0:
+        next_val = index // divisor
+        factor *= recip
+        value = value * divisor + index - next_val * divisor
+        index = next_val
 
-#     return value * factor
-
-
-# def gen_primes():
-#     # http://code.activestate.com/recipes/117119/
-#     D = {}
-#     q = 2
-#     while True:
-#         if q not in D:
-#             yield q
-#             D[q * q] = [q]
-#         else:
-#             for p in D[q]:
-#                 D.setdefault(p + q, []).append(p)
-#             del D[q]
-#         q += 1
+    return value * factor
 
 
-# def test01_radical_inverse(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
-
-#     v = RadicalInverse()
-#     assert(v.eval(0, 0) == 0)
-#     assert(v.eval(0, 1) == 0.5)
-#     assert(v.eval(0, 2) == 0.25)
-#     assert(v.eval(0, 3) == 0.75)
-
-#     for index, prime in enumerate(gen_primes()):
-#         if index >= 1024:
-#             break
-#         for i in range(10):
-#             assert dr.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
-
-# @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-# def test02_radical_inverse_vectorized(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
-
-#     v = RadicalInverse()
-#     for index, prime in enumerate(gen_primes()):
-#         if index >= 1024:
-#             break
-#         result = v.eval(index, dr.arange(10, dtype=dr.uint64))
-#         for i in range(len(result)):
-#             assert dr.abs(r_inv(prime, i) - result[i]) < 1e-7
+def gen_primes():
+    # http://code.activestate.com/recipes/117119/
+    D = {}
+    q = 2
+    while True:
+        if q not in D:
+            yield q
+            D[q * q] = [q]
+        else:
+            for p in D[q]:
+                D.setdefault(p + q, []).append(p)
+            del D[q]
+        q += 1
 
 
-# def test03_faure_permutations(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
-
-#     p = RadicalInverse()
-#     assert (p.permutation(0) == [0, 1]).all()
-#     assert (p.permutation(1) == [0, 1, 2]).all()
-#     assert (p.permutation(2) == [0, 3, 2, 1, 4]).all()
-#     assert (p.permutation(3) == [0, 2, 5, 3, 1, 4, 6]).all()
+def test01_radical_inverse_base2(variant_scalar_rgb):
+    v = mi.RadicalInverse()
+    assert v.eval(0, 0) == 0
+    assert v.eval(0, 1) == 0.5
+    assert v.eval(0, 2) == 0.25
+    assert v.eval(0, 3) == 0.75
 
 
-# def test04_scrambled_radical_inverse(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
-#     from mitsuba.core import math
+def test02_radical_inverse(variant_scalar_rgb):
+    v = mi.RadicalInverse()
+    assert v.bases() == 1024
 
-#     p = RadicalInverse(10, -1)
-#     assert (p.permutation(0) == [0, 1]).all()
+    for index, prime in enumerate(gen_primes()):
+        if index >= 1024:
+            break
+        assert v.base(index) == prime
+        for i in range(10):
+            assert dr.abs(r_inv(prime, i) - v.eval(index, i)) < 1e-7
 
-#     values = [
-#         0.0, 0.5, 0.25, 0.75, 0.125, 0.625, 0.375, 0.875, 0.0625, 0.5625,
-#         0.3125, 0.8125, 0.1875, 0.6875, 0.4375
-#     ]
 
-#     for i in range(len(values)):
-#         assert(p.eval_scrambled(0, i) == values[i])
+def test03_faure_permutations(variant_scalar_rgb):
+    v = mi.RadicalInverse()
+    assert (v.permutation(0) == [0, 1]).all()
+    assert (v.permutation(1) == [0, 1, 2]).all()
+    assert (v.permutation(2) == [0, 3, 2, 1, 4]).all()
+    assert (v.permutation(3) == [0, 2, 5, 3, 1, 4, 6]).all()
 
-#     p = RadicalInverse(10, 3)
-#     assert (p.permutation(0) == [1, 0]).all()
 
-#     values_scrambled = [
-#         math.OneMinusEpsilon,
-#         0.5, 0.75, 0.25, 0.875, 0.375, 0.625, 0.125, 0.9375, 0.4375,
-#         0.6875, 0.1875, 0.8125, 0.3125, 0.5625
-#     ]
+def test04_permutation_is_bijection(variant_scalar_rgb):
+    v = mi.RadicalInverse()
+    for index in range(20):
+        perm = v.permutation(index)
+        assert sorted(perm) == list(range(v.base(index)))
 
-#     for i in range(len(values_scrambled)):
-#         assert(p.eval_scrambled(0, i) == values_scrambled[i])
 
-# @pytest.mark.skip(reason="RadicalInverse has no vectorized bindings")
-# def test02_radical_inverse_vectorized(variant_scalar_rgb):
-#     from mitsuba.core import RadicalInverse
+def test05_scrambled_permutations(variant_scalar_rgb):
+    v = mi.RadicalInverse(10, 3)
+    assert v.scramble() == 3
+    assert (v.permutation(0) == [1, 0]).all()
+    assert (v.permutation(1) == [2, 1, 0]).all()
 
-#     try:
-#         from mitsuba.packet_rgb.core.qmc import RadicalInverseP
-#     except ImportError:
-#         pytest.skip("packet_rgb mode not enabled")
 
-#     v   = RadicalInverse()
-#     v_p = RadicalInverseP()
-#     for index in range(1024):
-#         result = v_p.eval_scrambled(index, dr.arange(10, dtype=dr.uint64))
-#         for i in range(len(result)):
-#             assert dr.abs(v.eval_scrambled(index, i) - result[i]) < 1e-7
+def test06_inverse_permutation(variant_scalar_rgb):
+    v = mi.RadicalInverse(10, 3)
+    for index in range(2):
+        perm = list(v.permutation(index))
+        assert v.inverse_permutation(index) == perm.index(0)
+
+
+def test07_eval_out_of_bounds(variant_scalar_rgb):
+    v = mi.RadicalInverse()
+    with pytest.raises(RuntimeError):
+        v.eval(v.bases(), 0)
+    with pytest.raises(RuntimeError):
+        v.base(v.bases())

@@ -96,10 +96,10 @@ public:
             ScalarColor3f color = props.get<ScalarColor3f>("color");
 
             if constexpr (is_spectral_v<Spectrum>) {
-                /* Evaluate the spectral upsampling model. This requires a
-                   reflectance value (colors in [0, 1]) which is accomplished here by
-                   scaling. We use a color where the highest component is 50%,
-                   which generally yields a fairly smooth spectrum. */
+                // Evaluate the spectral upsampling model. This requires a
+                // reflectance value (colors in [0, 1]) which is accomplished here by
+                // scaling. We use a color where the highest component is 50%,
+                // which generally yields a fairly smooth spectrum.
                 ScalarFloat factor = dr::max(color) * 2.f;
                 if (factor != 0.f)
                     color /= factor;

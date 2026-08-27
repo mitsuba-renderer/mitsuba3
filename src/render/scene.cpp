@@ -456,9 +456,9 @@ Scene<Float, Spectrum>::sample_silhouette(const Point3f &sample_,
     ss.pdf *= shape_weight;
     ss.scene_index = shape_idx;
 
-    /* This is an escape hatch for any failed sample. Ideally these cases should
-     * be resolved directly in each shape's `sample_silhouette`. Just in case,
-     * they are caught and ignored here. */
+    // This is an escape hatch for any failed sample. Ideally these cases should
+    // be resolved directly in each shape's `sample_silhouette`. Just in case,
+    // they are caught and ignored here.
     Mask to_ignore =
         (dr::isnan(ss.p.x()) || dr::isnan(ss.p.y()) || dr::isnan(ss.p.z()) ||
          dr::isnan(ss.d.x()) || dr::isnan(ss.d.y()) || dr::isnan(ss.d.z()) ||
@@ -515,9 +515,6 @@ MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *cb) {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
-    if (m_environment)
-        m_environment->set_scene(this); // TODO use parameters_changed({"scene"})
-
     bool accel_is_dirty = false;
     for (auto &s : m_shapes) {
         if (s->dirty()) {
@@ -541,6 +538,9 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
         for (auto &s : m_shapes)
             m_bbox.expand(s->bbox());
     }
+
+    if (m_environment)
+        m_environment->set_scene(this);
 
     // Check whether any shape parameters have gradient tracking enabled
     m_shapes_grad_enabled = false;

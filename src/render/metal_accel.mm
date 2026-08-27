@@ -369,11 +369,15 @@ build_impl(const std::vector<BlasEntry> &blases,
                         [blas_enc useResource: v_buf usage: MTLResourceUsageRead];
                         [blas_enc useResource: i_buf usage: MTLResourceUsageRead];
 
+                        // Metal has no index stride parameter; describe()
+                        // supplies a tightly packed buffer.
+                        Assert(g.index_stride == 3 * sizeof(uint32_t));
+
                         MTLAccelerationStructureTriangleGeometryDescriptor *gd =
                             [MTLAccelerationStructureTriangleGeometryDescriptor descriptor];
                         gd.vertexBuffer       = v_buf;
                         gd.vertexBufferOffset = v_off;
-                        gd.vertexStride       = 3 * sizeof(float);
+                        gd.vertexStride       = g.vertex_stride;
                         gd.vertexFormat       = MTLAttributeFormatFloat3;
                         gd.indexBuffer        = i_buf;
                         gd.indexBufferOffset  = i_off;

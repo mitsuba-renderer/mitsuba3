@@ -15,7 +15,7 @@ constexpr size_t kZStreamBufferSize = 32768;
 NAMESPACE_END(detail)
 
 /**
- * \brief Transparent compression/decompression stream based on \c zlib.
+ * Transparent compression/decompression stream based on ``zlib``.
  *
  * This class transparently decompresses and compresses reads and writes
  * to a nested stream, respectively.
@@ -24,14 +24,15 @@ class MI_EXPORT_LIB ZStream : public Stream {
 public:
 
     enum EStreamType {
-        EDeflateStream, /// A raw deflate stream
-        EGZipStream /// A gzip-compatible stream
+        EDeflateStream, ///< A raw deflate stream
+        EGZipStream ///< A gzip-compatible stream
     };
 
     using Stream::read;
     using Stream::write;
 
-    /** \brief Creates a new compression stream with the given underlying stream.
+    /**
+     * Creates a new compression stream with the given underlying stream.
      * This new instance takes ownership of the child stream. The child stream
      * must outlive the ZStream.
      */
@@ -44,7 +45,8 @@ public:
     /// Returns a string representation
     std::string to_string() const override;
 
-    /** \brief Closes the stream, but not the underlying child stream.
+    /**
+     * Closes the stream, but not the underlying child stream.
      * No further read or write operations are permitted.
      *
      * This function is idempotent.
@@ -56,7 +58,7 @@ public:
     bool is_closed() const override { return m_child_stream && m_child_stream->is_closed(); };
 
     // =========================================================================
-    //! @{ \name Compression stream-specific features
+    // Compression stream-specific features
     // =========================================================================
 
     /// Returns the child stream of this compression stream
@@ -65,22 +67,21 @@ public:
     /// Returns the child stream of this compression stream
     Stream *child_stream() { return m_child_stream; }
 
-    //! @}
     // =========================================================================
 
     // =========================================================================
-    //! @{ \name Implementation of the Stream interface
+    // Implementation of the Stream interface
     // =========================================================================
 
     /**
-     * \brief Reads a specified amount of data from the stream, decompressing
+     * Reads a specified amount of data from the stream, decompressing
      * it first using ZLib.
      * Throws an exception when the stream ended prematurely.
      */
     void read(void *p, size_t size) override;
 
     /**
-     * \brief Writes a specified amount of data into the stream, compressing
+     * Writes a specified amount of data into the stream, compressing
      * it first using ZLib.
      * Throws an exception when not all data could be written.
      */
@@ -94,7 +95,7 @@ public:
         Throw("seek(): unsupported in a ZLIB stream!");
     }
 
-    //// Unsupported. Always throws.
+    /// Unsupported. Always throws.
     void truncate(size_t) override {
         Throw("truncate(): unsupported in a ZLIB stream!");
     }
@@ -121,7 +122,6 @@ public:
         return m_child_stream->can_read();
     }
 
-    //! @}
     // =========================================================================
 
     MI_DECLARE_CLASS(ZStream)

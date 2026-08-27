@@ -19,23 +19,26 @@ NAMESPACE_BEGIN(util)
 extern MI_EXPORT_LIB int core_count();
 
 /**
- * \brief Convert a time difference (in seconds) to a string representation
- * \param time Time difference in (fractional) sections
- * \param precise When set to true, a higher-precision string representation
- * is generated.
+ * Convert a time difference (in seconds) to a string representation
+ *
+ * Args:
+ *     time: Time difference in (fractional) seconds
+ *
+ *     precise: When set to true, a higher-precision string representation
+ *         is generated.
  */
 extern MI_EXPORT_LIB std::string time_string(float time, bool precise = false);
 
 /// Turn a memory size into a human-readable string
 extern MI_EXPORT_LIB std::string mem_string(size_t size, bool precise = false);
 
-/// Returns 'true' if the application is running inside a debugger
+/// Returns ``True`` if the application is running inside a debugger
 extern MI_EXPORT_LIB bool detect_debugger();
 
 /// Generate a trap instruction if running in a debugger; otherwise, return.
 extern MI_EXPORT_LIB void trap_debugger();
 
-/// Return the absolute path to <tt>libmitsuba-core.dylib/so/dll<tt>
+/// Return the absolute path to ``libmitsuba-core.dylib/so/dll``
 extern MI_EXPORT_LIB fs::path library_path();
 
 /// Determine the width of the terminal window that is used to run Mitsuba
@@ -59,6 +62,10 @@ struct Version {
         : major_version(major), minor_version(minor), patch_version(patch) { }
 
     Version(std::string_view value) {
+        // Ignore the ".dev*" suffix of a pre-release
+        size_t pos = value.rfind(".dev");
+        if (pos != std::string_view::npos)
+            value = value.substr(0, pos);
         auto list = string::tokenize(value, " .");
         if (list.size() != 3)
             Throw("Version number must consist of three period-separated parts!");

@@ -25,48 +25,52 @@ public:
     get_majorant(const MediumInteraction3f &mi,
                  Mask active = true) const = 0;
 
-    /// Returns the medium coefficients Sigma_s, Sigma_n and Sigma_t evaluated
-    /// at a given MediumInteraction mi
+    /// Returns the medium coefficients :math:`\sigma_s`, :math:`\sigma_n` and
+    /// :math:`\sigma_t` evaluated at a given `MediumInteraction3f` ``mi``
     virtual std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum,
                        UnpolarizedSpectrum>
     get_scattering_coefficients(const MediumInteraction3f &mi,
                                 Mask active = true) const = 0;
 
     /**
-     * \brief Sample a free-flight distance in the medium.
+     * Sample a free-flight distance in the medium.
      *
      * This function samples a (tentative) free-flight distance according to an
      * exponential transmittance. It is then up to the integrator to then decide
-     * whether the MediumInteraction corresponds to a real or null scattering
+     * whether the `MediumInteraction3f` corresponds to a real or null scattering
      * event.
      *
-     * \param ray      Ray, along which a distance should be sampled
-     * \param sample   A uniformly distributed random sample
-     * \param channel  The channel according to which we will sample the
-     * free-flight distance. This argument is only used when rendering in RGB
-     * modes.
+     * Args:
+     *     ray: Ray, along which a distance should be sampled
      *
-     * \return         This method returns a MediumInteraction.
-     *                 The MediumInteraction will always be valid,
-     *                 except if the ray missed the Medium's bounding box.
+     *     sample: A uniformly distributed random sample
+     *
+     *     channel: The channel according to which we will sample the
+     *         free-flight distance. This argument is only used when rendering in RGB
+     *         modes.
+     *
+     * Returns:
+     *     This method returns a `MediumInteraction3f`.
+     *     The MediumInteraction will always be valid,
+     *     except if the ray missed the Medium's bounding box.
      */
     MediumInteraction3f sample_interaction(const Ray3f &ray, Float sample,
                                            UInt32 channel, Mask active) const;
 
     /**
-     * \brief Compute the transmittance and PDF
+     * Compute the transmittance and PDF
      *
      * This function evaluates the transmittance and PDF of sampling a certain
      * free-flight distance The returned PDF takes into account if a medium
-     * interaction occurred (mi.t <= si.t) or the ray left the medium (mi.t >
-     * si.t)
+     * interaction occurred (``mi.t <= si.t``) or the ray left the medium
+     * (``mi.t > si.t``)
      *
      * The evaluated PDF is spectrally varying. This allows to account for the
      * fact that the free-flight distance sampling distribution can depend on
      * the wavelength.
      *
-     * \return   This method returns a pair of (Transmittance, PDF).
-     *
+     * Returns:
+     *     This method returns a pair of ``(Transmittance, PDF)``.
      */
     std::pair<UnpolarizedSpectrum, UnpolarizedSpectrum>
     transmittance_eval_pdf(const MediumInteraction3f &mi,
@@ -113,7 +117,7 @@ MI_EXTERN_CLASS(Medium)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit medium arrays
+// Enables vectorized method calls on Dr.Jit medium arrays
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
@@ -128,5 +132,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

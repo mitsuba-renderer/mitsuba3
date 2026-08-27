@@ -120,6 +120,6 @@ and the BSDF reflectance (here using a :ref:`diffuse <bsdf-diffuse>` BSDF).
     While it is possible to define unbounded RGB properties (such as the ``eta``
     value for a :ref:`conductor BSDF <bsdf-conductor>`) using ``<rgb name=".." value=".."/>``
     tag, it is highly recommended to directly define a spectrum curve (or use a
-    material from :numref:`conductor-ior-list`) as the spectral uplifting algorithm
+    material from :num:`conductor-ior-list`) as the spectral uplifting algorithm
     implemented in Mitsuba won't be able to guarantee that the produced spectrum
     will behave consistently in both RGB and spectral modes.

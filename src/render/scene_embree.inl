@@ -115,7 +115,7 @@ static void embree_backface_cull(const RTCFilterFunctionNArguments *args) {
     }
 }
 
-/// Build one Embree geometry from a \ref ShapeIR.
+/// Build one Embree geometry from a `ShapeIR`.
 template <typename Float, typename Spectrum>
 static RTCGeometry
 embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
@@ -141,10 +141,10 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
-                                       3 * sizeof(float), g.vertex_count);
+                                       g.vertex_stride, g.vertex_count);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
                                        RTC_FORMAT_UINT3, g.index_ptr, 0,
-                                       3 * sizeof(uint32_t), g.face_count);
+                                       g.index_stride, g.face_count);
             if (g.kind == ShapeIR::Kind::TrianglesCulled) {
                 rtcSetGeometryIntersectFilterFunction(geom, embree_backface_cull);
                 rtcSetGeometryOccludedFilterFunction(geom, embree_backface_cull);

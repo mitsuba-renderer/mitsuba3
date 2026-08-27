@@ -168,7 +168,7 @@ public:
     }
 
     // =============================================================
-    //! @{ \name Sampling routines
+    // Sampling routines
     // =============================================================
 
     PositionSample3f sample_position(Float time, const Point2f &sample,
@@ -201,8 +201,8 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Point2f uniform_disk = warp::square_to_uniform_disk_concentric(uv);
-        Point3f local = Point3f(uniform_disk.x(), uniform_disk.y(), 0.f);
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.y());
+        Point3f local(uv.x() * cos_phi, uv.x() * sin_phi, 0.f);
 
         Point3f p = m_to_world.value() * local;
 
@@ -221,11 +221,10 @@ public:
         return si;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Silhouette sampling routines and other utilities
+    // Silhouette sampling routines and other utilities
     // =============================================================
 
     SilhouetteSample3f sample_silhouette(const Point3f &sample,
@@ -380,11 +379,10 @@ public:
         return ss;
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
@@ -440,14 +438,12 @@ public:
                                                      uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
 
         // Early exit when tracing isn't necessary
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
 
         AffineTransform4f to_world = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
@@ -455,73 +451,47 @@ public:
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        Point2f prim_uv = pi.prim_uv;
 
-        if constexpr (IsDiff) {
-            if (follow_shape) {
-                /* FollowShape glues the interaction point with the shape.
-                   Therefore, to also account for a possible differential motion
-                   of the shape, we first compute a detached intersection point
-                   in local space and transform it back in world space to get a
-                   point rigidly attached to the shape's motion, including
-                   translation, scaling and rotation. */
-                Point3f local = to_object * ray(pi.t);
-                /* With FollowShape the local position should always be static as
-                   the intersection point follows any motion of the sphere. */
-                local = dr::detach(local);
-                si.p = to_world * local;
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-                prim_uv = dr::head<2>(local);
-            } else {
-                /* To ensure that the differential interaction point stays along
-                   the traced ray, we first recompute the intersection distance
-                   in a differentiable way (w.r.t. to the disk parameters) and
-                   then compute the corresponding point along the ray. */
-                PreliminaryIntersection3f pi_d = ray_intersect_preliminary(ray, 0, active);
-                si.t = dr::replace_grad(pi.t, pi_d.t);
-                si.p = ray(si.t);
-                prim_uv = dr::replace_grad(pi.prim_uv, pi_d.prim_uv);
-            }
-        } else {
-            si.t = pi.t;
-            // Re-project onto the disk to improve accuracy
-            Point3f p = ray(pi.t);
-            Float dist = dr::dot(to_world.translation() - p, m_frame.n);
-            si.p = p + dist * m_frame.n;
-        }
+        si.t = pi.t;
+        si.n = dr::detach(m_frame.n);
 
-        si.t = dr::select(active, si.t, dr::Infinity<Float>);
+        // Re-project onto the disk to improve accuracy
+        Point3f p = ray(pi.t);
+        si.p = dr::detach(
+            p + dr::dot(dr::detach(to_world).translation() - p, si.n) * si.n);
 
-        // The Metal intersection function cannot forward prim_uv, so recompute
-        // it from si.p. Done after the diff branches, which would otherwise
-        // propagate Metal's zero value through ``replace_grad``.
-        if constexpr (dr::is_metal_v<Float>) {
-            Point3f local = to_object * si.p;
-            prim_uv = Point2f(local.x(), local.y());
-        }
+        // Surface position at the detached parameterization: the local
+        // coordinates are static as the disk moves.
+        Point3f p_att = to_world * dr::detach(to_object * si.p);
 
-        if (likely(has_flag(ray_flags, RayFlags::UV) ||
-                   has_flag(ray_flags, RayFlags::dPdUV))) {
-            Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
-                  inv_r = dr::rcp(r);
+        si.attach_motion(ray, p_att, ray_flags);
+
+        // Recover the local coordinates (``pi.prim_uv`` is not set on all backends)
+        Point3f local = to_object * si.p;
+        Point2f prim_uv(local.x(), local.y());
+
+        si.n = m_frame.n;
+
+        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
+            Float r_2   = dr::squared_norm(prim_uv),
+                  inv_r = dr::select(r_2 != 0.f, dr::rsqrt(r_2), 0.f),
+                  r     = r_2 * inv_r;
 
             Float v = dr::atan2(prim_uv.y(), prim_uv.x()) * dr::InvTwoPi<Float>;
             dr::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
-            if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-                Float cos_phi = dr::select(r != 0.f, prim_uv.x() * inv_r, 1.f),
-                      sin_phi = dr::select(r != 0.f, prim_uv.y() * inv_r, 0.f);
+            Float cos_phi = prim_uv.x() * inv_r,
+                  sin_phi = prim_uv.y() * inv_r;
 
-                si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
-                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f);
-            }
+            // The ``v`` coordinate is the azimuth scaled into [0, 1]
+            si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
+            si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f) *
+                       (dr::TwoPi<Float> * r);
+
+            si.sh_frame.n = m_frame.n;
+            si.sh_frame.s = si.dp_du;
         }
-
-        si.n          = m_frame.n;
-        si.sh_frame.n = m_frame.n;
-
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape    = this;

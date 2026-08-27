@@ -10,7 +10,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 
 /**
- * \brief This list of flags is used to classify the different types of emitters.
+ * This list of flags is used to classify the different types of emitters.
  */
 enum class EmitterFlags : uint32_t {
     // =============================================================
@@ -33,14 +33,14 @@ enum class EmitterFlags : uint32_t {
     Surface              = 0x00008,
 
     // =============================================================
-    //!                   Other lobe attributes
+    //                    Other lobe attributes
     // =============================================================
 
     /// The emission depends on the UV coordinates
     SpatiallyVarying     = 0x00010,
 
     // =============================================================
-    //!                 Compound lobe attributes
+    //                  Compound lobe attributes
     // =============================================================
 
     /// Delta function in either position or direction
@@ -74,7 +74,7 @@ public:
     /// Return whether the emitter parameters have changed
     bool dirty() const { return m_dirty; }
 
-    /// Modify the emitter's "dirty" flag
+    /// Modify the emitter's ``dirty`` flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
 
     /// This is both a class and the base of various Mitsuba plugins
@@ -100,7 +100,7 @@ MI_EXTERN_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
 
 // -----------------------------------------------------------------------
-//! @{ \name Enables vectorized method calls on Dr.Jit arrays of emitters
+// Enables vectorized method calls on Dr.Jit arrays of emitters
 // -----------------------------------------------------------------------
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
@@ -119,5 +119,4 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     DRJIT_CALL_GETTER(sampling_weight)
 DRJIT_CALL_END()
 
-//! @}
 // -----------------------------------------------------------------------

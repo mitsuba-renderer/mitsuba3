@@ -15,7 +15,7 @@
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Medium, Sampler, Scene)
-    NB_TRAMPOLINE(Medium, 6);
+    NB_TRAMPOLINE(Medium);
 
     PyMedium(const Properties &props) : Medium(props) {}
 
@@ -47,8 +47,6 @@ public:
     using Medium::m_sample_emitters;
     using Medium::m_is_homogeneous;
     using Medium::m_has_spectral_extinction;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Medium)
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
@@ -116,6 +114,7 @@ MI_PY_EXPORT(Medium) {
         dr::ArrayBinding b;
         auto medium_ptr = dr::bind_array_t<MediumPtr>(b, m, "MediumPtr");
         bind_medium_generic<MediumPtr>(medium_ptr);
+        medium_ptr.freeze();
     }
 
 }

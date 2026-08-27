@@ -6,12 +6,12 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Simple exchange format for tensor data of arbitrary rank and size
+ * Simple exchange format for tensor data of arbitrary rank and size
  *
  * This class provides convenient memory-mapped read-only access to tensor
  * data, usually exported from NumPy.
  *
- * The Python functions :python:func:`mi.tensor_io.write(filename, tensor_1=..,
+ * The Python functions :py:func:`mi.tensor_io.write(filename, tensor_1=..,
  * tensor_2=.., ...) <mitsuba.tensor_io.write>` and :py:func:`tensor_file =
  * mi.tensor_io.read(filename) <mitsuba.tensor_io.read>` can be used to create
  * and modify these files within Python.

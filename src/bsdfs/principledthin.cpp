@@ -277,8 +277,8 @@ public:
                 roughness = m_roughness->eval_1(si, active),
                 spec_trans =
                         m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f;
-        /* Diffuse transmission weight. Normally, its range is 0-2, we
-               make it 0-1 here. */
+        // Diffuse transmission weight. Normally, its range is 0-2, we
+        // make it 0-1 here.
         Float diff_trans =
                 m_has_diff_trans ? m_diff_trans->eval_1(si, active) / 2.0f : 0.0f;
 
@@ -404,8 +404,8 @@ public:
                     +BSDFFlags::DiffuseTransmission;
         }
 
-        /* The direction is changed once more. (Because it was changed in
-           the beginning.) */
+        // The direction is changed once more. (Because it was changed in
+        // the beginning.)
         bs.wo = dr::mulsign(bs.wo, cos_theta_i);
 
         bs.pdf = pdf(ctx, si, bs.wo, active);
@@ -453,8 +453,8 @@ public:
         wo_r.z()      = dr::abs(wo_r.z());
         Vector3f wh   = dr::normalize(wi + wo_r);
 
-        /* Masks for controlling the micro-macro surface incompatibilities
-           and correct sides. */
+        // Masks for controlling the micro-macro surface incompatibilities
+        // and correct sides.
         Mask spec_reflect_active =
                 active && (spec_trans > 0.0f) && reflect &&
                 mac_mic_compatibility(wh, wi, wo_t, wi.z(), true);
@@ -538,9 +538,9 @@ public:
             Float Rr          = 2.0f * roughness * dr::square(cos_theta_d);
             Float f_retro     = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
 
-            /* Fake subsurface implementation based on Hanrahan-Krueger
-               Fss90 used to "flatten" retro reflection based on
-               roughness. */
+            // Fake subsurface implementation based on Hanrahan-Krueger
+            // Fss90 used to "flatten" retro reflection based on
+            // roughness.
             if (m_has_flatness) {
                 Float Fss90 = Rr / 2.f;
                 Float Fss = dr::lerp(1.f, Fss90, Fo) * dr::lerp(1.f, Fss90, Fi);
@@ -655,9 +655,9 @@ public:
 
         // Specular lobes' pdf evaluations
         if (m_has_spec_trans) {
-            /* Halfway vector calculation. Absolute value is taken since for
-             * specular transmission, we first apply microfacet reflection
-             * and invert to the other side. */
+            // Halfway vector calculation. Absolute value is taken since for
+            // specular transmission, we first apply microfacet reflection
+            // and invert to the other side.
             Vector3f wo_r = wo_t;
             wo_r.z()      = dr::abs(wo_r.z());
             Vector3f wh   = dr::normalize(wi + wo_r);

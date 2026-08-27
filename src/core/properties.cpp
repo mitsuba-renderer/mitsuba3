@@ -593,7 +593,7 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
                                          std::string_view variant,
                                          bool emitter,
                                          bool unbounded) const {
-    size_t index = key_index(name);
+    size_t index = key_index_checked(name);
     const Entry &entry = d->entries[index];
     const Variant &value = entry.value;
     Type type = (Type) value.index();
@@ -645,11 +645,11 @@ ref<Object> Properties::get_texture_impl(std::string_view name,
                 double const_value = spectrum.values[0];
 
                 if (!is_spectral && !is_monochromatic && emitter) {
-                    /* A uniform spectrum does not produce a uniform RGB response in
-                       sRGB (which has a D65 white point). The call to 'xyz_to_srgb'
-                       computes this purple-ish color and uses it to initialize the
-                       'srgb' plugin. This is needed so that RGB variants of Mitsuba
-                       match the behavior of spectral variants */
+                    // A uniform spectrum does not produce a uniform RGB response in
+                    // sRGB (which has a D65 white point). The call to 'xyz_to_srgb'
+                    // computes this purple-ish color and uses it to initialize the
+                    // 'srgb' plugin. This is needed so that RGB variants of Mitsuba
+                    // match the behavior of spectral variants
                     plugin_name = "srgb";
                     props.set("color", const_value * xyz_to_srgb(Color3f(1.0)));
                 } else {

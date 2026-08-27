@@ -9,8 +9,11 @@
 #pragma once
 
 #define MI_VERSION_MAJOR 3
-#define MI_VERSION_MINOR 9
+#define MI_VERSION_MINOR 10
 #define MI_VERSION_PATCH 0
+
+/// Pre-release suffix (e.g. ".dev1"), empty in actual releases
+#define MI_VERSION_DEV ".dev1"
 
 #define MI_STRINGIFY(x) #x
 #define MI_TOSTRING(x)  MI_STRINGIFY(x)
@@ -19,7 +22,7 @@
 #define MI_VERSION                                                             \
     MI_TOSTRING(MI_VERSION_MAJOR) "."                                          \
     MI_TOSTRING(MI_VERSION_MINOR) "."                                          \
-    MI_TOSTRING(MI_VERSION_PATCH)
+    MI_TOSTRING(MI_VERSION_PATCH) MI_VERSION_DEV
 
 /// Year of the current release
 #define MI_YEAR "2024"

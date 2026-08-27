@@ -37,7 +37,7 @@
 #include <drjit/while_loop.h>
 
 NAMESPACE_BEGIN(drjit)
-/// Prints the canonical representation of a PCG32 object.
+/// Prints the canonical representation of a ``PCG32`` object.
 template <typename Value>
 std::ostream& operator<<(std::ostream &os, const PCG32<Value> &p) {
     os << "PCG32[" << std::endl
@@ -53,23 +53,20 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename UInt32> using PCG32 = dr::PCG32<UInt32>;
 
 /**
- * \brief Generate fast and reasonably good pseudorandom numbers using the
+ * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
- * by Fahad Zafar, Marc Olano, and Aaron Curtis.
+ * For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
  *
- * \param v0
- *     First input value to be encrypted (could be the sample index)
+ * Args:
+ *     v0: First input value to be encrypted (could be the sample index)
  *
- * \param v1
- *     Second input value to be encrypted (e.g. the requested random number dimension)
+ *     v1: Second input value to be encrypted (e.g. the requested random number dimension)
  *
- * \param rounds
- *     How many rounds should be executed? The default for random number
- *     generation is 4.
+ *     rounds: How many rounds should be executed? The default for random number
+ *         generation is 4.
  *
- * \return
+ * Returns:
  *     Two uniformly distributed 32-bit integers
  */
 
@@ -90,20 +87,20 @@ std::pair<UInt32, UInt32> sample_tea_32(UInt32 v0, UInt32 v1, int rounds = 4) {
 }
 
 /**
- * \brief Generate fast and reasonably good pseudorandom numbers using the
+ * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * For details, refer to "GPU Random Numbers via the Tiny Encryption Algorithm"
- * by Fahad Zafar, Marc Olano, and Aaron Curtis.
+ * For details, refer to Zafar et al. :cite:`Zafar2010TEA`.
  *
- * \param v0
- *     First input value to be encrypted (could be the sample index)
- * \param v1
- *     Second input value to be encrypted (e.g. the requested random number dimension)
- * \param rounds
- *     How many rounds should be executed? The default for random number
- *     generation is 4.
- * \return
+ * Args:
+ *     v0: First input value to be encrypted (could be the sample index)
+ *
+ *     v1: Second input value to be encrypted (e.g. the requested random number dimension)
+ *
+ *     rounds: How many rounds should be executed? The default for random number
+ *         generation is 4.
+ *
+ * Returns:
  *     A uniformly distributed 64-bit integer
  */
 
@@ -117,21 +114,22 @@ dr::uint64_array_t<UInt32> sample_tea_64(UInt32 v0, UInt32 v1, int rounds = 4) {
 
 
 /**
- * \brief Generate fast and reasonably good pseudorandom numbers using the
+ * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * This function uses \ref sample_tea to return single precision floating point
- * numbers on the interval <tt>[0, 1)</tt>
+ * This function uses `sample_tea_32` to return single precision floating point
+ * numbers on the interval ``[0, 1)``
  *
- * \param v0
- *     First input value to be encrypted (could be the sample index)
- * \param v1
- *     Second input value to be encrypted (e.g. the requested random number dimension)
- * \param rounds
- *     How many rounds should be executed? The default for random number
- *     generation is 4.
- * \return
- *     A uniformly distributed floating point number on the interval <tt>[0, 1)</tt>
+ * Args:
+ *     v0: First input value to be encrypted (could be the sample index)
+ *
+ *     v1: Second input value to be encrypted (e.g. the requested random number dimension)
+ *
+ *     rounds: How many rounds should be executed? The default for random number
+ *         generation is 4.
+ *
+ * Returns:
+ *     A uniformly distributed floating point number on the interval ``[0, 1)``
  */
 template <typename UInt32>
 dr::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds = 4) {
@@ -140,21 +138,22 @@ dr::float32_array_t<UInt32> sample_tea_float32(UInt32 v0, UInt32 v1, int rounds 
 }
 
 /**
- * \brief Generate fast and reasonably good pseudorandom numbers using the
+ * Generate fast and reasonably good pseudorandom numbers using the
  * Tiny Encryption Algorithm (TEA) by David Wheeler and Roger Needham.
  *
- * This function uses \ref sample_tea to return double precision floating point
- * numbers on the interval <tt>[0, 1)</tt>
+ * This function uses `sample_tea_64` to return double precision floating point
+ * numbers on the interval ``[0, 1)``
  *
- * \param v0
- *     First input value to be encrypted (could be the sample index)
- * \param v1
- *     Second input value to be encrypted (e.g. the requested random number dimension)
- * \param rounds
- *     How many rounds should be executed? The default for random number
- *     generation is 4.
- * \return
- *     A uniformly distributed floating point number on the interval <tt>[0, 1)</tt>
+ * Args:
+ *     v0: First input value to be encrypted (could be the sample index)
+ *
+ *     v1: Second input value to be encrypted (e.g. the requested random number dimension)
+ *
+ *     rounds: How many rounds should be executed? The default for random number
+ *         generation is 4.
+ *
+ * Returns:
+ *     A uniformly distributed floating point number on the interval ``[0, 1)``
  */
 
 template <typename UInt32>
@@ -164,7 +163,7 @@ dr::float64_array_t<UInt32> sample_tea_float64(UInt32 v0, UInt32 v1, int rounds 
 }
 
 
-/// Alias to \ref sample_tea_float32 or \ref sample_tea_float64 based given type size
+/// Alias to `sample_tea_float32` or `sample_tea_float64` based given type size
 template <typename Float, typename UInt32>
 auto sample_tea_float(UInt32 v0, UInt32 v1, int rounds = 4) {
     if constexpr(std::is_same_v<dr::scalar_t<Float>, float>)
@@ -174,22 +173,23 @@ auto sample_tea_float(UInt32 v0, UInt32 v1, int rounds = 4) {
 }
 
 /**
- * \brief Generate pseudorandom permutation vector using a shuffling network
+ * Generate pseudorandom permutation vector using a shuffling network
  *
- * This algorithm repeatedly invokes \ref sample_tea_32() internally and has
- * O(log2(sample_count)) complexity. It only supports permutation vectors,
+ * This algorithm repeatedly invokes `sample_tea_32()` internally and has
+ * ``O(log2(sample_count))`` complexity. It only supports permutation vectors,
  * whose lengths are a power of 2.
  *
- * \param index
- *     Input index to be permuted
- * \param size
- *     Length of the permutation vector
- * \param seed
- *     Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
- *     generate different permutation vectors.
- * \param rounds
- *     How many rounds should be executed by the Tiny Encryption Algorithm? The default is 2.
- * \return
+ * Args:
+ *     index: Input index to be permuted
+ *
+ *     size: Length of the permutation vector
+ *
+ *     seed: Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
+ *         generate different permutation vectors.
+ *
+ *     rounds: How many rounds should be executed by the Tiny Encryption Algorithm? The default is 2.
+ *
+ * Returns:
  *     The index corresponding to the input index in the pseudorandom permutation vector.
  */
 
@@ -213,21 +213,20 @@ UInt32 permute(UInt32 index, uint32_t size, UInt32 seed, int rounds = 2) {
 }
 
 /**
- * \brief Generate pseudorandom permutation vector using the algorithm described in Pixar's
- * technical memo "Correlated Multi-Jittered Sampling":
+ * Generate pseudorandom permutation vector using the algorithm described in
+ * Kensler's Pixar technical memo :cite:`Kensler2013CorrelatedMS`.
  *
- *     https://graphics.pixar.com/library/MultiJitteredSampling/
+ * Unlike `permute`, this function supports permutation vectors of any length.
  *
- *  Unlike \ref permute, this function supports permutation vectors of any length.
+ * Args:
+ *     index: Input index to be mapped
  *
- * \param index
- *     Input index to be mapped
- * \param sample_count
- *     Length of the permutation vector
- * \param seed
- *     Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
- *     generate different permutation vectors.
- * \return
+ *     sample_count: Length of the permutation vector
+ *
+ *     seed: Seed value used as second input to the Tiny Encryption Algorithm. Can be used to
+ *         generate different permutation vectors.
+ *
+ * Returns:
  *     The index corresponding to the input index in the pseudorandom permutation vector.
  */
 

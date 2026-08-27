@@ -63,9 +63,10 @@ static nb::object get_property(const Properties& p, std::string_view key) {
 
             // Use nanobind's internal API to find an existing Python object
             // from the C++ pointer and type embedded within the Any instance.
-            nb::handle py_obj = nanobind::detail::nb_type_put(
-                &any_val.type(), const_cast<void*>(any_val.data()),
-                nanobind::rv_policy::none, nullptr);
+            nb::handle py_obj = NB_CALL(nb_type_put)(
+                NB_CTX, &any_val.type(), nullptr,
+                const_cast<void *>(any_val.data()), nb::rv_policy::none_v,
+                nullptr, nullptr);
 
             if (!py_obj.is_valid())
                 Throw("Property \"%s\" is not a known Python object.", key);
@@ -86,30 +87,9 @@ MI_PY_EXPORT(Properties) {
         .def(nb::init<const Properties &>(), D(Properties, Properties, 3))
 
         // Methods
-        .def("has_property", [](const Properties& p, std::string_view key) {
-            // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning,
-                        "has_property() is deprecated, use 'key in props' instead", 1);
-            return p.has_property(key);
-        }, "key"_a, "Deprecated: use 'key in props' instead")
-        .def("remove_property", [](Properties& p, std::string_view key) {
-            // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning,
-                        "remove_property() is deprecated, use 'del props[key]' instead", 1);
-            return p.remove_property(key);
-        }, "key"_a, "Deprecated: use 'del props[key]' instead")
-        .def("property_names", [](const Properties& p) {
-            // Issue deprecation warning
-            PyErr_WarnEx(PyExc_DeprecationWarning,
-                        "property_names() is deprecated, use 'props.keys()' instead", 1);
-            std::vector<std::string> names;
-            for (const auto &key : p)
-                names.push_back(std::string(key.name()));
-            return names;
-        }, "Deprecated: use 'props.keys()' instead")
         .def("mark_queried",
              nb::overload_cast<std::string_view, bool>(&Properties::mark_queried, nb::const_),
-             "key"_a, "value"_a = true,
+             "name"_a, "value"_a = true,
              D(Properties, mark_queried))
         .def_method(Properties, was_queried)
         .def_method(Properties, plugin_name)
@@ -222,7 +202,7 @@ MI_PY_EXPORT(Properties) {
                 return nb::borrow(def_val);
         },
         "key"_a, "def_value"_a = nb::none(),
-        D(Properties, get))
+        D(Properties, get, 2))
         .def("__contains__", [](const Properties& p, std::string_view key) {
             return p.has_property(key);
         })
@@ -230,19 +210,19 @@ MI_PY_EXPORT(Properties) {
             return p.remove_property(key);
         })
         .def("keys", [](const Properties& p) {
-            nb::list names;
+            nb::list_builder names(p.size());
             for (const auto &key : p)
-                names.append(key.name());
-            return names;
+                names.put(key.name());
+            return names.commit();
         }, "Return a list of property names")
         .def("__iter__", [](nb::handle self) {
             return nb::iter(self.attr("keys")());
         }, "Return a list of property names")
         .def("items", [](const Properties& p) {
-            nb::list result;
+            nb::list_builder result(p.size());
             for (const auto &key : p)
-                result.append(nb::make_tuple(key.name(), get_property(p, key.name())));
-            return result;
+                result.put(nb::make_tuple(key.name(), get_property(p, key.name())));
+            return result.commit();
         }, "Return a list of (key, value) tuples")
         .def("as_string",
             [](const Properties& p, std::string_view key) { return p.as_string(key); },

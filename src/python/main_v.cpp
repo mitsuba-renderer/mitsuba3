@@ -93,13 +93,12 @@ MI_PY_DECLARE(Interaction);
 MI_PY_DECLARE(SurfaceInteraction);
 MI_PY_DECLARE(MediumInteraction);
 MI_PY_DECLARE(PreliminaryIntersection);
+MI_PY_DECLARE(DirectedEdge);
 MI_PY_DECLARE(Medium);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
 MI_PY_DECLARE(MicroflakeDistribution);
-#if defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(OptixDenoiser);
-#endif // defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
 MI_PY_DECLARE(DirectionSample);
@@ -118,7 +117,9 @@ using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
 
 NB_MODULE(MI_VARIANT_NAME, m) {
-    bool is_stub_gen = std::getenv("MI_STUB_GENERATION");
+    // Stub generation (which sets this variable) must be able to import the
+    // module on machines without a working JIT backend
+    bool is_stub_gen = std::getenv("NB_STUBGEN");
 
     /* scoped */ {
         // Before loading everything in and creating a lot of references to
@@ -165,11 +166,20 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     MI_PY_IMPORT(DrJit);
 
-    // TODO: Add documentation
+    // Properties of the color representation used by this variant
     m.attr("is_monochromatic") = is_monochromatic_v<Spectrum>;
     m.attr("is_rgb") = is_rgb_v<Spectrum>;
     m.attr("is_spectral") = is_spectral_v<Spectrum>;
     m.attr("is_polarized") = is_polarized_v<Spectrum>;
+
+    // Properties of the computational backend used by this variant
+    constexpr JitBackend Backend = dr::backend_v<Float>;
+    m.attr("is_scalar") = !dr::is_jit_v<Float>;
+    m.attr("is_llvm") = Backend == JitBackend::LLVM;
+    m.attr("is_cuda") = Backend == JitBackend::CUDA;
+    m.attr("is_metal") = Backend == JitBackend::Metal;
+    m.attr("is_jit") = dr::is_jit_v<Float>;
+    m.attr("is_ad") = dr::is_diff_v<Float>;
 
     MI_PY_IMPORT(Object);
     MI_PY_IMPORT(Ray);
@@ -198,6 +208,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     MI_PY_IMPORT(Scene);
     MI_PY_IMPORT(Shape);
+    MI_PY_IMPORT(DirectedEdge);
     MI_PY_IMPORT(Medium);
     MI_PY_IMPORT(Endpoint);
     MI_PY_IMPORT(Emitter);
@@ -217,9 +228,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_SUBMODULE(mueller);
     MI_PY_IMPORT(MicrofacetDistribution);
     MI_PY_IMPORT(MicroflakeDistribution);
-#if defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(OptixDenoiser);
-#endif // defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);
     MI_PY_IMPORT(Sensor);
@@ -229,8 +238,8 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
 
-    /* Callback function cleanup static variant-specific data structures, this
-     * should be called when the interpreter is exiting */
+    // Callback function cleanup static variant-specific data structures, this
+    // should be called when the interpreter is exiting
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         {
@@ -241,11 +250,11 @@ NB_MODULE(MI_VARIANT_NAME, m) {
         Scene::static_accel_shutdown();
     }));
 
-    /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.scalar_rgb.test.util import function`
-     * For that we `__path__` needs to be populated. We do it by using the
-     * `__file__` attribute of a Python file which is located in the same
-     * directory as this module */
+    // Make this a package, thus allowing statements such as:
+    // `from mitsuba.scalar_rgb.test.util import function`
+    // For that we `__path__` needs to be populated. We do it by using the
+    // `__file__` attribute of a Python file which is located in the same
+    // directory as this module
     nb::module_ os = nb::module_::import_("os");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));

@@ -16,13 +16,12 @@ struct fp16 {
 };
 static_assert(sizeof(fp16) == 2);
 
-namespace nanobind {
-    template <> struct ndarray_traits<fp16> {
-        static constexpr bool is_complex = false;
-        static constexpr bool is_float   = true;
-        static constexpr bool is_bool    = false;
-        static constexpr bool is_int     = false;
-        static constexpr bool is_signed  = true;
+namespace nanobind::detail {
+    template <> struct dtype_traits<fp16> {
+        static constexpr dlpack::dtype value{
+            (uint8_t) dlpack::dtype_code::Float, 16, 1
+        };
+        static constexpr auto name = const_name("float16");
     };
 }
 

@@ -51,19 +51,19 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
         d.divisor = dr::divisor<uint64_t>(value);
     }
 
-    /* Compute the size of the final permutation table (corresponding to primes) */
+    // Compute the size of the final permutation table (corresponding to primes)
     size_t final_size = 0;
     for (size_t i = 0; i < m_base_count; ++i)
         final_size += m_base[i].value;
-    final_size += 3; /* Padding for 64bit gather operations */
+    final_size += 3; // Padding for 64bit gather operations
 
-    /* Allocate memory for them */
+    // Allocate memory for them
     m_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[final_size]);
     m_permutations = std::unique_ptr<uint16_t*[]>(new uint16_t*[m_base_count]);
 
-    /* Check whether Faure or random permutations were requested */
+    // Check whether Faure or random permutations were requested
     if (scramble == -1) {
-        /* Efficiently compute all Faure permutations using dynamic programming */
+        // Efficiently compute all Faure permutations using dynamic programming
         uint16_t initial_bases = m_base[m_base_count - 1].value;
         size_t initial_size =
             ((size_t) initial_bases * (size_t) (initial_bases + 1)) / 2;
@@ -109,7 +109,7 @@ RadicalInverse::RadicalInverse(size_t max_base, int scramble) : m_scramble(scram
     }
     Log(Debug, "Done (took %s)", util::time_string((float) timer.value()));
 
-    /* Invert the first two permutations */
+    // Invert the first two permutations
     m_inv_permutation_storage = std::unique_ptr<uint16_t[]>(new uint16_t[5]);
     m_inv_permutations = std::unique_ptr<uint16_t*[]>(new uint16_t*[2]);
     m_inv_permutations[0] = m_inv_permutation_storage.get();
@@ -125,7 +125,7 @@ size_t RadicalInverse::base(size_t index) const {
 }
 
 /**
- * \ref Compute the Faure permutations using dynamic programming
+ * Compute the Faure permutations using dynamic programming
  *
  * For reference, see "Good permutations for extreme discrepancy"
  * by Henri Faure, Journal of Number Theory, Vol. 42, 1, 1992.
@@ -133,16 +133,16 @@ size_t RadicalInverse::base(size_t index) const {
 void RadicalInverse::compute_faure_permutations(uint32_t max_base, uint16_t **perm) {
     Assert(max_base >= 2);
 
-    /* Dimension 1 */
+    // Dimension 1
     perm[1][0] = 0;
 
-    /* Dimension 2 */
+    // Dimension 2
     perm[2][0] = 0;
     perm[2][1] = 1;
 
     for (uint32_t b = 2; b <= max_base; ++b) {
         if (b & 1) {
-            /* Odd dimension */
+            // Odd dimension
             uint16_t c = (uint16_t) ((b - 1) / 2);
 
             for (uint16_t i=0; i<b; ++i) {
@@ -154,7 +154,7 @@ void RadicalInverse::compute_faure_permutations(uint32_t max_base, uint16_t **pe
                 }
             }
         } else {
-            /* Even dimension */
+            // Even dimension
             uint16_t c = (uint16_t) (b / 2);
 
             for (uint16_t i=0; i<b; ++i)

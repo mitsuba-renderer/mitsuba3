@@ -120,7 +120,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, +RayFlags::All, /* coherent = */ true, active);
+            ray, +RayFlags::Default, /* coherent = */ true, active);
 
         Spectrum result(0.f);
 
@@ -136,7 +136,7 @@ public:
                 PreliminaryIntersection3f pi =
                     Base::skip_area_emitters(scene, ray_skip, true, skip_emitters);
                 SurfaceInteraction3f si_after_skip = pi.compute_surface_interaction(
-                        ray, +RayFlags::All, skip_emitters);
+                        ray, +RayFlags::Default, skip_emitters);
                 dr::masked(si, skip_emitters) = si_after_skip;
             }
         } else {
@@ -172,8 +172,8 @@ public:
                 // Query the BSDF for that emitter-sampled direction
                 Vector3f wo = si.to_local(ds.d);
 
-                /* Determine BSDF value and probability of having sampled
-                   that same direction using BSDF sampling. */
+                // Determine BSDF value and probability of having sampled
+                // that same direction using BSDF sampling.
                 auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e);
                 bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
@@ -204,8 +204,8 @@ public:
                 Spectrum emitter_val = emitter->eval(si_bsdf, active_b);
                 Mask delta = has_flag(bs.sampled_type, BSDFFlags::Delta);
 
-                /* Determine probability of having sampled that same
-                   direction using Emitter sampling. */
+                // Determine probability of having sampled that same
+                // direction using Emitter sampling.
                 DirectionSample3f ds(scene, si_bsdf, si);
 
                 Float emitter_pdf =

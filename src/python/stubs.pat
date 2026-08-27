@@ -24,6 +24,7 @@ MI_VERSION:
 MI_VERSION_MAJOR:
 MI_VERSION_MINOR:
 MI_VERSION_PATCH:
+MI_VERSION_DEV:
 MI_YEAR:
 DEBUG:
 
@@ -42,15 +43,10 @@ mitsuba.__prefix__:
         ad as ad,
         chi2 as chi2,
         math_py as math_py,
+        tensor_io as tensor_io,
+        testing as testing,
         util as util,
     )
-
-    def load_dict(dict: dict, parallel: bool = True, optimize: bool = True) -> typing.Any: ...
-    def load_file(path: str, parallel: bool = True, optimize: bool = True, **kwargs) -> typing.Any: ...
-    def load_string(value: str, parallel: bool = True, optimize: bool = True, **kwargs) -> typing.Any: ...
-
-    def set_log_level(level: LogLevel) -> None: ...
-    def log_level() -> LogLevel: ...
 
     _BoolCp: TypeAlias = Union[bool, 'Bool', 'drjit.auto.Bool', 'drjit.auto.ad.Bool', Annotated[NDArray[numpy.bool_], dict(shape=("*",), order='C', device='cpu')], Sequence[bool]]
     _IntCp: TypeAlias = Union[int, 'Int', 'drjit.auto.Int', 'drjit.auto.ad.Int', Annotated[NDArray[numpy.int32], dict(shape=("*",), order='C', device='cpu')], Sequence[int]]

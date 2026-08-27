@@ -76,7 +76,7 @@ class PRBIntegrator(RBIntegrator):
                **kwargs # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
         """
-        See ``ADIntegrator.sample()`` for a description of this interface and
+        See `ADIntegrator.sample` for a description of this interface and
         the role of the various parameters and return values.
         """
 
@@ -127,7 +127,7 @@ class PRBIntegrator(RBIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
+                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.Default)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
@@ -296,7 +296,7 @@ class PRBIntegrator(RBIntegrator):
                     # Differentiable Monte Carlo estimate of all contributions
                     Lo = Le + Lr_dir + Lr_ind
 
-                    attached_contrib = dr.flag(dr.JitFlag.VCallRecord) and not dr.grad_enabled(Lo)
+                    attached_contrib = dr.flag(dr.JitFlag.SymbolicCalls) and not dr.grad_enabled(Lo)
                     if dr.hint(attached_contrib, mode='scalar'):
                         raise Exception(
                             "The contribution computed by the differential "

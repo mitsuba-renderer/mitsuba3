@@ -102,7 +102,7 @@ def test04_ray_intersect(variants_all_ad_rgb):
                 assert si_found == (x >= 0 and x <= 1 and y >= 0 and y<= 1)
 
                 if si_found[0]:
-                    si = s.ray_intersect(ray, mi.RayFlags.All, True)
+                    si = s.ray_intersect(ray, mi.RayFlags.Default, True)
 
                     assert dr.allclose(si.t, 2 + y)
                     assert dr.allclose(si.n, mi.Normal3f(0, 1 / dr.sqrt(2), 1 / dr.sqrt(2)))
@@ -165,7 +165,7 @@ def test05_ray_intersect_instancing(variants_all_ad_rgb):
                 assert si_found == (x >= 0 and x <= 1 and y >= 0 and y<= 1)
 
                 if si_found[0]:
-                    si = s.ray_intersect(ray, mi.RayFlags.All, True)
+                    si = s.ray_intersect(ray, mi.RayFlags.Default, True)
 
                     assert dr.allclose(si.t, 2 + y)
                     assert dr.allclose(si.n, np.array([0, 1 / np.sqrt(2), 1 / np.sqrt(2)]))
@@ -207,7 +207,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     params['sdf.to_world'] = mi.Transform4f().translate(mi.Vector3f(theta))
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -226,7 +226,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     params['sdf.to_world'] = dr.detach(params['sdf.to_world'])
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -247,7 +247,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     params['sdf.to_world'] = mi.Transform4f().translate([0, theta, 0])
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -271,7 +271,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     ray = mi.Ray3f(mi.Vector3f(0.5, 0.5, 2), mi.Vector3f(0, 0, -1))
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -292,7 +292,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     ray = mi.Ray3f(mi.Vector3f(0.5, 0.5, 2), mi.Vector3f(0, 0, -1))
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -315,7 +315,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     ray = mi.Ray3f(mi.Vector3f(0.5, 0.5, 2), mi.Vector3f(0, 0, -1))
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -357,7 +357,7 @@ def test08_load_tensor(variants_all_ad_rgb):
                 assert si_found == (x >= 0 and x <= 1 and y >= 0 and y<= 1)
 
                 if si_found[0]:
-                    si = s.ray_intersect(ray, mi.RayFlags.All, True)
+                    si = s.ray_intersect(ray, mi.RayFlags.Default, True)
 
                     assert dr.allclose(si.t, 2 + y)
                     assert dr.allclose(si.n, np.array([0, 1 / np.sqrt(2), 1 / np.sqrt(2)]))

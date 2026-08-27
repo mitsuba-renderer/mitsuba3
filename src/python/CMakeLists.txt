@@ -2,17 +2,21 @@
 #   Mitsuba python library
 # ----------------------------------------------------------
 
-  set(MI_DIST_FLAGS "")
+set(MI_DIST_FLAGS "")
 if (SKBUILD)
   # Enable LTO only for release builds targeting PyPI (~5% binary size reduction)
   set(MI_DIST_FLAGS LTO)
-
-  if (MI_STABLE_ABI)
-    list(APPEND MI_DIST_FLAGS STABLE_ABI)
-  endif()
 endif()
 
 set(MI_NB_DOMAIN drjit)
+
+# Split mode delegates to a backend module from a separate Python package, the
+# non-split configuration to a shared libnanobind. Both use Dr.Jit's domain.
+if (MI_SPLIT_MODE)
+  list(APPEND MI_DIST_FLAGS BACKEND_MODULE nanobind_backend)
+else()
+  list(APPEND MI_DIST_FLAGS NB_SHARED)
+endif()
 
 include_directories(
   ${PNG_INCLUDE_DIRS}
@@ -31,7 +35,6 @@ foreach (MI_VARIANT ${MI_VARIANTS})
 
   nanobind_add_module(${TARGET_NAME}
       NB_DOMAIN ${MI_NB_DOMAIN}
-      NB_SHARED
       ${MI_DIST_FLAGS}
       main_v.cpp
       ${CORE_PY_V_SRC}
@@ -59,35 +62,26 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   )
 endforeach()
 
-set(nanobind_lib_name "nanobind")
-if (STABLE_ABI IN_LIST MI_DIST_FLAGS)
-    set(nanobind_lib_name "${nanobind_lib_name}-abi3")
+# The shared 'libnanobind' of the non-split build ships alongside the
+# extensions. Split mode imports the backend from a separate package instead.
+if (NOT MI_SPLIT_MODE)
+  set_target_properties(nanobind
+    PROPERTIES
+    LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+    RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
+    FOLDER python
+  )
+  install(TARGETS nanobind
+    LIBRARY DESTINATION mitsuba
+  )
 endif()
-set(nanobind_lib_name "${nanobind_lib_name}-${MI_NB_DOMAIN}") # Append domain name
-set_target_properties(${nanobind_lib_name}
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  RUNTIME_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  FOLDER python
-)
-install(TARGETS ${nanobind_lib_name}
-  LIBRARY DESTINATION mitsuba
-)
 
 nanobind_add_module(mitsuba_ext
   NB_DOMAIN ${MI_NB_DOMAIN}
-  NB_SHARED
   ${MI_DIST_FLAGS}
   main.cpp
   ${CORE_PY_SRC}
   ${RENDER_PY_SRC}
-)
-
-nanobind_add_module(mitsuba_alias
-  NB_DOMAIN ${MI_NB_DOMAIN}
-  NB_SHARED
-  ${MI_DIST_FLAGS}
-  alias.cpp
 )
 
 # macOS: Avoid warnings about loop unrolling being disabled with -Os
@@ -110,21 +104,6 @@ set_target_properties(mitsuba_ext
 )
 
 install(TARGETS mitsuba_ext
-  LIBRARY DESTINATION mitsuba
-)
-
-set_target_properties(mitsuba_alias
-  PROPERTIES
-  LIBRARY_OUTPUT_DIRECTORY ${MI_BINARY_DIR}/python/mitsuba
-  FOLDER python
-)
-
-target_include_directories(mitsuba_alias
-  PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/include
-  ${CMAKE_CURRENT_SOURCE_DIR}/../../ext/drjit/ext/drjit-core/include)
-
-install(TARGETS mitsuba_alias
   LIBRARY DESTINATION mitsuba
 )
 
@@ -209,7 +188,7 @@ foreach (MI_VARIANT ${MI_VARIANTS})
   list(APPEND MI_ALL_VARIANTS ${MI_VARIANT_NAME})
 endforeach()
 
-set(MI_STUB_DEPENDS mitsuba_alias mitsuba_ext mitsuba-copy-python-src ${MI_ALL_VARIANTS})
+set(MI_STUB_DEPENDS mitsuba_ext mitsuba-copy-python-src ${MI_COPY_FILES} ${MI_ALL_VARIANTS})
 
 # We usually build Dr.Jit along with Mitsuba (except building wheels in the
 # cloud, as indicated by SKBUILD). In that case, Mitsuba stub generation
@@ -245,12 +224,19 @@ set(STUB_ARGS
 # enabled.
 if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
+  # Stub generation does not recurse, each module must be listed separately.
+  # 'python.ad.optimizers' is absent because it forwards to 'drjit.opt'.
   set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
-                         "python.ad" "python.chi2" "python.math_py" "python.util" "parser")
+                         "python.ad" "python.ad.guiding" "python.ad.largesteps"
+                         "python.ad.projective"
+                         "python.ad.loaders.ray_loader"
+                         "python.ad.integrators.common"
+                         "python.chi2" "python.math_py" "python.util"
+                         "python.tensor_io" "python.testing" "parser")
 
   nanobind_add_stub(
     mitsuba-stub
-    MODULE mitsuba.mitsuba_stubs
+    MODULE mitsuba
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
     MARKER_FILE ${MI_BINARY_DIR}/python/mitsuba/py.typed
     ${STUB_ARGS}
@@ -258,7 +244,8 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   add_custom_command(
     OUTPUT ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
-    DEPENDS mitsuba-stub
+    DEPENDS mitsuba-stub ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
+      ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
     COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
       ${MI_BINARY_DIR}/python/mitsuba/_stubs.pyi
       ${MI_BINARY_DIR}/python/mitsuba/__init__.pyi
@@ -272,14 +259,15 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     string(REPLACE "." "/" value_path ${value})
     nanobind_add_stub(
       mitsuba-stub-${value}
-      MODULE mitsuba.mitsuba_stubs.${value}
+      MODULE mitsuba.${value}
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
       ${STUB_ARGS}
     )
 
     add_custom_command(
       OUTPUT ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
-      DEPENDS mitsuba-stub-${value}
+      DEPENDS mitsuba-stub-${value} ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
       COMMAND cmake -P ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/variant-stub.cmake
         ${MI_BINARY_DIR}/python/mitsuba/_${value_path}_stubs.pyi
         ${MI_BINARY_DIR}/python/mitsuba/${value_path}.pyi
@@ -294,8 +282,12 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
     DEPENDS ${MI_STUB_TARGET_DEPS}
   )
 
-  install(FILES ${MI_STUB_TARGET_DEPS} DESTINATION mitsuba)
-
+  # Preserve the hierarchy of submodule stubs
+  foreach (stub ${MI_STUB_TARGET_DEPS})
+    file(RELATIVE_PATH rel "${MI_BINARY_DIR}/python/mitsuba" "${stub}")
+    get_filename_component(dir "${rel}" DIRECTORY)
+    install(FILES ${stub} DESTINATION mitsuba/${dir})
+  endforeach()
 endif()
 
 
@@ -321,11 +313,19 @@ if (UNIX)
   endforeach()
 
   foreach (value ${MKDOC_COMPILE_DEFINITIONS})
-    list(APPEND MKDOC_CXXFLAGS -D${value})
+    if (NOT value MATCHES "^MI_ENABLE_")
+      list(APPEND MKDOC_CXXFLAGS -D${value})
+    endif()
   endforeach()
 
+  # Turn on every optional backend so that the generated docstrings don't
+  # depend on the platform and configuration used to generate them
+  list(APPEND MKDOC_CXXFLAGS -DMI_ENABLE_AUTODIFF=1 -DMI_ENABLE_CUDA=1
+       -DMI_ENABLE_LLVM=1 -DMI_ENABLE_METAL=1 -DMI_ENABLE_EMBREE=1)
+
   add_custom_target(docstrings USES_TERMINAL COMMAND
-    ${Python_EXECUTABLE} -m pybind11_mkdoc -std=c++17 -stdlib=libc++ -ferror-limit=100000
+    ${Python_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/../../resources/mkdocs.py
+    -std=c++17 -stdlib=libc++ -ferror-limit=100000
     ${MKDOC_CXXFLAGS}
     `find ${MKDOC_PATH}/core -name '*.h' ! -name fwd.h -print`
     `find ${MKDOC_PATH}/render -name '*.h' ! -name fwd.h -print`

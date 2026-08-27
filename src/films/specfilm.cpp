@@ -187,6 +187,13 @@ public:
         }
 
         compute_srf_sampling();
+
+        alloc_storage(storage_channels());
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        Base::parameters_changed(keys);
+        alloc_storage(storage_channels());
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -261,10 +268,9 @@ public:
         sorted.insert(sorted.end(), "W");  // Add weight channel
 
         /* locked */ {
-            m_channels = sorted;
             std::lock_guard<std::mutex> lock(m_mutex);
-            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
-                                       (uint32_t) m_channels.size());
+            alloc_storage(sorted.size());
+            m_channels = sorted;
         }
 
         std::sort(sorted.begin(), sorted.end());
@@ -279,7 +285,7 @@ public:
                                  bool border) override {
         bool default_config = dr::all(size == ScalarVector2u(0));
 
-        return new ImageBlock(default_config ? m_crop_size : size,
+        ref<ImageBlock> block = new ImageBlock(default_config ? m_crop_size : size,
                               default_config ? m_crop_offset : ScalarPoint2u(0),
                               (uint32_t) m_channels.size(), m_filter.get(),
                               border /* border */,
@@ -287,6 +293,13 @@ public:
                               dr::is_jit_v<Float> /* coalesce */,
                               false /* warn_negative */,
                               false /* warn_invalid */);
+
+        if (default_config) {
+            typename Base::LaunchParams lp = this->launch_params();
+            block->set_opaque_geometry(lp.crop_size, Point2i(lp.crop_offset));
+        }
+
+        return block;
     }
 
     void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
@@ -324,8 +337,9 @@ public:
     }
 
     TensorXf develop(bool raw = false) const override {
-        if (!m_storage)
-            Throw("No storage allocated, was prepare() called first?");
+        if (m_channels.empty())
+            Throw("develop(): channel information unavailable, prepare() must "
+                  "be called first.");
 
         if (raw) {
             std::lock_guard<std::mutex> lock(m_mutex);
@@ -354,9 +368,9 @@ public:
                    pixel_idx   = idx / target_ch,
                    channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
 
-            /* Index vectors referencing source pixels/weights as follows:
-                 values_idx = R1, G1, B1, R2, G2, B2 (for RGB response functions)
-                 weight_idx = W1, W1, W1, W2, W2, W2 */
+            // Index vectors referencing source pixels/weights as follows:
+            //   values_idx = R1, G1, B1, R2, G2, B2 (for RGB response functions)
+            //   weight_idx = W1, W1, W1, W2, W2, W2
             UInt32 values_idx = dr::fmadd(pixel_idx, source_ch, channel_idx),
                    weight_idx = dr::fmadd(pixel_idx, source_ch, (uint32_t) (m_channels.size() - 1));
 
@@ -367,28 +381,25 @@ public:
             // Perform the weight division unless the weight is zero
             values /= dr::select(weight == 0.f, 1.f, weight);
 
-            size_t shape[3] = { (size_t) size.y(), (size_t) size.x(),
-                                target_ch };
-
-            return TensorXf(values, 3, shape);
+            return TensorXf(values, { (size_t) size.y(), (size_t) size.x(),
+                                      target_ch });
         } else {
             ref<Bitmap> source = bitmap();
             ScalarVector2i size = source->size();
             size_t width = source->channel_count() * dr::prod(size);
             auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
 
-            size_t shape[3] = { (size_t) source->height(),
-                                (size_t) source->width(),
-                                source->channel_count() };
-
-            return TensorXf(data, 3, shape);
+            return TensorXf(data, { (size_t) source->height(),
+                                    (size_t) source->width(),
+                                    source->channel_count() });
         }
     }
 
 
     ref<Bitmap> bitmap(bool raw = false) const override {
-        if (!m_storage)
-            Throw("No storage allocated, was prepare() called first?");
+        if (m_channels.empty())
+            Throw("bitmap(): channel information unavailable, prepare() must "
+                  "be called first.");
 
         std::lock_guard<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
@@ -480,6 +491,26 @@ public:
 
     MI_DECLARE_CLASS(SpecFilm)
 protected:
+    /// Channel count of the last `prepare()` call, or a default before the first one
+    size_t storage_channels() const {
+        if (!m_channels.empty())
+            return m_channels.size();
+        return m_srfs.size() + 1;
+    }
+
+    /// Eagerly allocate the storage block
+    void alloc_storage(size_t channel_count) {
+        if (m_storage != nullptr &&
+            m_storage->channel_count() == channel_count &&
+            dr::all(m_storage->size() == m_crop_size) &&
+            dr::all(m_storage->offset() == m_crop_offset))
+            m_storage->clear();
+        else
+            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
+                                       (uint32_t) channel_count);
+    }
+
+protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
     sj::Type m_component_format;
@@ -489,6 +520,8 @@ protected:
     std::vector<ref<Texture>> m_srfs;
     std::vector<std::string> m_names;
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
+
+    MI_TRAVERSE_CB(Base, m_storage, m_srfs)
 };
 
 MI_EXPORT_PLUGIN(SpecFilm)

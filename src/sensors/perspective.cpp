@@ -165,7 +165,6 @@ public:
         if (keys.empty() || string::contains(keys, "to_world")) {
             if (m_to_world.scalar().has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
-            m_to_world = m_to_world.value().update();
         }
 
         update_camera_transforms();
@@ -182,8 +181,8 @@ public:
         m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
              - m_sample_to_camera * Point3f(0.f);
 
-        /* Precompute some data for importance(). Please
-           look at that function for further details. */
+        // Precompute some data for importance(). Please
+        // look at that function for further details.
         Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
                 pmax(m_sample_to_camera * Point3f(1.f, 1.f, 0.f));
 
@@ -193,8 +192,15 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
 
+        // Principal point offset expressed in crop window coordinates
+        m_scaled_principal_point_offset =
+            m_principal_point_offset *
+            Vector2f(ScalarVector2f(m_film->size()) /
+                     ScalarVector2f(m_film->crop_size()));
+
         dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_x_fov,
-                        m_image_rect, m_normalization, m_principal_point_offset);
+                        m_image_rect, m_normalization, m_principal_point_offset,
+                        m_scaled_principal_point_offset);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -211,13 +217,10 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
-                                 position_sample.y() + scaled_principal_point_offset.y(),
+                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
+                                 position_sample.y() + m_scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -248,13 +251,10 @@ public:
         ray.time = time;
         ray.wavelengths = wavelengths;
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + scaled_principal_point_offset.x(),
-                                 position_sample.y() + scaled_principal_point_offset.y(),
+                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
+                                 position_sample.y() + m_scaled_principal_point_offset.y(),
                                  0.f);
 
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
@@ -279,7 +279,10 @@ public:
     }
 
     ProjectiveTransform4f projection_transform() const override {
-        return m_sample_to_camera.inverse();
+        return ProjectiveTransform4f::translate(
+                   Vector3f(-m_scaled_principal_point_offset.x(),
+                            -m_scaled_principal_point_offset.y(), 0.f)) *
+               m_sample_to_camera.inverse();
     }
 
     std::pair<DirectionSample3f, Spectrum>
@@ -296,12 +299,9 @@ public:
         if (dr::none_or<false>(active))
             return { ds, dr::zeros<Spectrum>() };
 
-        Vector2f scaled_principal_point_offset =
-            m_film->size() * m_principal_point_offset / m_film->crop_size();
-
         Point3f screen_sample = m_sample_to_camera.inverse() * ref_p;
-        ds.uv = Point2f(screen_sample.x() - scaled_principal_point_offset.x(),
-                        screen_sample.y() - scaled_principal_point_offset.y());
+        ds.uv = Point2f(screen_sample.x() - m_scaled_principal_point_offset.x(),
+                        screen_sample.y() - m_scaled_principal_point_offset.y());
         active &= (ds.uv.x() >= 0) && (ds.uv.x() <= 1) && (ds.uv.y() >= 0) &&
                   (ds.uv.y() <= 1);
         if (dr::none_or<false>(active))
@@ -329,51 +329,50 @@ public:
     }
 
     /**
-     * \brief Compute the directional sensor response function of the camera
+     * Compute the directional sensor response function of the camera
      * multiplied with the cosine foreshortening factor associated with the
      * image plane
      *
-     * \param d
-     *     A normalized direction vector from the aperture position to the
-     *     reference point in question (all in local camera space)
+     * Args:
+     *     d: A normalized direction vector from the aperture position to the
+     *         reference point in question (all in local camera space)
      */
     Float importance(const Vector3f &d) const {
-        /* How is this derived? Imagine a hypothetical image plane at a
-           distance of d=1 away from the pinhole in camera space.
-
-           Then the visible rectangular portion of the plane has the area
-
-              A = (2 * dr::tan(0.5 * xfov in radians))^2 / aspect
-
-           Since we allow crop regions, the actual visible area is
-           potentially reduced:
-
-              A' = A * (cropX / filmX) * (cropY / filmY)
-
-           Perspective transformations of such aligned rectangles produce
-           an equivalent scaled (but otherwise undistorted) rectangle
-           in screen space. This means that a strategy, which uniformly
-           generates samples in screen space has an associated area
-           density of 1/A' on this rectangle.
-
-           To compute the solid angle density of a sampled point P on
-           the rectangle, we can apply the usual measure conversion term:
-
-              d_omega = 1/A' * distance(P, origin)^2 / dr::cos(theta)
-
-           where theta is the angle that the unit direction vector from
-           the origin to P makes with the rectangle. Since
-
-              distance(P, origin)^2 = Px^2 + Py^2 + 1
-
-           and
-
-              dr::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
-
-           we have
-
-              d_omega = 1 / (A' * cos^3(theta))
-        */
+        // How is this derived? Imagine a hypothetical image plane at a
+        // distance of d=1 away from the pinhole in camera space.
+        //
+        // Then the visible rectangular portion of the plane has the area
+        //
+        //    A = (2 * dr::tan(0.5 * xfov in radians))^2 / aspect
+        //
+        // Since we allow crop regions, the actual visible area is
+        // potentially reduced:
+        //
+        //    A' = A * (cropX / filmX) * (cropY / filmY)
+        //
+        // Perspective transformations of such aligned rectangles produce
+        // an equivalent scaled (but otherwise undistorted) rectangle
+        // in screen space. This means that a strategy, which uniformly
+        // generates samples in screen space has an associated area
+        // density of 1/A' on this rectangle.
+        //
+        // To compute the solid angle density of a sampled point P on
+        // the rectangle, we can apply the usual measure conversion term:
+        //
+        //    d_omega = 1/A' * distance(P, origin)^2 / dr::cos(theta)
+        //
+        // where theta is the angle that the unit direction vector from
+        // the origin to P makes with the rectangle. Since
+        //
+        //    distance(P, origin)^2 = Px^2 + Py^2 + 1
+        //
+        // and
+        //
+        //    dr::cos(theta) = 1/sqrt(Px^2 + Py^2 + 1),
+        //
+        // we have
+        //
+        //    d_omega = 1 / (A' * cos^3(theta))
 
         Float ct     = Frame3f::cos_theta(d),
               inv_ct = dr::rcp(ct);
@@ -381,8 +380,8 @@ public:
         // Compute the position on the plane at distance 1
         Point2f p(d.x() * inv_ct, d.y() * inv_ct);
 
-        /* Check if the point lies to the front and inside the
-           chosen crop rectangle */
+        // Check if the point lies to the front and inside the
+        // chosen crop rectangle
         Mask valid = ct > 0 && m_image_rect.contains(p);
 
         return dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
@@ -413,11 +412,11 @@ private:
     Float m_normalization;
     Float m_x_fov;
     Vector3f m_dx, m_dy;
-    Vector2f m_principal_point_offset;
+    Vector2f m_principal_point_offset, m_scaled_principal_point_offset;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect,
                    m_normalization, m_x_fov, m_dx, m_dy,
-                   m_principal_point_offset)
+                   m_principal_point_offset, m_scaled_principal_point_offset)
 };
 
 MI_EXPORT_PLUGIN(PerspectiveCamera)

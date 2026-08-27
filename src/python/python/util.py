@@ -57,16 +57,21 @@ class SceneParameters(Mapping):
         cur, value_type, node, flags = self.properties[key]
 
         if (flags & mi.ParamFlags.ReadOnly) != 0:
-            raise Exception(f'{key} is a Read-Only parameter!')
+            raise Exception(f'{key} is a read-only parameter!')
 
         cur_value = cur
         if value_type is not None:
             cur_value = self.get_property(cur, value_type, node)
 
-        if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
-            dr.all(cur_value == value, axis=None)):
-            # Turn this into a no-op when the set value is identical to the new value
-            return
+        try:
+            if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
+                dr.all(cur_value == value, axis=None)):
+                # Turn this into a no-op when the set value is identical to the new value
+                return
+        except Exception:
+            # Incomparable (e.g. mismatched shapes): let the write proceed so
+            # that the parameter owner can report a meaningful error
+            pass
 
         self.set_dirty(key)
 
@@ -156,7 +161,7 @@ class SceneParameters(Mapping):
         This method should rarely be called explicitly. The
         :py:class:`~mitsuba.SceneParameters` will detect most operations on
         its values and automatically flag them as dirty. A common exception to
-        the detection mechanism is the :py:meth:`~drjit.scatter` operation which
+        the detection mechanism is the :py:func:`~drjit.scatter` operation which
         needs an explicit call to :py:meth:`~mitsuba.SceneParameters.set_dirty()`.
         """
         value, _, node, flags = self.properties[key]
@@ -197,10 +202,11 @@ class SceneParameters(Mapping):
         element is the node itself. The second element is the set of keys that
         the node is being updated for.
 
-        Parameter ``values`` (``dict``):
-            Optional dictionary-like object containing a set of keys and values
-            to be used to overwrite scene parameters. This operation will happen
-            before propagating the update further into the scene internal state.
+        Args:
+            values: Optional dictionary-like object containing a set of keys
+                and values to be used to overwrite scene parameters. This
+                operation will happen before propagating the update further
+                into the scene internal state.
         """
         if values is not None:
             for k, v in values.items():
@@ -215,9 +221,6 @@ class SceneParameters(Mapping):
                 continue
 
             self.set_dirty(key)
-
-        for key in self.keys():
-            dr.schedule(self.__get_value(key))
 
         # Notify nodes from bottom to top
         work_list = [(d, n, k) for (d, n), k in self.nodes_to_update.items()]
@@ -238,10 +241,10 @@ class SceneParameters(Mapping):
         Reduce the size of the dictionary by only keeping elements,
         whose keys are defined by 'keys'.
 
-        Parameter ``keys`` (``None``, ``str``, ``[str]``):
-            Specifies which parameters should be kept. Regex are supported to define
-            a subset of parameters at once. If set to ``None``, all differentiable
-            scene parameters will be loaded.
+        Args:
+            keys: Specifies which parameters should be kept. Regex are
+                supported to define a subset of parameters at once. If set to
+                ``None``, all differentiable scene parameters will be loaded.
         """
         if type(keys) is not list:
             keys = [keys]
@@ -263,7 +266,7 @@ def _jit_id_hash(value: Any) -> int:
     """
 
     def jit_ids(value: Any) -> list[tuple[int, Optional[int]]]:
-        return dr.detail.collect_indices(value)
+        return dr.detail.collect_indices(value, dr.detail.TraverseRole.Freeze)
 
     return hash(tuple(jit_ids(value)))
 
@@ -371,12 +374,6 @@ class _RenderOp(dr.CustomOp):
                 develop=True,
                 evaluate=False
             )
-            # After rendering an image, the sampler state is dependent on the
-            # rendering loop. When a frozen function is recorded, the sampler
-            # might be evaluated, which causes parts of the rendering loop to
-            # be re-evaluated. To prevent this overhead, we reset the state
-            # of the sampler, by re-seeding it.
-            sensor.sampler().seed(0, 1)
             return res
 
     def forward(self):
@@ -408,7 +405,7 @@ def render(scene: mi.Scene,
     ``dr.backward()``).
 
     Under the hood, the differentiation operation will be intercepted and routed
-    to ``Integrator.render_forward()`` or ``Integrator.render_backward()``,
+    to `mitsuba.SamplingIntegrator.render_forward` or `mitsuba.SamplingIntegrator.render_backward`,
     which evaluate the derivative using either naive AD or a more specialized
     differential simulation.
 
@@ -422,54 +419,51 @@ def render(scene: mi.Scene,
     ``prb`` (Path Replay Backpropagation) that are specifically designed for
     differentiation can be significantly more efficient.
 
-    Parameter ``scene`` (``mi.Scene``):
-        Reference to the scene being rendered in a differentiable manner.
+    Args:
+        scene: Reference to the scene being rendered in a differentiable
+            manner.
 
-    Parameter ``params``:
-       An optional container of scene parameters that should receive gradients.
-       This argument isn't optional when computing forward mode derivatives. It
-       should be an instance of type ``mi.SceneParameters`` obtained via
-       ``mi.traverse()``. Gradient tracking must be explicitly enabled on these
-       parameters using ``dr.enable_grad(params['parameter_name'])`` (i.e.
-       ``render()`` will not do this for you). Furthermore, ``dr.set_grad(...)``
-       must be used to associate specific gradient values with parameters if
-       forward mode derivatives are desired. When the scene parameters are
-       derived from other variables that have gradient tracking enabled,
-       gradient values should be propagated to the scene parameters by calling
-       ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling this
-       function.
+        params: An optional container of scene parameters that should receive
+            gradients. This argument isn't optional when computing forward
+            mode derivatives. It should be an instance of type
+            `mitsuba.SceneParameters` obtained via `mitsuba.traverse()`.
+            Gradient tracking must be explicitly enabled on these parameters
+            using ``dr.enable_grad(params['parameter_name'])`` (i.e.
+            ``render()`` will not do this for you). Furthermore,
+            ``dr.set_grad(...)`` must be used to associate specific gradient
+            values with parameters if forward mode derivatives are desired.
+            When the scene parameters are derived from other variables that
+            have gradient tracking enabled, gradient values should be
+            propagated to the scene parameters by calling
+            ``dr.forward_to(params, dr.ADFlag.ClearEdges)`` before calling
+            this function.
 
-    Parameter ``sensor`` (``int``, ``mi.Sensor``):
-        Specify a sensor or a (sensor index) to render the scene from a
-        different viewpoint. By default, the first sensor within the scene
-        description (index 0) will take precedence.
+        sensor: Specify a sensor or a (sensor index) to render the scene from
+            a different viewpoint. By default, the first sensor within the
+            scene description (index 0) will take precedence.
 
-    Parameter ``integrator`` (``mi.Integrator``):
-        Optional parameter to override the rendering technique to be used. By
-        default, the integrator specified in the original scene description will
-        be used.
+        integrator: Optional parameter to override the rendering technique to
+            be used. By default, the integrator specified in the original
+            scene description will be used.
 
-    Parameter ``seed`` (``mi.UInt32``)
-        This parameter controls the initialization of the random number
-        generator during the primal rendering step. It is crucial that you
-        specify different seeds (e.g., an increasing sequence) if subsequent
-        calls should produce statistically independent images (e.g. to
-        de-correlate gradient-based optimization steps).
+        seed: This parameter controls the initialization of the random
+            number generator during the primal rendering step. It is crucial
+            that you specify different seeds (e.g., an increasing sequence)
+            if subsequent calls should produce statistically independent
+            images (e.g. to de-correlate gradient-based optimization steps).
 
-    Parameter ``seed_grad`` (``mi.UInt32``)
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation will
-        automatically compute a suitable value from the primal ``seed``.
+        seed_grad: This parameter is analogous to the ``seed`` parameter but
+            targets the differential simulation phase. If not specified, the
+            implementation will automatically compute a suitable value from
+            the primal ``seed``.
 
-    Parameter ``spp`` (``int``):
-        Optional parameter to override the number of samples per pixel for the
-        primal rendering step. The value provided within the original scene
-        specification takes precedence if ``spp=0``.
+        spp: Optional parameter to override the number of samples per pixel
+            for the primal rendering step. The value provided within the
+            original scene specification takes precedence if ``spp=0``.
 
-    Parameter ``spp_grad`` (``int``):
-        This parameter is analogous to the ``seed`` parameter but targets the
-        differential simulation phase. If not specified, the implementation will
-        copy the value from ``spp``.
+        spp_grad: This parameter is analogous to the ``seed`` parameter but
+            targets the differential simulation phase. If not specified, the
+            implementation will copy the value from ``spp``.
     """
 
     if params is not None and not isinstance(params, mi.SceneParameters):
@@ -528,8 +522,9 @@ def render(scene: mi.Scene,
 
 def convert_to_bitmap(data, uint8_srgb=True):
     """
-    Convert the RGB image in `data` to a `Bitmap`. `uint8_srgb` defines whether
-    the resulting bitmap should be translated to a uint8 sRGB bitmap.
+    Convert the RGB image in ``data`` to a `mitsuba.Bitmap`. ``uint8_srgb``
+    defines whether the resulting bitmap should be translated to a uint8 sRGB
+    bitmap.
     """
 
     if isinstance(data, mi.Bitmap):
@@ -547,7 +542,7 @@ def convert_to_bitmap(data, uint8_srgb=True):
 
 def write_bitmap(filename, data, write_async=True, quality=-1):
     """
-    Write the RGB image in `data` to a PNG/EXR/.. file.
+    Write the RGB image in ``data`` to a PNG/EXR/.. file.
     """
     uint8_srgb = filename.endswith('.png') or \
                  filename.endswith('.jpg') or \

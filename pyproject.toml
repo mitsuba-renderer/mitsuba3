@@ -1,8 +1,9 @@
 [build-system]
 requires = [
     "scikit-build-core",
-    "nanobind==2.13.0",
-    "drjit==1.4.0",
+    "nanobind==3.0.0",
+    "nanobind-backend>=1.0.0",
+    "drjit==1.6.0.dev1",
     "typing_extensions>=4.12",
     "hatch-fancy-pypi-readme",
 ]
@@ -15,9 +16,10 @@ dynamic = ["version", "readme"]
 description = "Mitsuba 3: A Retargetable Forward and Inverse Renderer"
 dependencies = [
   "typing_extensions>=4.12;python_version<\"3.11\"",
-  "drjit==1.4.0",
+  "drjit==1.6.0.dev1",
+  "nanobind-backend>=1.0.0",
 ]
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 authors = [
     { name = "Wenzel Jakob", email = "wenzel.jakob@epfl.ch" }
 ]
@@ -45,6 +47,10 @@ metadata.readme.provider = "scikit_build_core.metadata.fancy_pypi_readme"
 cmake.verbose = true
 logging.level = "INFO"
 
+# Split mode targets the Python 3.10 stable ABI, so one wheel per platform
+# covers every supported Python version
+wheel.py-api = "cp310"
+
 # Some bundled dependencies (e.g. ext/zlib) declare a very old
 # 'cmake_minimum_required'. CMake >= 4.0 removed compatibility with these,
 # causing configuration to fail. Allow them to configure anyway.
@@ -56,10 +62,13 @@ CMAKE_POLICY_VERSION_MINIMUM = "3.5"
 # Necessary to see build output from the actual compilation
 build-verbosity = 1
 
-build = ["cp39-*", "cp310-*", "cp311-*", "cp312-*", "cp313-*", "cp314-*"]
+# One Python version per platform suffices (see 'wheel.py-api' above)
+build = "cp310-*"
 archs = ["auto64"]
+
 skip = "*-musllinux* pp*"
-manylinux-aarch64-image = "manylinux2014"
+manylinux-x86_64-image = "manylinux_2_28"
+manylinux-aarch64-image = "manylinux_2_28"
 
 # Try to import the package to see if it was built correctly (compromise)
 test-command = ["python -c \"import mitsuba as mi; mi.set_variant('scalar_rgb')\""]
@@ -72,7 +81,7 @@ MACOSX_DEPLOYMENT_TARGET = "11.0"
 repair-wheel-command = "delocate-wheel --require-archs {delocate_archs} -w {dest_dir} --ignore-missing-dependencies {wheel}"
 
 [tool.cibuildwheel.linux]
-before-all = "yum install -y libatomic nasm"
+before-all = "dnf install -y libatomic nasm"
 
 [[tool.cibuildwheel.overrides]]
 # Need to manually tag the wheel as manylinux
@@ -84,7 +93,7 @@ repair-wheel-command = "pip install wheel>=0.40; new_whl_name=$(python -m wheel 
 # Need to manually tag the wheel as manylinux
 # WARNING: Tag depends on the image used by cibuildwheel
 select = "*-manylinux_aarch64"
-repair-wheel-command = "pip install wheel>=0.40; new_whl_name=$(python -m wheel tags --platform-tag manylinux_2_17_aarch64.manylinux2014_aarch64 {wheel} | tail -1 | cat); cp $(dirname {wheel})/$new_whl_name {dest_dir}"
+repair-wheel-command = "pip install wheel>=0.40; new_whl_name=$(python -m wheel tags --platform-tag manylinux_2_28_aarch64 {wheel} | tail -1 | cat); cp $(dirname {wheel})/$new_whl_name {dest_dir}"
 
 [tool.pytest.ini_options]
 testpaths = [ "src" ]
@@ -98,8 +107,9 @@ regex = '''(?sx)
 \#define \s+ MI_VERSION_MAJOR \s+ (?P<major>\d+) .*?
 \#define \s+ MI_VERSION_MINOR \s+ (?P<minor>\d+) .*?
 \#define \s+ MI_VERSION_PATCH \s+ (?P<patch>\d+) .*?
+\#define \s+ MI_VERSION_DEV \s+ "(?P<dev>[^"]*)" .*?
 '''
-result = "{major}.{minor}.{patch}"
+result = "{major}.{minor}.{patch}{dev}"
 
 # Build PyPI compliant README file from original README.md
 [tool.hatch.metadata.hooks.fancy-pypi-readme]

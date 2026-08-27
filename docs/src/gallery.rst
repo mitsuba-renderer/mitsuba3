@@ -15,57 +15,57 @@ Simple scenes
 
 .. grid:: 3
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Cornell Box <https://d38rqfq1h7iukm.cloudfront.net/scenes/cornell-box.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Cornell Box <https://d38rqfq1h7iukm.cloudfront.net/scenes/cornell-box.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/cornell-box.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/cornell-box.png
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Material preview <https://d38rqfq1h7iukm.cloudfront.net/scenes/matpreview.zip>`_
+    .. grid-item-card:: `Material preview <https://d38rqfq1h7iukm.cloudfront.net/scenes/matpreview.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/matpreview.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/matpreview.png
             :height: 90
             :align: center
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Veach bidir <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-bidir.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Veach bidir <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-bidir.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-bidir.png
-            :height: 90
-            :align: center
-
-        by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
-
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Veach MIS <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-mis.zip>`_
-        :class-title: sd-text-center sd-font-weight-bold
-        :class-body: sd-text-center
-
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-mis.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-bidir.png
             :height: 90
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Veach Ajar <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-ajar.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Veach MIS <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-mis.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-ajar.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-mis.png
             :height: 90
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Volumetric caustics <https://d38rqfq1h7iukm.cloudfront.net/scenes/volumetric-caustic.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Veach Ajar <https://d38rqfq1h7iukm.cloudfront.net/scenes/veach-ajar.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/volumetric-caustic.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-ajar.png
+            :height: 90
+            :align: center
+
+        by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
+
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Volumetric caustics <https://d38rqfq1h7iukm.cloudfront.net/scenes/volumetric-caustic.zip>`__
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/volumetric-caustic.png
             :height: 90
             :align: center
 
@@ -77,142 +77,153 @@ Single object
 
 .. grid:: 3
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Pontiac GTO 67 <https://d38rqfq1h7iukm.cloudfront.net/scenes/car.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Pontiac GTO 67 <https://d38rqfq1h7iukm.cloudfront.net/scenes/car.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/car.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/car.png
             :height: 130
             :align: center
 
         by `thecali <https://www.blendswap.com/user/thecali>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Old vintage car <https://d38rqfq1h7iukm.cloudfront.net/scenes/car2.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Old vintage car <https://d38rqfq1h7iukm.cloudfront.net/scenes/car2.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/car2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/car2.png
             :height: 130
             :align: center
 
         by `piopis <https://www.blendswap.com/user/piopis>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Coffee Maker <https://d38rqfq1h7iukm.cloudfront.net/scenes/coffee.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Coffee Maker <https://d38rqfq1h7iukm.cloudfront.net/scenes/coffee.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/coffee.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/coffee.png
             :height: 130
             :align: center
 
         by `cekuhnen <https://www.blendswap.com/user/cekuhnen>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Dragon <https://d38rqfq1h7iukm.cloudfront.net/scenes/dragon.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Dragon <https://d38rqfq1h7iukm.cloudfront.net/scenes/dragon.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/dragon.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/dragon.png
             :height: 130
             :align: center
 
         by `Delatronic <https://www.blendswap.com/user/Delatronic>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Spaceship <https://d38rqfq1h7iukm.cloudfront.net/scenes/spaceship.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Spaceship <https://d38rqfq1h7iukm.cloudfront.net/scenes/spaceship.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/spaceship.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/spaceship.png
             :height: 130
             :align: center
 
         by `thecali <https://www.blendswap.com/user/thecali>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Lamp <https://d38rqfq1h7iukm.cloudfront.net/scenes/lamp.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Lamp <https://d38rqfq1h7iukm.cloudfront.net/scenes/lamp.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/lamp.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/lamp.png
             :height: 130
             :align: center
 
         by `UP3D <https://www.blendswap.com/user/UP3D>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Teapot <https://d38rqfq1h7iukm.cloudfront.net/scenes/teapot.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Teapot <https://d38rqfq1h7iukm.cloudfront.net/scenes/teapot.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/teapot.png
             :height: 130
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Teapot full <https://d38rqfq1h7iukm.cloudfront.net/scenes/teapot-full.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Teapot full <https://d38rqfq1h7iukm.cloudfront.net/scenes/teapot-full.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot-full.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/teapot-full.png
             :height: 130
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
 
-    .. grid-item-card:: `Lego Bulldozer <https://d38rqfq1h7iukm.cloudfront.net/scenes/lego.zip>`_
+    .. grid-item-card:: `Standard Shader Ball <https://d38rqfq1h7iukm.cloudfront.net/scenes/standard-shader-ball.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/lego.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/standard-shader-ball.png
+            :height: 130
+            :align: center
+
+        by the `USD Working Group <https://github.com/usd-wg/assets/tree/main/full_assets/StandardShaderBall>`_,
+        converted by `Anton Palmqvist <https://github.com/AntonPalmqvist>`_
+
+    .. grid-item-card:: `Lego Bulldozer <https://d38rqfq1h7iukm.cloudfront.net/scenes/lego.zip>`__
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/lego.png
             :height: 130
             :align: center
 
         by `Heinzelnisse <https://www.blendswap.com/profile/88652>`_
 
-    .. grid-item-card:: `Sci-Fi Rover <https://d38rqfq1h7iukm.cloudfront.net/scenes/rover.zip>`_
+    .. grid-item-card:: `Sci-Fi Rover <https://d38rqfq1h7iukm.cloudfront.net/scenes/rover.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/rover.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/rover.png
             :height: 130
             :align: center
 
         by `vajrablue <https://www.blendswap.com/profile/5201>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Hair curls <https://d38rqfq1h7iukm.cloudfront.net/scenes/hair-curl.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Hair curls <https://d38rqfq1h7iukm.cloudfront.net/scenes/hair-curl.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/hair-curl.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/hair-curl.png
             :height: 130
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Curly hair <https://d38rqfq1h7iukm.cloudfront.net/scenes/curly-hair.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Curly hair <https://d38rqfq1h7iukm.cloudfront.net/scenes/curly-hair.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/curly-hair.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/curly-hair.png
             :height: 130
             :align: center
 
         by `Cem Yuksel <http://www.cemyuksel.com/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Straight hair <https://d38rqfq1h7iukm.cloudfront.net/scenes/straight-hair.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Straight hair <https://d38rqfq1h7iukm.cloudfront.net/scenes/straight-hair.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/straight-hair.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/straight-hair.png
             :height: 130
             :align: center
 
         by `Cem Yuksel <http://www.cemyuksel.com/>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Fur ball <https://d38rqfq1h7iukm.cloudfront.net/scenes/furball.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Fur ball <https://d38rqfq1h7iukm.cloudfront.net/scenes/furball.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/furball.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/furball.png
             :height: 130
             :align: center
 
@@ -224,131 +235,131 @@ Architecture
 
 .. grid:: 3
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Bathroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/bathroom.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Bathroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/bathroom.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bathroom.png
             :height: 130
             :align: center
 
         by `Mareck <https://www.blendswap.com/user/Mareck>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Salle de bain <https://d38rqfq1h7iukm.cloudfront.net/scenes/bathroom2.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Salle de bain <https://d38rqfq1h7iukm.cloudfront.net/scenes/bathroom2.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bathroom2.png
             :height: 130
             :align: center
 
         by `nacimus <https://www.blendswap.com/user/nacimus>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Bedroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/bedroom.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Bedroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/bedroom.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bedroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bedroom.png
             :height: 130
             :align: center
 
         by `SlykDrako <https://www.blendswap.com/user/SlykDrako>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Japanese Classroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/classroom.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Japanese Classroom <https://d38rqfq1h7iukm.cloudfront.net/scenes/classroom.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/classroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/classroom.png
             :height: 130
             :align: center
 
         by `NovaZeeke <https://www.blendswap.com/user/NovaZeeke>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `The Breakfast Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/dining-room.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `The Breakfast Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/dining-room.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/dining-room.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/dining-room.png
             :height: 130
             :align: center
 
         by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Country Kitchen <https://d38rqfq1h7iukm.cloudfront.net/scenes/kitchen.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Country Kitchen <https://d38rqfq1h7iukm.cloudfront.net/scenes/kitchen.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/kitchen.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/kitchen.png
             :height: 130
             :align: center
 
         by `Jay-Artist <https://www.blendswap.com/user/Jay-Artist>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Grey & White Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Grey & White Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room.png
             :height: 130
             :align: center
 
         by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `The White Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room-2.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `The White Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room-2.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room-2.png
             :height: 130
             :align: center
 
         by `Jay-Artist <https://www.blendswap.com/user/Jay-Artist>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Modern Living Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room-3.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Modern Living Room <https://d38rqfq1h7iukm.cloudfront.net/scenes/living-room-3.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-3.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room-3.png
             :height: 130
             :align: center
 
         by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Wooden Staircase <https://d38rqfq1h7iukm.cloudfront.net/scenes/staircase.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Wooden Staircase <https://d38rqfq1h7iukm.cloudfront.net/scenes/staircase.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/staircase.png
             :height: 130
             :align: center
 
         by `Wig42 <https://www.blendswap.com/user/Wig42>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Modern Hall <https://d38rqfq1h7iukm.cloudfront.net/scenes/staircase2.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Modern Hall <https://d38rqfq1h7iukm.cloudfront.net/scenes/staircase2.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/staircase2.png
             :height: 130
             :align: center
 
         by `NewSee2l035 <https://www.blendswap.com/user/NewSee2l035>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Glass of water <https://d38rqfq1h7iukm.cloudfront.net/scenes/glass-of-water.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Glass of water <https://d38rqfq1h7iukm.cloudfront.net/scenes/glass-of-water.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/glass-of-water.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/glass-of-water.png
             :height: 130
             :align: center
 
         by `aXel <https://www.blendswap.com/user/aXel>`_
 
-    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`_ `Victorian Style House <https://d38rqfq1h7iukm.cloudfront.net/scenes/house.zip>`_
+    .. grid-item-card:: `🅱️ <https://benedikt-bitterli.me/resources/>`__ `Victorian Style House <https://d38rqfq1h7iukm.cloudfront.net/scenes/house.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/house.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/house.png
             :height: 130
             :align: center
 
@@ -360,7 +371,7 @@ Documentation banners
 
 .. grid:: 3
 
-    .. grid-item-card:: `Banner 1 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_01.zip>`_
+    .. grid-item-card:: `Banner 1 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_01.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -368,7 +379,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 2 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_02.zip>`_
+    .. grid-item-card:: `Banner 2 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_02.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -376,7 +387,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 3 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_03.zip>`_
+    .. grid-item-card:: `Banner 3 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_03.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -384,7 +395,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 4 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_04.zip>`_
+    .. grid-item-card:: `Banner 4 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_04.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -392,7 +403,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 5 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_05.zip>`_
+    .. grid-item-card:: `Banner 5 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_05.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -400,7 +411,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 6 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_06.zip>`_
+    .. grid-item-card:: `Banner 6 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_06.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
@@ -408,7 +419,7 @@ Documentation banners
             :height: 90
             :align: center
 
-    .. grid-item-card:: `Banner 7 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_07.zip>`_
+    .. grid-item-card:: `Banner 7 <https://d38rqfq1h7iukm.cloudfront.net/scenes/banner_07.zip>`__
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 

@@ -8,7 +8,7 @@ NAMESPACE_BEGIN(mitsuba)
 namespace ng = nanogui;
 
 /**
- * \brief Main class of the Mitsuba user interface
+ * Main class of the Mitsuba user interface
  */
 class MI_EXPORT_UI MitsubaViewer : public ng::Screen {
 public:

@@ -1991,15 +1991,15 @@ void Bitmap::write_ppm(Stream *stream) const {
 /* The following is based on code by Bruce Walter */
 namespace {
     inline void rgbe_from_float(float *data, uint8_t rgbe[4]) {
-        /* Find the largest contribution */
+        // Find the largest contribution
         float max = std::max(std::max(data[0], data[1]), data[2]);
         if (max < 1e-32f) {
             rgbe[0] = rgbe[1] = rgbe[2] = rgbe[3] = 0;
         } else {
             int e;
-            /* Extract exponent and convert the fractional part into
-               the [0..255] range. Afterwards, divide by max so that
-               any color component multiplied by the result will be in [0,255] */
+            // Extract exponent and convert the fractional part into
+            // the [0..255] range. Afterwards, divide by max so that
+            // any color component multiplied by the result will be in [0,255]
             max = std::frexp(max, &e) * 256.f / max;
             rgbe[0] = (uint8_t) (data[0] * max);
             rgbe[1] = (uint8_t) (data[1] * max);
@@ -2240,8 +2240,8 @@ void Bitmap::write_rgbe(Stream *stream) const {
             data += m_pixel_format == PixelFormat::RGB ? 3 : 4;
         }
 
-        /* Write out each of the four channels separately run length encoded.
-           First red, then green, then blue, then exponent */
+        // Write out each of the four channels separately run length encoded.
+        // First red, then green, then blue, then exponent
         for (size_t i = 0; i < 4; i++)
             rgbe_write_rle(stream, buffer.get() + i * m_size.x(), m_size.x());
     }
@@ -2338,8 +2338,8 @@ void Bitmap::write_pfm(Stream *stream) const {
             stream->write(data + scanline * (m_size.y() - 1 - y),
                           scanline * sizeof(float));
     } else {
-        /* For convenience: also handle images with an alpha
-           channel, but strip it out while saving the data */
+        // For convenience: also handle images with an alpha
+        // channel, but strip it out while saving the data
         size_t scanline = (size_t) m_size.x() * ch;
         float *temp = (float *) alloca(scanline * sizeof(float));
 

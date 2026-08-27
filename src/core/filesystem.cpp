@@ -135,22 +135,45 @@ size_t file_size(const path& p) {
     return (size_t) sb.st_size;
 }
 
-bool equivalent(const path& p1, const path& p2) {
 #if defined(_WIN32)
-    struct _stati64 sb1, sb2;
-    if (_wstati64(p1.native().c_str(), &sb1) != 0)
-        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
-    if (_wstati64(p2.native().c_str(), &sb2) != 0)
-        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
-#else
-    struct stat sb1, sb2;
-    if (stat(p1.native().c_str(), &sb1) != 0)
-        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p1.string() + "\"!");
-    if (stat(p2.native().c_str(), &sb2) != 0)
-        throw std::runtime_error("filesystem::equivalent(): cannot stat file \"" + p2.string() + "\"!");
+/** Retrieve the volume and file identifier of a file or directory.
+ * The Windows CRT reports a constant inode number of zero via ``stat()``,
+ * hence this information must be queried from a file handle.
+ */
+static bool file_identity(const path &p, BY_HANDLE_FILE_INFORMATION &info) noexcept {
+    // FILE_FLAG_BACKUP_SEMANTICS is needed to open directories, and an empty
+    // access mask suffices to retrieve metadata
+    HANDLE handle = CreateFileW(
+        p.native().c_str(), 0,
+        FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE, nullptr,
+        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, nullptr);
+
+    if (handle == INVALID_HANDLE_VALUE)
+        return false;
+
+    bool success = GetFileInformationByHandle(handle, &info) != 0;
+    CloseHandle(handle);
+    return success;
+}
 #endif
 
-    return (sb1.st_dev == sb2.st_dev) && (sb1.st_ino == sb2.st_ino);
+bool equivalent(const path& p1, const path& p2) noexcept {
+#if defined(_WIN32)
+    BY_HANDLE_FILE_INFORMATION i1, i2;
+    if (!file_identity(p1, i1) || !file_identity(p2, i2))
+        return false;
+
+    return i1.dwVolumeSerialNumber == i2.dwVolumeSerialNumber &&
+           i1.nFileIndexHigh == i2.nFileIndexHigh &&
+           i1.nFileIndexLow == i2.nFileIndexLow;
+#else
+    struct stat sb1, sb2;
+    if (stat(p1.native().c_str(), &sb1) != 0 ||
+        stat(p2.native().c_str(), &sb2) != 0)
+        return false;
+
+    return sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino;
+#endif
 }
 
 bool create_directory(const path& p) noexcept {
@@ -208,6 +231,10 @@ bool rename(const path& src, const path &dst) {
 }
 
 bool copy_file(const path& src, const path &dst) {
+    // Copying a file onto itself has no effect and would truncate it
+    if (equivalent(src, dst))
+        return true;
+
     // Create parent directory if it doesn't exist
     path parent = dst.parent_path();
     if (!parent.empty() && !exists(parent)) {

@@ -6,7 +6,7 @@ How to make a new release?
 
 2. Regenerate the documentation using the `mkoc`, `mkdoc-api` and `docstrings`
    targets and commit the result. Do this with the following command in your
-   build folder: ``ninja docstrings && ninja && ninja mkdoc-api mkdoc``.
+   build folder: ``ninja docstrings && ninja && ninja mkdoc``.
    Do this on a Linux box, with ``docs/requirement.txt`` installed (UV)
    and pandoc installed (apt).
 
@@ -27,7 +27,8 @@ How to make a new release?
 8. If the action failed, fix whatever broke in the build process. If it succeded
    continue.
 
-9. Update the version number in ``include/mitsuba/mitsuba.h``.
+9. Update the version number in ``include/mitsuba/mitsuba.h`` and set
+   ``MI_VERSION_DEV`` to an empty string.
 
 10. Add release number and date to ``docs/release_notes.rst``.
 
@@ -48,8 +49,15 @@ How to make a new release?
 18. Check that the new version is available on
     `readthedocs <https://mitsuba.readthedocs.io/>`__.
 
-19. Create a `release on GitHub <https://github.com/mitsuba-renderer/mitsuba3/releases/new>`__
-    from the tag created at step 10. The changelog can be copied from step 2.
+19. Create the release on GitHub from the tag pushed at step 16:
+
+    .. code-block:: bash
+
+       python3 resources/changelog_to_release.py X.Y.Z --create
+
+    This converts the matching section of ``docs/release_notes.rst`` to Markdown
+    and hands it to ``gh release create``. Omit ``--create`` to preview the
+    notes, or add ``--draft`` to review them on GitHub before publishing.
 
 20. Checkout the ``stable`` branch and run ``git pull --ff-only origin vX.Y.Z``
     and ``git push``

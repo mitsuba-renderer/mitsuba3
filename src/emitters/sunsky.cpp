@@ -439,7 +439,7 @@ private:
     }
 
     /**
-     * \brief Updates the sky sampling data and sun irradiance values
+     * Updates the sky sampling data and sun irradiance values
      * based on the current parameters.
      */
     std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {
@@ -465,7 +465,8 @@ private:
                          sun_irrad_spec = dr::gather<FullSpectrum>(sun_irrad, UInt32(0));
 
             FullSpectrum wavelengths = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10};
-                         wavelengths = WAVELENGTH_STEP * wavelengths + WAVELENGTHS<ScalarFloat>[0];
+            wavelengths = ScalarFloat(WAVELENGTH_STEP) * wavelengths +
+                          WAVELENGTHS<ScalarFloat>[0];
 
             sky_lum *= luminance(sky_irrad_spec, wavelengths);
             sun_lum *= luminance(sun_irrad_spec, wavelengths) *

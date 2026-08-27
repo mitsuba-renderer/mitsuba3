@@ -292,14 +292,14 @@ public:
 
         Spectrum weight(0.f);
         if constexpr (is_polarized_v<Spectrum>) {
-            /* Due to the coordinate system rotations for polarization-aware
-               pBSDFs below we need to know the propagation direction of light.
-               In the following, light arrives along `-wo_hat` and leaves along
-               `+wi_hat`. */
+            // Due to the coordinate system rotations for polarization-aware
+            // pBSDFs below we need to know the propagation direction of light.
+            // In the following, light arrives along `-wo_hat` and leaves along
+            // `+wi_hat`.
             Vector3f wo_hat = ctx.mode == TransportMode::Radiance ? bs.wo : si.wi,
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : bs.wo;
 
-            /* BSDF weights are Mueller matrices now. */
+            // BSDF weights are Mueller matrices now.
             Float cos_theta_o_hat = Frame3f::cos_theta(wo_hat);
             Spectrum R = mueller::specular_reflection(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta)),
                      T = mueller::specular_transmission(UnpolarizedSpectrum(cos_theta_o_hat), UnpolarizedSpectrum(m_eta));
@@ -311,8 +311,8 @@ public:
                 bs.pdf = 1.f;
             }
 
-            /* The Stokes reference frame vector of this matrix lies perpendicular
-               to the plane of reflection. */
+            // The Stokes reference frame vector of this matrix lies perpendicular
+            // to the plane of reflection.
             Vector3f n(0, 0, 1);
             Vector3f s_axis_in  = dr::cross(n, -wo_hat);
             Vector3f s_axis_out = dr::cross(n, wi_hat);
@@ -324,8 +324,8 @@ public:
             s_axis_out = dr::select(collinear, Vector3f(1, 0, 0),
                                                dr::normalize(s_axis_out));
 
-            /* Rotate in/out reference vector of `weight` s.t. it aligns with the
-               implicit Stokes bases of -wo_hat & wi_hat. */
+            // Rotate in/out reference vector of `weight` s.t. it aligns with the
+            // implicit Stokes bases of -wo_hat & wi_hat.
             weight = mueller::rotate_mueller_basis(weight,
                                                    -wo_hat, s_axis_in, mueller::stokes_basis(-wo_hat),
                                                     wi_hat, s_axis_out, mueller::stokes_basis(wi_hat));
@@ -339,8 +339,8 @@ public:
         } else {
             if (likely(has_reflection && has_transmission)) {
                 weight = 1.f;
-                /* For differentiable variants, lobe choice has to be detached to avoid bias.
-                    Sampling weights should be computed accordingly. */
+                // For differentiable variants, lobe choice has to be detached to avoid bias.
+                // Sampling weights should be computed accordingly.
                 if constexpr (dr::is_diff_v<Float>) {
                     if (dr::grad_enabled(r_i)) {
                         Float r_diff = dr::replace_grad(Float(1.f), r_i / dr::detach(r_i));
@@ -360,8 +360,8 @@ public:
         }
 
         if (dr::any_or<true>(selected_t)) {
-            /* For transmission, radiance must be scaled to account for the solid
-               angle compression that occurs when crossing the interface. */
+            // For transmission, radiance must be scaled to account for the solid
+            // angle compression that occurs when crossing the interface.
             Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
             weight[selected_t] *= dr::square(factor);
         }

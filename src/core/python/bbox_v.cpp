@@ -8,6 +8,7 @@
 template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char *name) {
         using Point = typename BBox::Point;
         using Float = typename BBox::Value;
+        using Mask  = typename BBox::Mask;
 
         MI_PY_CHECK_ALIAS(BBox, name) {
             auto bbox = nb::class_<BBox>(m, name, D(BoundingBox))
@@ -72,6 +73,8 @@ template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char
                 .def_rw("max", &BBox::max)
                 .def_repr(BBox);
 
+            MI_PY_DRJIT_STRUCT(bbox, BBox, min, max);
+
             if constexpr (dr::size_v<Point> == 3) {
                 bbox.def("ray_intersect",
                          [](const BBox &self, const Ray &ray) {
@@ -89,8 +92,6 @@ MI_PY_EXPORT(BoundingBox) {
     bind_bbox<BoundingBox2f, Ray3f>(m, "BoundingBox2f");
     bind_bbox<BoundingBox3f, Ray3f>(m, "BoundingBox3f");
 
-    if constexpr (!std::is_same_v<Float, ScalarFloat>) {
-        bind_bbox<ScalarBoundingBox2f, Ray3f>(m, "ScalarBoundingBox2f");
-        bind_bbox<ScalarBoundingBox3f, Ray3f>(m, "ScalarBoundingBox3f");
-    }
+    bind_bbox<ScalarBoundingBox2f, Ray3f>(m, "ScalarBoundingBox2f");
+    bind_bbox<ScalarBoundingBox3f, Ray3f>(m, "ScalarBoundingBox3f");
 }

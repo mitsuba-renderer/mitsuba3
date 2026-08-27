@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! @{ \name Sampler implementations
+// Sampler implementations
 // =======================================================================
 
 MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Properties &props)
@@ -32,19 +32,11 @@ MI_VARIANT Sampler<Float, Spectrum>::Sampler(const Sampler &sampler)
 
 MI_VARIANT Sampler<Float, Spectrum>::~Sampler() { }
 
-MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
-    Object::traverse_1_cb_ro(payload, fn);
-    if (jit_flag(JitFlag::EnableObjectTraversal)) {
-        drjit::traverse_1_fn_ro(m_dimension_index, payload, fn);
-        drjit::traverse_1_fn_ro(m_sample_index, payload, fn);
-    }
-}
-
-MI_VARIANT void Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
-    Object::traverse_1_cb_rw(payload, fn);
-    if (jit_flag(JitFlag::EnableObjectTraversal)) {
-        drjit::traverse_1_fn_rw(m_dimension_index, payload, fn);
-        drjit::traverse_1_fn_rw(m_sample_index, payload, fn);
+MI_VARIANT void Sampler<Float, Spectrum>::traverse_cb(void *payload, const drjit::TraverseVisitor &cb) {
+    Object::traverse_cb(payload, cb);
+    if (cb.role == drjit::TraverseRole::Freeze) {
+        drjit::traverse_fn(m_dimension_index, payload, cb, "m_dimension_index");
+        drjit::traverse_fn(m_sample_index, payload, cb, "m_sample_index");
     }
 }
 
@@ -116,11 +108,10 @@ Sampler<Float, Spectrum>::current_sample_index() const {
                      wavefront_sample_offsets);
 }
 
-//! @}
 // =======================================================================
 
 // =======================================================================
-//! @{ \name PCG32Sampler implementations
+// PCG32Sampler implementations
 // =======================================================================
 
 MI_VARIANT PCG32Sampler<Float, Spectrum>::PCG32Sampler(const Properties &props)
@@ -136,9 +127,9 @@ MI_VARIANT void PCG32Sampler<Float, Spectrum>::seed(UInt32 seed,
         UInt32 idx = dr::arange<UInt32>(m_wavefront_size);
         dr::make_opaque(seed_value);
 
-        /* Scramble seed and stream index using the Tiny Encryption Algorithm.
-           Just providing a linearly increasing sequence of integers as streams
-           does not produce a sufficiently statistically independent set of RNGs */
+        // Scramble seed and stream index using the Tiny Encryption Algorithm.
+        // Just providing a linearly increasing sequence of integers as streams
+        // does not produce a sufficiently statistically independent set of RNGs
         auto [v0, v1] = sample_tea_32(seed_value, idx);
 
         m_rng.seed(v0, v1);
@@ -158,17 +149,11 @@ PCG32Sampler<Float, Spectrum>::PCG32Sampler(const PCG32Sampler &sampler)
     m_rng = sampler.m_rng;
 }
 
-MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const {
-    Base::traverse_1_cb_ro(payload, fn);
-    drjit::traverse_1_fn_ro(m_rng, payload, fn);
+MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_cb(void *payload, const drjit::TraverseVisitor &cb) {
+    Base::traverse_cb(payload, cb);
+    drjit::traverse_fn(m_rng, payload, cb, "m_rng");
 }
 
-MI_VARIANT void PCG32Sampler<Float, Spectrum>::traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) {
-    Base::traverse_1_cb_rw(payload, fn);
-    drjit::traverse_1_fn_rw(m_rng, payload, fn);
-}
-
-//! @}
 // =======================================================================
 
 MI_INSTANTIATE_CLASS(Sampler)

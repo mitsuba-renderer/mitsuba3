@@ -13,11 +13,11 @@
 #include <mitsuba/render/optix/bbox.cuh>
 #include <mitsuba/render/optix/matrix.cuh>
 
-/// Stores information about a Shape on the Optix side
+/// Stores information about a `Shape` on the Optix side
 struct OptixHitGroupData {
     /// Shape id in Dr.Jit's pointer registry
     uint32_t shape_registry_id;
-    /// Pointer to the memory region of Shape data (e.g. \c shapedata::SphereData)
+    /// Pointer to the memory region of `Shape` data (e.g. ``shapedata::SphereData``)
     void* data;
 };
 
@@ -47,7 +47,8 @@ constexpr float SqrtTwo  = float(1.41421356237309504880);
 
 using namespace optix;
 
-/// Write PreliminaryIntersection fields to the data pointers stored in the OptixParams
+/// Write `PreliminaryIntersection3f` fields to the data pointers stored in
+/// the OptixParams
 __device__ void
 set_preliminary_intersection_to_payload(float t,
                                         const Vector2f &prim_uv,

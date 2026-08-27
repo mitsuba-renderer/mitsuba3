@@ -125,9 +125,9 @@ public:
         Interaction3f last_scatter_event = dr::zeros<Interaction3f>();
         Float last_scatter_direction_pdf = 1.f;
 
-        /* Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
-           generates wavefront or megakernel renderer based on configuration).
-           Register everything that changes as part of the loop here */
+        // Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
+        // generates wavefront or megakernel renderer based on configuration).
+        // Register everything that changes as part of the loop here
         struct LoopState {
             Mask active;
             UInt32 depth;
@@ -313,11 +313,11 @@ public:
                                          intersect;
 
                     if (dr::any_or<true>(skip_emitters)) {
-                        Ray3f ray = si.spawn_ray(ls.ray.d);
+                        Ray3f skip_ray = si.spawn_ray(ls.ray.d);
                         PreliminaryIntersection3f pi =
-                            Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                            Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
                         SurfaceInteraction3f si_after_skip =
-                            pi.compute_surface_interaction(ray, +RayFlags::All, skip_emitters);
+                            pi.compute_surface_interaction(skip_ray, +RayFlags::Default, skip_emitters);
                         dr::masked(si, skip_emitters) = si_after_skip;
                     }
                 }
@@ -553,7 +553,6 @@ public:
         return { ls.transmittance * emitter_val, dir_sample };
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {

@@ -110,7 +110,7 @@ It is designed for use with volumetric primitive integrators, as detailed in
 
 .. tabs::
     .. code-tab:: xml
-        :name: sphere
+        :name: ellipsoids-sphere
 
         <shape type="ellipsoids">
             <string name="filename" value="my_primitives.ply"/>
@@ -217,11 +217,10 @@ public:
         );
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Sampling routines (not implemented!)
+    // Sampling routines (not implemented!)
     // =============================================================
 
     PositionSample3f sample_position(Float, const Point2f &, Mask) const override { return dr::zeros<PositionSample3f>(); }
@@ -234,11 +233,10 @@ public:
 
     SurfaceInteraction3f eval_parameterization(const Point2f &, uint32_t, Mask) const override { return dr::zeros<SurfaceInteraction3f>(); }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Attribute routines
+    // Attribute routines
     // =============================================================
 
     Mask has_attribute(std::string_view name, Mask active) const override {
@@ -281,11 +279,10 @@ public:
         }
     }
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Ray tracing routines
+    // Ray tracing routines
     // =============================================================
 
     template <typename FloatP, typename Ray3fP, typename Ellipsoid>
@@ -388,9 +385,9 @@ public:
             return dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        /* If necessary, temporally suspend gradient tracking for all shape
-           parameters to construct a surface interaction completely detach from
-           the shape. */
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detach from
+        // the shape.
         dr::suspend_grad<Float> scope(detach_shape, m_ellipsoids.data());
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
@@ -398,17 +395,25 @@ public:
         ellipsoid.scale *= m_ellipsoids.template extents<Float>(pi.prim_index, active);
         auto rot = dr::quat_to_matrix<Matrix3f>(ellipsoid.quat);
 
-        si.t = dr::select(active, pi.t, dr::Infinity<Float>);
-        si.p = ray(pi.t);
+        // The local coordinates are static as the ellipsoid moves
+        si.t = pi.t;
+        si.p = dr::detach(ray(pi.t));
+        Point3f local_d =
+            dr::detach(dr::transpose(rot) * (si.p - ellipsoid.center));
+
+        si.n = dr::detach(
+            dr::normalize(rot * (local_d / dr::square(ellipsoid.scale))));
+
+        Point3f p_att = ellipsoid.center +
+                        rot * (ellipsoid.scale *
+                               (local_d / dr::detach(ellipsoid.scale)));
+
+        si.attach_motion(ray, p_att, ray_flags);
 
         Point3f local = dr::transpose(rot) * (si.p - ellipsoid.center);
         si.sh_frame.n = dr::normalize(rot * (local / dr::square(ellipsoid.scale)));
 
         si.n = si.sh_frame.n;
-        si.uv    = Point2f(0.f, 0.f);
-        si.dp_du = Vector3f(0.f);
-        si.dp_dv = Vector3f(0.f);
-        si.dn_du = si.dn_dv = dr::zeros<Vector3f>();
 
         si.prim_index = pi.prim_index;
         si.shape      = this;
@@ -452,8 +457,8 @@ public:
 #endif
 
 #if defined(MI_ENABLE_METAL)
-    /// Migrate the ellipsoid arrays to the host and invoke \c f with the
-    /// world-space frame (rotation \c R, center \c c, scale \c s) of each.
+    /// Migrate the ellipsoid arrays to the host and invoke ``f`` with the
+    /// world-space frame (rotation ``R``, center ``c``, scale ``s``) of each.
     template <typename Func>
     void gpu_for_each_frame(Func &&f) const {
         size_t n = (size_t) m_ellipsoids.count();
@@ -503,7 +508,6 @@ public:
     }
 #endif
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {
@@ -524,43 +528,16 @@ public:
         return oss.str();
     }
 
-    void traverse_1_cb_ro(void *payload, dr::detail::traverse_callback_ro fn) const override {
-        // Only traverse the scene for frozen functions, since accidentally
-        // traversing the scene in loops or vcalls can cause errors with variable
-        // size mismatches, and backpropagation of gradients.
-        if (!jit_flag(JitFlag::EnableObjectTraversal))
+    void traverse_cb(void *payload, const dr::TraverseVisitor &cb) override {
+        if (cb.role != dr::TraverseRole::Freeze)
             return;
 
-        Object::traverse_1_cb_ro(payload, fn);
-        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-            dr::traverse_1_fn_ro(x, payload, fn);
-        });
-
-        dr::traverse_1_fn_ro(m_ellipsoids.data(), payload, fn);
-        dr::traverse_1_fn_ro(m_ellipsoids.extents_data(), payload, fn);
+        Base::traverse_cb(payload, cb);
+        dr::traverse_fn(m_ellipsoids.data(), payload, cb, "m_ellipsoids");
+        dr::traverse_fn(m_ellipsoids.extents_data(), payload, cb, "m_ellipsoids_extents");
         auto &attr_map = m_ellipsoids.attributes();
         for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
-            dr::traverse_1_fn_ro(it.value(), payload, fn);
-        }
-    }
-
-    void traverse_1_cb_rw(void *payload, dr::detail::traverse_callback_rw fn) override {
-        // Only traverse the scene for frozen functions, since accidentally
-        // traversing the scene in loops or vcalls can cause errors with variable
-        // size mismatches, and backpropagation of gradients.
-        if (!jit_flag(JitFlag::EnableObjectTraversal))
-            return;
-
-        Object::traverse_1_cb_rw(payload, fn);
-        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
-            dr::traverse_1_fn_rw(x, payload, fn);
-        });
-
-        dr::traverse_1_fn_rw(m_ellipsoids.data(), payload, fn);
-        dr::traverse_1_fn_rw(m_ellipsoids.extents_data(), payload, fn);
-        auto &attr_map = m_ellipsoids.attributes();
-        for (auto it = attr_map.begin(); it != attr_map.end(); ++it) {
-            dr::traverse_1_fn_rw(it.value(), payload, fn);
+            dr::traverse_fn(it.value(), payload, cb, "m_ellipsoids_attributes");
         }
     }
 

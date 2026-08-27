@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Minimal command line argument parser
+ * Minimal command line argument parser
  *
  * This class provides a minimal cross-platform command line argument parser in
  * the spirit of to GNU getopt. Both short and long arguments that accept an
@@ -14,17 +14,16 @@ NAMESPACE_BEGIN(mitsuba)
  *
  * The typical usage is
  *
- * \code
- * ArgParser p;
- * auto arg0 = p.register("--myParameter");
- * auto arg1 = p.register("-f", true);
- * p.parse(argc, argv);
- * if (*arg0)
- *     std::cout << "Got --myParameter" << std::endl;
- * if (*arg1)
- *     std::cout << "Got -f " << arg1->value() << std::endl;
- * \endcode
+ * .. code-block:: python
  *
+ *    p = mi.ArgParser()
+ *    arg0 = p.add("--myParameter")
+ *    arg1 = p.add("-f", True)
+ *    p.parse(sys.argv)
+ *    if arg0:
+ *        print("Got --myParameter")
+ *    if arg1:
+ *        print("Got -f", arg1.as_string())
  */
 class MI_EXPORT_LIB ArgParser {
 public:
@@ -41,7 +40,7 @@ public:
         size_t count() const;
 
         /**
-         * \brief For arguments that are specified multiple times, advance to
+         * For arguments that are specified multiple times, advance to
          * the next one.
          */
         const Arg *next() const { return m_next; }
@@ -60,13 +59,12 @@ public:
 
     protected:
         /**
-         * \brief Construct a new argument with the given prefixes
+         * Construct a new argument with the given prefixes
          *
-         * \param prefixes
-         *     A list of command prefixes (i.e. {"-f", "--fast"})
+         * Args:
+         *     prefixes: A list of command prefixes (i.e. {"-f", "--fast"})
          *
-         * \param extra
-         *     Indicates whether the argument accepts an extra argument value
+         *     extra: Indicates whether the argument accepts an extra argument value
          */
         Arg(const std::vector<std::string> &prefixes, bool extra)
             : m_prefixes(prefixes), m_extra(extra), m_present(false),
@@ -96,26 +94,24 @@ public:
     }
 
     /**
-     * \brief Register a new argument with the given prefix
+     * Register a new argument with the given prefix
      *
-     * \param prefix
-     *     A single command prefix (i.e. "-f")
+     * Args:
+     *     prefix: A single command prefix (i.e. "-f")
      *
-     * \param extra
-     *     Indicates whether the argument accepts an extra argument value
+     *     extra: Indicates whether the argument accepts an extra argument value
      */
     const Arg *add(const std::string &prefix, bool extra = false) {
         return add(std::vector<std::string>({ prefix }), extra);
     }
 
     /**
-     * \brief Register a new argument with the given list of prefixes
+     * Register a new argument with the given list of prefixes
      *
-     * \param prefixes
-     *     A list of command prefixes (i.e. {"-f", "--fast"})
+     * Args:
+     *     prefixes: A list of command prefixes (i.e. {"-f", "--fast"})
      *
-     * \param extra
-     *     Indicates whether the argument accepts an extra argument value
+     *     extra: Indicates whether the argument accepts an extra argument value
      */
     const Arg *add(const std::vector<std::string> &prefixes, bool extra = false) {
         Arg *arg = new Arg(prefixes, extra);

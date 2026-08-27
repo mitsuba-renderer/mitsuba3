@@ -14,7 +14,8 @@ MI_PY_EXPORT(DiscreteDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(DiscreteDistribution, "DiscreteDistribution") {
-        auto discrete_distr = MI_PY_STRUCT(DiscreteDistribution)
+        auto discrete_distr = nb::class_<DiscreteDistribution, drjit::TraversableBase>(
+            m, "DiscreteDistribution", D(DiscreteDistribution))
             .def(nb::init<>(), D(DiscreteDistribution))
             .def(nb::init<const DiscreteDistribution &>(), "Copy constructor")
             .def(nb::init<const FloatStorage &>(), "pmf"_a,
@@ -43,16 +44,16 @@ MI_PY_EXPORT(DiscreteDistribution) {
             .def_method(DiscreteDistribution, sum)
             .def("sample",
                 &DiscreteDistribution::sample,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample))
             .def("sample_pmf",
                 &DiscreteDistribution::sample_pmf,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_pmf))
             .def("sample_reuse",
                 &DiscreteDistribution::sample_reuse,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse))
             .def("sample_reuse_pmf",
                 &DiscreteDistribution::sample_reuse_pmf,
-                "value"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
+                "sample"_a, "active"_a = true, D(DiscreteDistribution, sample_reuse_pmf))
             .def_repr(DiscreteDistribution);
 
         drjit::bind_traverse(discrete_distr);
@@ -66,7 +67,8 @@ MI_PY_EXPORT(ContinuousDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(ContinuousDistribution, "ContinuousDistribution") {
-        auto continuous_distr = MI_PY_STRUCT(ContinuousDistribution)
+        auto continuous_distr = nb::class_<ContinuousDistribution, drjit::TraversableBase>(
+            m, "ContinuousDistribution", D(ContinuousDistribution))
             .def(nb::init<>(), D(ContinuousDistribution))
             .def(nb::init<const ContinuousDistribution &>(), "Copy constructor")
             .def(nb::init<const ScalarVector2f &, const FloatStorage &>(),
@@ -101,10 +103,10 @@ MI_PY_EXPORT(ContinuousDistribution) {
             .def_method(ContinuousDistribution, max)
             .def("sample",
                 &ContinuousDistribution::sample,
-                "value"_a, "active"_a = true, D(ContinuousDistribution, sample))
+                "sample"_a, "active"_a = true, D(ContinuousDistribution, sample))
             .def("sample_pdf",
                 &ContinuousDistribution::sample_pdf,
-                "value"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
+                "sample"_a, "active"_a = true, D(ContinuousDistribution, sample_pdf))
             .def_repr(ContinuousDistribution);
 
         drjit::bind_traverse(continuous_distr);
@@ -118,7 +120,8 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
     using FloatStorage = DynamicBuffer<Float>;
 
     MI_PY_CHECK_ALIAS(IrregularContinuousDistribution, "IrregularContinuousDistribution") {
-        auto irregular_distr = MI_PY_STRUCT(IrregularContinuousDistribution)
+        auto irregular_distr = nb::class_<IrregularContinuousDistribution, drjit::TraversableBase>(
+            m, "IrregularContinuousDistribution", D(IrregularContinuousDistribution))
             .def(nb::init<>(), D(IrregularContinuousDistribution))
             .def(nb::init<const IrregularContinuousDistribution &>(), "Copy constructor")
             .def(nb::init<const FloatStorage &, const FloatStorage &>(),
@@ -157,10 +160,11 @@ MI_PY_EXPORT(IrregularContinuousDistribution) {
             .def_method(IrregularContinuousDistribution, max)
             .def("sample",
                 &IrregularContinuousDistribution::sample,
-                "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
+                "sample"_a, "active"_a = true, D(IrregularContinuousDistribution, sample))
             .def("sample_pdf",
                 &IrregularContinuousDistribution::sample_pdf,
-                "value"_a, "active"_a = true, D(IrregularContinuousDistribution, sample_pdf))
+                "sample"_a, "active"_a = true,
+                D(IrregularContinuousDistribution, sample_pdf))
             .def_repr(IrregularContinuousDistribution);
 
         drjit::bind_traverse(irregular_distr);

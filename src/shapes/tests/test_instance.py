@@ -66,8 +66,9 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
             assert si_found == si_found_inst
 
             if si_found:
-                si = s.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, coherent=True, active=True)
-                si_inst = s_inst.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, coherent=True, active=True)
+                flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
+                si = s.ray_intersect(ray, flags, coherent=True, active=True)
+                si_inst = s_inst.ray_intersect(ray, flags, coherent=True, active=True)
 
                 assert si.prim_index == si_inst.prim_index
                 assert si.instance is None
@@ -112,25 +113,25 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
 
                 assert si_found == si_found_inst
 
-                for dn_flags in [mi.RayFlags.dNGdUV, mi.RayFlags.dNSdUV]:
-                    if si_found:
-                        si = s.ray_intersect(ray, mi.RayFlags.All | dn_flags, coherent=True, active=True)
-                        si_inst = s_inst.ray_intersect(ray, mi.RayFlags.All | dn_flags, coherent=True, active=True)
+                if si_found:
+                    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
+                    si = s.ray_intersect(ray, flags, coherent=True, active=True)
+                    si_inst = s_inst.ray_intersect(ray, flags, coherent=True, active=True)
 
-                        assert si.prim_index == si_inst.prim_index
-                        assert si.instance is None
-                        assert si_inst.instance is not None
-                        assert dr.allclose(si.t, si_inst.t, atol=2e-2)
-                        assert dr.allclose(si.time, si_inst.time, atol=2e-2)
-                        assert dr.allclose(si.p, si_inst.p, atol=2e-2)
-                        assert dr.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
-                        assert dr.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
-                        assert dr.allclose(si.uv, si_inst.uv, atol=2e-2)
-                        assert dr.allclose(si.wi, si_inst.wi, atol=2e-2)
+                    assert si.prim_index == si_inst.prim_index
+                    assert si.instance is None
+                    assert si_inst.instance is not None
+                    assert dr.allclose(si.t, si_inst.t, atol=2e-2)
+                    assert dr.allclose(si.time, si_inst.time, atol=2e-2)
+                    assert dr.allclose(si.p, si_inst.p, atol=2e-2)
+                    assert dr.allclose(si.dp_du, si_inst.dp_du, atol=2e-2)
+                    assert dr.allclose(si.dp_dv, si_inst.dp_dv, atol=2e-2)
+                    assert dr.allclose(si.uv, si_inst.uv, atol=2e-2)
+                    assert dr.allclose(si.wi, si_inst.wi, atol=2e-2)
 
-                        if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
-                            assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
-                            assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
+                    if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
+                        assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
+                        assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
 
 
 @pytest.mark.parametrize('width', [1, 10])
@@ -262,3 +263,38 @@ def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
             assert dr.allclose(si.t, si_inst.t, atol=2e-2)
             assert dr.allclose(si.p, si_inst.p, atol=2e-2)
             assert dr.allclose(si.n, si_inst.n, atol=2e-2)
+
+
+def test05_normal_partials_non_similarity(variant_scalar_rgb):
+    """The instance transform must not assume that it is a similarity"""
+    from drjit.scalar import ArrayXf as ScalarF
+    from mitsuba import ScalarTransform4f as T
+    from mitsuba.scalar_rgb.test.util import curved_patch, check_normal_partials
+
+    to_world = T().rotate([0.6, 0.8, 0.0], 37).scale([1.0, 2.0, 3.0])
+    assert not to_world.is_similarity()
+
+    mesh, ref = curved_patch()
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group': {'type': 'shapegroup', 'shape': mesh},
+        'instance': {'type': 'instance',
+                     'group': {'type': 'ref', 'id': 'group'},
+                     'to_world': to_world}
+    })
+    flags = mi.RayFlags.Default | mi.RayFlags.NormalPartials
+
+    # Probe a grid spanning the transformed patch from above
+    bbox, hits = scene.bbox(), 0
+    for x in dr.linspace(ScalarF, bbox.min.x, bbox.max.x, 10):
+        for y in dr.linspace(ScalarF, bbox.min.y, bbox.max.y, 10):
+            ray = mi.Ray3f(mi.Point3f(x, y, bbox.max.z + 1),
+                           mi.Vector3f(0, 0, -1))
+            si = scene.ray_intersect(ray, flags, True)
+            if not si.is_valid():
+                continue
+            hits += 1
+            check_normal_partials(si, ref.normal_field(int(si.prim_index)),
+                                  to_world)
+
+    assert hits > 5, hits

@@ -120,12 +120,11 @@ public:
         Bool          prev_bsdf_delta = true;
         BSDFContext   bsdf_ctx;
 
-        /* Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
-           mode, and it generates either a megakernel (default) or
-           wavefront-style renderer in JIT variants. This can be controlled by
-           passing the '-W' command line flag to the mitsuba binary or
-           enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
-        */
+        // Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
+        // mode, and it generates either a megakernel (default) or
+        // wavefront-style renderer in JIT variants. This can be controlled by
+        // passing the '-W' command line flag to the mitsuba binary or
+        // enabling/disabling the JitFlag.LoopRecord bit in Dr.Jit.
         struct LoopState {
             Ray3f ray;
             PreliminaryIntersection3f pi;
@@ -168,11 +167,11 @@ public:
 
         // ---------------------- Hide area emitters ----------------------
 
-        /* dr::any_or() checks for active entries in the provided boolean
-           array. JIT/Megakernel modes can't do this test efficiently as
-           each Monte Carlo sample runs independently. In this case,
-           dr::any_or<..>() returns the template argument (true) which means
-           that the 'if' statement is always conservatively taken. */
+        // dr::any_or() checks for active entries in the provided boolean
+        // array. JIT/Megakernel modes can't do this test efficiently as
+        // each Monte Carlo sample runs independently. In this case,
+        // dr::any_or<..>() returns the template argument (true) which means
+        // that the 'if' statement is always conservatively taken.
 
         if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
             // Did we hit an area emitter? If so, skip all area emitters along this ray
@@ -183,9 +182,9 @@ public:
             if (dr::any_or<true>(skip_emitters)) {
                 SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
                     ls.ray, +RayFlags::Minimal, skip_emitters);
-                Ray3f ray = si.spawn_ray(ls.ray.d);
+                Ray3f skip_ray = si.spawn_ray(ls.ray.d);
                 PreliminaryIntersection3f pi_after_skip =
-                    Base::skip_area_emitters(scene, ray, true, skip_emitters);
+                    Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
                 dr::masked(ls.pi, skip_emitters) = pi_after_skip;
             }
         }
@@ -194,12 +193,12 @@ public:
             [](const LoopState& ls) { return ls.active; },
             [this, scene, bsdf_ctx](LoopState& ls) {
 
-            /* dr::while_loop implicitly masks all code in the loop using the
-               'active' flag, so there is no need to pass it to every function */
+            // dr::while_loop implicitly masks all code in the loop using the
+            // 'active' flag, so there is no need to pass it to every function
 
             // Fill out all information of the interaction
             SurfaceInteraction3f si =
-                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::All);
+                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::Default);
 
             // ---------------------- Direct emission ----------------------
 
@@ -247,8 +246,8 @@ public:
                     si, ls.sampler->next_2d(), true, active_em);
                 active_em &= (ds.pdf != 0.f);
 
-                /* Given the detached emitter sample, recompute its contribution
-                   with AD to enable light source optimization. */
+                // Given the detached emitter sample, recompute its contribution
+                // with AD to enable light source optimization.
                 if (dr::grad_enabled(si.p)) {
                     ds.d = dr::normalize(ds.p - si.p);
                     Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
@@ -286,13 +285,13 @@ public:
 
             ls.ray = si.spawn_ray(si.to_world(bsdf_sample.wo));
 
-            /* When the path tracer is differentiated, we must be careful that
-               the generated Monte Carlo samples are detached (i.e. don't track
-               derivatives) to avoid bias resulting from the combination of moving
-               samples and discontinuous visibility. We need to re-evaluate the
-               BSDF differentiably with the detached sample in that case. */
+            // When the path tracer is differentiated, we must be careful that
+            // the generated Monte Carlo samples are detached (i.e. don't track
+            // derivatives) to avoid bias resulting from the combination of moving
+            // samples and discontinuous visibility. We need to re-evaluate the
+            // BSDF differentiably with the detached sample in that case.
             if (dr::grad_enabled(ls.ray)) {
-                ls.ray = dr::detach<true>(ls.ray);
+                ls.ray = dr::detach(ls.ray);
 
                 // Recompute 'wo' to propagate derivatives to cosine term
                 Vector3f wo_2 = si.to_local(ls.ray.d);
@@ -322,9 +321,9 @@ public:
             Mask rr_active = ls.depth >= m_rr_depth,
                  rr_continue = ls.sampler->next_1d() < rr_prob;
 
-            /* Differentiable variants of the renderer require the russian
-               roulette sampling weight to be detached to avoid bias. This is a
-               no-op in non-differentiable variants. */
+            // Differentiable variants of the renderer require the russian
+            // roulette sampling weight to be detached to avoid bias. This is a
+            // no-op in non-differentiable variants.
             ls.throughput[rr_active] *= dr::rcp(dr::detach(rr_prob));
 
             ls.active = active_next && (!rr_active || rr_continue) &&
@@ -345,7 +344,6 @@ public:
         };
     }
 
-    //! @}
     // =============================================================
 
     std::string to_string() const override {
@@ -360,11 +358,11 @@ public:
         pdf_a *= pdf_a;
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
-        return dr::detach<true>(dr::select(dr::isfinite(w), w, 0.f));
+        return dr::detach(dr::select(dr::isfinite(w), w, 0.f));
     }
 
     /**
-     * \brief Perform a Mueller matrix multiplication in polarized modes, and a
+     * Perform a Mueller matrix multiplication in polarized modes, and a
      * fused multiply-add otherwise.
      */
     Spectrum spec_fma(const Spectrum &a, const Spectrum &b,

@@ -137,3 +137,16 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
 
     from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 3])
+
+def test07_traverse(variants_vec_rgb):
+    min = mi.Vector3f(dr.linspace(mi.Float, -5, 0, num=10))
+    max = min + 5
+    bboxes = mi.BoundingBox3f(min, max)
+    dr.eval(bboxes)
+
+    idx = dr.full(mi.UInt32, 9, shape=10)
+    res = dr.gather(mi.BoundingBox3f, bboxes, idx)
+
+    target = mi.BoundingBox3f(mi.Vector3f(0), mi.Vector3f(5))
+    assert dr.allclose(res.min, target.min)
+    assert dr.allclose(res.max, target.max)

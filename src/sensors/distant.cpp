@@ -177,6 +177,9 @@ public:
             if (!m_target_shape)
                 Throw(
                     "Invalid parameter target, must be a Point3f or a Shape.");
+
+            // Build the target's sampling table, which ``sample_ray()`` needs
+            m_target_shape->surface_area();
         } else {
             Log(Debug, "No target specified.");
         }

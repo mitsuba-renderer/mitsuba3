@@ -41,7 +41,7 @@ enum class TagType {
 };
 
 /**
- * \brief Structure to track parameter substitutions during XML parsing
+ * Structure to track parameter substitutions during XML parsing
  *
  * This structure holds information about a single parameter that can be
  * substituted in XML attributes using the $parameter_name syntax.
@@ -61,7 +61,8 @@ template <typename... Args>
                               const char *, Args&&... args);
 
 static ParserState parse_file_impl(const ParserConfig &config, const fs::path &filename,
-                                   SortedParameters &params, int depth);
+                                   SortedParameters &params, int depth,
+                                   const FileResolver &resolver);
 
 // Helper function to check that all and only the specified attributes are present
 // Required attributes are prefixed with '!', optional ones without
@@ -113,7 +114,7 @@ static void check_unused_parameters(const ParserConfig &config,
 }
 
 /**
- * \brief Interprets an XML tag name and returns its type classification
+ * Interprets an XML tag name and returns its type classification
  *
  * This function takes an XML tag name and returns a pair containing:
  * - For property tags (e.g., "float", "rgb", "transform"):
@@ -121,8 +122,11 @@ static void check_unused_parameters(const ParserConfig &config,
  * - For object tags (e.g., "scene", "bsdf", "shape"):
  *   returns (TagType::Object, appropriate ObjectType)
  *
- * \param str The XML tag name to interpret
- * \return A pair of (TagType, ObjectType) indicating the tag classification
+ * Args:
+ *     str: The XML tag name to interpret
+ *
+ * Returns:
+ *     A pair of (TagType, ObjectType) indicating the tag classification
  */
 static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
     if (str.empty())
@@ -194,16 +198,21 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
 }
 
 /**
- * \brief Perform parameter substitution on an XML attribute in-place
+ * Perform parameter substitution on an XML attribute in-place
  *
  * This function modifies the attribute value directly, replacing any
  * occurrences of $parameter_name with the corresponding parameter value.
  *
- * \param xml_node The XML node containing the attribute (for error location)
- * \param attr The XML attribute to modify
- * \param params List of parameters sorted by search key length
- * \param state Parser state for error reporting
- * \param file_index File index for error location
+ * Args:
+ *     xml_node: The XML node containing the attribute (for error location)
+ *
+ *     attr: The XML attribute to modify
+ *
+ *     params: List of parameters sorted by search key length
+ *
+ *     state: Parser state for error reporting
+ *
+ *     file_index: File index for error location
  */
 static void substitute_parameters(pugi::xml_node xml_node,
                                   pugi::xml_attribute &attr,
@@ -396,16 +405,20 @@ static ScalarVector3d parse_vector_from_string(const ParserState &state,
 }
 
 /**
- * \brief Generate a human-readable file location string for error reporting
+ * Generate a human-readable file location string for error reporting
  *
  * Returns a string describing where a scene node was defined in the source file.
  * For XML files, this includes the filename and line:column information.
  * For dictionary-parsed nodes (which don't have location info), returns the node's ID
  * or a generic description.
  *
- * \param state Parser state containing file information
- * \param node Scene node to locate
- * \return Human-readable location string (e.g., "scene.xml (line 10, col 5)")
+ * Args:
+ *     state: Parser state containing file information
+ *
+ *     node: Scene node to locate
+ *
+ * Returns:
+ *     Human-readable location string (e.g., "scene.xml (line 10, col 5)")
  */
 std::string file_location(const ParserState &state, const SceneNode &node) {
     // First check if we have a path from dictionary parsing
@@ -754,8 +767,7 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                     fail(state, scene_node, "%s", e.what());
                 }
             } else {
-                ref<FileResolver> fs = mitsuba::file_resolver();
-                fs::path file_path = fs->resolve(filename_attr);
+                fs::path file_path = state.resolver->resolve(filename_attr);
                 try {
                     spectrum = Properties::Spectrum(file_path);
                 } catch (const std::exception &e) {
@@ -771,37 +783,22 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
         case TagType::Include: {
             check_attributes(state, scene_node, node, {"!filename"sv, "name"sv});
 
-            // Clone the FileResolver and add the current file's parent directory
-            // This allows relative paths in includes to be resolved correctly
-            ref<FileResolver> fs_backup = mitsuba::file_resolver();
-            ref<FileResolver> fs = new FileResolver(*fs_backup);
-
-            // Add the parent directory of the current file being parsed
-            if (scene_node.file_index < state.files.size()) {
-                fs::path parent_dir = state.files[scene_node.file_index].parent_path();
-                if (!parent_dir.empty())
-                    fs->prepend(parent_dir);
-            }
-            set_file_resolver(fs.get());
-
             // Parse the included file recursively with increased depth
             ParserState inc_state;
             fs::path filename;
             try {
-                filename = fs->resolve(node.attribute("filename").value());
+                filename = state.resolver->resolve(node.attribute("filename").value());
                 if (!fs::exists(filename))
                     fail(state, scene_node, "included file \"%s\" not found", filename);
 
                 Log(Info, "Loading included XML file \"%s\" ..", filename.string());
 
-                inc_state = parse_file_impl(config, filename, params, state.depth + 1);
+                inc_state = parse_file_impl(config, filename, params, state.depth + 1,
+                                            *state.resolver);
             } catch (const std::exception &e) {
-                set_file_resolver(fs_backup.get());
                 // Add context about which file included this one
                 fail(state, scene_node, "while processing <include>:\n%s", e.what());
             }
-
-            set_file_resolver(fs_backup.get());
 
             // Merge the included nodes into our state
             if (!inc_state.empty()) {
@@ -983,23 +980,14 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
             if (parent_idx != 0)
                 fail(state, scene_node, "<path>: path can only be child of root");
 
-            ref<FileResolver> fs = mitsuba::file_resolver();
             fs::path resource_path(node.attribute("value").value());
-
-            if (!resource_path.is_absolute()) {
-                // First try to resolve it starting in the XML file directory
-                if (scene_node.file_index < state.files.size()) {
-                    resource_path = state.files[scene_node.file_index].parent_path() / resource_path;
-                }
-                // Otherwise try to resolve it with the FileResolver
-                if (!fs::exists(resource_path))
-                    resource_path = fs->resolve(node.attribute("value").value());
-            }
+            if (!resource_path.is_absolute())
+                resource_path = state.resolver->resolve(resource_path);
 
             if (!fs::exists(resource_path))
                 fail(state, scene_node, "<path>: folder \"%s\" not found", resource_path);
 
-            fs->prepend(resource_path);
+            state.resolver->prepend(resource_path);
             break;
         }
 
@@ -1059,14 +1047,15 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
 ParserState parse_file(const ParserConfig &config, const fs::path &filename,
                        const ParameterList &param_list) {
     SortedParameters params = make_sorted_parameters(param_list);
-    ParserState state = parse_file_impl(config, filename, params, 0);
+    ParserState state = parse_file_impl(config, filename, params, 0, *file_resolver());
     check_unused_parameters(config, params);
     return state;
 }
 
 static ParserState parse_file_impl(const ParserConfig &config,
                                    const fs::path &filename,
-                                   SortedParameters &params, int depth) {
+                                   SortedParameters &params, int depth,
+                                   const FileResolver &resolver) {
 
     // Check recursion depth
     if (depth >= config.max_include_depth)
@@ -1099,6 +1088,12 @@ static ParserState parse_file_impl(const ParserConfig &config,
     ParserState state;
     state.depth = depth;
     state.files.push_back(filename);
+
+    // Relative paths in this file are resolved starting at its directory
+    state.resolver = new FileResolver(resolver);
+    fs::path parent_dir = filename.parent_path();
+    if (!parent_dir.empty())
+        state.resolver->prepend(parent_dir);
 
     std::string_view version_str = root_node.attribute("version").value();
     try {
@@ -1139,6 +1134,7 @@ ParserState parse_string(const ParserConfig &config, std::string_view string, co
     state.depth = 0;
     state.content = string;
     state.files.push_back("<string>");
+    state.resolver = new FileResolver(*file_resolver());
 
     std::string_view version_str = root_node.attribute("version").value();
     try {
@@ -1678,6 +1674,8 @@ static Task* instantiate_node(const ParserConfig &config,
     // Lambda function to instantiate a node once its children are ready
     auto instantiate = [&config, &state, &scratch, index, backend, scope]() {
         ScopedSetJITScope set_scope(config.parallel ? backend : 0u, scope);
+        ScopedFileResolver set_resolver(state.resolver ? state.resolver.get()
+                                                       : file_resolver());
 
         Scratch &s = scratch[index];
         SceneNode &node = state[index];
@@ -1837,7 +1835,7 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
 // ===========================================================================
 
 /**
- * \brief Helper function to decompose a transform matrix into a canonical
+ * Helper function to decompose a transform matrix into a canonical
  * format to improve editability of the resulting XML.
 
  * The function tries to decompose the transformation into

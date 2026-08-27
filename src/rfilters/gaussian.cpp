@@ -52,19 +52,17 @@ public:
         // Cut off after 4 standard deviations
         m_radius = 4 * m_stddev;
 
-        /* Precompute a cheap approximation to the filter kernel.
-           Unnecessary on NVIDIA GPUs that provide a fast exponential
-           instruction via the MUFU (multi-function generator). */
+        // Precompute a cheap approximation to the filter kernel.
+        // Unnecessary on NVIDIA GPUs that provide a fast exponential
+        // instruction via the MUFU (multi-function generator).
         if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>) {
-            /*
-              Remez fit to exp(-x/2), obtained using:
-
-              f[x_] = MiniMaxApproximation[Exp[-x/2], {x, {0, 16}, 9, 0},
-                  WorkingPrecision -> 50, Brake -> {400, 400},
-                  MaxIterations -> 100, Bias -> 0][[2, 1]];
-
-              N[CoefficientList[h[x] - h[16], x], 10]
-            */
+            // Remez fit to exp(-x/2), obtained using:
+            //
+            // f[x_] = MiniMaxApproximation[Exp[-x/2], {x, {0, 16}, 9, 0},
+            //     WorkingPrecision -> 50, Brake -> {400, 400},
+            //     MaxIterations -> 100, Bias -> 0][[2, 1]];
+            //
+            // N[CoefficientList[h[x] - h[16], x], 10]
 
             double coeff[10] = { 9.992604880e-1, -4.977025247e-1,
                                  1.222248550e-1, -1.932406282e-2,

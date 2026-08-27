@@ -58,7 +58,7 @@ class ProjectiveDetail():
                                             scene: mi.Scene,
                                             viewpoint: mi.Point3f,
                                             sample2: mi.Point2f,
-                                            active: mi.Mask) -> mi.SilhouetteSample3f:
+                                            active: mi.Bool) -> mi.SilhouetteSample3f:
         """
         Sample a primarily visible silhouette point as seen from the sensor.
         Returns a silhouette sample struct.
@@ -69,7 +69,7 @@ class ProjectiveDetail():
             self.primary_shape_distribution.sample_reuse_pmf(sample2.x, active)
 
         def sample_precomputed_silhouette(i: int, viewpoint: mi.Point3f,
-                sample2: mi.Point2f, shape_pmf: mi.Float, active: mi.Mask):
+                sample2: mi.Point2f, shape_pmf: mi.Float, active: mi.Bool):
             shape_distr = self.primary_distributions[i]
             shape_indices = self.primary_indices[i]
 
@@ -106,7 +106,7 @@ class ProjectiveDetail():
                         sensor: mi.Sensor,
                         ss: mi.SilhouetteSample3f) -> mi.Float:
         """
-        The silhouette sample `ss` stores (1) the sampling density in the scene
+        The silhouette sample ``ss`` stores (1) the sampling density in the scene
         space, and (2) the motion of the silhouette point in the scene space.
         This Jacobian corrects both quantities to the camera sample space.
         """
@@ -225,8 +225,9 @@ class ProjectiveDetail():
         )
 
         # Get the intersection struct for the shape pointer
-        flags = mi.RayFlags.All | mi.RayFlags.dNSdUV
-        si = scene.ray_intersect(ray_seed, ray_flags=flags, coherent=True, active=active)
+        si = scene.ray_intersect(
+            ray_seed, ray_flags=mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+            coherent=True, active=active)
         active &= si.is_valid()
 
         # Is the shape we hit being differentiated in this scene?
@@ -535,26 +536,26 @@ class ProjectiveDetail():
                                 sample: mi.Vector3f,
                                 sampler: mi.Sampler,
                                 preprocess: bool,
-                                active: mi.Mask = True):
+                                active: mi.Bool = True):
         """
         Evaluate the indirect discontinuous derivatives integral for a given
         sample point in boundary sample space.
 
-        Parameters ``sample`` (``mi.Point3f``):
-            The sample point in boundary sample space.
+        Args:
+            sample: The sample point in boundary sample space.
 
-        This function returns a tuple ``(result, sensor_uv)`` where
+        Returns:
+            A tuple ``(result, wavelengths, sensor_uv)`` where
 
-        Output ``result`` (``mi.Spectrum``):
-            The integrand of the indirect discontinuous derivatives.
+            - ``result``: The integrand of the indirect discontinuous
+              derivatives.
 
-        Output ``wavelengths`` (``mi.Wavelength``):
-            Set of wavelength used by this sample. (Only relevant in spectral
-            variants)
+            - ``wavelengths``: Set of wavelength used by this sample. (Only
+              relevant in spectral variants)
 
-        Output ``sensor_uv`` (``mi.Point2f``):
-            The UV coordinates on the sensor film to splat the result to. If
-            ``preprocess`` is false, this coordinate is not used.
+            - ``sensor_uv``: The UV coordinates on the sensor film to splat
+              the result to. If ``preprocess`` is false, this coordinate is
+              not used.
         """
         parent = self.parent
 
@@ -614,7 +615,7 @@ class ProjectiveDetail():
     class ProjectOperation():
         """
         Projection operation takes a seed ray as input and outputs a
-        \ref SilhouetteSample3f object.
+        `mitsuba.SilhouetteSample3f` object.
         """
         def __init__(self, mesh_proj_algo, max_walk, max_jump) -> None:
             self.mesh_proj_algo = mesh_proj_algo
@@ -696,8 +697,9 @@ class ProjectiveDetail():
                     projected_p + projected_normal * mi.math.RayEpsilon,
                     -projected_normal
                 )
-                si = scene.ray_intersect(ray_new, mi.RayFlags.All | mi.RayFlags.dNSdUV,
-                                         coherent=False, active=loop_active)
+                si = scene.ray_intersect(
+                    ray_new, mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+                    coherent=False, active=loop_active)
                 loop_active &= si.is_valid() & (si.shape == shape)
 
                 # Check if we hit a silhouette
@@ -738,7 +740,8 @@ class ProjectiveDetail():
             pi.shape = ss.shape
             dummy_ray = dr.zeros(mi.Ray3f, dr.width(ss))
             si_jump = pi.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, active=active)
+                dummy_ray, mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+                active=active)
 
             # Perform the jump operation
             ss_jump, valid_jump = self.mesh_jump(scene, si_jump, viewpoint, sampler.state, active_jump, 1)

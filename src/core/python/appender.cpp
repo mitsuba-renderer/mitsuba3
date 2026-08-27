@@ -9,7 +9,7 @@
 // Trampoline for derived types implemented in Python
 class PyAppender : public Appender {
 public:
-    NB_TRAMPOLINE(Appender, 2);
+    NB_TRAMPOLINE(Appender);
 
     void append(mitsuba::LogLevel level, std::string_view text) override {
         NB_OVERRIDE_PURE(append, level, text);

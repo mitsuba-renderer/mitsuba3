@@ -6,6 +6,15 @@ get_directory_property(MI_EXT_COMPILE_OPTIONS        COMPILE_OPTIONS)
 get_directory_property(MI_EXT_COMPILE_OPTIONS_NOWARN COMPILE_OPTIONS)
 list(REMOVE_ITEM MI_EXT_COMPILE_OPTIONS_NOWARN -Wall -Wextra /W4)
 
+# MSVC carries its warning level in ``CMAKE_CXX_FLAGS`` rather than in the
+# directory property. Strip it there as well, otherwise dependencies that lower
+# the level on their own targets produce a D9025 warning for every file.
+set(MI_EXT_CXX_FLAGS        "${CMAKE_CXX_FLAGS}")
+set(MI_EXT_CXX_FLAGS_NOWARN "${CMAKE_CXX_FLAGS}")
+if (MSVC)
+  string(REGEX REPLACE "/W[0-4] *" "" MI_EXT_CXX_FLAGS_NOWARN "${MI_EXT_CXX_FLAGS_NOWARN}")
+endif()
+
 # ---------------------------------------------------------------------------
 #  Enable assembler dialects
 # ---------------------------------------------------------------------------
@@ -35,6 +44,7 @@ endif()
 
 if (MI_PROFILER_ITTNOTIFY)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS_NOWARN}")
+  set(CMAKE_CXX_FLAGS "${MI_EXT_CXX_FLAGS_NOWARN}")
   add_subdirectory(ittnotify/ittnotify)
   set(ITT_INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR}/ittnotify/ittnotify/include)
   set(ITT_INCLUDE_DIRS ${ITT_INCLUDE_DIRS} PARENT_SCOPE)
@@ -47,9 +57,11 @@ endif()
 # ---------------------------------------------------------------------------
 
 set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS}")
+set(CMAKE_CXX_FLAGS "${MI_EXT_CXX_FLAGS}")
 set(DRJIT_ENABLE_JIT      ${MI_ENABLE_JIT} CACHE BOOL " " FORCE)
 set(DRJIT_ENABLE_AUTODIFF ${MI_ENABLE_AUTODIFF} CACHE BOOL " " FORCE)
 set(DRJIT_ENABLE_PYTHON   ${MI_ENABLE_PYTHON} CACHE BOOL " " FORCE)
+set(DRJIT_SPLIT_MODE      ${MI_SPLIT_MODE}   CACHE BOOL " " FORCE)
 if (MI_PROFILER_NVTX)
     include_directories(${CUDA_TOOLKIT_ROOT_DIR}/include)
     set(DRJIT_ENABLE_NVTX ON)
@@ -86,6 +98,7 @@ endif()
 mark_as_advanced(
   DRJIT_ENABLE_AUTODIFF DRJIT_ENABLE_JIT
   DRJIT_ENABLE_PYTHON DRJIT_ENABLE_PYTHON_PACKET DRJIT_ENABLE_TESTS
+  DRJIT_SPLIT_MODE
   DRJIT_JIT_DYNAMIC_CUDA DRJIT_JIT_DYNAMIC_LLVM DRJIT_JIT_ENABLE_OPTIX
   DRJIT_THREAD_ENABLE_TESTS
 )
@@ -96,6 +109,7 @@ mark_as_advanced(
 
 if (MI_ENABLE_EMBREE)
   set_directory_properties(PROPERTIES COMPILE_OPTIONS "")
+  set(CMAKE_CXX_FLAGS "${MI_EXT_CXX_FLAGS_NOWARN}")
 
   set(EMBREE_ISPC_SUPPORT              OFF CACHE BOOL " " FORCE)
   set(EMBREE_TUTORIALS                 OFF CACHE BOOL " " FORCE)
@@ -185,6 +199,7 @@ mark_as_advanced(FORCE EMBREE_ADDRESS_SANITIZER EMBREE_API_NAMESPACE
 # ----------------------------------------------------------
 
 set_directory_properties(PROPERTIES COMPILE_OPTIONS "${MI_EXT_COMPILE_OPTIONS_NOWARN}")
+set(CMAKE_CXX_FLAGS "${MI_EXT_CXX_FLAGS_NOWARN}")
 if (WIN32)
   set(ZLIB_BUILD_STATIC_LIBS OFF CACHE BOOL " " FORCE)
   set(ZLIB_BUILD_SHARED_LIBS ON  CACHE BOOL " " FORCE)
@@ -311,7 +326,16 @@ set(ENABLE_SHARED   ON  CACHE BOOL " " FORCE)
 set(ENABLE_STATIC   OFF CACHE BOOL " " FORCE)
 set(WITH_TURBOJPEG  OFF CACHE BOOL " " FORCE)
 set(WITH_TOOLS      OFF CACHE BOOL " " FORCE)
+
+# Use the dynamic MSVC runtime like every other part of the build. The default
+# would force ``/MT`` on top of the inherited ``/MD``.
+set(WITH_CRT_DLL    ON  CACHE BOOL " " FORCE)
+
+# libjpeg-turbo caps its policy range at CMake 3.28, leaving CMP0219 unset and
+# warning. cmake_policy(SET) would not survive its cmake_minimum_required().
+set(CMAKE_POLICY_DEFAULT_CMP0219 NEW)
 add_subdirectory(libjpeg-turbo)
+unset(CMAKE_POLICY_DEFAULT_CMP0219)
 set_property(TARGET jpeg PROPERTY FOLDER "dependencies")
 
 # Public headers live in src/; the generated jconfig.h lands in the build dir.
@@ -332,6 +356,7 @@ mark_as_advanced(
   ENABLE_STATIC
   WITH_TURBOJPEG
   WITH_TOOLS
+  WITH_CRT_DLL
 )
 
 # ----------------------------------------------------------
@@ -385,12 +410,15 @@ endif()
 #  Fast floating point parser (interface library)
 # ----------------------------------------------------------
 
+set(FASTFLOAT_INSTALL OFF CACHE BOOL " " FORCE)
 add_subdirectory(fastfloat EXCLUDE_FROM_ALL)
 mark_as_advanced(
+  FASTFLOAT_BENCHMARKS
+  FASTFLOAT_CXX_STANDARD
+  FASTFLOAT_INSTALL
   FASTFLOAT_SANITIZE
   FASTFLOAT_TEST
 )
-unset(CMAKE_CXX_STANDARD CACHE)
 
 # ----------------------------------------------------------
 #  Nanobind headers

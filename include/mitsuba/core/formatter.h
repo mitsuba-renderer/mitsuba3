@@ -4,7 +4,8 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/** \brief Abstract interface for converting log information into
+/**
+ * Abstract interface for converting log information into
  * a human-readable format
  */
 class MI_EXPORT_LIB Formatter : public Object {
@@ -13,22 +14,18 @@ public:
     ~Formatter() = default;
 
     /**
-     * \brief Turn a log message into a human-readable format
+     * Turn a log message into a human-readable format
      *
-     * \param level
-     *     The importance of the debug message
+     * Args:
+     *     level: The importance of the debug message
      *
-     * \param cname
-     *     Name of the class (if present)
+     *     cname: Name of the class (if present)
      *
-     * \param fname
-     *      Source location (file)
+     *     fname: Source location (file)
      *
-     * \param line
-     *      Source location (line number)
+     *     line: Source location (line number)
      *
-     * \param msg
-     *      Text content associated with the log message
+     *     msg: Text content associated with the log message
      */
     virtual std::string format(LogLevel level, const char *cname,
                                const char *fname, int line,
@@ -37,7 +34,8 @@ public:
     MI_DECLARE_CLASS(Formatter)
 };
 
-/** \brief The default formatter used to turn log messages into
+/**
+ * The default formatter used to turn log messages into
  * a human-readable form
  */
 class MI_EXPORT_LIB DefaultFormatter : public Formatter {
@@ -52,22 +50,26 @@ public:
 
     /// Should date information be included? The default is yes.
     void set_has_date(bool value) { m_has_date = value; }
-    /// \sa set_has_date
+    /// See Also:
+    ///     `set_has_date`
     bool has_date() { return m_has_date; }
 
     /// Should thread information be included? The default is yes.
     void set_has_thread(bool value) { m_has_thread = value; }
-    /// \sa set_has_thread
+    /// See Also:
+    ///     `set_has_thread`
     bool has_thread() { return m_has_thread; }
 
     /// Should log level information be included? The default is yes.
     void set_has_log_level(bool value) { m_has_log_level = value; }
-    /// \sa set_has_log_level
+    /// See Also:
+    ///     `set_has_log_level`
     bool has_log_level() { return m_has_log_level; }
 
     /// Should class information be included? The default is yes.
     void set_has_class(bool value) { m_has_class = value; }
-    /// \sa set_has_class
+    /// See Also:
+    ///     `set_has_class`
     bool has_class() { return m_has_class; }
 
     MI_DECLARE_CLASS(DefaultFormatter)

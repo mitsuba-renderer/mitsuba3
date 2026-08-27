@@ -1,3 +1,4 @@
+#include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/stream.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/properties.h>
@@ -6,6 +7,7 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/mesh_utils.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
@@ -13,7 +15,9 @@
 #include <nanobind/stl/string_view.h>
 #include <nanobind/stl/vector.h>
 #include <nanobind/stl/tuple.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/optional.h>
+#include <nanobind/ndarray.h>
 #include <drjit/python.h>
 
 MI_PY_EXPORT(SilhouetteSample) {
@@ -58,19 +62,24 @@ MI_PY_EXPORT(SilhouetteSample) {
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Mesh)
-    NB_TRAMPOLINE(Mesh, 1);
+    NB_TRAMPOLINE(Mesh);
+
+    using IndexBuffer = typename Mesh::IndexBuffer;
 
     PyMesh(const Properties &props) : Mesh(props) { }
-    PyMesh(const std::string &name, uint32_t vertex_count, uint32_t face_count,
-           const Properties &props = Properties(),
-           bool has_vertex_normals = false, bool has_vertex_texcoords = false)
-        : Mesh(name, vertex_count, face_count, props, has_vertex_normals,
-               has_vertex_texcoords) {}
+    PyMesh(std::string_view name, bool face_normals = false,
+           bool flip_normals = false)
+        : Mesh(name, face_normals, flip_normals) { }
+    PyMesh(std::string_view name, const TensorXu32 &faces,
+           const TensorXf32 &positions, const TensorXf32 &normals,
+           const TensorXf32 &texcoords, const IndexBuffer &position_index,
+           const IndexBuffer &normal_index, const IndexBuffer &bsdf_index,
+           bool face_normals, bool flip_normals)
+        : Mesh(name, faces, positions, normals, texcoords, position_index,
+               normal_index, bsdf_index, face_normals, flip_normals) { }
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Mesh)
 };
 
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
@@ -111,9 +120,12 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray,
                const PreliminaryIntersection3f &pi, uint32_t ray_flags,
                Mask active) {
-                return shape->compute_surface_interaction(ray, pi, ray_flags, 0, active);
+                SurfaceInteraction3f si = shape->compute_surface_interaction(
+                    ray, pi, ray_flags, 0, active);
+                si.finalize_surface_interaction(pi, ray, ray_flags, active);
+                return si;
             },
-            "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::All,
+            "ray"_a, "pi"_a, "ray_flags"_a = +RayFlags::Default,
             "active"_a = true, D(Shape, compute_surface_interaction))
        .def("has_attribute",
             [](Ptr shape, const std::string &name, const Mask &active) {
@@ -153,7 +165,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Ray3f &ray, uint32_t flags, const Mask &active) {
                 return shape->ray_intersect(ray, flags, active);
             },
-            "ray"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+            "ray"_a, "ray_flags"_a = +RayFlags::Default, "active"_a = true,
             D(Shape, ray_intersect))
        .def("ray_test",
             [](Ptr shape, const Ray3f &ray, const Mask &active) {
@@ -229,7 +241,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape, const Point2f &uv, uint32_t ray_flags, Mask active) {
                 return shape->eval_parameterization(uv, ray_flags, active);
             },
-            "uv"_a, "ray_flags"_a = +RayFlags::All, "active"_a = true,
+            "uv"_a, "ray_flags"_a = +RayFlags::Default, "active"_a = true,
             D(Shape, eval_parameterization))
        .def("surface_area",
             [](Ptr shape) {
@@ -252,12 +264,12 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
        .def("face_count", [](const Ptr ptr) {
             return ptr->face_count();
         }, D(Mesh, face_count))
-       .def("has_vertex_normals", [](const Ptr ptr) {
-            return ptr->has_vertex_normals();
-        }, D(Mesh, has_vertex_normals))
-       .def("has_vertex_texcoords", [](const Ptr ptr) {
-            return ptr->has_vertex_texcoords();
-        }, D(Mesh, has_vertex_texcoords))
+       .def("has_normals", [](const Ptr ptr) {
+            return ptr->has_normals();
+        }, D(Mesh, has_normals))
+       .def("has_texcoords", [](const Ptr ptr) {
+            return ptr->has_texcoords();
+        }, D(Mesh, has_texcoords))
        .def("has_mesh_attributes", [](const Ptr ptr) {
             return ptr->has_mesh_attributes();
         }, D(Mesh, has_mesh_attributes))
@@ -267,43 +279,45 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
        .def("face_indices", [](const Ptr m, UInt32 index, Mask active) {
                 return m->face_indices(index, active);
             }, D(Mesh, face_indices), "index"_a, "active"_a = true)
-       .def("edge_indices", [](const Ptr m, UInt32 tri_index, UInt32 edge_index, Mask active) {
-                return m->edge_indices(tri_index, edge_index, active);
-            }, D(Mesh, edge_indices), "tri_index"_a, "edge_index"_a, "active"_a = true)
+       .def("dedge_indices", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_indices(index, active);
+            }, D(Mesh, dedge_indices), "index"_a, "active"_a = true)
        .def("vertex_position", [](const Ptr m, UInt32 index, Mask active) {
-                return m->vertex_position(index, active);
+                return Point3f(m->vertex_position(index, active));
             }, D(Mesh, vertex_position), "index"_a, "active"_a = true)
        .def("vertex_normal", [](const Ptr m, UInt32 index, Mask active) {
-                return m->vertex_normal(index, active);
+                return Normal3f(m->vertex_normal(index, active));
             }, D(Mesh, vertex_normal), "index"_a, "active"_a = true)
        .def("vertex_texcoord", [](const Ptr m, UInt32 index, Mask active) {
-                return m->vertex_texcoord(index, active);
+                return Point2f(m->vertex_texcoord(index, active));
             }, D(Mesh, vertex_texcoord), "index"_a, "active"_a = true)
        .def("face_normal", [](const Ptr m, UInt32 index, Mask active) {
                 return m->face_normal(index, active);
             }, D(Mesh, face_normal), "index"_a, "active"_a = true)
-       .def("opposite_dedge", [](const Ptr m, UInt32 index, Mask active) {
-                return m->opposite_dedge(index, active);
-            }, D(Mesh, opposite_dedge), "index"_a, "active"_a = true)
-
+       .def("dedge_opposite", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_opposite(index, active);
+            }, D(Mesh, dedge_opposite), "index"_a, "active"_a = true)
+       .def("dedge_vertex_edge", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_edge(index, active);
+            }, D(Mesh, dedge_vertex_edge), "index"_a, "active"_a = true)
+       .def("dedge_vertex_valence", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_valence(index, active);
+            }, D(Mesh, dedge_vertex_valence), "index"_a, "active"_a = true)
+       .def("dedge_vertex_flags", [](const Ptr m, UInt32 index, Mask active) {
+                return m->dedge_vertex_flags(index, active);
+            }, D(Mesh, dedge_vertex_flags), "index"_a, "active"_a = true)
        .def("ray_intersect_triangle", [](const Ptr ptr, const UInt32 &index,
                                          const Ray3f &ray, Mask active) {
                 return ptr->ray_intersect_triangle(index, ray, active);
-            },
-            "index"_a, "ray"_a, "active"_a = true,
-            D(Mesh, ray_intersect_triangle));
+            }, D(Mesh, ray_intersect_triangle), "index"_a, "ray"_a, "active"_a = true);
 
     if constexpr (dr::is_array_v<Ptr> && dr::is_jit_v<Ptr>) {
         // Custom constructor to automatically zero-out non-Mesh pointer entries.
         // using ShapePtr = dr::replace_scalar_t<Ptr, Shape *>;
-        cls.def("__init__", [](Ptr *dst) {
-               // Zero-sized pointer array.
-               new (dst) Ptr();
-           })
+        cls.def("__init__", [](Ptr *dst) { new (dst) Ptr(); })
            .def("__init__", [](Ptr *dst, const ShapePtr &ptr) {
                 ShapePtr filtered = dr::select(ptr->is_mesh(), ptr, dr::zeros<ShapePtr>());
                 Ptr mesh = dr::reinterpret_array<Ptr>(filtered);
-                // Placement new.
                 new (dst) Ptr(mesh);
             })
             .def("__init__", [](Ptr *dst, const Shape *ptr) {
@@ -311,11 +325,151 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
             })
             .def("__init__", [](Ptr *dst, const Mesh *ptr) {
                 new (dst) Ptr(ptr);
-            })
-            .def("has_flipped_normals", [](Ptr shape) {
-                return shape->has_flipped_normals();
-            }, D(Shape, has_flipped_normals));
+            });
     }
+}
+
+using NdArrayF = nb::ndarray<const float, nb::c_contig, nb::device::cpu>;
+using NdPoints = nb::ndarray<const float, nb::shape<-1, 3>, nb::c_contig,
+                             nb::device::cpu>;
+using NdTexcoords = nb::ndarray<const float, nb::shape<-1, 2>, nb::c_contig,
+                                nb::device::cpu>;
+
+using NdIndex = nb::ndarray<nb::ndim<1>, nb::c_contig, nb::device::cpu>;
+
+/// Reinterpret a 32-bit index array as unsigned. Negative entries turn into
+/// large indices, which the subsequent bounds checks reject.
+static const uint32_t *index_data(const NdIndex &array, const char *name) {
+    nb::dlpack::dtype dtype = array.dtype();
+    if (dtype != nb::dtype<uint32_t>() && dtype != nb::dtype<int32_t>())
+        Throw("from_corners(): '%s' must be a 32-bit integer array.", name);
+    return (const uint32_t *) array.data();
+}
+
+/// This particular Mesh::from_corners() method only exists in the bindings, so
+/// we place its docstring here.
+static constexpr const char *doc_from_corners = R"doc(
+Build the mesh from corner-indexed data
+
+Many DCC applications and mesh formats store positions per vertex, but
+normals, UVs and colors per *face corner*, so that they can be discontinuous
+across edges. This function builds a mesh from such input by fusing the
+corners of a vertex that agree, and splitting it where they do not.
+
+Corner data is addressed in units of *records*. By default, there is one
+record per face corner. Applications that keep their per-corner data in
+pools instead can pass ``corner_index`` and skip the corner-aligned copy.
+
+All arrays must be C-contiguous. Index arrays are read in place and must
+hold 32-bit integers, signed or unsigned as the producer prefers. Float
+arrays of a different dtype arrive through a converting copy.
+
+Args:
+    positions: ``(vertex_count, 3)`` array of vertex positions (float32)
+
+    corner_vertex: ``(record_count,)`` array naming the source vertex of
+        each record
+
+    corner_index: Optional ``(corner_count,)`` array mapping each face
+        corner to a record. Without it, records and face corners coincide.
+
+    face_offsets: Optional ``(face_count + 1,)`` array of polygon offsets.
+        Face ``i`` then spans the corners ``[face_offsets[i],
+        face_offsets[i + 1])`` and fans into triangles around its first
+        corner, which assumes convex polygons. Without it, every three
+        consecutive corners form a triangle.
+
+    bsdf_index: Optional ``(face_count,)`` array of per-face material
+        indices
+
+    normals: Optional ``(record_count, 3)`` array of shading normals
+        (float32), which are normalized on the way in. Meshes using face
+        normals ignore them, and meshes without them receive generated
+        smooth normals.
+
+    texcoords: Optional ``(record_count, 2)`` array of texture coordinates
+        (float32)
+
+    attrs: Optional custom attributes, mapping a name prefixed with
+        ``vertex_`` to a ``(record_count, dim)`` array of 1 to 4 channels
+        (float32)
+
+A mesh can be built only once: a second ``from_*`` call raises an exception;
+later mesh changes must go through the parameter interface instead.)doc";
+
+template <typename Mesh>
+static void mesh_from_corners(Mesh &mesh, NdPoints positions,
+                              NdIndex corner_vertex,
+                              std::optional<NdIndex> corner_index,
+                              std::optional<NdIndex> face_offsets,
+                              std::optional<NdIndex> bsdf_index,
+                              std::optional<NdPoints> normals,
+                              std::optional<NdTexcoords> texcoords,
+                              nb::dict attrs) {
+    CornerMesh desc;
+    desc.vertex_count = positions.shape(0);
+    desc.positions = positions.data();
+    desc.record_count = corner_vertex.shape(0);
+    desc.corner_vertex = index_data(corner_vertex, "corner_vertex");
+    desc.corner_count = desc.record_count;
+
+    if (corner_index) {
+        desc.corner_count = corner_index->shape(0);
+        desc.corner_index = index_data(*corner_index, "corner_index");
+    }
+
+    if (face_offsets) {
+        if (face_offsets->shape(0) < 1)
+            Throw("from_corners(): 'face_offsets' needs face_count + 1 "
+                  "entries.");
+        desc.face_count = face_offsets->shape(0) - 1;
+        desc.face_offsets = index_data(*face_offsets, "face_offsets");
+    }
+
+    if (bsdf_index) {
+        size_t n_faces =
+            face_offsets ? desc.face_count : desc.corner_count / 3;
+        if (bsdf_index->shape(0) != n_faces)
+            Throw("from_corners(): 'bsdf_index' needs one entry per face "
+                  "(%zu).", n_faces);
+        desc.bsdf_index = index_data(*bsdf_index, "bsdf_index");
+    }
+
+    std::vector<NdArrayF> views;
+
+    auto adopt = [&](NdArrayF values, std::string_view name,
+                     size_t dim) -> CornerAttribute {
+        CornerAttribute out;
+        out.name = name;
+        out.dim = dim;
+        out.data = values.data();
+        out.value_count = values.shape(0);
+        views.push_back(std::move(values));
+        return out;
+    };
+
+    if (normals)
+        desc.normals = adopt(NdArrayF(*normals), "normals", 3);
+    if (texcoords)
+        desc.texcoords = adopt(NdArrayF(*texcoords), "texcoords", 2);
+
+    std::vector<CornerAttribute> cattrs;
+    cattrs.reserve(attrs.size());
+    for (auto [k, v] : attrs) {
+        std::string_view name = nb::cast<std::string_view>(k);
+        NdArrayF values;
+        if (!nb::try_cast(v, values) ||
+            (values.ndim() != 1 && values.ndim() != 2))
+            Throw("from_corners(): attribute \"%s\": expected a c-contiguous "
+                  "float32 array of shape (record_count,) or (record_count, "
+                  "dim).", name);
+        size_t dim = values.ndim() == 2 ? values.shape(1) : 1;
+        cattrs.push_back(adopt(std::move(values), name, dim));
+    }
+    desc.attrs = cattrs.data();
+    desc.attr_count = cattrs.size();
+
+    mesh.from_corners(desc);
 }
 
 MI_PY_EXPORT(Shape) {
@@ -347,43 +501,111 @@ MI_PY_EXPORT(Shape) {
         dr::ArrayBinding b;
         auto shape_ptr = dr::bind_array_t<ShapePtr>(b, m, "ShapePtr");
         bind_shape_generic<ShapePtr>(shape_ptr);
+        shape_ptr.freeze();
     }
 
     using PyMesh = PyMesh<Float, Spectrum>;
-    using ScalarSize = typename Mesh::ScalarSize;
+
+    using IndexBuffer = typename Mesh::IndexBuffer;
+
     auto mesh_cls = MI_PY_TRAMPOLINE_CLASS(PyMesh, Mesh, Shape)
         .def(nb::init<const Properties&>(), "props"_a)
-        .def(nb::init<const std::string &, ScalarSize, ScalarSize,
-                      const Properties &, bool, bool>(),
-             "name"_a, "vertex_count"_a, "face_count"_a,
-             "props"_a = Properties(),
-             "has_vertex_normals"_a = false, "has_vertex_texcoords"_a = false,
-             D(Mesh, Mesh))
-        .def_method(Mesh, initialize)
+        .def(nb::init<std::string_view, bool, bool>(), "name"_a,
+             "face_normals"_a = false, "flip_normals"_a = false,
+             D(Mesh, Mesh, 2))
+        .def(nb::init<std::string_view, const TensorXu32 &,
+                      const TensorXf32 &, const TensorXf32 &,
+                      const TensorXf32 &, const IndexBuffer &,
+                      const IndexBuffer &, const IndexBuffer &, bool, bool>(),
+             "name"_a, "faces"_a, "positions"_a,
+             "normals"_a = TensorXf32(), "texcoords"_a = TensorXf32(),
+             "position_index"_a = IndexBuffer(),
+             "normal_index"_a = IndexBuffer(),
+             "bsdf_index"_a = IndexBuffer(), "face_normals"_a = false,
+             "flip_normals"_a = false, D(Mesh, Mesh, 3))
         .def("write_ply",
-             nb::overload_cast<const std::string &>(&Mesh::write_ply, nb::const_),
+             nb::overload_cast<const fs::path &>(&Mesh::write_ply, nb::const_),
              "filename"_a, D(Mesh, write_ply))
         .def("write_ply",
              nb::overload_cast<Stream *>(&Mesh::write_ply, nb::const_),
              "stream"_a, D(Mesh, write_ply, 2))
-        .def("merge", &Mesh::merge, "other"_a,
-             D(Mesh, merge))
+        .def("write_serialized",
+             nb::overload_cast<const fs::path &>(&Mesh::write_serialized,
+                                                 nb::const_),
+             "filename"_a, D(Mesh, write_serialized))
+        .def("write_serialized",
+             nb::overload_cast<Stream *>(&Mesh::write_serialized, nb::const_),
+             "stream"_a, D(Mesh, write_serialized, 2))
+        .def_static("merge", &Mesh::merge, "shapes"_a, D(Mesh, merge))
 
-        .def("vertex_positions_buffer", nb::overload_cast<>(&Mesh::vertex_positions_buffer))
-        .def("vertex_normals_buffer", nb::overload_cast<>(&Mesh::vertex_normals_buffer))
-        .def("vertex_texcoords_buffer", nb::overload_cast<>(&Mesh::vertex_texcoords_buffer))
-        .def("faces_buffer", nb::overload_cast<>(&Mesh::faces_buffer))
+        .def("position_count", &Mesh::position_count,
+             D(Mesh, position_count))
+        .def("normal_count", &Mesh::normal_count, D(Mesh, normal_count))
+        .def("position_index", &Mesh::position_index, D(Mesh, position_index))
+        .def("normal_index", &Mesh::normal_index, D(Mesh, normal_index))
+        .def("geometric_faces", &Mesh::geometric_faces,
+             D(Mesh, geometric_faces))
 
-        .def("attribute_buffer", &Mesh::attribute_buffer, "name"_a,
-             D(Mesh, attribute_buffer))
-        .def("add_attribute", &Mesh::add_attribute, "name"_a, "size"_a, "buffer"_a,
+        .def("positions", &Mesh::positions, D(Mesh, positions))
+        .def("normals", &Mesh::normals, D(Mesh, normals))
+        .def("texcoords", &Mesh::texcoords, D(Mesh, texcoords))
+        .def("tangents", &Mesh::tangents, D(Mesh, tangents))
+        .def("faces", &Mesh::faces, D(Mesh, faces))
+        .def("bsdf_index", &Mesh::bsdf_index, D(Mesh, bsdf_index))
+        .def("packed_vertices", nb::overload_cast<>(&Mesh::packed_vertices),
+             D(Mesh, packed_vertices))
+
+        .def_static("frame_encode",
+                    [](const Normal3f &n, const Vector3f &s) {
+                        return frame_encode(n, s);
+                    },
+                    "n"_a, "s"_a, D(frame_encode))
+        .def_static("frame_decode",
+                    [](const Vector3f &p) { return frame_decode(p); },
+                    "p"_a, D(frame_decode))
+
+        .def("attribute", &Mesh::attribute, "name"_a, D(Mesh, attribute))
+        .def("add_attribute", &Mesh::add_attribute, "name"_a, "values"_a,
              D(Mesh, add_attribute))
         .def("remove_attribute", &Mesh::remove_attribute, "name"_a,
              D(Mesh, remove_attribute))
 
-        .def("recompute_vertex_normals", &Mesh::recompute_vertex_normals)
-        .def("recompute_bbox", &Mesh::recompute_bbox)
-        .def("build_directed_edges", &Mesh::build_directed_edges);
+        .def("has_tangents", &Mesh::has_tangents, D(Mesh, has_tangents))
+        .def("packs_tangent", &Mesh::packs_tangent, D(Mesh, packs_tangent))
+        .def("recompute_normals", &Mesh::recompute_normals,
+             D(Mesh, recompute_normals))
+        .def("transform", &Mesh::transform, "t"_a, D(Mesh, transform))
+        .def("dedge", &Mesh::dedge,
+             nb::rv_policy::reference_internal, D(Mesh, dedge))
+
+        .def("from_corners", &mesh_from_corners<Mesh>,
+             "positions"_a, "corner_vertex"_a,
+             "corner_index"_a = nb::none(), "face_offsets"_a = nb::none(),
+             "bsdf_index"_a = nb::none(), "normals"_a = nb::none(),
+             "texcoords"_a = nb::none(), "attrs"_a = nb::dict(),
+             doc_from_corners)
+        .def("from_fields", &Mesh::from_fields,
+             "faces"_a, "positions"_a, "normals"_a = TensorXf32(),
+             "texcoords"_a = TensorXf32(),
+             "position_index"_a = IndexBuffer(),
+             "normal_index"_a = IndexBuffer(),
+             "bsdf_index"_a = IndexBuffer(), D(Mesh, from_fields))
+        .def("from_packed",
+             [](Mesh &self, uint32_t layout, const TensorXu32 &packed_faces,
+                const TensorXf32 &packed_vertices,
+                const IndexBuffer &position_index,
+                const IndexBuffer &normal_index, size_t position_count,
+                size_t normal_count) {
+                 self.from_packed((Layout) layout, packed_faces,
+                                  packed_vertices, position_index,
+                                  normal_index, position_count, normal_count);
+             },
+             "layout"_a, "packed_faces"_a, "packed_vertices"_a,
+             "position_index"_a = IndexBuffer(),
+             "normal_index"_a = IndexBuffer(), "position_count"_a = 0,
+             "normal_count"_a = 0, D(Mesh, from_packed))
+        .def("validate", &Mesh::validate, "check_bounds"_a = false,
+             D(Mesh, validate));
 
     bind_mesh_generic<Mesh *>(mesh_cls);
 
@@ -391,6 +613,7 @@ MI_PY_EXPORT(Shape) {
         dr::ArrayBinding b;
         auto mesh_ptr = dr::bind_array_t<MeshPtr>(b, m, "MeshPtr");
         bind_mesh_generic<MeshPtr>(mesh_ptr);
+        mesh_ptr.freeze();
     }
 
     drjit::bind_traverse(mesh_cls);

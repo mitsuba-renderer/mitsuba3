@@ -10,7 +10,7 @@ class BasicPRBIntegrator(RBIntegrator):
     .. _integrator-prb_basic:
 
     Basic Path Replay Backpropagation (:monosp:`prb_basic`)
-    ---------------------------------------------------------
+    -------------------------------------------------------
 
     .. pluginparameters::
 
@@ -63,7 +63,7 @@ class BasicPRBIntegrator(RBIntegrator):
                **kwargs # Absorbs unused arguments
     ) -> Tuple[mi.Spectrum, mi.Bool, List[mi.Float], mi.Spectrum]:
         """
-        See ``ADIntegrator.sample()`` for a description of this interface and
+        See `ADIntegrator.sample` for a description of this interface and
         the role of the various parameters and return values.
         """
 
@@ -108,12 +108,12 @@ class BasicPRBIntegrator(RBIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.All)
+                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.Default)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
-                    si_prev = pi_prev.compute_surface_interaction(ray_prev, ray_flags=mi.RayFlags.All)
+                    si_prev = pi_prev.compute_surface_interaction(ray_prev, ray_flags=mi.RayFlags.Default)
                     # We should not account for the current interaction's motion
                     si_detach = dr.detach(si)
                     wi_global = dr.normalize(si_prev.p - si_detach.p)
@@ -164,7 +164,7 @@ class BasicPRBIntegrator(RBIntegrator):
 
             if dr.hint(not primal, mode='scalar'):
                 si_next = pi_next.compute_surface_interaction(ray_next,
-                                                              ray_flags=mi.RayFlags.All,
+                                                              ray_flags=mi.RayFlags.Default,
                                                               active=active_next)
 
                 with dr.resume_grad():

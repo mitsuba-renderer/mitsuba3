@@ -16,7 +16,7 @@ NAMESPACE_BEGIN(mitsuba)
 namespace dr = drjit;
 
 // =============================================================
-//! @{ \name Forward declarations of Mitsuba classes/structs
+// Forward declarations of Mitsuba classes/structs
 // =============================================================
 
 class Object;
@@ -46,11 +46,10 @@ class ZStream;
 enum LogLevel : int;
 enum class ObjectType : uint32_t;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Common type aliases
+// Common type aliases
 // =============================================================
 
 template <typename Value, size_t Size>          struct Vector;
@@ -72,11 +71,10 @@ template <typename Float>                       struct ContinuousDistribution;
 template <typename Spectrum> using StokesVector  = dr::Array<Spectrum, 4>;
 template <typename Spectrum> using MuellerMatrix = dr::Matrix<Spectrum, 4>;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name Buffer types
+// Buffer types
 // =============================================================
 
 template <typename Value,
@@ -85,11 +83,10 @@ template <typename Value,
 using DynamicBuffer =
     std::conditional_t<dr::is_dynamic_array_v<T>, T, dr::DynamicArray<T>>;
 
-//! @}
 // =============================================================
 
 // =============================================================
-//! @{ \name CoreAliases struct
+// CoreAliases struct
 // =============================================================
 
 template <typename Float_> struct CoreAliases {
@@ -189,6 +186,7 @@ template <typename Float_> struct CoreAliases {
     using TensorXf16 = dr::Tensor<mitsuba::DynamicBuffer<Float16>>;
     using TensorXf32 = dr::Tensor<mitsuba::DynamicBuffer<Float32>>;
     using TensorXf64 = dr::Tensor<mitsuba::DynamicBuffer<Float64>>;
+    using TensorXu32 = dr::Tensor<mitsuba::DynamicBuffer<UInt32>>;
 
     using Texture1f = dr::Texture<Float, 1>;
     using Texture2f = dr::Texture<Float, 2>;
@@ -208,7 +206,6 @@ template <typename Float_> struct CoreAliases {
 
 };
 
-//! @}
 // =============================================================
 
 #define MI_VARIANT template <typename Float, typename Spectrum>
@@ -295,6 +292,7 @@ template <typename Float_> struct CoreAliases {
     using prefix ## TensorXf16           = typename prefix ## CoreAliases::TensorXf16;             \
     using prefix ## TensorXf32           = typename prefix ## CoreAliases::TensorXf32;             \
     using prefix ## TensorXf64           = typename prefix ## CoreAliases::TensorXf64;             \
+    using prefix ## TensorXu32           = typename prefix ## CoreAliases::TensorXu32;             \
     using prefix ## Texture1f16          = typename prefix ## CoreAliases::Texture1f16;            \
     using prefix ## Texture2f16          = typename prefix ## CoreAliases::Texture2f16;            \
     using prefix ## Texture3f16          = typename prefix ## CoreAliases::Texture3f16;            \
@@ -347,7 +345,7 @@ NAMESPACE_END(mitsuba)
 extern "C" {
 
 // =============================================================
-//! @{ \name Helper macros
+// Helper macros
 // =============================================================
 
 #define MI_DECLARE_ENUM_OPERATORS_IMPL(name, neq_expr)                         \
@@ -357,14 +355,29 @@ extern "C" {
     constexpr uint32_t operator|(uint32_t f1, name f2) {                       \
         return f1 | (uint32_t) f2;                                             \
     }                                                                          \
+    constexpr uint32_t operator|(name f1, uint32_t f2) {                       \
+        return (uint32_t) f1 | f2;                                             \
+    }                                                                          \
     constexpr uint32_t operator&(name f1, name f2) {                           \
         return (uint32_t) f1 & (uint32_t) f2;                                  \
     }                                                                          \
     constexpr uint32_t operator&(uint32_t f1, name f2) {                       \
         return f1 & (uint32_t) f2;                                             \
     }                                                                          \
+    constexpr uint32_t operator&(name f1, uint32_t f2) {                       \
+        return (uint32_t) f1 & f2;                                             \
+    }                                                                          \
     constexpr uint32_t operator~(name f1) { return ~(uint32_t) f1; }           \
     constexpr uint32_t operator+(name e) { return (uint32_t) e; }              \
+    constexpr name &operator|=(name &f1, name f2) {                            \
+        return f1 = (name) ((uint32_t) f1 | (uint32_t) f2);                    \
+    }                                                                          \
+    constexpr name &operator&=(name &f1, uint32_t f2) {                        \
+        return f1 = (name) ((uint32_t) f1 & f2);                               \
+    }                                                                          \
+    constexpr bool has_flag(name flags, name f) {                              \
+        return ((uint32_t) flags & (uint32_t) f) != 0;                         \
+    }                                                                          \
     template <typename UInt32>                                                 \
     constexpr auto has_flag(UInt32 flags, name f) {                            \
         return neq_expr(flags & (uint32_t) f, 0u);                             \
@@ -384,154 +397,80 @@ extern "C" {
                             })
 #endif
 
-/**
- * \brief Macro, generating the implementation of the ``traverse_1_cb_ro``
- *     method.
- *
- * The first argument should be the base class, from which the current class
- * inherits. The other arguments should list all members of that class, which
- * are supposed to be read only traversable.
- */
-#define MI_TRAVERSE_CB_RO(Base, ...)                                           \
-        void traverse_1_cb_ro(void *payload,                                   \
-                              drjit::detail::traverse_callback_ro fn)          \
-            const override {                                                   \
-            static_assert(std::is_base_of<                                     \
-                          drjit::TraversableBase,                              \
-                          std::remove_pointer_t<decltype(this)>>::value);      \
-            /*                                                                 \
-             * Only traverse the scene for frozen functions, since             \
-             * accidentally traversing the scene in loops or vcalls can cause  \
-             * errors with variable size mismatches, and backpropagation of    \
-             * gradients.                                                      \
-             */                                                                \
-            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
-                return;                                                        \
-            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
-                Base::traverse_1_cb_ro(payload, fn);                           \
-            DRJIT_MAP(DR_TRAVERSE_MEMBER_RO, __VA_ARGS__)                      \
-        }
+/// Turn a member name into the compile-time string that names it in a traversal
+#define MI_STRINGIFY(x) #x
 
 /**
- * \breif Macro, generating the implementation of the ``traverse_1_cb_rw``
- *     method.
+ * Macro, generating the implementation of the ``traverse_cb`` method.
  *
  * The first argument should be the base class, from which the current class
- * inherits. The other arguments should list all members of that class, which
- * are supposed to be read and write traversable.
- */
-#define MI_TRAVERSE_CB_RW(Base, ...)                                           \
-        void traverse_1_cb_rw(                                                 \
-            void *payload, drjit::detail::traverse_callback_rw fn) override {  \
-            static_assert(std::is_base_of<                                     \
-                          drjit::TraversableBase,                              \
-                          std::remove_pointer_t<decltype(this)>>::value);      \
-            /*                                                                 \
-             * Only traverse the scene for frozen functions, since             \
-             * accidentally traversing the scene in loops or vcalls can cause  \
-             * errors with variable size mismatches, and backpropagation of    \
-             * gradients.                                                      \
-             */                                                                \
-            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
-                return;                                                        \
-            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
-                Base::traverse_1_cb_rw(payload, fn);                           \
-            DRJIT_MAP(DR_TRAVERSE_MEMBER_RW, __VA_ARGS__)                      \
-        }
-
-/**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
- *     ``traverse_1_cb_rw`` methods.
+ * inherits. The other arguments should list all traversable members of that
+ * class.
  *
- * The first argument should be the base class, from which the current class
- * inherits. The other arguments should list all members of that class, which
- * are supposed to be read and write traversable.
- *
- * This macro differs from ``DR_TRAVERSE_CB`` in that the functions it generates
- * do not traverse the object if the flag ``JitFlag::EnableObjectTraversal``
- * is not set. This is required, to circumvent issues where scene variables would
- * accidentally be added to loop states, and dispatch arguments.
+ * This macro differs from ``DR_TRAVERSE_CB`` in that the function it generates
+ * only traverses the object as part of a frozen function. This is required, to
+ * circumvent issues where scene variables would accidentally be added to loop
+ * states, and dispatch arguments.
  */
 #define MI_TRAVERSE_CB(Base, ...)                                              \
 public:                                                                        \
-    MI_TRAVERSE_CB_RO(Base, __VA_ARGS__)                                       \
-    MI_TRAVERSE_CB_RW(Base, __VA_ARGS__)
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb)          \
+        override {                                                             \
+        static_assert(std::is_base_of<                                         \
+                      drjit::TraversableBase,                                  \
+                      std::remove_pointer_t<decltype(this)>>::value);          \
+        DRJIT_MARK_USED(payload);                                              \
+        DRJIT_MARK_USED(cb);                                                   \
+        if (cb.role != drjit::TraverseRole::Freeze)                            \
+            return;                                                            \
+        if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)           \
+            Base::traverse_cb(payload, cb);                                    \
+        DRJIT_MAP(DR_TRAVERSE_MEMBER, __VA_ARGS__)                             \
+    }
 
 /**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
- *     ``traverse_1_cb_rw`` methods.
+ * Macro, generating the declaration of the ``traverse_cb`` method.
  *
- * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the functions and
- * ``MI_IMPLEMENT_TRAVERSE_CB`` implements them. Use this macro if the class is
+ * In contrast to ``MI_TRAVERSE_CB``, this macro only declares the function and
+ * ``MI_IMPLEMENT_TRAVERSE_CB`` implements it. Use this macro if the class is
  * declared in a header file and implemented in a source file.
  */
 #define MI_DECLARE_TRAVERSE_CB(...)                                            \
-        DRJIT_INLINE auto traverse_1_cb_fields_() {                            \
+        DRJIT_INLINE auto traverse_cb_fields_() {                              \
             return drjit::tie(__VA_ARGS__);                                    \
         }                                                                      \
-        DRJIT_INLINE auto traverse_1_cb_fields_() const {                      \
-            return drjit::tie(__VA_ARGS__);                                    \
-        }                                                                      \
+        static constexpr const char *traverse_cb_names_[] = {                  \
+            DRJIT_MAPC(MI_STRINGIFY, __VA_ARGS__)                              \
+        };                                                                     \
                                                                                \
     public:                                                                    \
-        void traverse_1_cb_ro(void *payload,                                   \
-                              drjit::detail::traverse_callback_ro fn)          \
-            const override;                                                    \
-        void traverse_1_cb_rw(                                                 \
-            void *payload, drjit::detail::traverse_callback_rw fn) override;
+        void traverse_cb(void *payload,                                        \
+                         const drjit::TraverseVisitor &cb) override;
 
 /**
- * \brief Macro, generating the implementations of the ``traverse_1_cb_ro`` and
- *     ``traverse_1_cb_rw`` methods.
+ * Macro, generating the implementation of the ``traverse_cb`` method.
  *
- * In contrast to ``MI_TRAVERSE_CB``, this macro generates the implementations
- * for the functions declared by ``MI_DECLARE_TRAVERSE_CB``. Use this macro if
+ * In contrast to ``MI_TRAVERSE_CB``, this macro generates the implementation
+ * for the function declared by ``MI_DECLARE_TRAVERSE_CB``. Use this macro if
  * the class is declared in a header file and implemented in a source file.
  */
 #define MI_IMPLEMENT_TRAVERSE_CB(Type, Base)                                   \
         MI_VARIANT                                                             \
-        void Type<Float, Spectrum>::traverse_1_cb_ro(                          \
-            void *payload, drjit::detail::traverse_callback_ro fn) const {     \
-                                                                               \
-            /*                                                                 \
-             * Only traverse the scene for frozen functions, since             \
-             * accidentally traversing the scene in loops or vcalls can cause  \
-             * errors with variable size mismatches, and backpropagation of    \
-             * gradients.                                                      \
-             */                                                                \
-            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
+        void Type<Float, Spectrum>::traverse_cb(                               \
+            void *payload, const drjit::TraverseVisitor &cb) {                 \
+            if (cb.role != drjit::TraverseRole::Freeze)                        \
                 return;                                                        \
                                                                                \
             if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \
-                Base::traverse_1_cb_ro(payload, fn);                           \
-                                                                               \
-            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
-                              [payload, fn](auto &x) {                         \
-                                  drjit::traverse_1_fn_ro(x, payload, fn);     \
-                              });                                              \
-        }                                                                      \
-        MI_VARIANT                                                             \
-        void Type<Float, Spectrum>::traverse_1_cb_rw(                          \
-            void *payload, drjit::detail::traverse_callback_rw fn) {           \
-                                                                               \
-            /*                                                                 \
-             * Only traverse the scene for frozen functions, since             \
-             * accidentally traversing the scene in loops or vcalls can cause  \
-             * errors with variable size mismatches, and backpropagation of    \
-             * gradients.                                                      \
-             */                                                                \
-            if (!jit_flag(JitFlag::EnableObjectTraversal))                     \
-                return;                                                        \
-                                                                               \
-            if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)      \
-                Base::traverse_1_cb_rw(payload, fn);                           \
-            drjit::traverse_1(this->traverse_1_cb_fields_(),                   \
-                              [payload, fn](auto &x) {                         \
-                                  drjit::traverse_1_fn_rw(x, payload, fn);     \
+                Base::traverse_cb(payload, cb);                                \
+            size_t i = 0;                                                      \
+            drjit::traverse_1(this->traverse_cb_fields_(),                     \
+                              [&](auto &x) {                                   \
+                                  drjit::traverse_fn(x, payload, cb,           \
+                                                     traverse_cb_names_[i++]); \
                               });                                              \
         }
 
-//! @}
 // =============================================================
 
 };

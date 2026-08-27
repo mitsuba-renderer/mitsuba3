@@ -27,9 +27,9 @@ enum MetalIntersectionFn : uint32_t {
     METAL_ISECT_FN_COUNT      = 5
 };
 
-/// Map a custom shape's \ref ShapeType to its Metal intersection-function
+/// Map a custom shape's `ShapeType` to its Metal intersection-function
 /// index, which also selects the per-type primitive-data ``[[buffer(..)]]``
-/// slot. Returns \c METAL_ISECT_FN_COUNT for unsupported types.
+/// slot. Returns ``METAL_ISECT_FN_COUNT`` for unsupported types.
 inline uint32_t metal_fn_index(ShapeType type) {
     switch (type) {
         case ShapeType::Sphere:     return METAL_ISECT_FN_SPHERE;

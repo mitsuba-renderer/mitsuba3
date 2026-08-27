@@ -1,6 +1,6 @@
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/render/mesh.h>
-#include <array>
+#include <cstring>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -12,7 +12,6 @@ Cube (:monosp:`cube`)
 -------------------------
 
 .. pluginparameters::
- :extra-rows: 2
 
  * - flip_normals
    - |bool|
@@ -24,40 +23,8 @@ Cube (:monosp:`cube`)
    - Specifies an optional linear object-to-world transformation.
      (Default: none (i.e. object space = world space))
 
- * - vertex_count
-   - |int|
-   - Total number of vertices
-   - |exposed|
-
- * - face_count
-   - |int|
-   - Total number of faces
-   - |exposed|
-
- * - faces
-   - :paramtype:`uint32[]`
-   - Face indices buffer (flatten)
-   - |exposed|
-
- * - vertex_positions
-   - :paramtype:`float[]`
-   - Vertex positions buffer (flatten) pre-multiplied by the object-to-world transformation.
-   - |exposed|, |differentiable|, |discontinuous|
-
- * - vertex_normals
-   - :paramtype:`float[]`
-   - Vertex normals buffer (flatten)  pre-multiplied by the object-to-world transformation.
-   - |exposed|, |differentiable|, |discontinuous|
-
- * - vertex_texcoords
-   - :paramtype:`float[]`
-   - Vertex texcoords buffer (flatten)
-   - |exposed|, |differentiable|
-
- * - (Mesh attribute)
-   - :paramtype:`float[]`
-   - Mesh attribute buffer (flatten)
-   - |exposed|, |differentiable|
+In addition, this plugin exposes the standard mesh state parameters
+documented in :ref:`sec-shape-mesh-parameters`.
 
 This shape plugin describes a cube intersection primitive, based on the triangle
 mesh class.  By default, it creates a cube between the world-space positions
@@ -83,83 +50,66 @@ of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
 
 MI_VARIANT class Cube final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_name, m_bbox, m_to_world, m_vertex_count,
-                    m_face_count, m_vertex_positions, m_vertex_normals,
-                    m_vertex_texcoords, m_faces, m_mesh_attributes,
-                    m_face_normals, has_vertex_normals,
-                    has_vertex_texcoords, recompute_vertex_normals,
-                    initialize)
+    MI_IMPORT_BASE(Mesh, m_filename, m_to_world, m_flip_normals, from_packed)
     MI_IMPORT_TYPES()
 
-    using typename Base::FloatStorage;
-    using typename Base::InputFloat;
     using typename Base::InputNormal3f;
     using typename Base::InputPoint3f;
     using typename Base::InputVector2f;
-    using typename Base::InputVector3f;
-    using typename Base::ScalarIndex;
-    using typename Base::ScalarSize;
-    using ScalarIndex3 = std::array<ScalarIndex, 3>;
 
 public:
     Cube(const Properties &props) : Base(props) {
-        m_face_count   = 12;
-        m_vertex_count = 24;
-        m_name         = "cube";
+        constexpr size_t vertex_count = 24, corner_count = 8, face_count = 12;
+        m_filename = "cube";
 
-        std::vector<InputVector3f> vertices = {
-            {  1, -1, -1 }, {  1, -1,  1 }, { -1, -1,  1 }, { -1, -1, -1 },
-            {  1,  1, -1 }, { -1,  1, -1 }, { -1,  1,  1 }, {  1,  1,  1 },
-            {  1, -1, -1 }, {  1,  1, -1 }, {  1,  1,  1 }, {  1, -1,  1 },
-            {  1, -1,  1 }, {  1,  1,  1 }, { -1,  1,  1 }, { -1, -1,  1 },
-            { -1, -1,  1 }, { -1,  1,  1 }, { -1,  1, -1 }, { -1, -1, -1 },
-            {  1,  1, -1 }, {  1, -1, -1 }, { -1, -1, -1 }, { -1,  1, -1 }
+        // The four vertices of cube face ``s`` are ``4s .. 4s+3``: they
+        // share the face normal and repeat one UV pattern, and the two
+        // triangles are ``{4s, 4s+1, 4s+2}`` and ``{4s+3, 4s, 4s+2}``
+        const InputNormal3f side_normals[6] = {
+            { 0, -1, 0 }, { 0, 1, 0 }, { 1, 0, 0 },
+            { 0, 0, 1 }, { -1, 0, 0 }, { 0, 0, -1 }
         };
-        std::vector<InputNormal3f> normals = {
-            { 0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 }, {  0, -1,  0 }, {  0, 1, 0 },
-            { 0,  1,  0 }, {  0,  1,  0 }, {  0,  1,  0 }, {  1,  0,  0 }, {  1, 0, 0 },
-            { 1,  0,  0 }, {  1,  0,  0 }, {  0,  0,  1 }, {  0,  0,  1 }, {  0, 0, 1 },
-            { 0,  0,  1 }, { -1,  0,  0 }, { -1,  0,  0 }, { -1,  0,  0 }, { -1, 0, 0 },
-            { 0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 }, {  0,  0, -1 }
-        };
-        std::vector<InputVector2f> texcoords = {
-            { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 },
-            { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 },
-            { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 },
-            { 1, 0 }, { 0, 0 }, { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }
-        };
-        std::vector<ScalarIndex3> triangles = {
-            {  0,  1,  2 }, {  3,  0,  2 }, {  4,  5,  6 }, {  7,  4,  6 },
-            {  8,  9, 10 }, { 11,  8, 10 }, { 12, 13, 14 }, { 15, 12, 14 },
-            { 16, 17, 18 }, { 19, 16, 18 }, { 20, 21, 22 }, { 23, 20, 22 }
+        const InputVector2f side_uv[4] = {
+            { 0, 1 }, { 1, 1 }, { 1, 0 }, { 0, 0 }
         };
 
-        std::unique_ptr<float[]> vertex_positions(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_normals(new float[m_vertex_count * 3]);
-        std::unique_ptr<float[]> vertex_texcoords(new float[m_vertex_count * 2]);
+        // Vertex -> cube corner map: the 24 vertices (four per face)
+        // reference 8 distinct corners, which connects the faces in the
+        // geometric topology while the authored normals keep the edges
+        // sharp. Corner ``c`` sits at (+-1, +-1, +-1), with bit ``k`` of
+        // ``c`` selecting the sign of axis ``k``.
+        static const uint32_t position_index[vertex_count] = {
+            1, 5, 4, 0,  3, 2, 6, 7,  1, 3, 7, 5,
+            5, 7, 6, 4,  4, 6, 2, 0,  3, 1, 0, 2
+        };
 
-        for (uint8_t i = 0; i < m_vertex_count; ++i) {
-                InputFloat *position_ptr = vertex_positions.get() + i * 3;
-                InputFloat *normal_ptr   = vertex_normals.get() + i * 3;
-                InputFloat *texcoord_ptr = vertex_texcoords.get() + i * 2;
+        InputPoint3f corner_positions[corner_count];
+        for (uint32_t c = 0; c < corner_count; ++c)
+            corner_positions[c] =
+                InputPoint3f(c & 1 ? 1.f : -1.f, c & 2 ? 1.f : -1.f,
+                             c & 4 ? 1.f : -1.f);
 
-                InputPoint3f p  = vertices[i];
-                InputNormal3f n = normals[i];
-                p               = m_to_world.scalar() * p;
-                n               = dr::normalize(m_to_world.scalar() * n);
+        // The normals are per vertex (an identity map), while the
+        // positions reference the 8 distinct corners
+        PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
+                      make_layout(true, true), corner_count);
+        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        m_flip_normals = false;
+        m_to_world = ScalarAffineTransform4f();
+        memcpy(pm.position_index.data(), position_index,
+               sizeof(position_index));
 
-                dr::store(position_ptr, p);
-                dr::store(normal_ptr, n);
-                dr::store(texcoord_ptr, texcoords[i]);
-                m_bbox.expand(p);
+        for (uint32_t s = 0; s < 6; ++s) {
+            InputNormal3f n = side_normals[s];
+            uint32_t v = 4 * s;
+            for (uint32_t k = 0; k < 4; ++k)
+                pm.set_vertex(v + k, corner_positions[position_index[v + k]],
+                              n, side_uv[k]);
+            pm.set_face(2 * s,     { v,     v + 1, v + 2 });
+            pm.set_face(2 * s + 1, { v + 3, v,     v + 2 });
         }
 
-        m_faces = dr::load<DynamicBuffer<UInt32>>(triangles.data(), m_face_count * 3);
-        m_vertex_positions = dr::load<FloatStorage>(vertex_positions.get(), m_vertex_count * 3);
-        m_vertex_normals   = dr::load<FloatStorage>(vertex_normals.get(), m_vertex_count * 3);
-        m_vertex_texcoords = dr::load<FloatStorage>(vertex_texcoords.get(), m_vertex_count * 2);
-
-        initialize();
+        from_packed(std::move(pm));
     }
 
     MI_DECLARE_CLASS(Cube)

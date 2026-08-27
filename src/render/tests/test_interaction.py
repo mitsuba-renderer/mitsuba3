@@ -50,6 +50,7 @@ def test02_intersection_construction(variant_scalar_rgb):
              t=[12, 13, 14],
              n=[15, 16, 17]
 ],
+  frame_flipped=0,
   dp_du=[18, 19, 20],
   dp_dv=[21, 22, 23],
   dn_du=[18, 19, 20],

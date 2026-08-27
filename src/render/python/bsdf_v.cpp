@@ -35,7 +35,7 @@ MI_PY_EXPORT(BSDFSample) {
 MI_VARIANT class PyBSDF : public BSDF<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(BSDF)
-    NB_TRAMPOLINE(BSDF, 12);
+    NB_TRAMPOLINE(BSDF);
 
     PyBSDF(const Properties &props) : BSDF(props) { }
 
@@ -107,8 +107,6 @@ public:
 
     using BSDF::m_flags;
     using BSDF::m_components;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(BSDF);
 };
 
 template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
@@ -201,6 +199,7 @@ MI_PY_EXPORT(BSDF) {
         dr::ArrayBinding b;
         auto bsdf_ptr = dr::bind_array_t<BSDFPtr>(b, m, "BSDFPtr");
         bind_bsdf_generic<BSDFPtr>(bsdf_ptr);
+        bsdf_ptr.freeze();
     }
 
 }

@@ -15,7 +15,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Unified homogeneous coordinate transformation
+ * Unified homogeneous coordinate transformation
  *
  * This class represents homogeneous coordinate transformations, i.e.,
  * composable mappings that include rotations, scaling, translations, and
@@ -31,7 +31,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Point_, bool Affine>
 struct Transform {
     // =============================================================
-    //! @{ \name Type declarations
+    // Type declarations
     // =============================================================
 
     static constexpr size_t Size = Point_::Size;
@@ -43,21 +43,19 @@ struct Transform {
     using Scalar  = dr::scalar_t<Float>;
     using Point   = Point_;
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Fields
+    // Fields
     // =============================================================
 
     Matrix matrix            = dr::identity<Matrix>();
     Matrix inverse_transpose = dr::identity<Matrix>();
 
-    //! @}
     // =============================================================
 
     // =============================================================
-    //! @{ \name Constructors, methods, etc.
+    // Constructors, methods, etc.
     // =============================================================
 
     /// Initialize the transformation from the given matrix
@@ -86,7 +84,7 @@ struct Transform {
                          dr::transpose(inverse_transpose));
     }
 
-    /// Update the inverse transpose part following a modification to 'matrix'
+    /// Update the inverse transpose part following a modification to `matrix`
     Transform update() {
         if constexpr (Affine) {
             using RotMatrix = dr::Matrix<Float, Size - 1>;
@@ -126,9 +124,7 @@ struct Transform {
     }
 
     /// Inequality comparison operator
-    bool operator!=(const Transform &t) const {
-        return dr::all_nested(matrix != t.matrix);
-    }
+    bool operator!=(const Transform &t) const { return !operator==(t); }
 
     /// Create a translation transformation
     static Transform translate(const Vector<Float, Size - 1> &v) {
@@ -155,11 +151,14 @@ struct Transform {
         return Transform(matrix, matrix);
     }
 
-    /** \brief Create an orthographic transformation, which maps Z to [0,1]
+    /**
+     * Create an orthographic transformation, which maps Z to [0,1]
      * and leaves the X and Y coordinates untouched.
      *
-     * \param near Near clipping plane
-     * \param far  Far clipping plane
+     * Args:
+     *     near: Near clipping plane
+     *
+     *     far: Far clipping plane
      */
     template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform orthographic(Float near_, Float far_) {
@@ -167,11 +166,15 @@ struct Transform {
                translate({ 0.f, 0.f, -near_ });
     }
 
-    /** \brief Create a look-at camera transformation
+    /**
+     * Create a look-at camera transformation
      *
-     * \param origin Camera position
-     * \param target Target vector
-     * \param up     Up vector
+     * Args:
+     *     origin: Camera position
+     *
+     *     target: Target vector
+     *
+     *     up: Up vector
      */
     template <size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform look_at(const mitsuba::Point<Float, 3> &origin,
@@ -204,7 +207,7 @@ struct Transform {
         return Transform(result, inverse);
     }
 
-    /// Creates a transformation that converts from the standard basis to 'frame'
+    /// Creates a transformation that converts from the standard basis to ``frame``
     template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform to_frame(const Frame<Value> &frame) {
         dr::Array<Scalar, 1> z(0);
@@ -219,7 +222,7 @@ struct Transform {
         return Transform(result, result);
     }
 
-    /// Creates a transformation that converts from 'frame' to the standard basis
+    /// Creates a transformation that converts from ``frame`` to the standard basis
     template <typename Value, size_t N = Size, dr::enable_if_t<N == 4> = 0>
     static Transform from_frame(const Frame<Value> &frame) {
         dr::Array<Scalar, 1> z(0);
@@ -235,9 +238,9 @@ struct Transform {
     }
 
     /**
-     * \brief Test for a scale component in each transform matrix by checking
-     * whether <tt>M . M^T == I</tt> (where <tt>M</tt> is the matrix in
-     * question and <tt>I</tt> is the identity).
+     * Test for a scale component in each transform matrix by checking
+     * whether ``M . M^T == I`` (where ``M`` is the matrix in
+     * question and ``I`` is the identity).
      */
     Mask has_scale() const {
         Mask mask(false);
@@ -245,7 +248,7 @@ struct Transform {
             for (size_t j = i; j < Size - 1; ++j) {
                 Float sum = 0.f;
                 for (size_t k = 0; k < Size - 1; ++k)
-                    sum += matrix[i][k] * matrix[j][k];
+                    sum = dr::fmadd(matrix[i][k], matrix[j][k], sum);
 
                 mask |= dr::abs(sum - (i == j ? 1.f : 0.f)) > 1e-3f;
             }
@@ -254,8 +257,39 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D vector
-     * \remark In the Python API, this maps to the \c @ operator
+     * Test whether the linear part is a similarity, i.e., a
+     * rotation/reflection, potentially with a uniform scale and translation.
+     *
+     * The implementation checks whether ``M . M^T`` is a multiple of the
+     * identity.
+     */
+    Mask is_similarity() const {
+        constexpr size_t N = Size - 1;
+
+        // Compute the shared uniform scale, if present.
+        Float ref = 0.f;
+        for (size_t i = 0; i < N; ++i)
+            for (size_t k = 0; k < N; ++k)
+                ref = dr::fmadd(matrix[i][k], matrix[i][k], ref);
+        ref *= Scalar(1) / Scalar(N);
+
+        Mask mask(true);
+        for (size_t i = 0; i < N; ++i) {
+            for (size_t j = i; j < N; ++j) {
+                Float sum = 0.f;
+                for (size_t k = 0; k < N; ++k)
+                    sum += matrix[i][k] * matrix[j][k];
+                mask &= dr::abs(sum - (i == j ? ref : 0.f)) <= ref * 1e-3f;
+            }
+        }
+        return mask;
+    }
+
+    /**
+     * Transform a 3D vector
+     *
+     * Note:
+     *     In the Python API, this maps to the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE Vector<Expr, Size - 1> operator*(const Vector<T, Size - 1> &arg) const {
@@ -272,8 +306,10 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D normal vector
-     * \remark In the Python API, one should use the \c @ operator
+     * Transform a 3D normal vector
+     *
+     * Note:
+     *     In the Python API, one should use the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE Normal<Expr, Size - 1> operator*(const Normal<T, Size - 1> &arg) const {
@@ -290,8 +326,10 @@ struct Transform {
     }
 
     /**
-     * \brief Transform a 3D point with or without perspective division
-     * \remark In the Python API, this maps to the \c @ operator
+     * Transform a 3D point with or without perspective division
+     *
+     * Note:
+     *     In the Python API, this maps to the ``@`` operator
      */
     template <typename T, typename Expr = dr::expr_t<Float, T>>
     MI_INLINE mitsuba::Point<Expr, Size - 1> operator*(const mitsuba::Point<T, Size - 1> &arg) const {
@@ -374,27 +412,33 @@ struct Transform {
         }
     }
 
-    /** \brief Create a perspective transformation.
+    /**
+     * Create a perspective transformation.
      *   (Maps [near, far] to [0, 1])
      *
      *  Projects vectors in camera space onto a plane at z=1:
      *
-     *  x_proj = x / z
-     *  y_proj = y / z
-     *  z_proj = (far * (z - near)) / (z * (far-near))
+     *  .. code-block:: python
+     *
+     *     x_proj = x / z
+     *     y_proj = y / z
+     *     z_proj = (far * (z - near)) / (z * (far-near))
      *
      *  Camera-space depths are not mapped linearly!
      *
-     * \param fov Field of view in degrees
-     * \param near Near clipping plane
-     * \param far  Far clipping plane
+     * Args:
+     *     fov: Field of view in degrees
+     *
+     *     near: Near clipping plane
+     *
+     *     far: Far clipping plane
      */
     template <size_t N = Size, dr::enable_if_t<N == 4 && !Affine> = 0>
     static Transform perspective(Float fov, Float near_, Float far_) {
         Float recip = 1.f / (far_ - near_);
 
-        /* Perform a scale so that the field of view is mapped
-           to the interval [-1, 1] */
+        // Perform a scale so that the field of view is mapped
+        // to the interval [-1, 1]
         Float tan = dr::tan(dr::deg_to_rad(fov * .5f)),
               cot = 1.f / tan;
 
@@ -421,8 +465,8 @@ struct Transform {
                     inverse_transpose.entry(i, j);
             }
             result.matrix.entry(i, Size - 2) = matrix.entry(i, Size - 1);
-            result.inverse_transpose.entry(i, Size - 2) =
-                inverse_transpose.entry(i, Size - 1);
+            result.inverse_transpose.entry(Size - 2, i) =
+                inverse_transpose.entry(Size - 1, i);
         }
 
         return result;
@@ -450,13 +494,8 @@ struct Transform {
         return result;
     }
 
-    template <typename T>
-    [[deprecated("Please use operator*")]]
-    auto transform_affine(const T &value) const { return operator*(value); }
-
     DRJIT_STRUCT(Transform, matrix, inverse_transpose)
 
-    //! @}
     // =============================================================
 };
 

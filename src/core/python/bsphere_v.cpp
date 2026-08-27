@@ -38,6 +38,5 @@ MI_PY_EXPORT(BoundingSphere) {
 
     bind_bsphere<BoundingSphere3f, Ray3f>(m, "BoundingSphere3f");
 
-    if constexpr (!std::is_same_v<Float, ScalarFloat>)
-        bind_bsphere<ScalarBoundingSphere3f, Ray3f>(m, "ScalarBoundingSphere3f");
+    bind_bsphere<ScalarBoundingSphere3f, Ray3f>(m, "ScalarBoundingSphere3f");
 }

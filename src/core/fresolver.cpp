@@ -44,8 +44,20 @@ std::string FileResolver::to_string() const {
 }
 
 static ref<FileResolver> __static_file_resolver;
+static thread_local FileResolver *__thread_file_resolver = nullptr;
 
 void set_file_resolver(FileResolver *file_resolver) { __static_file_resolver = file_resolver; }
-FileResolver *file_resolver() { return __static_file_resolver.get(); }
+
+FileResolver *file_resolver() {
+    FileResolver *fr = __thread_file_resolver;
+    return fr ? fr : __static_file_resolver.get();
+}
+
+ScopedFileResolver::ScopedFileResolver(FileResolver *fs)
+    : m_backup(__thread_file_resolver) {
+    __thread_file_resolver = fs;
+}
+
+ScopedFileResolver::~ScopedFileResolver() { __thread_file_resolver = m_backup; }
 
 NAMESPACE_END(mitsuba)

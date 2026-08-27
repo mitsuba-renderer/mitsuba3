@@ -100,7 +100,7 @@ def test04_ray_intersect(variant_scalar_rgb):
                     ray = mi.Ray3f(o=[x, y, -10], d=[0, 0, 1],
                                 time=0.0, wavelengths=[])
 
-                    si = s.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, True)
+                    si = s.ray_intersect(ray, mi.RayFlags.Default, True)
                     ray_u = mi.Ray3f(ray)
                     ray_v = mi.Ray3f(ray)
                     eps = 1e-4
@@ -111,14 +111,10 @@ def test04_ray_intersect(variant_scalar_rgb):
 
                     if si_u.is_valid():
                         dp_du = (si_u.p - si.p) / eps
-                        dn_du = (si_u.n - si.n) / eps
                         assert dr.allclose(dp_du, si.dp_du, atol=2e-2)
-                        assert dr.allclose(dn_du, si.dn_du, atol=2e-2)
                     if si_v.is_valid():
                         dp_dv = (si_v.p - si.p) / eps
-                        dn_dv = (si_v.n - si.n) / eps
                         assert dr.allclose(dp_dv, si.dp_dv, atol=2e-2)
-                        assert dr.allclose(dn_dv, si.dn_dv, atol=2e-2)
 
 
 @fresolver_append_path

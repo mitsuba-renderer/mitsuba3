@@ -89,9 +89,9 @@ MI_PY_EXPORT(VolumeGrid) {
         .def_method(VolumeGrid, bytes_per_voxel)
         .def_method(VolumeGrid, buffer_size)
         .def("write", nb::overload_cast<Stream *>(&VolumeGrid::write, nb::const_),
-            "stream"_a, D(VolumeGrid, write), nb::call_guard<nb::gil_scoped_release>())
+            "stream"_a, D(VolumeGrid, write, 2), nb::call_guard<nb::gil_scoped_release>())
         .def("write", nb::overload_cast<const fs::path &>(
-                &VolumeGrid::write, nb::const_), "path"_a, D(VolumeGrid, write, 2),
+                &VolumeGrid::write, nb::const_), "path"_a, D(VolumeGrid, write),
                 nb::call_guard<nb::gil_scoped_release>())
         .def_prop_ro("__array_interface__", [](VolumeGrid &grid) -> nb::object {
             nb::dict result;

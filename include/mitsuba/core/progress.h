@@ -6,7 +6,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief General-purpose progress reporter
+ * General-purpose progress reporter
  *
  * This class is used to track the progress of various operations that might
  * take longer than a second or so. It provides interactive feedback when
@@ -15,18 +15,19 @@ NAMESPACE_BEGIN(mitsuba)
 class MI_EXPORT_LIB ProgressReporter : public Object {
 public:
     /**
-     * \brief Construct a new progress reporter.
-     * \param label
-     *     An identifying name for the operation taking place (e.g. "Rendering")
-     * \param ptr
-     *     Custom pointer payload to be delivered as part of progress messages
+     * Construct a new progress reporter.
+     *
+     * Args:
+     *     label: An identifying name for the operation taking place (e.g. "Rendering")
+     *
+     *     payload: Custom pointer payload to be delivered as part of progress messages
      */
     ProgressReporter(const std::string &label, void *payload = nullptr);
 
     /// Destructor
     ~ProgressReporter();
 
-    /// Update the progress to \c progress (which should be in the range [0, 1])
+    /// Update the progress to ``progress`` (which should be in the range [0, 1])
     void update(float progress);
 
     MI_DECLARE_CLASS(ProgressReporter)

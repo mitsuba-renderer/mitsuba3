@@ -22,8 +22,6 @@
 #include "../render/metal/shapes.h"
 #endif
 
-#include "../render/bbox_reduce.h"
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -278,10 +276,10 @@ public:
 
         if constexpr (dr::is_jit_v<Float>) {
             DynamicBuffer<UInt32> idx = dr::arange<DynamicBuffer<UInt32>>(m_control_point_count);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u);
-            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 0u), idx * 4u + 0u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 1u), idx * 4u + 1u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(vertex_buffer, idx * 3u + 2u), idx * 4u + 2u, true, ReduceMode::NoConflicts);
+            dr::scatter(m_control_points, dr::gather<FloatStorage>(radius_buffer, idx * 1u + 0u), idx * 4u + 3u, true, ReduceMode::NoConflicts);
         } else {
             for (size_t i = 0; i < m_control_point_count; ++i) {
                 m_control_points[i * 4 + 0] = vertex_buffer[i * 3 + 0];
@@ -330,11 +328,15 @@ public:
         if (!m_is_instance && recursion_depth > 0)
             return dr::zeros<SurfaceInteraction3f>();
 
-        bool need_uv = has_flag(ray_flags, RayFlags::UV);
+        bool shading = has_flag(ray_flags, RayFlags::Shading);
+
+        // If necessary, temporally suspend gradient tracking for all shape
+        // parameters to construct a surface interaction completely detached
+        // from the shape.
+        dr::suspend_grad<Float> scope(
+            has_flag(ray_flags, RayFlags::DetachShape), m_control_points);
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        si.t = dr::select(active, pi.t, dr::Infinity<Float>);
-        si.p = ray(pi.t);
 
         Float v_local = pi.prim_uv.x();
         UInt32 prim_idx = pi.prim_index;
@@ -349,20 +351,53 @@ public:
         Point3f p0 = Point3f(c0.x(), c0.y(), c0.z()),
                 p1 = Point3f(c1.x(), c1.y(), c1.z());
 
+        Vector3f axis = dr::normalize(p1 - p0);
+
         Vector3f u_rot, u_rad;
-        std::tie(u_rot, u_rad) = local_frame(dr::normalize(p1 - p0));
+        std::tie(u_rot, u_rad) = local_frame(axis);
 
         Point3f c = p0 * (1.f - v_local) + p1 * v_local;
-        si.n = si.sh_frame.n = dr::normalize(si.p - c);
+
+        si.t = pi.t;
+        si.p = dr::detach(ray(pi.t));
+
+        Vector3f rad_vec_d = si.p - dr::detach(c);
+        si.n = dr::normalize(rad_vec_d);
+
+        // Surface position at the detached parameterization: the offset from the
+        // center line is held fixed in the curve's frame, so that it rotates
+        // along with the segment.
+        Point3f p_att = c + dr::dot(rad_vec_d, dr::detach(u_rad)) * u_rad +
+                            dr::dot(rad_vec_d, dr::detach(u_rot)) * u_rot +
+                            dr::dot(rad_vec_d, dr::detach(axis))  * axis;
+
+        si.attach_motion(ray, p_att, ray_flags);
+
+        if constexpr (dr::is_diff_v<Float>) {
+            if (!has_flag(ray_flags, RayFlags::FollowShape)) {
+                // Let the curve parameter follow the sliding of the interaction
+                // point across the moving surface
+                Vector3f dp_dv = dr::detach(
+                    (p1 - p0) + (c1.w() - c0.w()) * dr::normalize(rad_vec_d));
+
+                v_local = dr::replace_grad(
+                    v_local, v_local + dr::dot(si.p - p_att, dp_dv) /
+                                           dr::squared_norm(dp_dv));
+
+                // Recompute the center line with the correct motion
+                c = p0 * (1.f - v_local) + p1 * v_local;
+            }
+        }
+
+        si.n = dr::normalize(si.p - c);
 
         // Embree and OptiX cull linear-curve backfaces at trace time; Metal's
         // HW intersector reports both sides. Drop inside hits to match (a no-op
         // on backends that already cull).
         this->cull_backface(si, ray, active);
 
-        if (need_uv) {
-            Vector3f rad_vec = si.p - c;
-            Vector3f rad_vec_normalized = dr::normalize(rad_vec);
+        if (shading) {
+            Vector3f rad_vec_normalized = dr::normalize(si.p - c);
 
             Float u = dr::atan2(dr::dot(u_rot, rad_vec_normalized),
                                 dr::dot(u_rad, rad_vec_normalized));
@@ -371,6 +406,16 @@ public:
             Float v = (v_local + prim_idx) / dr::width(m_indices);
 
             si.uv = Point2f(u, v);
+
+            // Tangents of the (u, v) parameterization: ``u`` runs around the
+            // curve, ``v`` along all segments.
+            Float segment_count = (Float) dr::width(m_indices);
+            si.dp_du = dr::TwoPi<Float> * dr::cross(axis, si.p - c);
+            si.dp_dv = segment_count *
+                       ((p1 - p0) + (c1.w() - c0.w()) * rad_vec_normalized);
+
+            si.sh_frame.n = si.n;
+            si.sh_frame.s = si.dp_du;
         }
 
         si.prim_index = pi.prim_index;
@@ -443,26 +488,10 @@ private:
     }
 
     void recompute_bbox() {
-        m_bbox.reset();
-        if (m_control_point_count == 0)
-            return;
-
-        if constexpr (dr::is_jit_v<Float>) {
-            m_bbox = device_reduce_bbox<ScalarPoint3f>(
-                m_control_points, m_control_point_count, 4, /* radius_offset = */ 3);
-        } else {
-            const InputFloat *ptr = m_control_points.data();
-            for (ScalarSize i = 0; i < m_control_point_count; ++i) {
-                ScalarPoint3f p(ptr[4 * i + 0], ptr[4 * i + 1], ptr[4 * i + 2]);
-                ScalarFloat r(ptr[4 * i + 3]);
-                m_bbox.expand(p + r * ScalarVector3f(-1, 0, 0));
-                m_bbox.expand(p + r * ScalarVector3f(1, 0, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, -1, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, 1, 0));
-                m_bbox.expand(p + r * ScalarVector3f(0, 0, -1));
-                m_bbox.expand(p + r * ScalarVector3f(0, 0, 1));
-            }
-        }
+        m_bbox = reduce_bbox<
+            /* Type = */ ScalarPoint3f,
+            /* Stride = */ 4,
+            /* RadiusOffset = */ 3>(m_control_points, m_control_point_count);
     }
 
     std::tuple<Vector3f, Vector3f>

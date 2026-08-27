@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 // =======================================================================
-//! Texture base implementation
+// Texture base implementation
 // =======================================================================
 
 MI_VARIANT Texture<Float, Spectrum>::Texture(const Properties &props)

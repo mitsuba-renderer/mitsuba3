@@ -42,6 +42,7 @@ MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
 MI_PY_DECLARE(FilmFlags);
 MI_PY_DECLARE(DiscontinuityFlags);
+MI_PY_DECLARE(VertexFlags);
 
 NB_MODULE(mitsuba_ext, m) {
     // Temporarily change the module name (for pydoc)
@@ -53,6 +54,7 @@ NB_MODULE(mitsuba_ext, m) {
     m.attr("MI_VERSION_MAJOR") = MI_VERSION_MAJOR;
     m.attr("MI_VERSION_MINOR") = MI_VERSION_MINOR;
     m.attr("MI_VERSION_PATCH") = MI_VERSION_PATCH;
+    m.attr("MI_VERSION_DEV")   = MI_VERSION_DEV;
     m.attr("MI_YEAR")          = MI_YEAR;
     m.attr("MI_AUTHORS")       = MI_AUTHORS;
 
@@ -91,7 +93,8 @@ NB_MODULE(mitsuba_ext, m) {
                 return;
 
             nb::gil_scoped_acquire guard;
-            Py_DECREF(o);
+            if (guard.is_valid())
+                Py_DECREF(o);
         }
     );
 
@@ -165,9 +168,10 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Sensor);
     MI_PY_IMPORT(FilmFlags);
     MI_PY_IMPORT(DiscontinuityFlags);
+    MI_PY_IMPORT(VertexFlags);
 
-    /* Register a cleanup callback function to wait for pending tasks (this is
-     * called before all Python variables are cleaned up */
+    // Register a cleanup callback function to wait for pending tasks (this is
+    // called before all Python variables are cleaned up
     auto atexit = nb::module_::import_("atexit");
     atexit.attr("register")(nb::cpp_function([]() {
         {
@@ -185,11 +189,11 @@ NB_MODULE(mitsuba_ext, m) {
         Thread::static_shutdown();
     }));
 
-    /* Make this a package, thus allowing statements such as:
-     * `from mitsuba.test.util import function`
-     * For that `__path__` needs to be populated. We do it by using the
-     * `__file__` attribute of a Python file which is located in the same
-     * directory as this module */
+    // Make this a package, thus allowing statements such as:
+    // `from mitsuba.test.util import function`
+    // For that `__path__` needs to be populated. We do it by using the
+    // `__file__` attribute of a Python file which is located in the same
+    // directory as this module
     nb::module_ os = nb::module_::import_("os");
     nb::module_ cfg = nb::module_::import_("mitsuba.config");
     nb::object cfg_path = os.attr("path").attr("realpath")(cfg.attr("__file__"));

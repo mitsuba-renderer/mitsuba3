@@ -10,54 +10,53 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief Base class of all sample generators.
+ * Base class of all sample generators.
  *
- * A \a sampler provides a convenient abstraction around methods that generate
+ * A *sampler* provides a convenient abstraction around methods that generate
  * uniform pseudo- or quasi-random points within a conceptual
- * infinite-dimensional unit hypercube \f$[0,1]^\infty$\f. This involves two
+ * infinite-dimensional unit hypercube :math:`[0,1]^\infty`. This involves two
  * main operations: by querying successive component values of such an
- * infinite-dimensional point (\ref next_1d(), \ref next_2d()), or by
- * discarding the current point and generating another one (\ref advance()).
+ * infinite-dimensional point (`next_1d()`, `next_2d()`), or by
+ * discarding the current point and generating another one (`advance()`).
  *
  * Scalar and vectorized rendering algorithms interact with the sampler
  * interface in a slightly different way:
  *
  * Scalar rendering algorithm:
  *
- *   1. The rendering algorithm first invokes \ref seed() to initialize the
- *      sampler state.
+ * 1. The rendering algorithm first invokes `seed()` to initialize the
+ *    sampler state.
  *
- *   2. The first pixel sample can now be computed, after which \ref advance()
- *      needs to be invoked. This repeats until all pixel samples have been
- *      generated. Note that some implementations need to be configured for a
- *      certain number of pixel samples, and exceeding these will lead to an
- *      exception being thrown.
+ * 2. The first pixel sample can now be computed, after which `advance()`
+ *    needs to be invoked. This repeats until all pixel samples have been
+ *    generated. Note that some implementations need to be configured for a
+ *    certain number of pixel samples, and exceeding these will lead to an
+ *    exception being thrown.
  *
- *   3. While computing a pixel sample, the rendering algorithm usually
- *      requests 1D or 2D component blocks using the \ref next_1d() and
- *      \ref next_2d() functions before moving on to the next sample.
+ * 3. While computing a pixel sample, the rendering algorithm usually
+ *    requests 1D or 2D component blocks using the `next_1d()` and
+ *    `next_2d()` functions before moving on to the next sample.
  *
  * A vectorized rendering algorithm effectively queries multiple sample
  * generators that advance in parallel. This involves the following steps:
  *
- *   1. The rendering algorithm invokes \ref set_samples_per_wavefront()
- *      if each rendering step is split into multiple passes (in which
- *      case fewer samples should be returned per \ref sample_1d()
- *      or \ref sample_2d() call).
+ * 1. The rendering algorithm invokes `set_samples_per_wavefront()`
+ *    if each rendering step is split into multiple passes (in which
+ *    case fewer samples should be returned per `next_1d()`
+ *    or `next_2d()` call).
  *
- *   2. The rendering algorithm then invokes \ref seed() to initialize the
- *      sampler state, and to inform the sampler of the wavefront size,
- *      i.e., how many sampler evaluations should be performed in parallel,
- *      accounting for all passes. The initialization ensures that the set of
- *      parallel samplers is mutually statistically independent (in a
- *      pseudo/quasi-random sense).
+ * 2. The rendering algorithm then invokes `seed()` to initialize the
+ *    sampler state, and to inform the sampler of the wavefront size,
+ *    i.e., how many sampler evaluations should be performed in parallel,
+ *    accounting for all passes. The initialization ensures that the set of
+ *    parallel samplers is mutually statistically independent (in a
+ *    pseudo/quasi-random sense).
  *
- *   3. \ref advance() can be used to advance to the next point.
+ * 3. `advance()` can be used to advance to the next point.
  *
- *   4. As in the scalar approach, the rendering algorithm can request batches
- *      of (pseudo-) random numbers using the \ref next_1d() and \ref next_2d()
- *      functions.
- *
+ * 4. As in the scalar approach, the rendering algorithm can request batches
+ *    of (pseudo-) random numbers using the `next_1d()` and `next_2d()`
+ *    functions.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Sampler : public JitObject<Sampler<Float, Spectrum>> {
@@ -68,9 +67,9 @@ public:
     ~Sampler();
 
     /**
-     * \brief Create a fork of this sampler.
+     * Create a fork of this sampler.
      *
-     * A subsequent call to \c seed is necessary to properly initialize
+     * A subsequent call to ``seed`` is necessary to properly initialize
      * the internal state of the sampler.
      *
      * May throw an exception if not supported.
@@ -78,30 +77,31 @@ public:
     virtual ref<Sampler> fork() = 0;
 
     /**
-     * \brief Create a clone of this sampler.
+     * Create a clone of this sampler.
      *
      * Subsequent calls to the cloned sampler will produce the same
      * random numbers as the original sampler.
      *
-     * \remark This method relies on the overload of the copy constructor.
+     * Note:
+     *     This method relies on the overload of the copy constructor.
      *
-     * May throw an exception if not supported.
+     *     May throw an exception if not supported.
      */
     virtual ref<Sampler> clone() = 0;
 
     /**
-     * \brief Deterministically seed the underlying RNG, if applicable.
+     * Deterministically seed the underlying RNG, if applicable.
      *
      * In the context of wavefront ray tracing & dynamic arrays, this function
-     * must be called with \c wavefront_size matching the size of the wavefront.
+     * must be called with ``wavefront_size`` matching the size of the wavefront.
      */
     virtual void seed(UInt32 seed,
                       uint32_t wavefront_size = (uint32_t) -1);
 
     /**
-     * \brief Advance to the next sample.
+     * Advance to the next sample.
      *
-     * A subsequent call to \c next_1d or \c next_2d will access the first
+     * A subsequent call to ``next_1d`` or ``next_2d`` will access the first
      * 1D or 2D components of this sample.
      */
     virtual void advance();
@@ -157,8 +157,7 @@ protected:
     UInt32 m_sample_index;
 
 public:
-    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
-    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override;
 };
 
 /// Interface for sampler plugins based on the PCG32 random number generator
@@ -182,8 +181,7 @@ protected:
     PCG32 m_rng;
 
 public:
-    virtual void traverse_1_cb_ro(void *payload, drjit::detail::traverse_callback_ro fn) const override;
-    virtual void traverse_1_cb_rw(void *payload, drjit::detail::traverse_callback_rw fn) override;
+    void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override;
 };
 
 MI_EXTERN_CLASS(Sampler)

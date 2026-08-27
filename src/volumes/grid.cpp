@@ -258,36 +258,29 @@ public:
                 }
                 m_max = (float) max;
 
-                size_t shape[4] = {
-                    (size_t) res.z(),
-                    (size_t) res.y(),
-                    (size_t) res.x(),
-                    4
-                };
-                m_texture = Texture3f(TensorXf(scaled_data.get(), 4, shape),
-                                      m_accel, m_accel, filter_mode, wrap_mode);
+                m_texture = Texture3f(
+                    TensorXf(scaled_data.get(), { (size_t) res.z(),
+                                                  (size_t) res.y(),
+                                                  (size_t) res.x(), 4 }),
+                    m_accel, m_accel, filter_mode, wrap_mode);
             } else if (volume_grid) {
-                size_t shape[4] = {
-                    (size_t) res.z(),
-                    (size_t) res.y(),
-                    (size_t) res.x(),
-                    channel_count
-                };
-                m_texture = Texture3f(TensorXf(volume_grid->data(), 4, shape),
-                                      m_accel, m_accel, filter_mode, wrap_mode);
+                m_texture = Texture3f(
+                    TensorXf(volume_grid->data(), { (size_t) res.z(),
+                                                    (size_t) res.y(),
+                                                    (size_t) res.x(),
+                                                    channel_count }),
+                    m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = volume_grid->max();
                 m_max_per_channel.resize(volume_grid->channel_count());
                 volume_grid->max_per_channel(m_max_per_channel.data());
                 m_channel_count = channel_count;
             } else if (tensor) {
-                size_t shape[4] = {
-                    (size_t) res.z(),
-                    (size_t) res.y(),
-                    (size_t) res.x(),
-                    channel_count
-                };
-                m_texture = Texture3f(TensorXf(tensor->array(), 4, shape),
-                                      m_accel, m_accel, filter_mode, wrap_mode);
+                m_texture = Texture3f(
+                    TensorXf(tensor->array(), { (size_t) res.z(),
+                                                (size_t) res.y(),
+                                                (size_t) res.x(),
+                                                channel_count }),
+                    m_accel, m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
             }
@@ -455,7 +448,7 @@ public:
 
 protected:
     /**
-     * \brief Returns the number of channels in the grid
+     * Returns the number of channels in the grid
      *
      * For object instances that perform spectral upsampling, the channel that
      * holds all scaling coefficients is omitted.
@@ -471,7 +464,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction using spectral
+     * Evaluates the volume at the given interaction using spectral
      * upsampling
      */
     MI_INLINE UnpolarizedSpectrum interpolate_spectral(const Interaction3f &it,
@@ -534,7 +527,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 1 channel.
      */
@@ -550,7 +543,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 3 channels.
      */
@@ -564,7 +557,7 @@ protected:
     }
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume data has exactly 6 channels.
      */
@@ -580,7 +573,7 @@ protected:
 
 
     /**
-     * \brief Evaluates the volume at the given interaction
+     * Evaluates the volume at the given interaction
      *
      * Should only be used when the volume contains data with multiple channels
      */

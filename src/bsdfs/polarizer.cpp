@@ -86,7 +86,8 @@ public:
         m_transmittance = props.get_texture<Texture>("transmittance", 1.f);
         m_polarizing = props.get<bool>("polarizing", true);
 
-        m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
+        m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null |
+                  BSDFFlags::Anisotropic;
         m_components.push_back(m_flags);
     }
 
@@ -123,14 +124,14 @@ public:
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
 
-            /* The `forward` direction here is always along the direction that
-               light travels. This is needed for the coordinate system rotation
-               below. */
+            // The `forward` direction here is always along the direction that
+            // light travels. This is needed for the coordinate system rotation
+            // below.
             Vector3fS forward = ctx.mode == TransportMode::Radiance ? si.wi : -si.wi;
 
-            /* To account for non-perpendicular incidence, we compute the effective
-               transmitting axis based on "The polarization properties of a tilted polarizer"
-               by Korger et al. 2013. */
+            // To account for non-perpendicular incidence, we compute the effective
+            // transmitting axis based on "The polarization properties of a tilted polarizer"
+            // by Korger et al. 2013.
             Vector3fS a_axis(sin_theta, cos_theta, 0.f);
             Vector3fS eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
             Vector3fS eff_t_axis = dr::cross(forward, eff_a_axis);
@@ -177,14 +178,14 @@ public:
             // Get standard Mueller matrix for a linear polarizer.
             Spectrum M = mueller::linear_polarizer(1.f);
 
-            /* The `forward` direction here is always along the direction that
-               light travels. This is needed for the coordinate system rotation
-               below. */
+            // The `forward` direction here is always along the direction that
+            // light travels. This is needed for the coordinate system rotation
+            // below.
             Vector3fS forward = si.wi;   // Note: Should be reversed for TransportMode::Importance.
 
-            /* To account for non-perpendicular incidence, we compute the effective
-               transmitting axis based on "The polarization properties of a tilted polarizer"
-               by Korger et al. 2013. */
+            // To account for non-perpendicular incidence, we compute the effective
+            // transmitting axis based on "The polarization properties of a tilted polarizer"
+            // by Korger et al. 2013.
             Vector3fS a_axis(sin_theta, cos_theta, 0.f);
             Vector3fS eff_a_axis = dr::normalize(a_axis - dr::dot(a_axis, forward)*forward);
             Vector3fS eff_t_axis = dr::cross(forward, eff_a_axis);

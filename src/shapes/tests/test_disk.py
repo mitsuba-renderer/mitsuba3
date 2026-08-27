@@ -60,7 +60,8 @@ def test03_ray_intersect(variant_scalar_rgb):
                         ray = mi.Ray3f(o=[x, y, -10], d=[0, 0, 1],
                                     time=0.0, wavelengths=[])
 
-                        si = s.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.dNSdUV, True)
+                        si = s.ray_intersect(
+                            ray, mi.RayFlags.Default | mi.RayFlags.NormalPartials, True)
                         ray_u = mi.Ray3f(ray)
                         ray_v = mi.Ray3f(ray)
                         eps = 1e-4
@@ -154,7 +155,7 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     si = shape.ray_intersect(ray)
     si.dp_dv *= 1.0
     dr.forward(ray.o.y)
-    assert dr.allclose(dr.grad(si.dp_dv), [-1, 0, 0])
+    assert dr.allclose(dr.grad(si.dp_dv), [-2 * dr.pi, 0, 0], atol=1e-5)
 
 
 def test06_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
@@ -190,7 +191,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.DetachShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -208,7 +209,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().scale(1 + theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -232,7 +233,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta, dr.ADFlag.ClearNone)
 
@@ -250,7 +251,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All | mi.RayFlags.FollowShape)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -268,7 +269,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
     dr.enable_grad(theta)
     params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
-    si = shape.ray_intersect(ray, mi.RayFlags.All)
+    si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -294,6 +295,11 @@ def test08_eval_parameterization(variants_all_ad_rgb):
 
     si_after = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
     assert dr.allclose(si_before.uv, si_after.uv)
+
+    # ``eval_parameterization`` must invert the reported UV parameterization
+    uv = mi.Point2f(dr.meshgrid(dr.linspace(mi.Float, 0.05, 0.95, 5),
+                                dr.linspace(mi.Float, 0.05, 0.95, 5)))
+    assert dr.allclose(shape.eval_parameterization(uv).uv, uv)
 
 
 def test09_sample_silhouette_wrong_type(variants_all_rgb):
@@ -423,3 +429,31 @@ def test16_sample_precomputed_silhouette(variants_vec_rgb):
 def test17_shape_type(variant_scalar_rgb):
     disk = mi.load_dict({ 'type': 'disk' })
     assert disk.shape_type() == mi.ShapeType.Disk.value;
+
+
+def test18_position_partials(variant_scalar_rgb):
+    """``dp_du``/``dp_dv`` must be the derivatives of ``si.uv = (r, phi/2pi)``"""
+    import numpy as np
+
+    to_world = mi.ScalarTransform4f().scale([2, 3, 1])
+    scene = mi.load_dict({'type': 'scene',
+                          'shape': {'type': 'disk', 'to_world': to_world}})
+    M = np.array(to_world.matrix, dtype=np.float64)[:3, :3]
+
+    def position(u, v):
+        phi = 2 * np.pi * v
+        return M @ np.array([u * np.cos(phi), u * np.sin(phi), 0.0])
+
+    h = 1e-5
+    for x in dr.linspace(Float, -1.5, 1.5, 5):
+        for y in dr.linspace(Float, -1.5, 1.5, 5):
+            ray = mi.Ray3f(mi.Point3f(x, y, 5), mi.Vector3f(0, 0, -1))
+            si = scene.ray_intersect(ray, mi.RayFlags.Default, True)
+            # The azimuth, and hence the partials, are undefined at the center
+            if not si.is_valid() or si.uv[0] == 0:
+                continue
+            u, v = float(si.uv[0]), float(si.uv[1])
+            assert dr.allclose(si.dp_du, (position(u + h, v) -
+                                          position(u - h, v)) / (2 * h), atol=1e-3)
+            assert dr.allclose(si.dp_dv, (position(u, v + h) -
+                                          position(u, v - h)) / (2 * h), atol=1e-3)

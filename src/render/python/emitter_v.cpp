@@ -11,7 +11,7 @@
 MI_VARIANT class PyEmitter : public Emitter<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Emitter, Scene, Medium, Shape)
-    NB_TRAMPOLINE(Emitter, 16);
+    NB_TRAMPOLINE(Emitter);
 
     PyEmitter(const Properties &props) : Emitter(props) { }
 
@@ -22,22 +22,22 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &ref,
+    sample_direction(const Interaction3f &it,
                      const Point2f &sample,
                      Mask active) const override {
-        NB_OVERRIDE_PURE(sample_direction, ref, sample, active);
+        NB_OVERRIDE_PURE(sample_direction, it, sample, active);
     }
 
-    Float pdf_direction(const Interaction3f &ref,
+    Float pdf_direction(const Interaction3f &it,
                         const DirectionSample3f &ds,
                         Mask active) const override {
-        NB_OVERRIDE_PURE(pdf_direction, ref, ds, active);
+        NB_OVERRIDE_PURE(pdf_direction, it, ds, active);
     }
 
-    Spectrum eval_direction(const Interaction3f &ref,
+    Spectrum eval_direction(const Interaction3f &it,
                             const DirectionSample3f &ds,
                             Mask active)  const override {
-        NB_OVERRIDE_PURE(eval_direction, ref, ds, active);
+        NB_OVERRIDE_PURE(eval_direction, it, ds, active);
     }
 
     std::pair<PositionSample3f, Float>
@@ -85,8 +85,6 @@ public:
     using Emitter::m_flags;
     using Emitter::m_needs_sample_2;
     using Emitter::m_needs_sample_3;
-
-    DR_TRAMPOLINE_TRAVERSE_CB(Emitter);
 };
 
 template <typename Ptr, typename Cls> void bind_emitter_generic(Cls &cls) {
@@ -173,6 +171,7 @@ MI_PY_EXPORT(Emitter) {
         dr::ArrayBinding b;
         auto emitter_ptr = dr::bind_array_t<EmitterPtr>(b, m, "EmitterPtr");
         bind_emitter_generic<EmitterPtr>(emitter_ptr);
+        emitter_ptr.freeze();
     }
 
 }

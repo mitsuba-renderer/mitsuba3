@@ -1,21 +1,19 @@
 #pragma once
 
 /**
- * \file struct.h
- *
  * Mitsuba's structured data conversion facilities are provided by the
- * standalone <em>struct-jit</em> library (see \c ext/struct-jit). This header
+ * standalone *struct-jit* library (see ``ext/struct-jit``). This header
  * pulls in that library and exposes a small number of Mitsuba-side
  * conveniences:
  *
- *  - the namespace alias \c sj for \c struct_jit,
- *  - the \ref struct_type_v variable template (a compile-time C++ type to
- *    \c struct_jit::Type mapping that also understands \c drjit::half), and
- *  - the \c type_id specialization that teaches struct-jit about \c drjit::half.
+ *  - the namespace alias ``sj`` for ``struct_jit``,
+ *  - the ``struct_type_v`` variable template (a compile-time C++ type to
+ *    ``struct_jit::Type`` mapping that also understands ``drjit::half``), and
+ *  - the ``type_id`` specialization that teaches struct-jit about ``drjit::half``.
  *
- * The former \c mitsuba::Struct and \c mitsuba::StructConverter classes have
- * been removed; use \c struct_jit::Struct, \c struct_jit::Converter and
- * \c struct_jit::make_converter() instead (conventionally via the \c sj alias).
+ * The former ``mitsuba::Struct`` and ``mitsuba::StructConverter`` classes have
+ * been removed; use ``struct_jit::Struct``, ``struct_jit::Converter`` and
+ * ``struct_jit::make_converter()`` instead (conventionally via the ``sj`` alias).
  */
 
 #include <struct-jit/struct-jit.h>
@@ -35,8 +33,8 @@ NAMESPACE_BEGIN(mitsuba)
 namespace sj = struct_jit;
 
 /**
- * \brief Compile-time mapping from a C++ scalar type to the corresponding
- * \c struct_jit::Type (e.g. \c struct_type_v<float> == \c sj::Type::Float32).
+ * Compile-time mapping from a C++ scalar type to the corresponding
+ * ``struct_jit::Type`` (e.g. ``struct_type_v<float>`` == ``sj::Type::Float32``).
  */
 template <typename T>
 constexpr sj::Type struct_type_v = sj::type_v<drjit::scalar_t<T>>;
