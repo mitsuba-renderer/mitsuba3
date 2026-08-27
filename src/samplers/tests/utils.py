@@ -94,19 +94,18 @@ def check_sampler_kernel_hash_wavefront(t, sampler):
     """
     Checks wether re-seeding the sampler causes recompilation of the kernel, sampling from it.
     """
-    with dr.scoped_set_flag(dr.JitFlag.KernelHistory, True):
+    with dr.kernel_history([dr.KernelType.JIT]) as history:
         kernel_hash = None
         for i in range(4):
             seed = t(i)
 
             sampler.seed(seed, 64)
-            
+
             dr.eval(sampler.next_1d())
 
-            history = dr.kernel_history([dr.KernelType.JIT])
             if kernel_hash is None:
-                kernel_hash = history[-1]["hash"]
+                kernel_hash = history[-1].hash
             else:
-                assert kernel_hash ==  history[-1]["hash"]
+                assert kernel_hash == history[-1].hash
             
             
