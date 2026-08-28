@@ -94,7 +94,7 @@ class BasicPRBIntegrator(RBIntegrator):
         if dr.hint(self.hide_emitters, mode='scalar'):
             # Did we hit an area emitter? If so, skip all area emitters along this ray
             skip_emitters = pi.is_valid() & (pi.shape.emitter() != None) & active
-            si_skip = pi.compute_surface_interaction(ray, mi.RayFlags.Minimal, skip_emitters)
+            si_skip = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Minimal, skip_emitters)
             ray_skip = si_skip.spawn_ray(ray.d)
             pi_after_skip = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
             pi[skip_emitters] = pi_after_skip
@@ -108,12 +108,13 @@ class BasicPRBIntegrator(RBIntegrator):
             # from differentiable shape parameters (position, normals, etc.)
             # In primal mode, this is just an ordinary ray tracing operation.
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray, ray_flags=mi.RayFlags.Default)
+                si = scene.compute_surface_interaction(ray, pi, ray_flags=mi.RayFlags.Default)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
-                    si_prev = pi_prev.compute_surface_interaction(ray_prev, ray_flags=mi.RayFlags.Default)
+                    si_prev = scene.compute_surface_interaction(
+                        ray_prev, pi_prev, ray_flags=mi.RayFlags.Default)
                     # We should not account for the current interaction's motion
                     si_detach = dr.detach(si)
                     wi_global = dr.normalize(si_prev.p - si_detach.p)
@@ -163,9 +164,9 @@ class BasicPRBIntegrator(RBIntegrator):
             # ------------------ Differential phase only ------------------
 
             if dr.hint(not primal, mode='scalar'):
-                si_next = pi_next.compute_surface_interaction(ray_next,
-                                                              ray_flags=mi.RayFlags.Default,
-                                                              active=active_next)
+                si_next = scene.compute_surface_interaction(
+                    ray_next, pi_next, ray_flags=mi.RayFlags.Default,
+                    active=active_next)
 
                 with dr.resume_grad():
                     # If the current interaction point is moving, we need

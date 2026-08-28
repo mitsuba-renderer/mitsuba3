@@ -376,13 +376,8 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
                                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
-
-        // Early exit when tracing isn't necessary
-        if (!m_is_instance && recursion_depth > 0)
-            return dr::zeros<SurfaceInteraction3f>();
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
         // If necessary, temporally suspend gradient tracking for all shape
@@ -417,7 +412,7 @@ public:
 
         si.prim_index = pi.prim_index;
         si.shape      = this;
-        si.instance   = nullptr;
+        si.instance_index = 0;
 
         return si;
     }

@@ -195,18 +195,16 @@ class PathProjectiveIntegrator(PSIntegrator):
             # In primal mode, this is just an ordinary ray tracing operation.
             use_si_shade = ignore_ray & (depth == depth_init)
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray,
+                si = scene.compute_surface_interaction(ray, pi,
                                                     ray_flags=mi.RayFlags.Default,
                                                     active=active_next & ~use_si_shade)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
-                    si_prev_diff = pi_prev.compute_surface_interaction(
-                        ray_prev,
-                        ray_flags=mi.RayFlags.Minimal,
-                        active=active_next & ~use_si_shade
-                    )
+                    si_prev_diff = scene.compute_surface_interaction(
+                        ray_prev, pi_prev, ray_flags=mi.RayFlags.Minimal,
+                        active=active_next & ~use_si_shade)
                     si_prev = dr.replace_grad(si_prev, si_prev_diff)
                     si_detached = dr.detach(si) # Ignore motion of current point
                     wi_global = dr.normalize(si_prev.p - si_detached.p)
@@ -380,9 +378,9 @@ class PathProjectiveIntegrator(PSIntegrator):
             # ------------------ Differential phase only ------------------
 
             if dr.hint(not primal, mode='scalar'):
-                si_next = pi_next.compute_surface_interaction(ray_next,
-                                                              ray_flags=mi.RayFlags.Minimal,
-                                                              active=active_next)
+                si_next = scene.compute_surface_interaction(
+                    ray_next, pi_next, ray_flags=mi.RayFlags.Minimal,
+                    active=active_next)
 
                 with dr.resume_grad():
                     # If the current interaction point is moving, we need
@@ -488,8 +486,8 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
-        si_fg = pi_fg.compute_surface_interaction(
-            dummy_ray, mi.RayFlags.Default, active)
+        si_fg = scene.compute_surface_interaction(
+            dummy_ray, pi_fg, mi.RayFlags.Default, active)
 
         # If smooth normals are used, it is possible that the computed
         # shading normal near visibility silhouette points to the wrong side

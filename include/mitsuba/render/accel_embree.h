@@ -48,23 +48,41 @@ struct EmbreeAccel {
 
     // --- Declarative traversal ---
     DRJIT_TRAVERSE(EmbreeAccel, accel_handle, func_handle,
-                   occlude_handle, shapes_registry_ids)
+                   occlude_handle)
 
-    /// Native Embree scene, lifetime tied to ``accel_handle`` in JIT variants.
+    /// Native Embree scene, lifetime tied to ``accel_handle`` in JIT variants
     RTCSceneTy *accel = nullptr;
-    std::vector<int> geometries;
+
+    /// Geometry IDs currently attached to ``accel`` (detached on rebuild)
+    std::vector<unsigned int> geometries;
+
+    /// Whether this scene was created while another scene renders (see init())
     bool is_nested_scene = false;
-    /// One nested Embree scene per ShapeGroup, shared by its Instances.
+
+    /// One nested Embree scene per ShapeGroup, shared by its Instances
     tsl::robin_map<const void *, RTCSceneTy *, PointerHasher> group_scenes;
-    /// Width-specialized Embree entry points.
+
+    /// Width-specialized Embree closest-hit entry point
     void *func_ptr = nullptr;
+
+    /// Width-specialized Embree any-hit (shadow ray) entry point
     void *occlude_func_ptr = nullptr;
 
-    /// Freeze-visible handles and shape recovery table.
+    /// Freeze-visible handle owning ``accel``
     UInt64 accel_handle;
+
+    /// Freeze-visible handle wrapping ``func_ptr``
     UInt64 func_handle;
+
+    /// Freeze-visible handle wrapping ``occlude_func_ptr``
     UInt64 occlude_handle;
-    DynamicBuffer<UInt32> shapes_registry_ids;
+
+    /// Number of instances.
+    /// The Embree backends reserve the geometry IDs [0, instance_count) for
+    /// instances, so that a hit's ``instID`` can be directly interpreted as the
+    /// instance index. Non-instanced geometry follows at ``instance_count``
+    /// plus its registry ID (LLVM mode) or sequentially (scalar mode)
+    uint32_t instance_count = 0;
 };
 
 NAMESPACE_END(mitsuba)

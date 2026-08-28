@@ -114,9 +114,6 @@ static constexpr size_t NumGeometryKinds = (size_t) ShapeIR::Kind::Instance;
 //  Whole-scene descriptor
 // ---------------------------------------------------------------------------
 
-/// ``InstanceEntry.owner_registry_id`` for a top-level BLAS.
-static constexpr uint32_t SCENE_IR_NO_OWNER = (uint32_t) -1;
-
 /// One bottom-level acceleration structure holding same-kind geometry.
 struct BlasEntry {
     ShapeIR::Kind        kind;
@@ -132,8 +129,8 @@ struct InstanceEntry {
     float    to_world[12] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f,
                               0.f, 0.f, 1.f, 0.f, 0.f, 0.f };
 
-    /// JIT registry ID of the ShapeGroup, or ``SCENE_IR_NO_OWNER``.
-    uint32_t owner_registry_id = SCENE_IR_NO_OWNER;
+    /// Index + 1 of the owning ``instance``, or 0 for a top-level BLAS.
+    uint32_t instance_index = 0;
 };
 
 /// Scene description consumed by acceleration-structure builders.

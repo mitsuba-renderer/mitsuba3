@@ -37,19 +37,19 @@ def test01_attach_automatic(variants_all_ad_rgb):
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     # Not attached if not necessary
-    si = pi.compute_surface_interaction(ray)
+    si = scene.compute_surface_interaction(ray, pi)
     assert not dr.grad_enabled(si.t)
     assert not dr.grad_enabled(si.p)
 
     # Attached if the ray is attached
     dr.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray)
+    si = scene.compute_surface_interaction(ray, pi)
     assert dr.grad_enabled(si.t)
     assert dr.grad_enabled(si.p)
     assert not dr.grad_enabled(si.n)  # face normal does not depend on the ray
 
     # Still attached to the ray under DetachShape
-    si = pi.compute_surface_interaction(ray,
+    si = scene.compute_surface_interaction(ray, pi,
                                         mi.RayFlags.Default |
                                         mi.RayFlags.DetachShape)
     assert dr.grad_enabled(si.p)
@@ -67,7 +67,7 @@ def test01_attach_automatic(variants_all_ad_rgb):
         assert shape.parameters_grad_enabled() == expected
 
     dr.disable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray)
+    si = scene.compute_surface_interaction(ray, pi)
     assert dr.grad_enabled(si.t)
     assert dr.grad_enabled(si.p)
 
@@ -91,7 +91,7 @@ def test02_ray_derivatives(variants_all_ad_rgb):
             (ray.o.z, lambda si: si.t, -1),
             # Tilting the direction along x moves si.p by the flight distance
             (ray.d.x, lambda si: si.p, [10, 0, 0])]:
-        si = pi.compute_surface_interaction(ray)
+        si = scene.compute_surface_interaction(ray, pi)
         dr.forward(param)
         dr.assert_allclose(dr.grad(field(si)), expected)
 
@@ -99,7 +99,7 @@ def test02_ray_derivatives(variants_all_ad_rgb):
     for output, expected in [(lambda si: si.p.x, [1, 0, 0]),
                              (lambda si: si.t, [0, 0, -1])]:
         dr.set_grad(ray.o, 0.0)
-        si = pi.compute_surface_interaction(ray)
+        si = scene.compute_surface_interaction(ray, pi)
         dr.backward(output(si))
         dr.assert_allclose(dr.grad(ray.o), expected)
 
@@ -126,7 +126,7 @@ def test03_params_forward(variants_all_ad_rgb):
 
     # A translation along z moves si.t and si.p
     apply_transformation(lambda v: mi.Transform4f().translate(v))
-    si = pi.compute_surface_interaction(ray)
+    si = scene.compute_surface_interaction(ray, pi)
     dr.forward(diff_vector.z)
     dr.assert_allclose(dr.grad(si.t), 1)
     dr.assert_allclose(dr.grad(si.p), [0, 0, 1])
@@ -135,7 +135,7 @@ def test03_params_forward(variants_all_ad_rgb):
     # opposite direction
     for axis, uv_grad in [('x', [-0.5, 0]), ('y', [0, -0.5])]:
         apply_transformation(lambda v: mi.Transform4f().translate(v))
-        si = pi.compute_surface_interaction(ray)
+        si = scene.compute_surface_interaction(ray, pi)
         dr.forward(getattr(diff_vector, axis))
         dr.assert_allclose(dr.grad(si.uv), uv_grad, atol=1e-6)
 
@@ -145,7 +145,7 @@ def test03_params_forward(variants_all_ad_rgb):
     pi = scene.ray_intersect_preliminary(ray, coherent=True)
 
     apply_transformation(lambda v: mi.Transform4f().rotate([0, 0, 1], v.x))
-    si = pi.compute_surface_interaction(ray)
+    si = scene.compute_surface_interaction(ray, pi)
     dr.forward(diff_vector.x)
     du = 0.5 * dr.sin(2 * dr.pi / 360.0)
     dr.assert_allclose(dr.grad(si.uv), [-du, du], atol=1e-6)
@@ -174,7 +174,7 @@ def test04_params_backward(variants_all_ad_rgb):
         params.set_dirty(pos_key)
         params.set_dirty(uv_key)
         params.update()
-        return pi.compute_surface_interaction(ray)
+        return scene.compute_surface_interaction(ray, pi)
 
     # (output, expected positions gradient)
     pos_cases = [
@@ -254,12 +254,12 @@ def test05_follow_and_detach_shape(variants_all_ad_rgb):
     ]
     for flags, p_grad, uv_grad in cases:
         apply_translation()
-        si = pi.compute_surface_interaction(ray, flags)
+        si = scene.compute_surface_interaction(ray, pi, flags)
         dr.forward(diff_vector.x)
         dr.assert_allclose(dr.grad(si.p), p_grad, atol=1e-5)
 
         apply_translation()
-        si = pi.compute_surface_interaction(ray, flags)
+        si = scene.compute_surface_interaction(ray, pi, flags)
         dr.forward(diff_vector.x)
         dr.assert_allclose(dr.grad(si.uv), uv_grad, atol=1e-5)
 
@@ -267,7 +267,7 @@ def test05_follow_and_detach_shape(variants_all_ad_rgb):
     # what a rectangle that was never attached would have produced
     apply_translation()
     dr.enable_grad(ray.o)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default |
+    si = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Default |
                                         mi.RayFlags.DetachShape)
     dr.forward(ray.o.x)
     dr.assert_allclose(dr.grad(si.p), [1, 0, 0], atol=1e-5)

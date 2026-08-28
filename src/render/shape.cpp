@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/scene_ir.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
@@ -228,7 +229,6 @@ MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
                                                     const PreliminaryIntersection3f &/*pi*/,
                                                     uint32_t /*ray_flags*/,
-                                                    uint32_t /*recursion_depth*/,
                                                     Mask /*active*/) const {
     NotImplementedError("compute_surface_interaction");
 }
@@ -236,8 +236,22 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
 MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    auto pi = ray_intersect_preliminary(ray, 0, active);
-    return pi.compute_surface_interaction(ray, ray_flags, active);
+    PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
+
+    active &= pi.is_valid();
+    if (dr::none_or<false>(active)) {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wi = -ray.d;
+        si.wavelengths = ray.wavelengths;
+        return si;
+    }
+
+    // Route through the ShapePtr so that JIT variants trace the call like
+    // any other hit expansion
+    SurfaceInteraction3f si =
+        pi.shape->compute_surface_interaction(ray, pi, ray_flags, active);
+    si.finalize_surface_interaction(pi, ray, ray_flags, active);
+    return si;
 }
 
 MI_VARIANT void

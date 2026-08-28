@@ -160,7 +160,7 @@ public:
                 InputTensorXf(vol_grid.data(), { (size_t) res.z(),
                                                  (size_t) res.y(),
                                                  (size_t) res.x(), 1 }),
-                true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+                true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else if (props.has_property("grid")) {
             const TensorXf& tensor = props.get_any<TensorXf>("grid");
             if (tensor.ndim() != 4)
@@ -171,7 +171,7 @@ public:
                       tensor.shape(3));
             m_grid_texture = InputTexture3f(
                 (const typename InputTexture3f::TensorXf &) tensor,
-                true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+                true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         } else {
             Throw("The SDF values must be specified with either the "
                   "\"filename\" or \"grid\" parameter!");
@@ -338,13 +338,9 @@ public:
     SurfaceInteraction3f
     compute_surface_interaction(const Ray3f &ray,
                                 const PreliminaryIntersection3f &pi,
-                                uint32_t ray_flags, uint32_t recursion_depth,
+                                uint32_t ray_flags,
                                 Mask active) const override {
         MI_MASK_ARGUMENT(active);
-
-        // Early exit when tracing isn't necessary
-        if (!m_is_instance && recursion_depth > 0)
-            return dr::zeros<SurfaceInteraction3f>();
 
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
 
@@ -399,7 +395,7 @@ public:
 
         si.prim_index = pi.prim_index;
         si.shape    = this;
-        si.instance = nullptr;
+        si.instance_index = 0;
 
         return si;
     }

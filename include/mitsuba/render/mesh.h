@@ -909,7 +909,6 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
-                                                     uint32_t recursion_depth = 0,
                                                      Mask active = true) const override;
 
     Mask has_attribute(std::string_view name, Mask active = true) const override;

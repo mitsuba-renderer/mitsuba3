@@ -53,6 +53,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
             } else {
                 m_bbox.expand(shape->bbox());
                 m_shapes.push_back(shape);
+                if (shape->is_instance())
+                    m_instances.push_back(shape);
             }
             if (mesh)
                 mesh->set_scene(this);
@@ -93,6 +95,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
 
     m_accel.init(this, props);
     clear_shapes_dirty();
+    update_instance_transforms();
 
     if (!m_emitters.empty()) {
         // Inform environment emitters etc. about the scene bounds
@@ -100,8 +103,28 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
             emitter->set_scene(this);
     }
 
-    m_shapes_dr = dr::load<DynamicBuffer<ShapePtr>>(
-        m_shapes.data(), m_shapes.size());
+    if constexpr (dr::is_jit_v<Float>) {
+        // Mitsuba resolves 1-level instancing directly within the scene
+        // class. Traced calls don't need to ever reach 'instance' and
+        // 'shapegroup' shapes, so we just deregister them from the JIT here.
+        std::unique_ptr<uint32_t[]> ids(new uint32_t[m_shapes.size()]);
+        for (size_t i = 0; i < m_shapes.size(); ++i) {
+            Shape *shape = m_shapes[i];
+            uint32_t index = 0;
+            if (shape->is_instance())
+                shape->unregister();
+            else
+                index = jit_registry_id(shape);
+            ids[i] = index;
+        }
+        for (ShapeGroup *group : m_shapegroups)
+            group->unregister();
+        m_shapes_dr = dr::reinterpret_array<DynamicBuffer<ShapePtr>>(
+            dr::load<DynamicBuffer<UInt32>>(ids.get(), m_shapes.size()));
+    } else {
+        m_shapes_dr = dr::load<DynamicBuffer<ShapePtr>>(
+            m_shapes.data(), m_shapes.size());
+    }
 
     m_emitters_dr = dr::load<DynamicBuffer<EmitterPtr>>(
         m_emitters.data(), m_emitters.size());
@@ -195,6 +218,209 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
 
 // -----------------------------------------------------------------------
 
+/// Stash the 3x4 affine part of a transformation into a flat list
+template <typename Value, typename Transform>
+static void pack_matrix(Value *rec, const Transform &t) {
+    for (size_t col = 0; col < 4; ++col)
+        for (size_t row = 0; row < 3; ++row)
+            rec[col * 3 + row] = t.matrix(row, col);
+}
+
+/// Reassemble a transformation from a flat column-major 3x4 list
+template <typename AffineTransform4f, typename Rec>
+static AffineTransform4f unpack_matrix(const Rec &rec) {
+    using Matrix = typename AffineTransform4f::Matrix;
+    return AffineTransform4f(Matrix(
+        rec[0], rec[3], rec[6], rec[9],
+        rec[1], rec[4], rec[7], rec[10],
+        rec[2], rec[5], rec[8], rec[11],
+        0.f,    0.f,    0.f,    1.f));
+}
+
+MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
+    // An empty record buffer marks an instance-free scene (the instance list
+    // itself is fixed at construction time)
+    if (m_instances.empty())
+        return;
+
+    // Pack the primal transform data on the host
+    size_t n = m_instances.size();
+    std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[12 * n]);
+    for (size_t i = 0; i < n; ++i)
+        pack_matrix(data.get() + 12 * i, m_instances[i]->scalar_to_world());
+    m_instance_transforms =
+        dr::load<DynamicBuffer<Float>>(data.get(), 12 * n);
+
+    // Overlay the records of differentiated instances so that gradients
+    // flow from the packed buffer back to each instance's ``to_world``.
+    if constexpr (dr::is_diff_v<Float>) {
+        for (size_t i = 0; i < n; ++i) {
+            AffineTransform4f t = m_instances[i]->to_world();
+            if (!dr::grad_enabled(t))
+                continue;
+            dr::Array<Float, 12> rec;
+            pack_matrix(rec.data(), t);
+            dr::scatter(m_instance_transforms, rec, UInt32((uint32_t) i),
+                        true, ReduceMode::NoConflicts);
+        }
+    }
+}
+
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::compute_surface_interaction(
+    const Ray3f &ray, const PreliminaryIntersection3f &pi, uint32_t ray_flags,
+    Mask active) const {
+    active &= pi.is_valid();
+    if (dr::none_or<false>(active)) {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wi = -ray.d;
+        si.wavelengths = ray.wavelengths;
+        return si;
+    }
+
+    ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
+
+    // Instance-free scenes only need the plain leaf-shape call
+    if (m_instance_transforms.size() == 0) {
+        SurfaceInteraction3f si = pi.shape->compute_surface_interaction(
+            ray, pi, ray_flags, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+        return si;
+    }
+
+    return compute_surface_interaction_instanced(ray, pi, ray_flags, active);
+}
+
+MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
+Scene<Float, Spectrum>::compute_surface_interaction_instanced(
+    const Ray3f &ray, const PreliminaryIntersection3f &pi, uint32_t ray_flags,
+    Mask active) const {
+    Mask has_inst = active && (pi.instance_index != 0u);
+
+    bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape),
+         follow_shape = has_flag(ray_flags, RayFlags::FollowShape),
+         grad_enabled = dr::grad_enabled(m_instance_transforms);
+
+    // Move instanced lanes' rays into the local frame of their shape
+    // group. Both parameterizations share the same distance value ``t``
+    // because the direction is not re-normalized.
+    auto [ray_l_o, ray_l_d] = dr::if_stmt(
+        std::make_tuple(ray.o, ray.d, pi.instance_index),
+        has_inst,
+
+        [this, detach_shape](const Point3f &o, const Vector3f &d,
+                             const UInt32 &index) {
+            AffineTransform4f to_object =
+                unpack_matrix<AffineTransform4f>(
+                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
+                                                     index - 1u)).inverse();
+
+            if constexpr (dr::is_diff_v<Float>) {
+                if (detach_shape)
+                    to_object = dr::detach(to_object);
+            }
+
+            return std::make_pair(Point3f(to_object * o),
+                                  Vector3f(to_object * d));
+        },
+
+        [](const Point3f &o, const Vector3f &d,
+           const UInt32 &) { return std::make_pair(o, d); },
+
+        "Scene::compute_surface_interaction_instanced() [ray transform]");
+
+    Ray3f ray_l = ray;
+    ray_l.o = ray_l_o;
+    ray_l.d = ray_l_d;
+
+    SurfaceInteraction3f si =
+        pi.shape->compute_surface_interaction(ray_l, pi, ray_flags, active);
+
+    si = dr::if_stmt(
+        std::make_tuple(si, ray, pi.instance_index),
+        has_inst,
+
+        [this, ray_flags, detach_shape, follow_shape, grad_enabled](
+            SurfaceInteraction3f si, const Ray3f &ray,
+            const UInt32 &index) {
+            AffineTransform4f to_world =
+                unpack_matrix<AffineTransform4f>(
+                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms, index - 1u));
+            if constexpr (dr::is_diff_v<Float>) {
+                if (detach_shape)
+                    to_world = dr::detach(to_world);
+            }
+
+            AffineTransform4f to_world_d = dr::detach(to_world);
+
+            // Hit point `si.p` is only attached to the surface motion
+            si.p = to_world * si.p;
+            si.n = dr::normalize(to_world_d * si.n);
+
+            if (likely(has_flag(ray_flags, RayFlags::Shading))) {
+                // Transforming a normal applies the inverse transpose,
+                // which does not preserve its length. Differentiating the
+                // re-normalization projects the transformed partials back
+                // onto the tangent plane.
+                Normal3f n = to_world_d * si.sh_frame.n;
+                Float inv_len = dr::rcp(dr::norm(n));
+                n *= inv_len;
+                si.sh_frame.n = n;
+
+                if (has_flag(ray_flags, RayFlags::NormalPartials)) {
+                    Vector3f dn_du = to_world_d * Normal3f(si.dn_du) * inv_len,
+                             dn_dv = to_world_d * Normal3f(si.dn_dv) * inv_len;
+
+                    si.dn_du = dr::fnmadd(n, dr::dot(n, dn_du), dn_du);
+                    si.dn_dv = dr::fnmadd(n, dr::dot(n, dn_dv), dn_dv);
+                }
+
+                // A tangent direction supplied by the nested shape
+                // transforms along; finalize_surface_interaction()
+                // orthonormalizes it against the transformed normal and
+                // derives the bitangent. A mirroring instance transform
+                // flips the orientation of the nested parameterization.
+                si.sh_frame.s = to_world_d * si.sh_frame.s;
+                si.frame_flipped ^=
+                    dr::det(Matrix3f(to_world_d.matrix)) < 0.f;
+
+                si.dp_du = to_world * si.dp_du;
+                si.dp_dv = to_world * si.dp_dv;
+            }
+
+            if constexpr (dr::is_diff_v<Float>) {
+                if (follow_shape && grad_enabled) {
+                    // Recompute si.t in a differential manner as the
+                    // distance between the ray origin and the hit point
+                    // following the moving surface.
+                    si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) /
+                                    dr::squared_norm(ray.d));
+                } else if (!follow_shape && grad_enabled) {
+                    // Differential recomputation of the intersection of
+                    // the ray with the moving plane tangent to the hit
+                    // point. In this scenario, it is important that
+                    // `si.p` stays along the ray as the surface moves.
+                    si.t = (dr::dot(si.n, si.p) - dr::dot(si.n, ray.o)) /
+                            dr::dot(si.n, ray.d);
+                    si.p = ray(si.t);
+                }
+            }
+
+            return si;
+        },
+
+        [](SurfaceInteraction3f si, const Ray3f &,
+           const UInt32 &) { return si; },
+
+        "Scene::compute_surface_interaction_instanced() [world transform]");
+
+    si.instance_index = pi.instance_index;
+
+    si.finalize_surface_interaction(pi, ray, ray_flags, active);
+    return si;
+}
+
+
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
                                       Mask coherent, bool reorder,
@@ -211,7 +437,7 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
     // SurfaceInteraction. This composition is backend-independent.
     PreliminaryIntersection3f pi = m_accel.ray_intersect_preliminary(
         this, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active);
-    return pi.compute_surface_interaction(ray, ray_flags, active);
+    return compute_surface_interaction(ray, pi, ray_flags, active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
@@ -547,6 +773,7 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     if (accel_is_dirty) {
         m_accel.rebuild(this);
         clear_shapes_dirty();
+        update_instance_transforms();
 
         m_bbox = {};
         for (auto &s : m_shapes)

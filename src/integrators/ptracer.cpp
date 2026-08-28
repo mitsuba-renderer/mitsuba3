@@ -250,7 +250,8 @@ public:
             [](const LoopState& ls) { return ls.active; },
             [this, scene, sensor, block, sample_scale](LoopState& ls) {
 
-            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(ls.ray, +RayFlags::Default);
+            SurfaceInteraction3f si = scene->compute_surface_interaction(
+                ls.ray, ls.pi, +RayFlags::Default);
 
             BSDFPtr bsdf = si.bsdf(ls.ray);
 

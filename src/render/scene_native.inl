@@ -17,9 +17,6 @@ void NativeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     accel = new ShapeKDTree<Float, Spectrum>(props);
     accel->inc_ref();
 
-    if constexpr (dr::is_llvm_v<Float>)
-        shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
-
     rebuild(scene);
 }
 
@@ -31,10 +28,19 @@ void NativeAccel<Float, Spectrum>::rebuild(
         dr::sync_thread();
 
     accel->clear();
-    for (Shape *shape : scene->m_shapes)
+    for (Shape *shape : scene->m_shapes) {
+        if (shape->is_instance())
+            Throw("The native kd-tree acceleration structure does not "
+                  "support instancing. Rebuild Mitsuba with Embree enabled "
+                  "to render scenes containing 'instance' shapes.");
         accel->add_shape(shape);
+    }
     ScopedPhase phase(ProfilerPhase::InitAccel);
     accel->build();
+
+    if constexpr (dr::is_llvm_v<Float>)
+        shapes_registry_ids =
+            build_registry_ids<Float, Spectrum>(scene->m_shapes);
 
     // The kd-tree is rebuilt in place, so initialize the handles only once.
     // The cleanup callback keeps it alive until pending ray-tracing kernels
@@ -149,15 +155,13 @@ void kdtree_trace_func_wrapper(const int *valid, void *ptr,
                 ScalarFloat& prim_v = ((ScalarFloat*) &args[offsetof(RayHit, v) * Width])[i];
                 uint32_t& prim_id = ((uint32_t*) &args[offsetof(RayHit, prim_id) * Width])[i];
                 uint32_t& geom_id = ((uint32_t*) &args[offsetof(RayHit, geom_id) * Width])[i];
-                uint32_t& inst_id = ((uint32_t*) &args[offsetof(RayHit, inst_id) * Width])[i];
 
+                // inst_id keeps the -1 ("not instanced") written by the trace
                 ray_maxt  = pi.t;
                 prim_u = pi.prim_uv[0];
                 prim_v = pi.prim_uv[1];
                 prim_id = pi.prim_index;
-                geom_id = pi.shape_index;
-                inst_id = pi.instance ? (uint32_t) (size_t) pi.shape
-                                      : (uint32_t) -1;
+                geom_id = pi.instance_index; // top-level shape index (see kdtree.h)
             }
         }
     }
@@ -175,7 +179,10 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
     Mask active) const {
     if constexpr (!dr::is_array_v<Float>) {
         DRJIT_MARK_USED(coherent);
-        return accel->template ray_intersect_preliminary<false>(ray, active);
+        auto pi = accel->template ray_intersect_preliminary<false>(ray, active);
+        // The kd-tree repurposes this field internally (see kdtree.h)
+        pi.instance_index = 0;
+        return pi;
     } else {
         dr::Array<Float, 3> ray_o(ray.o), ray_d(ray.d);
 
@@ -187,8 +194,8 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
 
         // The kd-tree traces in ``Float`` precision, so the hit fields are
         // stolen at that width.
-        return decode_cpu_llvm_pi<Float, Spectrum, Float>(out,
-                                                          shapes_registry_ids);
+        return decode_cpu_llvm_pi<Float, Spectrum, Float>(
+            out, shapes_registry_ids);
     }
 }
 
@@ -218,12 +225,13 @@ NativeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
 template <typename Float, typename Spectrum>
 typename NativeAccel<Float, Spectrum>::SurfaceInteraction3f
 NativeAccel<Float, Spectrum>::ray_intersect_naive(
-    const Scene<Float, Spectrum> * /*scene*/, const Ray3f &ray,
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray,
     Mask active) const {
     PreliminaryIntersection3f pi =
         accel->template ray_intersect_naive<false>(ray, active);
 
-    return pi.compute_surface_interaction(ray, +RayFlags::Default, active);
+    return scene->compute_surface_interaction(ray, pi, +RayFlags::Default,
+                                              active);
 }
 
 NAMESPACE_END(mitsuba)

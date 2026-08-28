@@ -358,7 +358,7 @@ def test12_many_top_level_analytic_shapes(variants_vec_backends_once_rgb):
     assert dr.all(si.is_valid())
     dr.assert_allclose(si.p.x, cx, atol=1e-3)
     # Top-level hits carry no instance
-    assert dr.all(si.instance == dr.zeros(mi.ShapePtr))
+    assert dr.all(si.instance_index == 0)
     # The hit shape recovered for ray i must be exactly the i-th shape
     for i in range(n):
         got = dr.gather(mi.ShapePtr, si.shape, mi.UInt32(i))

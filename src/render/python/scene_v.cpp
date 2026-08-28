@@ -65,6 +65,12 @@ MI_PY_EXPORT(Scene) {
              nb::overload_cast<const Ray3f &, uint32_t, Mask, bool, UInt32, uint32_t, Mask>(&Scene::ray_intersect, nb::const_),
              "ray"_a, "ray_flags"_a, "coherent"_a, "reorder"_a = false,
              "reorder_hint"_a = 0, "reorder_hint_bits"_a = 0, "active"_a = true, D(Scene, ray_intersect, 3))
+        .def("compute_surface_interaction",
+             &Scene::compute_surface_interaction, "ray"_a, "pi"_a,
+             "ray_flags"_a = +RayFlags::Default, "active"_a = true,
+             D(Scene, compute_surface_interaction))
+        .def("instance", &Scene::instance, "index"_a,
+             nb::rv_policy::reference_internal, D(Scene, instance))
         .def("ray_test",
              nb::overload_cast<const Ray3f &, Mask>(&Scene::ray_test, nb::const_),
              "ray"_a, "active"_a = true, D(Scene, ray_test))

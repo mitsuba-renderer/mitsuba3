@@ -551,7 +551,6 @@ public:
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
                                                              uint32_t ray_flags = +RayFlags::Default,
-                                                             uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
     /**
@@ -805,6 +804,12 @@ public:
     /// Is this shape an instance?
     bool is_instance() const { return shape_type() == +ShapeType::Instance; };
 
+    /// Return the object-to-world transformation
+    AffineTransform4f to_world() const { return m_to_world.value(); }
+
+    /// Return the object-to-world transformation (scalar form)
+    const ScalarAffineTransform4f &scalar_to_world() const { return m_to_world.scalar(); }
+
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
                                                m_exterior_medium.get() != nullptr; }
@@ -1017,7 +1022,7 @@ NAMESPACE_END(mitsuba)
         const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
         MI_MASK_ARGUMENT(active);                                                           \
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
-        std::tie(pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =               \
+        std::tie(pi.valid, pi.t, pi.prim_uv, std::ignore, pi.prim_index) =                  \
             ray_intersect_preliminary_impl<Float>(ray, prim_index, active);                 \
         pi.shape = this;                                                                    \
         return pi;                                                                          \

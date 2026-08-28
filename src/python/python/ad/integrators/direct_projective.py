@@ -330,8 +330,8 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # The ray origin is wrong, but this is fine if we only need the primal
             # radiance
-            si_fg = pi_fg.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.Default, active)
+            si_fg = scene.compute_surface_interaction(
+                dummy_ray, pi_fg, mi.RayFlags.Default, active)
 
             # We know the incident direction is valid since this is the
             # foreground interaction. Overwrite the incident direction to avoid
@@ -361,8 +361,8 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # The ray origin is wrong, but this is fine if we only need the primal
             # radiance
-            si_fg = pi_fg.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.Default, active)
+            si_fg = scene.compute_surface_interaction(
+                dummy_ray, pi_fg, mi.RayFlags.Default, active)
 
             # If smooth normals are used, it is possible that the computed
             # shading normal near visibility silhouette points to the wrong side

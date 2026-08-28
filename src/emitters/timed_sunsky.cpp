@@ -419,7 +419,7 @@ private:
         Float turb_idx_f = dr::clip(m_turbidity - 1.f, 0.f, TURBIDITY_LVLS - 1.f);
         TensorXf res = dr::take_interp(sampling_weights_data, turb_idx_f, 1);
 
-        return new SamplingTexture(res, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+        return new SamplingTexture(res, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
     }
 
     template<typename Dataset>
@@ -482,7 +482,7 @@ private:
 
             TensorXf temp(sampling_weigths, { MPDF_ELEVATION_COUNT, 1 });
 
-            sky_weight_tex = new SamplingTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            sky_weight_tex = new SamplingTexture(temp, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
 
         // Sun irradiance
@@ -497,7 +497,7 @@ private:
             TensorXf temp(sun_irrad_data,
                           { MPDF_ELEVATION_COUNT, CHANNEL_COUNT });
 
-            sun_irrad_tex = new SunIrradTexture(temp, true, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            sun_irrad_tex = new SunIrradTexture(temp, true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
         }
 
         return std::make_pair(sky_weight_tex, sun_irrad_tex);

@@ -377,15 +377,9 @@ void prepare_ias(const SceneIR &sd,
                              ? OPTIX_INSTANCE_FLAG_NONE
                              : OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING;
 
-        // instanceId is recovered on the device as pi.instance: the owning
-        // Instance's registry id for an instanced hit, or 0 (null) for a
-        // top-level shape.
-        uint32_t instance_id = inst.owner_registry_id == SCENE_IR_NO_OWNER
-                                   ? 0u
-                                   : inst.owner_registry_id;
+        uint32_t instance_id = inst.instance_index;
 
-        // to_world is column-major 3x4 (to_world[col*3 + row]). OptiX wants
-        // row-major 3x4.
+        // to_world is col-major 3x4. OptiX wants row-major 3x4.
         float t[12];
         for (int row = 0; row < 3; ++row)
             for (int col = 0; col < 4; ++col)

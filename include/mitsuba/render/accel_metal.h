@@ -43,9 +43,8 @@ struct MetalAccel {
         const Scene<Float, Spectrum> *scene, const Ray3f &ray,
         Mask active) const;
 
-    // --- Declarative traversal (scene handle + recovery tables) ---
-    DRJIT_TRAVERSE(MetalAccel, accel_handle, geom_shape_offsets,
-                   geom_shape_table)
+    // --- Declarative traversal (scene handle + recovery table) ---
+    DRJIT_TRAVERSE(MetalAccel, accel_handle, geom_shape_table)
 
     /// Opaque handle owning the Metal objects (TLAS/BLAS/buffers/library)
     MetalAccelData *accel = nullptr;
@@ -53,10 +52,12 @@ struct MetalAccel {
     uint32_t scene_index = 0;
     /// Handle variable representing the Metal scene for @dr.freeze
     UInt64 accel_handle;
-    /// Per-instance recovery tables resolving ``pi.shape`` from a hit's
-    /// (instance_id, geometry_id), built in scene_metal.inl.
-    DynamicBuffer<UInt32> geom_shape_offsets;
+    /// Recovery table indexed by TLAS userID + geometry ID, resolving a hit
+    /// into ``pi.shape`` (see scene_metal.inl)
     DynamicBuffer<UInt32> geom_shape_table;
+    /// Layout of ``geom_shape_table``: (shape id, instance index) pairs when
+    /// true, plain shape ids otherwise
+    bool has_instances = false;
 
 private:
     /// Trace ``ray``, writing eight result variable indices to ``out``. With

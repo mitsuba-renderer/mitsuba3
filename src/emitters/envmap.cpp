@@ -189,7 +189,6 @@ public:
         TensorXf tensor(bitmap_2->data(), { (size_t) m_res.y(), (size_t) sw,
                                             (size_t) PixelWidth });
         m_texture = Tex(tensor, /* use_accel = */ true,
-                        /* migrate = */ dr::is_jit_v<Float>,
                         dr::FilterMode::Linear, dr::WrapMode::Clamp);
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
@@ -242,8 +241,7 @@ public:
 
                 m_texture.set_tensor(
                     TensorXf(corrected, { (size_t) m_res.y(), (size_t) sw,
-                                          (size_t) PixelWidth }),
-                    /* migrate */ true);
+                                          (size_t) PixelWidth }));
             } else {
                 refresh_halo((ScalarFloat *) tensor.array().data(), m_res);
                 m_texture.update_inplace();

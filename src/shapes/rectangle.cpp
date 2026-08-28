@@ -223,7 +223,7 @@ public:
         si.dp_dv     = m_frame.t;
         si.uv        = uv;
         si.shape    = this;
-        si.instance = nullptr;
+        si.instance_index = 0;
         si.t        = dr::select(active, 0, dr::Infinity<Float>);
 
         /// Zero-initialize remaining fields

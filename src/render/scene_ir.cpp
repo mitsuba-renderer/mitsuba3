@@ -76,12 +76,16 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         sd.instances.push_back(e);
     }
     // ...then, per Instance shape, one instance per BLAS of its ShapeGroup.
+    // ``inst_shapes`` preserves the order of appearance in the scene's shape
+    // list, so the running index below matches the numbering used by
+    // Scene::update_instance_transforms().
+    uint32_t instance_index = 0;
     for (const ShapeIR &inst : inst_shapes) {
-        uint32_t owner = jit_registry_id(inst.ctx);
+        ++instance_index;
         for (uint32_t bi : sd.group_blases[group_index.at(inst.group_id)]) {
             InstanceEntry e;
             e.blas_index = bi;
-            e.owner_registry_id = owner;
+            e.instance_index = instance_index;
             for (int k = 0; k < 12; ++k)
                 e.to_world[k] = inst.to_world[k];
             sd.instances.push_back(e);
