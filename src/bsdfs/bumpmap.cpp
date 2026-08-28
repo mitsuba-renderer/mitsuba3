@@ -111,6 +111,19 @@ public:
             Throw("Exactly one Texture child object must be specified.");
 
         m_scale = props.get<ScalarFloat>("scale", 1.f);
+
+        // Probe the nested texture so that an unsuitable input is reported
+        // when the scene is loaded rather than in the middle of a render
+        try {
+            SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+            m_nested_texture->eval_1_grad(si, false);
+        } catch (const std::exception &e) {
+            Throw("The nested texture cannot be evaluated as a scalar height "
+                  "field.\n\n%s\n\nThe \"bumpmap\" plugin perturbs the "
+                  "shading frame using the UV gradient of a height map. If the "
+                  "texture instead encodes tangent-space normals in its RGB "
+                  "channels, use the \"normalmap\" plugin.", e.what());
+        }
     }
 
     void traverse(TraversalCallback *cb) override {
