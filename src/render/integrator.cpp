@@ -115,8 +115,8 @@ Integrator<Float, Spectrum>::skip_area_emitters(const Scene *scene,
         [&scene, coherent](LoopState &ls) {
             ls.pi = scene->ray_intersect_preliminary(ls.ray, coherent);
             ls.active &= ls.pi.is_valid() && (ls.pi.shape->emitter() != nullptr);
-            SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
-                ls.ray, +RayFlags::Minimal, ls.active);
+            SurfaceInteraction3f si = scene->compute_surface_interaction(
+                ls.ray, ls.pi, +RayFlags::Minimal, ls.active);
             ls.ray = si.spawn_ray(ls.ray.d);
         });
 

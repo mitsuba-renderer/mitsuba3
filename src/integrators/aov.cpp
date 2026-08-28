@@ -286,9 +286,9 @@ public:
 
                 case AOVType::ShapeIndex:
                     if constexpr (!dr::is_jit_v<Float>) {
-                        ShapePtr target = si.instance;
-                        if (!target)
-                            target = si.shape;
+                        ShapePtr target = si.instance_index != 0
+                            ? scene->instance(si.instance_index - 1)
+                            : si.shape;
 
                         auto it = m_shape_to_idx.find(target);
                         if (it == m_shape_to_idx.end())

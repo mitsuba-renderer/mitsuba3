@@ -455,12 +455,12 @@ public:
         m_raw(raw),
         m_srgb(srgb) {
 
-        // Compute the mean without migrating texture data, i.e. avoid the
-        // m_texture.tensor() call that would trigger a migration. On CUDA we
-        // ideally keep the data solely as a GPU texture.
+        // Compute the mean from the input tensor, i.e. avoid the
+        // m_texture.tensor() call that would read the data back from the
+        // GPU texture.
         rebuild_internals(tensor, true, false);
 
-        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel, accel,
+        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel,
                                     filter_mode, wrap_mode, srgb);
     }
 

@@ -2385,20 +2385,18 @@ protected:
             pi.valid = hit;
             pi.t = dr::select(hit, ScalarFloat(0), dr::Infinity<ScalarFloat>);
         } else {
-            uint32_t inst_index = (uint32_t) -1;
             if (shape->is_mesh()) {
                 std::tie(pi.valid, pi.t, pi.prim_uv) =
                     mesh->ray_intersect_triangle_scalar(prim_index, ray);
             } else {
-                std::tie(pi.valid, pi.t, pi.prim_uv, inst_index, prim_index) =
+                std::tie(pi.valid, pi.t, pi.prim_uv, std::ignore, prim_index) =
                     shape->ray_intersect_preliminary_scalar(ray);
             }
             pi.prim_index = prim_index;
-
-            bool hit_inst  = (inst_index != (uint32_t) -1);
-            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape; // shape_index for LLVM + kdtree
-            pi.instance    = hit_inst ? shape : nullptr;
-            pi.shape_index = hit_inst ? inst_index : shape_index;
+            pi.shape      = shape;
+            // Repurposed to convey the top-level shape index (the kd-tree
+            // does not support instancing)
+            pi.instance_index = shape_index;
         }
 
         return pi;

@@ -1755,7 +1755,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
         return dr::zeros<SurfaceInteraction3f>();
 
     SurfaceInteraction3f si =
-        compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        compute_surface_interaction(ray, pi, ray_flags, active);
     si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
     return si;
@@ -2277,15 +2277,10 @@ MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
                                                    uint32_t ray_flags,
-                                                   uint32_t recursion_depth,
                                                    Mask active) const {
     MI_MASK_ARGUMENT(active);
 
     SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-
-    // Early exit when tracing isn't necessary
-    if (!m_is_instance && recursion_depth > 0)
-        return si;
 
     constexpr bool IsDiff = dr::is_diff_v<Float>;
     bool detach  = IsDiff && has_flag(ray_flags, RayFlags::DetachShape),
@@ -2466,7 +2461,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.prim_index = pi.prim_index;
     si.shape    = this;
-    si.instance = nullptr;
+    si.instance_index = 0;
 
     return si;
 }

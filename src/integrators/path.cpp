@@ -180,8 +180,8 @@ public:
                                  ls.active;
 
             if (dr::any_or<true>(skip_emitters)) {
-                SurfaceInteraction3f si = ls.pi.compute_surface_interaction(
-                    ls.ray, +RayFlags::Minimal, skip_emitters);
+                SurfaceInteraction3f si = scene->compute_surface_interaction(
+                    ls.ray, ls.pi, +RayFlags::Minimal, skip_emitters);
                 Ray3f skip_ray = si.spawn_ray(ls.ray.d);
                 PreliminaryIntersection3f pi_after_skip =
                     Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
@@ -197,8 +197,8 @@ public:
             // 'active' flag, so there is no need to pass it to every function
 
             // Fill out all information of the interaction
-            SurfaceInteraction3f si =
-                ls.pi.compute_surface_interaction(ls.ray, +RayFlags::Default);
+            SurfaceInteraction3f si = scene->compute_surface_interaction(
+                ls.ray, ls.pi, +RayFlags::Default);
 
             // ---------------------- Direct emission ----------------------
 

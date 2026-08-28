@@ -741,10 +741,11 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
     pi.prim_uv[1] = dr::reinterpret_array<Single, UInt32>(UInt32::steal(hitobject_out[3]));
     pi.prim_index = UInt32::steal(hitobject_out[4]);
     pi.shape      = dr::reinterpret_array<ShapePtr, UInt32>(UInt32::steal(shape_id_idx));
-    pi.instance   = has_instances ? ShapePtr::steal(hitobject_out[6]) : dr::zeros<ShapePtr>();
-
-    // This field is only used by embree, but we still need to initialize it for vcalls
-    pi.shape_index = dr::zeros<UInt32>();
+    // Missed/masked lanes carry a nop hit object, whose instance id query
+    // reports zero
+    pi.instance_index = has_instances
+        ? UInt32::steal(hitobject_out[6])
+        : dr::zeros<UInt32>();
 
     return pi;
 }

@@ -39,7 +39,7 @@ def probe(scene, xy, flags=mi.RayFlags.Default):
     dr.eval(pi)
     assert dr.all(pi.is_valid())
     return (int(np.array(pi.prim_index).ravel()[0]), rows(pi.prim_uv, 2).T,
-            pi.compute_surface_interaction(ray, flags), ray)
+            scene.compute_surface_interaction(ray, pi, flags), ray)
 
 
 # -------------------------------------------------------------------

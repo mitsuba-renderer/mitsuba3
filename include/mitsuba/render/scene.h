@@ -236,6 +236,32 @@ public:
                                        Mask active = true) const;
 
     /**
+     * Expand a preliminary intersection into a detailed surface interaction
+     *
+     * This function turns a `PreliminaryIntersection3f` into a
+     * `SurfaceInteraction3f`, which provides a richer description of the
+     * intersection's differentiable geometry.
+     *
+     * Args:
+     *     ray: Ray associated with the preliminary ray intersection ``pi``
+     *
+     *     pi: Preliminary intersection to be expanded
+     *
+     *     ray_flags: An integer combining flag bits from `RayFlags` (merged
+     *         using binary or).
+     *
+     * Returns:
+     *     A detailed surface interaction record. Its ``is_valid()`` method
+     *     should be queried to check if an intersection was actually found.
+     */
+    SurfaceInteraction3f compute_surface_interaction(
+        const Ray3f &ray, const PreliminaryIntersection3f &pi,
+        uint32_t ray_flags = +RayFlags::Default, Mask active = true) const;
+
+    /// Return the ``instance`` shape with the given index.
+    const Shape *instance(size_t index) const { return m_instances[index]; }
+
+    /**
      * Intersect a ray with the shapes comprising the scene and return a
      * boolean specifying whether or not an intersection was found.
      *
@@ -747,6 +773,9 @@ protected:
     /// Unmarks all shapes as dirty
     void clear_shapes_dirty();
 
+    /// Repack the per-instance transform records (see below)
+    void update_instance_transforms();
+
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
     /// Updates the discrete distribution used to select an emitter
@@ -792,6 +821,21 @@ protected:
     /// Enable/disable automatic BVH compaction criterion in compact_accel().
     bool m_compact_accel_auto;
 
+    /// Instances in order of appearance in ``m_shapes``.
+    /// `PreliminaryIntersection3f.instance_index` references this array biased
+    /// by one, since 0 marks non-instanced intersections.
+    std::vector<const Shape *> m_instances;
+
+    /// Flattened sequence of instance ``to_world`` matrices (12 floats each)
+    DynamicBuffer<Float> m_instance_transforms;
+
+    /// Instancing-aware expansion of a preliminary intersection (see
+    /// ``compute_surface_interaction()``, which forwards here when the
+    /// record may reference instanced geometry)
+    SurfaceInteraction3f compute_surface_interaction_instanced(
+        const Ray3f &ray, const PreliminaryIntersection3f &pi,
+        uint32_t ray_flags, Mask active) const;
+
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;
 
@@ -799,7 +843,8 @@ protected:
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
-                           m_silhouette_shapes_dr, m_silhouette_distr)
+                           m_silhouette_shapes_dr, m_silhouette_distr,
+                           m_instance_transforms)
 };
 
 // See interaction.h

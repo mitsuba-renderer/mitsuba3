@@ -121,7 +121,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
                const PreliminaryIntersection3f &pi, uint32_t ray_flags,
                Mask active) {
                 SurfaceInteraction3f si = shape->compute_surface_interaction(
-                    ray, pi, ray_flags, 0, active);
+                    ray, pi, ray_flags, active);
                 si.finalize_surface_interaction(pi, ray, ray_flags, active);
                 return si;
             },

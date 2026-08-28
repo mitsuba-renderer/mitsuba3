@@ -170,7 +170,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     )
     params.update()
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
+    si = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     dr.forward(theta)
 
@@ -194,7 +194,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     params.update()
 
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default)
+    si = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Default)
 
     dr.forward(theta)
 
@@ -218,7 +218,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variant_l
     params.update()
 
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
+    si = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
     dr.forward(theta)
 
@@ -244,7 +244,7 @@ def test08_eval_parameterization(variants_vec_rgb):
     ray = mi.Ray3f(mi.Vector3f(x, y, 2), mi.Vector3f(0, 0, -1))
 
     pi = scene.ray_intersect_preliminary(ray)
-    si = pi.compute_surface_interaction(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
+    si = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
     curve = scene.shapes()[0]
     eval_param_si = curve.eval_parameterization(si.uv, active=si.is_valid())

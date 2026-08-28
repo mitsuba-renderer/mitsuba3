@@ -4672,8 +4672,6 @@ static const char *__doc_mitsuba_InstanceEntry = R"doc(One flattened TLAS/IAS in
 
 static const char *__doc_mitsuba_InstanceEntry_blas_index = R"doc(Index into ``SceneIR.blases``.)doc";
 
-static const char *__doc_mitsuba_InstanceEntry_owner_registry_id = R"doc(JIT registry ID of the ShapeGroup, or ``SCENE_IR_NO_OWNER``.)doc";
-
 static const char *__doc_mitsuba_InstanceEntry_to_world = R"doc(Column-major 3x4 affine, identity for a top-level BLAS.)doc";
 
 static const char *__doc_mitsuba_Integrator =
@@ -6492,11 +6490,13 @@ static const char *__doc_mitsuba_MetalAccel_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_MetalAccel_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_MetalAccel_geom_shape_offsets =
-R"doc(Per-instance recovery tables resolving ``pi.shape`` from a hit's
-(instance_id, geometry_id), built in scene_metal.inl.)doc";
+static const char *__doc_mitsuba_MetalAccel_geom_shape_table =
+R"doc(Recovery table indexed by TLAS userID + geometry ID, resolving a hit
+into ``pi.shape`` (see scene_metal.inl))doc";
 
-static const char *__doc_mitsuba_MetalAccel_geom_shape_table = R"doc()doc";
+static const char *__doc_mitsuba_MetalAccel_has_instances =
+R"doc(Layout of ``geom_shape_table``: (shape id, instance index) pairs when
+true, plain shape ids otherwise)doc";
 
 static const char *__doc_mitsuba_MetalAccel_init = R"doc()doc";
 
@@ -7493,8 +7493,8 @@ This data structure is used as return type for the
 stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
-If the intersection is deemed relevant, detailed intersection information can later be
-obtained via the  `compute_surface_interaction()` method.)doc";
+If the intersection is deemed relevant, detailed intersection information
+can later be obtained via `Scene.compute_surface_interaction()`.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_2 =
 R"doc(Stores preliminary information related to a ray intersection
@@ -7504,8 +7504,8 @@ This data structure is used as return type for the
 stores whether the shape is intersected by a given ray, and cache
 preliminary information about the intersection if that is the case.
 
-If the intersection is deemed relevant, detailed intersection information can later be
-obtained via the  `compute_surface_interaction()` method.)doc";
+If the intersection is deemed relevant, detailed intersection information
+can later be obtained via `Scene.compute_surface_interaction()`.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_3 = R"doc()doc";
 
@@ -7515,22 +7515,11 @@ static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection
 
 static const char *__doc_mitsuba_PreliminaryIntersection_PreliminaryIntersection_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_compute_surface_interaction =
-R"doc(Compute and return detailed information related to a surface interaction
-
-Args:
-    ray: Ray associated with the ray intersection
-
-    ray_flags: Flags specifying which information should be computed
-
-Returns:
-    A data structure containing the detailed information)doc";
-
 static const char *__doc_mitsuba_PreliminaryIntersection_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_fields_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_instance_index = R"doc(Instance index. The value 0 encodes that the shape is not instanced.)doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_is_valid = R"doc(Is the current interaction valid?)doc";
 
@@ -7546,9 +7535,7 @@ static const char *__doc_mitsuba_PreliminaryIntersection_prim_index = R"doc(Prim
 
 static const char *__doc_mitsuba_PreliminaryIntersection_prim_uv = R"doc(2D coordinates on the primitive surface parameterization)doc";
 
-static const char *__doc_mitsuba_PreliminaryIntersection_shape = R"doc(Pointer to the associated shape)doc";
-
-static const char *__doc_mitsuba_PreliminaryIntersection_shape_index = R"doc(Shape index, e.g. the shape ID in shapegroup (if applicable))doc";
+static const char *__doc_mitsuba_PreliminaryIntersection_shape = R"doc(Pointer to the associated shape (the leaf shape for instanced hits))doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection_t = R"doc(Distance traveled along the ray. Invalid lanes are set to infinity.)doc";
 
@@ -8904,6 +8891,25 @@ static const char *__doc_mitsuba_Scene_class_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_clear_shapes_dirty = R"doc(Unmarks all shapes as dirty)doc";
 
+static const char *__doc_mitsuba_Scene_compute_surface_interaction =
+R"doc(Expand a preliminary intersection into a detailed surface interaction
+
+This function turns a `PreliminaryIntersection3f` into a
+`SurfaceInteraction3f`, which provides a richer description of the
+intersection's differentiable geometry.
+
+Args:
+    ray: Ray associated with the preliminary ray intersection ``pi``
+
+    pi: Preliminary intersection to be expanded
+
+    ray_flags: An integer combining flag bits from `RayFlags` (merged
+        using binary or).
+
+Returns:
+    A detailed surface interaction record. Its ``is_valid()`` method
+    should be queried to check if an intersection was actually found.)doc";
+
 static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitters)doc";
 
 static const char *__doc_mitsuba_Scene_emitters_2 = R"doc(Return the list of emitters (const version))doc";
@@ -8940,6 +8946,11 @@ Args:
 Returns:
     The incident radiance and discrete or solid angle density of the
     sample.)doc";
+
+static const char *__doc_mitsuba_Scene_instance =
+R"doc(Return the ``instance`` shape with the given index. Like ``shapes()``,
+this is a host-side lookup; it maps values read back from
+``pi.instance_index`` to the underlying shape object.)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's `Integrator`)doc";
 
@@ -10970,7 +10981,7 @@ static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc"
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_uv_partials = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_instance = R"doc(Stores a pointer to the parent instance (if applicable))doc";
+static const char *__doc_mitsuba_SurfaceInteraction_instance_index = R"doc(Instance index. The value 0 encodes that the shape is not instanced.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_is_medium_transition = R"doc(Does the surface mark a transition between two media?)doc";
 

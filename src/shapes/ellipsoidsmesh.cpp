@@ -291,9 +291,8 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
                                                      Mask active) const override {
-        auto si = Base::compute_surface_interaction(ray, pi, ray_flags, recursion_depth, active);
+        auto si = Base::compute_surface_interaction(ray, pi, ray_flags, active);
 
         // Divide by the number of faces per Gaussians
         si.prim_index /= (uint32_t) m_shell_faces.size();
