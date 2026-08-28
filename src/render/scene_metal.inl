@@ -53,7 +53,7 @@ void MetalAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         dr::load<DynamicBuffer<UInt32>>(table.data(), table.size());
 
     std::tie(accel, scene_index) =
-        build_metal_accel(sd, scene->m_compact_accel);
+        build_metal_accel(sd, scene->compact_accel());
 
     accel_handle = UInt64::steal(jit_metal_scene_owner_handle(scene_index));
 }

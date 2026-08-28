@@ -722,6 +722,16 @@ public:
     /// Returns a union of ShapeType flags denoting what is present in the scene
     uint32_t shape_types() const;
 
+    /**
+     * \brief Should the BVH builder compact the acceleration data structure?
+     *
+     * BVH Compaction can significantly reduce memory usage but also requires
+     * device <-> host synchronization. If ``m_compact_accel_auto`` is set,
+     * only compact on the first build and switch to non-compacting builds later
+     * to avoid the sync cost in inverse rendering optimization iterations.
+     */
+    bool compact_accel();
+
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
@@ -777,6 +787,10 @@ protected:
     /// Compact GPU acceleration structures after building. This reduces BLAS
     /// memory at the cost of an extra build-time query and compaction pass.
     bool m_compact_accel;
+    /// Has an acceleration structure build already taken place?
+    bool m_accel_built = false;
+    /// Enable/disable automatic BVH compaction criterion in compact_accel().
+    bool m_compact_accel_auto;
 
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;

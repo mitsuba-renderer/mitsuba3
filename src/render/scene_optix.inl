@@ -45,7 +45,6 @@ struct MiOptixSceneState {
     /// shared-SBT megakernel path (``other_scene``), where this scene's records
     /// follow the host scene's. Set once in init().
     uint32_t sbt_record_base = 0;
-    bool compact_accel = false;
     uint32_t sbt_jit_index;
 
     /// Copies of MiOptixConfig fields, cached to avoid a hash lookup + mutex lock.
@@ -76,9 +75,8 @@ struct MiOptixConfig {
 // Array storing previously initialized optix configurations
 static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
 static std::mutex optix_configs_lock;
-static constexpr uint32_t OptixConfigCompactKey = 1u << 31;
 
-const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
+const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     // Instances/groups are handled by IAS traversal, not by intersection
     // programs. Mask the bits so they don't spuriously add the CUSTOM flag
     shape_types &= ~((uint32_t) ShapeType::Instance |
@@ -89,16 +87,13 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
         key &= ~ShapeType::Rectangle; // Rectangles are actually meshes
         key |= +ShapeType::Mesh;
     }
-    if (compact)
-        key |= OptixConfigCompactKey;
 
     // Use flags as config index in optix_configs
     auto [it, success] = optix_configs.try_emplace(key);
     if (!success)
         return it->second;
 
-    Log(Debug, "Initialize Optix configuration (key=0x%x, compact=%s)..",
-        key, compact ? "true" : "false");
+    Log(Debug, "Initialize Optix configuration (key=0x%x)..", key);
 
     MiOptixConfig &config = it.value();
     config.context = jit_optix_context();
@@ -155,9 +150,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types, bool compact) {
     if (st)
         prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
-    unsigned int accel_build_flags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-    if (compact)
-        accel_build_flags |= OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+    unsigned int accel_build_flags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE |
+                                     OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
 
     config.pipeline_compile_options.usesPrimitiveTypeFlags = prim_flags;
 
@@ -367,15 +361,15 @@ static void optix_rebuild_accel(
         // lives in the scene state (sized once, index-aligned with
         // scene->shapegroups()); a dirty group is rebuilt and its freeze-visible
         // handles refreshed.
-        build_gas(s.context, sd.blases, sd.top_blases, s.accel,
-                  s.compact_accel);
+        bool compact = scene->compact_accel();
+        build_gas(s.context, sd.blases, sd.top_blases, s.accel, compact);
         auto &shapegroups = scene->shapegroups();
         for (size_t i = 0; i < shapegroups.size(); ++i) {
             auto &sg = shapegroups[i];
             MiOptixAccelData &group_gas = s.group_accel[i];
             if (sg->dirty()) {
                 build_gas(s.context, sd.blases, sd.group_blases[i], group_gas,
-                          s.compact_accel);
+                          compact);
                 std::vector<UInt64> handles;
                 handles.reserve(group_gas.gas.size());
                 for (const MiOptixAccelData::HandleData &h : group_gas.gas)
@@ -525,10 +519,6 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     if (other_scene) {
         Log(Debug, "Re-use OptiX config, pipeline and update SBT ..");
         MiOptixSceneState &s2 = *other_scene->m_accel.state;
-        if (scene->m_compact_accel != s2.compact_accel)
-            Throw("OptiX scenes sharing one SBT must use the same "
-                  "compact_acceleration_structures setting.");
-
         const MiOptixConfig &config = optix_configs[s2.config_key];
 
         HitGroupSbtRecord* prev_data
@@ -563,7 +553,6 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         jit_var_inc_ref(s.sbt_jit_index);
 
         s.config_key = s2.config_key;
-        s.compact_accel = s2.compact_accel;
         s.context = s2.context;
         s.pipeline_jit_index = s2.pipeline_jit_index;
     } else {
@@ -572,7 +561,7 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         // =====================================================
 
         const MiOptixConfig &config =
-            init_optix_config(scene->shape_types(), scene->m_compact_accel);
+            init_optix_config(scene->shape_types());
 
         // =====================================================
         //  Shader Binding Table generation
@@ -606,7 +595,6 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
         s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
         s.config_key = config.key;
-        s.compact_accel = scene->m_compact_accel;
         s.context = config.context;
         s.pipeline_jit_index = config.pipeline_jit_index;
     }

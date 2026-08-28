@@ -26,7 +26,8 @@ NAMESPACE_BEGIN(mitsuba)
 MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     : JitObject<Scene>(props.id()) {
     m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
-    m_compact_accel = props.get<bool>("compact_acceleration_structures", false);
+    m_compact_accel = props.get<bool>("compact_accel", true);
+    m_compact_accel_auto = !props.has_property("compact_accel");
 
     for (auto &prop : props.objects()) {
         ref<Object> v = prop.get<ref<Object>>();
@@ -513,6 +514,19 @@ MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *cb) {
         }
     }
 }
+
+MI_VARIANT bool Scene<Float, Spectrum>::compact_accel() {
+    bool first_build = !m_accel_built;
+    m_accel_built = true;
+
+    if (!m_compact_accel_auto)
+        return m_compact_accel;
+    return first_build;
+}
+
+    // . Later builds come from geometry edits,
+    // as in a differentiable rendering optimization loop, where the compaction
+    // pass and its device-to-host synchronization would slow down every step.
 
 MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     bool accel_is_dirty = false;

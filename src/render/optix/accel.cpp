@@ -203,9 +203,11 @@ void build_gas(const OptixDeviceContext &context,
         size_t shapes_count = geoms.size();
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-        if (compact)
-            accel_options.buildFlags |= OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        // ALLOW_COMPACTION must always be present so that the flags agree with
+        // the builtin curve modules (init_optix_config); `compact` only decides
+        // whether the compaction pass below runs.
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE |
+                                   OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
 
