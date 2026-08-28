@@ -193,6 +193,53 @@ def test09_forward_ad(variants_all_ad_rgb):
     dr.assert_allclose(dr.grad(value), 2 * 0.5 + math.cos(0.5))
 
 
+def test11_color_ops(variants_all_rgb):
+    """rgb() assembly, component broadcast, mean, and luminance"""
+    si = dr.zeros(mi.SurfaceInteraction3f)
+
+    tex = make('rgb(in[0], in[1], in[2])', 0.25, 0.5, 0.75)
+    color = mi.Color3f(0.25, 0.5, 0.75)
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)), color)
+    dr.assert_allclose(mi.Color3f(tex.eval(si)), color)
+    dr.assert_allclose(tex.eval_1(si), mi.luminance(color))
+
+    srgb = { 'type': 'srgb', 'color': [0.1, 0.2, 0.3] }
+    ref = mi.load_dict(srgb)
+    rc = mi.Color3f(ref.eval_3(si))
+
+    tex = make('in[0].g', srgb)
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)), mi.Color3f(rc[1]))
+    dr.assert_allclose(tex.eval_1(si), ref.eval_1(si))
+
+    tex = make('rgb(in[0].b, in[0].g, in[0].r)', srgb)
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)),
+                       mi.Color3f(rc[2], rc[1], rc[0]))
+
+    tex = make('mean(in[0])', srgb)
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)), mi.Color3f(dr.mean(rc)))
+
+    tex = make('luminance(in[0])', srgb)
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)),
+                       mi.Color3f(mi.luminance(rc)))
+
+
+def test12_color_ops_spectral(variant_scalar_spectral):
+    """mean() averages wavelength samples; the other color operations reject
+    spectral queries but remain usable via eval_1/eval_3"""
+    si = dr.zeros(mi.SurfaceInteraction3f)
+
+    dr.assert_allclose(make('mean(in[0])', 0.5).eval(si), 0.5)
+
+    tex = make('in[0].r', 0.5)
+    dr.assert_allclose(tex.eval_1(si), 0.5)
+    with pytest.raises(RuntimeError, match='component access'):
+        tex.eval(si)
+    with pytest.raises(RuntimeError, match='rgb'):
+        make('rgb(in[0], in[0], in[0])', 0.5).eval(si)
+    with pytest.raises(RuntimeError, match='luminance'):
+        make('luminance(in[0])', 0.5).eval(si)
+
+
 @pytest.mark.parametrize('expr, error', [
     ('', 'must end with a result expression'),
     ('tmp[0] = 1;', 'must end with a result expression'),
@@ -210,6 +257,9 @@ def test09_forward_ad(variants_all_ad_rgb):
     ('1 ? 2', r"expected ':'"),
     ('2 @ 3', 'expected end of input'),
     ('1 < 2 < 3', 'cannot be chained'),
+    ('in[0].x', 'expected a component name'),
+    ('in[0].', 'expected a component name'),
+    ('rgb(1, 2)', 'takes 3 argument'),
 ])
 def test10_parse_errors(variant_scalar_rgb, expr, error):
     with pytest.raises(RuntimeError, match=error):
