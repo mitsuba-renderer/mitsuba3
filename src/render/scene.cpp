@@ -310,6 +310,7 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
 
         [this, detach_shape](const Point3f &o, const Vector3f &d,
                              const UInt32 &index) {
+            DRJIT_MARK_USED(detach_shape);
             AffineTransform4f to_object =
                 unpack_matrix<AffineTransform4f>(
                     dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
@@ -343,6 +344,9 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
         [this, ray_flags, detach_shape, follow_shape, grad_enabled](
             SurfaceInteraction3f si, const Ray3f &ray,
             const UInt32 &index) {
+            DRJIT_MARK_USED(detach_shape);
+            DRJIT_MARK_USED(follow_shape);
+            DRJIT_MARK_USED(grad_enabled);
             AffineTransform4f to_world =
                 unpack_matrix<AffineTransform4f>(
                     dr::gather<dr::Array<Float, 12>>(m_instance_transforms, index - 1u));

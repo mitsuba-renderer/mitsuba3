@@ -20,7 +20,7 @@ public:
         if (self.is_valid())
             m_class_name = nb::type_name(self.type()).c_str();
         else
-            m_class_name = ClassName;
+            m_class_name = Texture::ClassName;
     }
 
     std::string_view class_name() const override { return m_class_name; }
