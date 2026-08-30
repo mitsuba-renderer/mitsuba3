@@ -381,6 +381,7 @@ public:
             pm.set_face(i, { faces[3 * i], faces[3 * i + 1],
                              faces[3 * i + 2] });
 
+        stream_->close();
         from_packed(std::move(pm));
     }
 
@@ -448,6 +449,8 @@ public:
             stream->read_array(dst, (string::starts_with(name, "face_")
                                          ? face_count : vertex_count) * dim);
         }
+
+        stream_->close();
 
         // The records arrived in bulk, so they are transformed after the fact
         pm.set_transform(m_to_world.scalar(), m_flip_normals);
