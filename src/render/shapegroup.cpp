@@ -69,9 +69,8 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *cb) {
     for (auto s : m_shapes) {
         std::string_view id = s->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
-            cb->put("shape", s, ParamFlags::Differentiable);
-        else
-            cb->put(std::string(id), s, ParamFlags::Differentiable);
+            id = "";
+        cb->put(id, s, ParamFlags::Differentiable);
     }
 }
 

@@ -1,5 +1,6 @@
 #include <embree3/rtcore.h>
 #include <nanothread/nanothread.h>
+#include <tsl/robin_map.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/scene_ir.h>

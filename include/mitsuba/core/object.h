@@ -439,8 +439,10 @@ MI_DECLARE_ENUM_OPERATORS(ParamFlags)
  * through the `TraversalCallback.put()` methods, which distinguish
  * between regular parameters and references to other scene objects that are
  * handled recursively.
+ *
+ * Passing an empty name asks the callback to derive one.
  */
-class TraversalCallback {
+class MI_EXPORT_LIB TraversalCallback {
 public:
     template <typename T, typename Flags> void put(std::string_view name, ref<T> &value, Flags flags) {
         put_object(name, value.get(), (uint32_t) flags);
@@ -476,6 +478,16 @@ protected:
     virtual void put_object(std::string_view name,
                             Object *value,
                             uint32_t flags) = 0;
+
+    /**
+     * Extend the lifetime of a Python object whose contents were
+     * reported to `put()`
+     *
+     * A plugin written in Python can report a value that exists only for the
+     * duration of the call. It must invoke this funcdtion with the borrowed
+     * ``PyObject*`` so that the caller can keep it alive.
+     */
+    virtual void keep_alive(void *python_object);
 };
 
 /// Prints the canonical string representation of an object instance

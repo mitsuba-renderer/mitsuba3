@@ -11,6 +11,8 @@ void Object::traverse(TraversalCallback * /*callback*/) { }
 
 void Object::parameters_changed(const std::vector<std::string> &/*keys*/) { }
 
+void TraversalCallback::keep_alive(void * /*python_object*/) { }
+
 std::string Object::to_string() const {
     std::ostringstream oss;
     oss << class_name() << "[" << (void *) this << "]";

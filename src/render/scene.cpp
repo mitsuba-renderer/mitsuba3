@@ -745,13 +745,9 @@ MI_VARIANT void Scene<Float, Spectrum>::traverse(TraversalCallback *cb) {
     cb->put("allow_thread_reordering", m_thread_reordering, ParamFlags::NonDifferentiable);
     for (auto& child : m_children) {
         std::string_view id = child->id();
-        if (id.empty() || string::starts_with(id, "_unnamed_")) {
-            // Use a generic identifier based on object type
-            std::string generic_id = "object_" + std::to_string(reinterpret_cast<uintptr_t>(child.get()));
-            cb->put(generic_id, child, ParamFlags::Differentiable);
-        } else {
-            cb->put(id, child, ParamFlags::Differentiable);
-        }
+        if (id.empty() || string::starts_with(id, "_unnamed_"))
+            id = "";
+        cb->put(id, child, ParamFlags::Differentiable);
     }
 }
 

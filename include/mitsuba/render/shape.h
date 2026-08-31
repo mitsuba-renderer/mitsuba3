@@ -10,7 +10,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/scene_ir.h>
 #include <drjit/packet.h>
-#include <tsl/robin_map.h>
+#include <map>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -951,8 +951,7 @@ protected:
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
-                   std::equal_to<>> m_texture_attributes;
+    std::map<std::string, ref<Texture>, std::less<>> m_texture_attributes;
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
