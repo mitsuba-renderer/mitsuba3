@@ -476,6 +476,9 @@ MI_PY_EXPORT(Shape) {
     MI_PY_IMPORT_TYPES(Shape, Mesh)
 
     auto shape = MI_PY_CLASS(Shape, Object)
+        .def("to_world", &Shape::to_world, D(Shape, to_world))
+        .def("scalar_to_world", &Shape::scalar_to_world,
+             D(Shape, scalar_to_world))
         .def("bbox", nb::overload_cast<>(
             &Shape::bbox, nb::const_), D(Shape, bbox))
         .def("bbox", nb::overload_cast<ScalarUInt32>(
@@ -537,6 +540,12 @@ MI_PY_EXPORT(Shape) {
              nb::overload_cast<Stream *>(&Mesh::write_serialized, nb::const_),
              "stream"_a, D(Mesh, write_serialized, 2))
         .def_static("merge", &Mesh::merge, "shapes"_a, D(Mesh, merge))
+        .def("parts", &Mesh::parts, D(Mesh, parts))
+        .def("find_part",
+             [](const Mesh &m, uint32_t prim_index) {
+                 return m.find_part(prim_index);
+             },
+             nb::rv_policy::copy, "prim_index"_a, D(Mesh, find_part))
 
         .def("position_count", &Mesh::position_count,
              D(Mesh, position_count))
@@ -606,6 +615,20 @@ MI_PY_EXPORT(Shape) {
              "normal_count"_a = 0, D(Mesh, from_packed))
         .def("validate", &Mesh::validate, "check_bounds"_a = false,
              D(Mesh, validate));
+
+    using MeshPart = typename Mesh::Part;
+    nb::class_<MeshPart>(mesh_cls, "Part", D(Mesh, Part))
+        .def_ro("id", &MeshPart::id, D(Mesh, Part, id))
+        .def_ro("face_offset", &MeshPart::face_offset,
+                D(Mesh, Part, face_offset))
+        .def_ro("face_count", &MeshPart::face_count,
+                D(Mesh, Part, face_count))
+        .def_ro("bbox", &MeshPart::bbox, D(Mesh, Part, bbox))
+        .def("__repr__", [](const MeshPart &p) {
+            return tfm::format(
+                "Part[id=\"%s\", face_offset=%u, face_count=%u, bbox=%s]",
+                p.id, p.face_offset, p.face_count, p.bbox);
+        });
 
     bind_mesh_generic<Mesh *>(mesh_cls);
 
