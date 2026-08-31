@@ -67,7 +67,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
             "M_world"_a, "in_forward_world"_a, "out_forward_world"_a,
             D(SurfaceInteraction, to_local_mueller))
         .def("emitter", &SurfaceInteraction3f::emitter, D(SurfaceInteraction, emitter),
-            "scene"_a, "active"_a = true)
+            "scene"_a, "active"_a = true, "visibility_mask"_a = +RayMask::All)
         .def("is_sensor", &SurfaceInteraction3f::is_sensor, D(SurfaceInteraction, is_sensor))
         .def("is_medium_transition", &SurfaceInteraction3f::is_medium_transition,
             D(SurfaceInteraction, is_medium_transition))

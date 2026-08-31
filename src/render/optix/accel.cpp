@@ -390,7 +390,7 @@ void prepare_ias(const SceneIR &sd,
               t[4], t[5], t[6],  t[7],
               t[8], t[9], t[10], t[11] },
             instance_id, blas_sbt_offset[inst.blas_index],
-            /* visibilityMask = */ 255, flags,
+            blas.visibility_mask, flags,
             blas_handle[inst.blas_index], /* pads = */ { 0, 0 }
         };
     }

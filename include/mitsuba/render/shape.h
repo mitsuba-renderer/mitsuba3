@@ -838,6 +838,16 @@ public:
     /// Return the area emitter associated with this shape (if any)
     Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
 
+    /**
+     * Return the shape's 8-bit visibility mask (see `RayMask`)
+     *
+     * A ray can only intersect this shape when the bitwise AND of its
+     * ray-side mask and this value is nonzero. Ordinary shapes match every
+     * ray. Shapes with an attached emitter return its
+     * `Emitter.visibility_mask()`.
+     */
+    uint32_t visibility_mask() const;
+
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }
 

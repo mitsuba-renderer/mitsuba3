@@ -168,10 +168,12 @@ class PathProjectiveIntegrator(PSIntegrator):
         if dr.hint(ignore_ray, mode='scalar'):
             si = si_shade
         else:
-            pi = scene.ray_intersect_preliminary(ray,
-                                                 coherent=True,
-                                                 reorder=False,
-                                                 active=active)
+            # Depth-0 lanes use the camera mask, which hides emitters marked
+            # as invisible
+            pi = scene.ray_intersect_preliminary(
+                ray, coherent=True, reorder=False, active=active,
+                visibility_mask=dr.select(depth_init == 0, mi.RayMask.Camera,
+                                          mi.RayMask.All))
 
         # Variables caching information from the previous bounce
         ray_prev        = mi.Ray3f(ray)
@@ -218,12 +220,14 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
-            if dr.hint(self.hide_emitters, mode='scalar'):
-                active_next &= ~((depth == 0) & ~si.is_valid())
+            # Ray mask of the trace that produced si. The emitter lookup uses
+            # it to hide an invisible environment from escaped depth-0 rays.
+            ray_mask = dr.select(depth == 0, mi.RayMask.Camera,
+                                 mi.RayMask.All)
 
             # Compute MIS weight for emitter sample from previous bounce
-            ds = mi.DirectionSample3f(scene, si=si, ref=si_prev)
+            ds = mi.DirectionSample3f(scene, si=si, ref=si_prev,
+                                      visibility_mask=ray_mask)
 
             mis = mis_weight(
                 bsdf_pdf_prev,

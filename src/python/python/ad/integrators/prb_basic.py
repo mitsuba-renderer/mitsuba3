@@ -21,10 +21,6 @@ class BasicPRBIntegrator(RBIntegrator):
          visible light sources. 2 will lead to single-bounce (direct-only)
          illumination, and so on. (Default: 6)
 
-     * - hide_emitters
-       - |bool|
-       - Hide directly visible emitters. (Default: no, i.e. |false|)
-
     Basic Path Replay Backpropagation-style integrator *without* next event
     estimation, multiple importance sampling, Russian Roulette, and
     projective sampling. The lack of all of these features means that gradients
@@ -84,20 +80,13 @@ class BasicPRBIntegrator(RBIntegrator):
         β = mi.Spectrum(1)                               # Path throughput weight
         active = mi.Bool(active)                         # Active SIMD lanes
         pi_prev = dr.zeros(mi.PreliminaryIntersection3f) # Interaction of the previous bounce
+
+        # The camera mask hides emitters marked as invisible
         pi = scene.ray_intersect_preliminary(ray,        # Current interaction
                                              coherent=True,
                                              reorder=False,
-                                             active=active)
-
-        # ---------------------- Hide area emitters ----------------------
-
-        if dr.hint(self.hide_emitters, mode='scalar'):
-            # Did we hit an area emitter? If so, skip all area emitters along this ray
-            skip_emitters = pi.is_valid() & (pi.shape.emitter() != None) & active
-            si_skip = scene.compute_surface_interaction(ray, pi, mi.RayFlags.Minimal, skip_emitters)
-            ray_skip = si_skip.spawn_ray(ray.d)
-            pi_after_skip = self.skip_area_emitters(scene, ray_skip, True, skip_emitters)
-            pi[skip_emitters] = pi_after_skip
+                                             active=active,
+                                             visibility_mask=mi.RayMask.Camera)
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
@@ -123,13 +112,15 @@ class BasicPRBIntegrator(RBIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
-            if dr.hint(self.hide_emitters, mode='scalar'):
-                active_next &= ~((depth == 0) & ~si.is_valid())
+            # Ray mask of the trace that produced si. The emitter lookup uses
+            # it to hide an invisible environment from escaped depth-0 rays.
+            ray_mask = dr.select(depth == 0, mi.RayMask.Camera,
+                                 mi.RayMask.All)
 
             # Differentiable evaluation of intersected emitter / envmap
             with dr.resume_grad(when=not primal):
-                Le = β * si.emitter(scene).eval(si, active_next)
+                emitter = si.emitter(scene, visibility_mask=ray_mask)
+                Le = β * emitter.eval(si, active_next)
 
             # Should we continue tracing to reach one more vertex?
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()

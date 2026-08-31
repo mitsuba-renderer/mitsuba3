@@ -71,6 +71,7 @@ void cpu_llvm_ray_trace(void *func_ptr, uint32_t func_handle_index,
                         const dr::Array<RayScalar, 3> &ray_o,
                         const dr::Array<RayScalar, 3> &ray_d, RayScalar ray_time,
                         RayScalar ray_maxt, Mask coherent, Mask active,
+                        const dr::uint32_array_t<Float> &visibility_mask,
                         int shadow_ray, uint32_t *out) {
     using UInt32 = dr::uint32_array_t<Float>;
     using UInt64 = dr::uint64_array_t<Float>;
@@ -88,7 +89,7 @@ void cpu_llvm_ray_trace(void *func_ptr, uint32_t func_handle_index,
                         ray_o.z().index(), ray_mint.index(),
                         ray_d.x().index(), ray_d.y().index(),
                         ray_d.z().index(), ray_time.index(),
-                        ray_maxt.index(),  zero.index(),
+                        ray_maxt.index(),  visibility_mask.index(),
                         zero.index(),      zero.index() };
 
     jit_llvm_ray_trace(func_v.index(), scene_v.index(), shadow_ray, in, out);

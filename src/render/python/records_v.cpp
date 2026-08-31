@@ -35,8 +35,10 @@ MI_PY_EXPORT(DirectionSample) {
                         const Vector3f &, const Float &, const EmitterPtr &>(),
             "p"_a, "n"_a, "uv"_a, "time"_a, "pdf"_a, "delta"_a, "d"_a, "dist"_a,
             "emitter"_a, "Element-by-element constructor")
-        .def(nb::init<const Scene *, const SurfaceInteraction3f &, const Interaction3f &>(),
-            "scene"_a.none(), "si"_a, "ref"_a, D(PositionSample, PositionSample))
+        .def(nb::init<const Scene *, const SurfaceInteraction3f &,
+                      const Interaction3f &, const UInt32 &>(),
+            "scene"_a.none(), "si"_a, "ref"_a,
+            "visibility_mask"_a = +RayMask::All, D(PositionSample, PositionSample))
         .def_rw("d",     &DirectionSample3f::d,     D(DirectionSample, d))
         .def_rw("dist",  &DirectionSample3f::dist,  D(DirectionSample, dist))
         .def_rw("emitter", &DirectionSample3f::emitter, D(DirectionSample, emitter))

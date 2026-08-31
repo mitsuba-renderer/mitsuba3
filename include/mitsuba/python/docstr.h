@@ -2012,11 +2012,15 @@ static const char *__doc_mitsuba_Bitmap_write_ppm = R"doc(Save a file using the 
 
 static const char *__doc_mitsuba_Bitmap_write_rgbe = R"doc(Save a file using the RGBE file format)doc";
 
-static const char *__doc_mitsuba_BlasEntry = R"doc(One bottom-level acceleration structure holding same-kind geometry.)doc";
+static const char *__doc_mitsuba_BlasEntry =
+R"doc(One bottom-level acceleration structure holding geometry that shares one
+kind and one visibility mask.)doc";
 
 static const char *__doc_mitsuba_BlasEntry_geoms = R"doc()doc";
 
 static const char *__doc_mitsuba_BlasEntry_kind = R"doc()doc";
+
+static const char *__doc_mitsuba_BlasEntry_visibility_mask = R"doc()doc";
 
 static const char *__doc_mitsuba_BoundingBox =
 R"doc(Generic n-dimensional bounding box data structure
@@ -3167,7 +3171,10 @@ Args:
 
     si: Surface interaction
 
-    ref: Reference position)doc";
+    ref: Reference position
+
+    visibility_mask: Ray-side visibility mask used for the emitter
+        lookup (see `SurfaceInteraction.emitter`))doc";
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_2 = R"doc(Element-by-element constructor)doc";
 
@@ -3556,6 +3563,8 @@ static const char *__doc_mitsuba_EmitterFlags_Empty = R"doc(No flags set (defaul
 
 static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is placed at infinity (e.g. environment maps))doc";
 
+static const char *__doc_mitsuba_EmitterFlags_Invisible = R"doc(The emitter is hidden from directly visible (camera) rays)doc";
+
 static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
 
 static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
@@ -3566,7 +3575,10 @@ static const char *__doc_mitsuba_Emitter_class_name = R"doc(This is both a class
 
 static const char *__doc_mitsuba_Emitter_dirty = R"doc(Return whether the emitter parameters have changed)doc";
 
-static const char *__doc_mitsuba_Emitter_flags = R"doc(Flags for all components combined.)doc";
+static const char *__doc_mitsuba_Emitter_flags =
+R"doc(Flags for all components combined. The ``visible`` property is
+merged in here (rather than stored in ``m_flags``) because plugin
+constructors assign ``m_flags`` after the base class has run.)doc";
 
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
@@ -3576,11 +3588,17 @@ static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all 
 
 static const char *__doc_mitsuba_Emitter_m_sampling_weight = R"doc(Sampling weight)doc";
 
+static const char *__doc_mitsuba_Emitter_m_visible = R"doc(False if the emitter is hidden from camera rays)doc";
+
 static const char *__doc_mitsuba_Emitter_parameters_changed = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(The emitter's sampling weight.)doc";
 
 static const char *__doc_mitsuba_Emitter_set_dirty = R"doc(Modify the emitter's ``dirty`` flag)doc";
+
+static const char *__doc_mitsuba_Emitter_set_visible =
+R"doc(Used by the Scene to implement the deprecated ``hide_emitters``
+integrator flag before building its acceleration data structures)doc";
 
 static const char *__doc_mitsuba_Emitter_traverse = R"doc()doc";
 
@@ -3589,6 +3607,12 @@ static const char *__doc_mitsuba_Emitter_traverse_cb = R"doc()doc";
 static const char *__doc_mitsuba_Emitter_type = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
 static const char *__doc_mitsuba_Emitter_variant_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+
+static const char *__doc_mitsuba_Emitter_visibility_mask =
+R"doc(Return the 8-bit visibility mask (see `RayMask`). Invisible emitters
+clear the `RayMask.Camera` bit.)doc";
+
+static const char *__doc_mitsuba_Emitter_visible = R"doc(Is this emitter visible to directly visible (camera) rays?)doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Abstract interface subsuming emitters and sensors in Mitsuba.
@@ -4745,7 +4769,9 @@ static const char *__doc_mitsuba_Integrator_cancel = R"doc(Cancel a running rend
 
 static const char *__doc_mitsuba_Integrator_class_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Integrator_m_hide_emitters = R"doc(Flag for disabling direct visibility of emitters)doc";
+static const char *__doc_mitsuba_Integrator_hide_emitters = R"doc(Whether the deprecated ``hide_emitters`` flag was set (see `Scene`))doc";
+
+static const char *__doc_mitsuba_Integrator_m_hide_emitters = R"doc(Deprecated flag that hides all emitters from direct view)doc";
 
 static const char *__doc_mitsuba_Integrator_m_id = R"doc(Identifier (if available))doc";
 
@@ -4930,30 +4956,6 @@ enforced accurately.
 
 Note that accurate timeouts rely on ``m_render_timer``, which needs
 to be reset at the beginning of the rendering phase.)doc";
-
-static const char *__doc_mitsuba_Integrator_skip_area_emitters =
-R"doc(Traces a ray in the scene and returns the first intersection that
-is not an area emitter.
-
-This is a helper method for when the ``hide_emitters`` flag is set.
-
-Args:
-    scene: The scene that the ray will intersect.
-
-    ray: The ray that determines the direction in which to trace new rays
-
-    coherent: Setting this flag to ``True`` can noticeably improve performance when
-        ``ray`` contains a coherent set of rays (e.g. primary camera rays),
-        and when using ``llvm_*`` variants of the renderer along with
-        Embree. It has no effect in scalar or CUDA/OptiX variants.
-        (Default: False)
-
-    active: A mask that indicates which lanes are active. Typically, this should
-        be set to ``True`` for any lane where the current depth is 0 (for
-        ``hide_emitters``). (Default: True)
-
-Returns:
-    The first intersection that is not an area emitter along the ``ray``.)doc";
 
 static const char *__doc_mitsuba_Integrator_traverse_cb = R"doc()doc";
 
@@ -8496,6 +8498,22 @@ direction in the shading frame (`SurfaceInteraction3f.wi`).
 
 This is also the default option selected by `RayFlags.Default`.)doc";
 
+static const char *__doc_mitsuba_RayMask =
+R"doc(Visibility mask bits for scene ray tracing queries.
+
+Every shape advertises an 8-bit visibility mask, and the ray tracing methods
+of `Scene` accept a ray-side counterpart. A shape can only be intersected
+when the bitwise AND of the two masks is nonzero.
+
+Mitsuba uses this mechanism to hide emitters from directly visible
+(i.e., camera) rays. Integrators trace such rays with `RayMask.Camera`
+and use `RayMask.All` everywhere else. The remaining bits are currently
+unused.)doc";
+
+static const char *__doc_mitsuba_RayMask_All = R"doc(Default ray mask, matched by every shape)doc";
+
+static const char *__doc_mitsuba_RayMask_Camera = R"doc(Matched by all shapes except emitters marked as invisible)doc";
+
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time ``time``)doc";
 
 static const char *__doc_mitsuba_Ray_Ray_2 = R"doc(Construct a new ray (o, d) with time)doc";
@@ -8960,9 +8978,9 @@ R"doc(Walk the ``scene`` once and lower it to a ``SceneIR``.
    Backends use the slot as the persistent index for per-shape storage
    such as custom primitive data buffers.
 
-2. Partition non-instance geometry by ``ShapeIR.Kind``. Each non-empty
-   bucket becomes one ``BlasEntry``. Emit top-level BLASes first, then
-   one shared BLAS set per ShapeGroup.
+2. Partition non-instance geometry by ``ShapeIR.Kind`` and visibility
+   mask. Each non-empty bucket becomes one ``BlasEntry``. Emit top-level
+   BLASes first, then one shared BLAS set per ShapeGroup.
 
 3. Flatten the TLAS/IAS instance list: one identity ``InstanceEntry`` per
    top-level BLAS, then one transformed entry for every ``Instance`` and
@@ -9232,6 +9250,13 @@ Args:
         and when using ``llvm_*`` variants of the renderer along with
         Embree. It has no effect in scalar or CUDA/OptiX variants.
 
+    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+        can only be intersected when the bitwise AND of this value and
+        the shape's `Shape.visibility_mask()` is nonzero. The default,
+        `RayMask.All`, matches every shape; camera rays should pass
+        `RayMask.Camera` so that emitters flagged as invisible are
+        skipped.
+
 Returns:
     A detailed surface interaction record. Its ``is_valid()`` method
     should be queried to check if an intersection was actually found.)doc";
@@ -9312,6 +9337,13 @@ Args:
         least significant bit). It is recommended to use as few as possible.
         At most, 16 bits can be used. This flag has no effect in scalar or
         LLVM variants, or if the ``reorder`` parameter is ``False``.
+
+    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+        can only be intersected when the bitwise AND of this value and
+        the shape's `Shape.visibility_mask()` is nonzero. The default,
+        `RayMask.All`, matches every shape; camera rays should pass
+        `RayMask.Camera` so that emitters flagged as invisible are
+        skipped.
 
 Returns:
     A detailed surface interaction record. Its ``is_valid()`` method
@@ -9444,6 +9476,13 @@ Args:
         At most, 16 bits can be used. This flag has no effect in scalar or
         LLVM variants, or if the ``reorder`` parameter is ``False``.
 
+    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+        can only be intersected when the bitwise AND of this value and
+        the shape's `Shape.visibility_mask()` is nonzero. The default,
+        `RayMask.All`, matches every shape; camera rays should pass
+        `RayMask.Camera` so that emitters flagged as invisible are
+        skipped.
+
 Returns:
     A preliminary surface interaction record. Its ``is_valid()`` method
     should be queried to check if an intersection was actually found.)doc";
@@ -9500,6 +9539,10 @@ Args:
         ``ray`` contains a coherent set of rays (e.g. primary camera rays),
         and when using ``llvm_*`` variants of the renderer along with
         Embree. It has no effect in scalar or CUDA/OptiX variants.
+
+    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+        can only occlude the ray when the bitwise AND of this value and
+        the shape's `Shape.visibility_mask()` is nonzero.
 
 Returns:
     ``True`` if an intersection was found)doc";
@@ -10000,6 +10043,11 @@ pointer on Metal/OptiX).)doc";
 static const char *__doc_mitsuba_ShapeIR_vertex_stride =
 R"doc(Distance between consecutive vertex records in bytes; the position
 occupies the first three floats of each record.)doc";
+
+static const char *__doc_mitsuba_ShapeIR_visibility_mask =
+R"doc(8-bit visibility mask (see ``Shape::visibility_mask()``), filled in by
+``SceneIRBuilder``. Backends with per-instance masks (OptiX, Metal)
+rely on same-mask geometry sharing one BLAS.)doc";
 
 static const char *__doc_mitsuba_ShapeKDTree = R"doc()doc";
 
@@ -10641,6 +10689,14 @@ static const char *__doc_mitsuba_Shape_type = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_variant_name = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_visibility_mask =
+R"doc(Return the shape's 8-bit visibility mask (see `RayMask`)
+
+A ray can only intersect this shape when the bitwise AND of its
+ray-side mask and this value is nonzero. Ordinary shapes match every
+ray. Shapes with an attached emitter return its
+`Emitter.visibility_mask()`.)doc";
+
 static const char *__doc_mitsuba_SilhouetteSample =
 R"doc(Data structure holding the result of visibility silhouette sampling
 operations on geometry.)doc";
@@ -11070,6 +11126,10 @@ static const char *__doc_mitsuba_SurfaceInteraction_duv_dy = R"doc(UV partials w
 
 static const char *__doc_mitsuba_SurfaceInteraction_emitter =
 R"doc(Return the emitter associated with the intersection (if any)
+
+The ``visibility_mask`` should be the ray-side mask of the trace that
+produced this interaction (see `RayMask`). Escaped rays report the
+environment emitter only when the mask matches its visibility.
 
 Note:
     Defined in scene.h)doc";
@@ -12589,6 +12649,10 @@ Returns:
 static const char *__doc_mitsuba_emitter =
 R"doc(Return the emitter associated with the intersection (if any)
 
+The ``visibility_mask`` should be the ray-side mask of the trace that
+produced this interaction (see `RayMask`). Escaped rays report the
+environment emitter only when the mask matches its visibility.
+
 Note:
     Defined in scene.h)doc";
 
@@ -12970,6 +13034,10 @@ static const char *__doc_mitsuba_has_flag_18 = R"doc()doc";
 static const char *__doc_mitsuba_has_flag_19 = R"doc()doc";
 
 static const char *__doc_mitsuba_has_flag_20 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_21 = R"doc()doc";
+
+static const char *__doc_mitsuba_has_flag_22 = R"doc()doc";
 
 static const char *__doc_mitsuba_hash = R"doc()doc";
 
@@ -13372,6 +13440,8 @@ static const char *__doc_mitsuba_operator_add_10 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_add_11 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_add_12 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_band = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_2 = R"doc()doc";
@@ -13432,6 +13502,12 @@ static const char *__doc_mitsuba_operator_band_29 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_band_30 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_band_31 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_32 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_band_33 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_bnot = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_2 = R"doc()doc";
@@ -13451,6 +13527,8 @@ static const char *__doc_mitsuba_operator_bnot_8 = R"doc()doc";
 static const char *__doc_mitsuba_operator_bnot_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bnot_10 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bnot_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor = R"doc()doc";
 
@@ -13512,6 +13590,12 @@ static const char *__doc_mitsuba_operator_bor_29 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_bor_30 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_bor_31 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_32 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_bor_33 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_iand = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_iand_2 = R"doc()doc";
@@ -13532,6 +13616,8 @@ static const char *__doc_mitsuba_operator_iand_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_iand_10 = R"doc()doc";
 
+static const char *__doc_mitsuba_operator_iand_11 = R"doc()doc";
+
 static const char *__doc_mitsuba_operator_ior = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_ior_2 = R"doc()doc";
@@ -13551,6 +13637,8 @@ static const char *__doc_mitsuba_operator_ior_8 = R"doc()doc";
 static const char *__doc_mitsuba_operator_ior_9 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_ior_10 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_ior_11 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift = R"doc(Print a string representation of the bounding box)doc";
 

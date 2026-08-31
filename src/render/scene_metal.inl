@@ -93,6 +93,7 @@ void MetalAccel<Float, Spectrum>::release() {
 
 template <typename Float, typename Spectrum>
 void MetalAccel<Float, Spectrum>::trace(const Ray3f &ray, Mask active,
+                                        const UInt32 &visibility_mask,
                                         uint32_t out[8], bool shadow) const {
     using Single = dr::float32_array_t<Float>;
     dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
@@ -102,13 +103,13 @@ void MetalAccel<Float, Spectrum>::trace(const Ray3f &ray, Mask active,
     if constexpr (!std::is_same_v<Single, Float>)
         ray_tmax = dr::minimum(ray_tmax, dr::Largest<Single>);
 
-    uint32_t args[8] = {
+    uint32_t args[9] = {
         ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
         ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-        ray_tmin.index(), ray_tmax.index()
+        ray_tmin.index(), ray_tmax.index(), visibility_mask.index()
     };
 
-    jit_metal_ray_trace(8, args, active.index(), out, 8, scene_index, shadow);
+    jit_metal_ray_trace(9, args, active.index(), out, 8, scene_index, shadow);
 }
 
 template <typename Float, typename Spectrum>
@@ -116,7 +117,7 @@ typename MetalAccel<Float, Spectrum>::PreliminaryIntersection3f
 MetalAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> * /*scene*/, const Ray3f &ray, Mask /*coh*/,
     bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
-    Mask active) const {
+    Mask active, const UInt32 &visibility_mask) const {
     using Single = dr::float32_array_t<Float>;
 
     PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
@@ -126,7 +127,7 @@ MetalAccel<Float, Spectrum>::ray_intersect_preliminary(
     // out: [valid, distance, bary_u, bary_v, instance_id, primitive_id,
     //       geometry_id, user_instance_id]
     uint32_t out[8];
-    trace(ray, active, out, /* shadow = */ false);
+    trace(ray, active, visibility_mask, out, /* shadow = */ false);
 
     Mask valid = Mask::steal(out[0]);
 
@@ -161,12 +162,13 @@ template <typename Float, typename Spectrum>
 typename MetalAccel<Float, Spectrum>::Mask
 MetalAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                       const Ray3f &ray, Mask /*coherent*/,
-                                      Mask active) const {
+                                      Mask active,
+                                      const UInt32 &visibility_mask) const {
     if (scene_index == 0) // Empty scene: no occluders
         return dr::zeros<Mask>(dr::width(ray.o));
 
     uint32_t out[8];
-    trace(ray, active, out, /* shadow = */ true);
+    trace(ray, active, visibility_mask, out, /* shadow = */ true);
 
     // A shadow trace computes only out[0] (the hit flag). out[1..7] are left
     // untouched (see jit_metal_ray_trace), so steal just the hit flag.

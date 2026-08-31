@@ -93,6 +93,12 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     props.mark_queried("kd_retract_bad_splits");
     props.mark_queried("kd_exact_primitive_threshold");
 
+    // Implement the deprecated "hide_emitters" flag by marking every emitter
+    // as invisible before the acceleration data structures bake the masks
+    if (m_integrator && m_integrator->hide_emitters())
+        for (Emitter *emitter : m_emitters)
+            emitter->set_visible(false);
+
     m_accel.init(this, props);
     clear_shapes_dirty();
     update_instance_transforms();
@@ -430,7 +436,8 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
                                       Mask coherent, bool reorder,
                                       UInt32 reorder_hint,
                                       uint32_t reorder_hint_bits,
-                                      Mask active) const {
+                                      Mask active,
+                                      const UInt32 &visibility_mask) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
     DRJIT_MARK_USED(reorder);
@@ -440,7 +447,8 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
     // Locate the intersection using the backend, then expand it into a full
     // SurfaceInteraction. This composition is backend-independent.
     PreliminaryIntersection3f pi = m_accel.ray_intersect_preliminary(
-        this, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active);
+        this, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active,
+        visibility_mask);
     return compute_surface_interaction(ray, pi, ray_flags, active);
 }
 
@@ -449,7 +457,8 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
                                                   Mask coherent, bool reorder,
                                                   UInt32 reorder_hint,
                                                   uint32_t reorder_hint_bits,
-                                                  Mask active) const {
+                                                  Mask active,
+                                                  const UInt32 &visibility_mask) const {
     DRJIT_MARK_USED(coherent);
     DRJIT_MARK_USED(reorder);
     DRJIT_MARK_USED(reorder_hint);
@@ -457,15 +466,16 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
 
     return m_accel.ray_intersect_preliminary(this, ray, coherent, reorder,
                                              reorder_hint, reorder_hint_bits,
-                                             active);
+                                             active, visibility_mask);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active) const {
+Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active,
+                                 const UInt32 &visibility_mask) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
 
-    return m_accel.ray_test(this, ray, coherent, active);
+    return m_accel.ray_test(this, ray, coherent, active, visibility_mask);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f

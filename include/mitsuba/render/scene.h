@@ -135,6 +135,13 @@ public:
      *         and when using ``llvm_*`` variants of the renderer along with
      *         Embree. It has no effect in scalar or CUDA/OptiX variants.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A detailed surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -142,8 +149,11 @@ public:
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
                                        uint32_t ray_flags,
                                        Mask coherent,
-                                       Mask active = true) const {
-        return ray_intersect(ray, ray_flags, coherent, false, 0, 0, active);
+                                       Mask active = true,
+                                       const UInt32 &visibility_mask
+                                           = (uint32_t) RayMask::All) const {
+        return ray_intersect(ray, ray_flags, coherent, false, 0, 0, active,
+                             visibility_mask);
     }
 
     /**
@@ -223,6 +233,13 @@ public:
      *         At most, 16 bits can be used. This flag has no effect in scalar or
      *         LLVM variants, or if the ``reorder`` parameter is ``False``.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A detailed surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -233,7 +250,9 @@ public:
                                        bool reorder,
                                        UInt32 reorder_hint,
                                        uint32_t reorder_hint_bits,
-                                       Mask active = true) const;
+                                       Mask active = true,
+                                       const UInt32 &visibility_mask
+                                           = (uint32_t) RayMask::All) const;
 
     /**
      * Expand a preliminary intersection into a detailed surface interaction
@@ -318,10 +337,16 @@ public:
      *         and when using ``llvm_*`` variants of the renderer along with
      *         Embree. It has no effect in scalar or CUDA/OptiX variants.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only occlude the ray when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero.
+     *
      * Returns:
      *     ``True`` if an intersection was found
      */
-    Mask ray_test(const Ray3f &ray, Mask coherent, Mask active) const;
+    Mask ray_test(const Ray3f &ray, Mask coherent, Mask active,
+                  const UInt32 &visibility_mask
+                      = (uint32_t) RayMask::All) const;
 
     /**
      * Intersect a ray with the shapes comprising the scene and return
@@ -378,8 +403,11 @@ public:
      */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask coherent = false,
-                                                        Mask active = true) const {
-        return ray_intersect_preliminary(ray, coherent, false, 0, 0, active);
+                                                        Mask active = true,
+                                                        const UInt32 &visibility_mask
+                                                            = (uint32_t) RayMask::All) const {
+        return ray_intersect_preliminary(ray, coherent, false, 0, 0, active,
+                                         visibility_mask);
     }
 
     /**
@@ -449,6 +477,13 @@ public:
      *         At most, 16 bits can be used. This flag has no effect in scalar or
      *         LLVM variants, or if the ``reorder`` parameter is ``False``.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A preliminary surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -456,9 +491,11 @@ public:
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask coherent,
                                                         bool reorder,
-                                                        UInt32 reorder_hint ,
+                                                        UInt32 reorder_hint,
                                                         uint32_t reorder_hint_bits,
-                                                        Mask active = true) const;
+                                                        Mask active = true,
+                                                        const UInt32 &visibility_mask
+                                                            = (uint32_t) RayMask::All) const;
 
     /**
      * Ray intersection using a brute force search. Used in
@@ -850,14 +887,24 @@ protected:
 // See interaction.h
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
-SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
+SurfaceInteraction<Float, Spectrum>::emitter(
+        const Scene *scene, Mask active,
+        const dr::uint32_array_t<Float> &visibility_mask) const {
     if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
-        return is_valid() ? shape->emitter() : scene->environment();
+        if (is_valid())
+            return shape->emitter();
+        const Emitter *env = scene->environment();
+        return (env && (visibility_mask & env->visibility_mask()) != 0)
+                   ? env : nullptr;
     } else {
         EmitterPtr emitter = shape->emitter(active);
-        if (scene && scene->environment())
-            emitter = dr::select(is_valid(), emitter, scene->environment() & active);
+        const Emitter *env = scene ? scene->environment() : nullptr;
+        if (env) {
+            Mask env_visible =
+                active && ((visibility_mask & env->visibility_mask()) != 0u);
+            emitter = dr::select(is_valid(), emitter, env & env_visible);
+        }
         return emitter;
     }
 }

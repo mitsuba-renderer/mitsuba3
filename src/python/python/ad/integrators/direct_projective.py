@@ -145,13 +145,18 @@ class DirectProjectiveIntegrator(PSIntegrator):
             si = si_shade
         else:
             with dr.resume_grad(when=not primal):
-                si = scene.ray_intersect(ray, ray_flags=mi.RayFlags.Default,
-                                         coherent=True, active=active)
+                # The camera mask hides emitters marked as invisible
+                si = scene.ray_intersect(
+                    ray, ray_flags=mi.RayFlags.Default, coherent=True,
+                    active=active,
+                    visibility_mask=mi.RayMask.Camera)
 
-        # Hide the environment emitter if necessary
-        if not self.hide_emitters:
-            with dr.resume_grad(when=not primal):
-                L += si.emitter(scene).eval(si, active)
+        # The emitter lookup reuses the camera mask so that escaped rays
+        # ignore a hidden environment emitter
+        with dr.resume_grad(when=not primal):
+            emitter = si.emitter(scene, active,
+                                 visibility_mask=mi.RayMask.Camera)
+            L += emitter.eval(si, active)
 
         active_next = active & si.is_valid() & (self.max_depth > 1)
 

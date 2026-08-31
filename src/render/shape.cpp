@@ -91,6 +91,11 @@ Shape<Float, Spectrum>::describe(ShapeIR &g) const {
 #endif
 }
 
+MI_VARIANT uint32_t Shape<Float, Spectrum>::visibility_mask() const {
+    return m_emitter ? m_emitter->visibility_mask()
+                     : (uint32_t) RayMask::All;
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
 Shape<Float, Spectrum>::sample_direction(const Interaction3f &it,
                                          const Point2f &sample,

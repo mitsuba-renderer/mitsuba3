@@ -490,6 +490,7 @@ MI_PY_EXPORT(Shape) {
             &Shape::texture_attribute), D(Shape, texture_attribute), "name"_a)
         .def_method(Shape, remove_attribute, "name"_a)
         .def_method(Shape, is_mesh)
+        .def_method(Shape, visibility_mask)
         .def_method(Shape, parameters_grad_enabled)
         .def_method(Shape, set_bsdf, "bsdf"_a)
         .def_method(Shape, primitive_count)

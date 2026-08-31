@@ -28,10 +28,6 @@ Particle tracer (:monosp:`ptracer`)
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
 
- * - hide_emitters
-   - |bool|
-   - Hide directly visible emitters. (Default: no, i.e. |false|)
-
  * - samples_per_pass
    - |bool|
    - If specified, divides the workload in successive passes with :paramtype:`samples_per_pass`
@@ -67,8 +63,8 @@ useful in wavefront mode.
 template <typename Float, typename Spectrum>
 class ParticleTracerIntegrator final : public AdjointIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_hide_emitters,
-                    m_rr_depth, m_max_depth)
+    MI_IMPORT_BASE(AdjointIntegrator, m_samples_per_pass, m_rr_depth,
+                    m_max_depth)
     MI_IMPORT_TYPES(Scene, Sensor, Film, Sampler, ImageBlock, Emitter,
                      EmitterPtr, BSDF, BSDFPtr)
 
@@ -77,7 +73,7 @@ public:
     void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
                 ImageBlock *block, ScalarFloat sample_scale) const override {
         // Account for emitters directly visible from the sensor
-        if (m_max_depth != 0 && !m_hide_emitters)
+        if (m_max_depth != 0)
             sample_visible_emitters(scene, sensor, sampler, block, sample_scale);
 
         // Primary & further bounces illumination
@@ -109,8 +105,10 @@ public:
         EmitterPtr emitter =
             dr::gather<EmitterPtr>(scene->emitters_dr(), emitter_idx);
 
-        // Don't connect delta emitters with sensor (both position and direction)
-        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta);
+        // Don't connect delta emitters with sensor (both position and
+        // direction), nor emitters hidden from directly visible rays
+        Mask active = !has_flag(emitter->flags(), EmitterFlags::Delta) &&
+                      !has_flag(emitter->flags(), EmitterFlags::Invisible);
 
         // 3. Emitter position sampling
         Spectrum emitter_weight = dr::zeros<Spectrum>();
@@ -343,8 +341,11 @@ public:
             return 0.f;
 
         // Check that sensor is visible from current position (shadow ray).
+        // The segment toward the sensor corresponds to a directly visible
+        // (camera) ray, so shapes hidden from the camera do not occlude it.
         Ray3f sensor_ray = si.spawn_ray_to(sensor_ds.p);
-        active &= !scene->ray_test(sensor_ray, active);
+        active &= !scene->ray_test(sensor_ray, false, active,
+                                   +RayMask::Camera);
         if (dr::none_or<false>(active))
             return 0.f;
 

@@ -23,6 +23,13 @@ Area light (:monosp:`area`)
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
+ * - visible
+   - |bool|
+   - Whether the emitter appears in directly visible (camera) rays. When set
+     to |false|, camera rays pass through the emitter's shape and hit whatever
+     lies behind it, while shadows, reflections, and indirect illumination
+     remain unaffected. (Default: |true|)
+
 This plugin implements an area light, i.e. a light source that emits
 diffuse illumination from the exterior of an arbitrary shape.
 Since the emission profile of an area light is completely diffuse, it

@@ -35,10 +35,6 @@ Volumetric path tracer with spectral MIS (:monosp:`volpathmis`)
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
 
- * - hide_emitters
-   - |bool|
-   - Hide directly visible emitters. (Default: no, i.e. |false|)
-
 This plugin provides a volumetric path tracer that can be used to compute approximate solutions
 of the radiative transfer equation. Its implementation performs MIS both for directional sampling
 as well as free-flight distance sampling. In particular, this integrator is well suited
@@ -68,7 +64,7 @@ template <typename Float, typename Spectrum>
 class VolumetricMisPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
@@ -99,7 +95,7 @@ template <typename Float, typename Spectrum, bool SpectralMis>
 class VolpathMisIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
@@ -132,9 +128,7 @@ public:
             Throw("This integrator currently does not support polarized mode!");
         }
 
-        // If there is an environment emitter and emitters are visible: all rays will be valid
-        // Otherwise, it will depend on whether a valid interaction is sampled
-        Mask valid_ray = !m_hide_emitters && (scene->environment() != nullptr);
+        Mask valid_ray = false;
 
         // For now, don't use ray differentials
         Ray3f ray = ray_;
@@ -147,7 +141,7 @@ public:
         MediumPtr medium = initial_medium;
         MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
 
-        Mask specular_chain = active && !m_hide_emitters;
+        Mask specular_chain = active;
         UInt32 depth = 0;
         WeightMatrix p_over_f = dr::full<WeightMatrix>(1.f);
         WeightMatrix p_over_f_nee = dr::full<WeightMatrix>(1.f);
@@ -246,6 +240,11 @@ public:
             if (dr::none_or<false>(active))
                 return;
 
+            // Ray mask of the current path segment. Depth-0 segments use the
+            // camera mask, which hides emitters marked as invisible.
+            UInt32 ray_mask = dr::select(depth == 0u, +RayMask::Camera,
+                                         +RayMask::All);
+
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && (medium != nullptr);
             Mask active_surface = active && !active_medium;
@@ -266,7 +265,8 @@ public:
                 dr::masked(ray.maxt, active_medium && medium->is_homogeneous() && mei.is_valid()) = mei.t;
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
-                    dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
+                    dr::masked(si, intersect) = scene->ray_intersect(
+                        ray, +RayFlags::Default, false, intersect, ray_mask);
                 needs_intersection &= !active_medium;
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
 
@@ -357,34 +357,21 @@ public:
             active_surface |= escaped_medium;
             Mask intersect = active_surface && needs_intersection;
             if (dr::any_or<true>(intersect))
-                dr::masked(si, intersect) = scene->ray_intersect(ray, intersect);
+                dr::masked(si, intersect) = scene->ray_intersect(
+                    ray, +RayFlags::Default, false, intersect, ray_mask);
 
             if (dr::any_or<true>(active_surface)) {
-                // ---------------------- Hide area emitters ----------------------
-                if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
-                    // Are we on the first segment and did we hit an area emitter?
-                    // If so, skip all area emitters along this ray
-                    Mask skip_emitters = si.is_valid() &&
-                                         (si.shape->emitter() != nullptr) &&
-                                         (ls.depth == 0) &&
-                                         intersect;
-
-                    if (dr::any_or<true>(skip_emitters)) {
-                        Ray3f skip_ray = si.spawn_ray(ls.ray.d);
-                        PreliminaryIntersection3f pi =
-                            Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
-                        SurfaceInteraction3f si_after_skip =
-                            scene->compute_surface_interaction(skip_ray, pi, +RayFlags::Default, skip_emitters);
-                        dr::masked(si, skip_emitters) = si_after_skip;
-                    }
-                }
-
                 // ---------------- Intersection with emitters ----------------
                 Mask ray_from_camera = active_surface && (depth == 0u);
                 Mask count_direct = ray_from_camera || specular_chain;
-                EmitterPtr emitter = si.emitter(scene);
-                Mask active_e = active_surface && (emitter != nullptr) &&
-                                !((depth == 0u) && m_hide_emitters);
+                // Reusing the trace's ray mask hides an invisible environment
+                // from escaped depth-0 rays
+                EmitterPtr emitter = si.emitter(scene, true, ray_mask);
+                Mask active_e = active_surface && (emitter != nullptr);
+
+                // Rays that see an emitter through the mask are valid samples.
+                // This includes escaped rays reaching a visible environment.
+                valid_ray |= active_e;
                 if (dr::any_or<true>(active_e)) {
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation

@@ -571,7 +571,7 @@ build_impl(const std::vector<BlasEntry> &blases,
             if (any_backface_culled_triangles &&
                 !blas_backface_cull[inst.blas_index])
                 d.options |= MTLAccelerationStructureInstanceOptionDisableTriangleCulling;
-            d.mask                            = 0xFFu;
+            d.mask                            = blases[inst.blas_index].visibility_mask;
             d.intersectionFunctionTableOffset = blas_ift_base[inst.blas_index];
             d.accelerationStructureIndex      = inst.blas_index;
             d.userID                          = user_ids[i];

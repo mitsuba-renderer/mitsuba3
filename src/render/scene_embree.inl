@@ -124,9 +124,14 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
     ShapeIR g;
     shape->describe(g);
 
+    // Each case sets the per-shape visibility mask, which Embree tests
+    // against the per-lane ray mask (this requires EMBREE_RAY_MASK).
+    // Instances keep the all-bits default, since Embree also tests the masks
+    // of the geometries within the instanced scene.
     switch (g.kind) {
         case ShapeIR::Kind::Custom: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetGeometryUserPrimitiveCount(geom, (unsigned int) g.prim_count);
             rtcSetGeometryUserData(geom, (void *) shape);
             rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
@@ -139,6 +144,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
         case ShapeIR::Kind::Triangles:
         case ShapeIR::Kind::TrianglesCulled: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
                                        g.vertex_stride, g.vertex_count);
@@ -160,6 +166,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 device, g.kind == ShapeIR::Kind::BSplineCurve
                             ? RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE
                             : RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT4, g.cp_ptr, 0,
                                        4 * sizeof(float), g.cp_count);
@@ -392,7 +399,7 @@ typename EmbreeAccel<Float, Spectrum>::PreliminaryIntersection3f
 EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
     bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
-    Mask active) const {
+    Mask active, const UInt32 &visibility_mask) const {
     using Single = dr::float32_array_t<Float>;
     DRJIT_MARK_USED(scene);
 
@@ -416,7 +423,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         dr::store(&rh.ray.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         rh.ray.tfar = ray_maxt;
-        rh.ray.mask = 0;
+        rh.ray.mask = visibility_mask;
         rh.ray.id = 0;
         rh.ray.flags = 0;
         rh.hit.geomID = (uint32_t) -1;
@@ -457,7 +464,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
                                   (void *) accel, accel_handle.index(), ray_o,
                                   ray_d, ray_time, ray_maxt, coherent, active,
-                                  0, out);
+                                  visibility_mask, 0, out);
 
         // Embree traces in float32, so the hit fields are stolen as ``Single``.
         PreliminaryIntersection3f pi;
@@ -499,7 +506,8 @@ template <typename Float, typename Spectrum>
 typename EmbreeAccel<Float, Spectrum>::Mask
 EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                        const Ray3f &ray, Mask coherent,
-                                       Mask active) const {
+                                       Mask active,
+                                       const UInt32 &visibility_mask) const {
     using Single = dr::float32_array_t<Float>;
 
     // Be careful with 'ray.maxt' in double precision variants
@@ -520,7 +528,7 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
         dr::store(&ray2.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         ray2.tfar = (float) ray_maxt;
-        ray2.mask = 0;
+        ray2.mask = visibility_mask;
         ray2.id = 0;
         ray2.flags = 0;
 
@@ -538,7 +546,8 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
         cpu_llvm_ray_trace<Float>((void *) occlude_func_ptr,
                                   occlude_handle.index(), (void *) accel,
                                   accel_handle.index(), ray_o, ray_d, ray_time,
-                                  ray_maxt, coherent, active, 1, out);
+                                  ray_maxt, coherent, active, visibility_mask,
+                                  1, out);
 
         return Mask::steal(out[0]);
     } else {

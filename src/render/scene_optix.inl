@@ -675,10 +675,10 @@ typename OptixAccel<Float, Spectrum>::PreliminaryIntersection3f
 OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask /*coherent*/,
     bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
-    Mask active) const {
+    Mask active, const UInt32 &visibility_mask) const {
     MiOptixSceneState &s = *state;
 
-    UInt32 ray_mask(255),
+    UInt32 ray_mask(visibility_mask),
            ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
                      OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
            sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
@@ -754,10 +754,11 @@ template <typename Float, typename Spectrum>
 typename OptixAccel<Float, Spectrum>::Mask
 OptixAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                       const Ray3f &ray, Mask /*coherent*/,
-                                      Mask active) const {
+                                      Mask active,
+                                      const UInt32 &visibility_mask) const {
     MiOptixSceneState &s = *state;
 
-    UInt32 ray_mask(255),
+    UInt32 ray_mask(visibility_mask),
            ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
                      OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
                      OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),

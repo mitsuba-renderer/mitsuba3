@@ -30,10 +30,6 @@ Path tracer (:monosp:`path`)
      1, then path generation may randomly cease after encountering directly
      visible surfaces. (Default: 5)
 
- * - hide_emitters
-   - |bool|
-   - Hide directly visible emitters. (Default: no, i.e. |false|)
-
 This integrator implements a basic path tracer and is a **good default choice**
 when there is no strong reason to prefer another method.
 
@@ -86,7 +82,7 @@ paths of arbitrary length to compute both direct and indirect illumination.
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth, m_hide_emitters)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
     MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
@@ -111,8 +107,7 @@ public:
         PreliminaryIntersection3f pi  = dr::zeros<PreliminaryIntersection3f>();
         UInt32 depth                  = 0;
 
-        // If m_hide_emitters == false, the environment emitter will be visible
-        Mask valid_ray = !m_hide_emitters && (scene->environment() != nullptr);
+        Mask valid_ray = false;
 
         // Variables caching information from the previous bounce
         Interaction3f prev_si         = dr::zeros<Interaction3f>();
@@ -157,37 +152,15 @@ public:
             sampler
         };
 
-        // First bounce is usually coherent - don't reorder threads
+        // First bounce is usually coherent - don't reorder threads. The
+        // camera mask hides emitters marked as invisible.
         ls.pi = scene->ray_intersect_preliminary(ls.ray,
                                                  /* coherent = */ true,
                                                  /* reorder = */ false,
                                                  /* reorder_hint = */ 0,
                                                  /* reorder_hint_bits = */ 0,
-                                                 ls.active);
-
-        // ---------------------- Hide area emitters ----------------------
-
-        // dr::any_or() checks for active entries in the provided boolean
-        // array. JIT/Megakernel modes can't do this test efficiently as
-        // each Monte Carlo sample runs independently. In this case,
-        // dr::any_or<..>() returns the template argument (true) which means
-        // that the 'if' statement is always conservatively taken.
-
-        if (m_hide_emitters && dr::any_or<true>(ls.depth == 0u)) {
-            // Did we hit an area emitter? If so, skip all area emitters along this ray
-            Mask skip_emitters = ls.pi.is_valid() &&
-                                 (ls.pi.shape->emitter() != nullptr) &&
-                                 ls.active;
-
-            if (dr::any_or<true>(skip_emitters)) {
-                SurfaceInteraction3f si = scene->compute_surface_interaction(
-                    ls.ray, ls.pi, +RayFlags::Minimal, skip_emitters);
-                Ray3f skip_ray = si.spawn_ray(ls.ray.d);
-                PreliminaryIntersection3f pi_after_skip =
-                    Base::skip_area_emitters(scene, skip_ray, true, skip_emitters);
-                dr::masked(ls.pi, skip_emitters) = pi_after_skip;
-            }
-        }
+                                                 ls.active,
+                                                 +RayMask::Camera);
 
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
@@ -202,8 +175,15 @@ public:
 
             // ---------------------- Direct emission ----------------------
 
-            if (dr::any_or<true>(si.emitter(scene) != nullptr)) {
-                DirectionSample3f ds(scene, si, ls.prev_si);
+            // Ray mask of the trace that produced si to handle hidden emitters
+            UInt32 ray_mask = dr::select(ls.depth == 0u, +RayMask::Camera,
+                                         +RayMask::All);
+
+            EmitterPtr emitter = si.emitter(scene, true, ray_mask);
+            ls.valid_ray |= emitter != nullptr;
+
+            if (dr::any_or<true>(emitter != nullptr)) {
+                DirectionSample3f ds(scene, si, ls.prev_si, ray_mask);
                 Float em_pdf = 0.f;
 
                 if (dr::any_or<true>(!ls.prev_bsdf_delta))
@@ -216,7 +196,7 @@ public:
                 // Accumulate, being careful with polarization (see spec_fma)
                 ls.result = spec_fma(
                     ls.throughput,
-                    ds.emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf,
+                    emitter->eval(si, ls.prev_bsdf_pdf > 0.f) * mis_bsdf,
                     ls.result);
             }
 
@@ -225,7 +205,6 @@ public:
 
             if (dr::none_or<false>(active_next)) {
                 ls.active = active_next;
-                ls.valid_ray |= (si.emitter(scene) != nullptr) && !m_hide_emitters;
                 return; // early exit for scalar mode
             }
 

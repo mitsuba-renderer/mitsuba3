@@ -38,9 +38,10 @@ struct EmbreeAccel {
     PreliminaryIntersection3f ray_intersect_preliminary(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
         bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
-        Mask active) const;
+        Mask active, const UInt32 &visibility_mask) const;
     Mask ray_test(const Scene<Float, Spectrum> *scene, const Ray3f &ray,
-                  Mask coherent, Mask active) const;
+                  Mask coherent, Mask active,
+                  const UInt32 &visibility_mask) const;
     /// Embree has no brute-force traversal; defer to the accelerated path.
     SurfaceInteraction3f ray_intersect_naive(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray,

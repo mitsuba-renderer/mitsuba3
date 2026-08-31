@@ -91,6 +91,28 @@ enum class RayFlags : uint32_t {
 
 MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
+/**
+ * Visibility mask bits for scene ray tracing queries.
+ *
+ * Every shape advertises an 8-bit visibility mask, and the ray tracing methods
+ * of `Scene` accept a ray-side counterpart. A shape can only be intersected
+ * when the bitwise AND of the two masks is nonzero.
+ *
+ * Mitsuba uses this mechanism to hide emitters from directly visible
+ * (i.e., camera) rays. Integrators trace such rays with `RayMask.Camera`
+ * and use `RayMask.All` everywhere else. The remaining bits are currently
+ * unused.
+ */
+enum class RayMask : uint32_t {
+    /// Matched by all shapes except emitters marked as invisible
+    Camera = 0x01,
+
+    /// Default ray mask, matched by every shape
+    All = 0xFF
+};
+
+MI_DECLARE_ENUM_OPERATORS(RayMask)
+
 // -----------------------------------------------------------------------------
 
 /// Generic interaction data structure, shared by surface and medium interactions
@@ -312,10 +334,16 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * Return the emitter associated with the intersection (if any)
      *
+     * The ``visibility_mask`` should be the ray-side mask of the trace that
+     * produced this interaction (see `RayMask`). Escaped rays report the
+     * environment emitter only when the mask matches its visibility.
+     *
      * Note:
      *     Defined in scene.h
      */
-    EmitterPtr emitter(const Scene *scene, Mask active = true) const;
+    EmitterPtr emitter(const Scene *scene, Mask active = true,
+                       const dr::uint32_array_t<Float> &visibility_mask
+                           = (uint32_t) RayMask::All) const;
 
     /// Is the intersected shape also a sensor?
     Mask is_sensor() const { return shape->is_sensor(); }
