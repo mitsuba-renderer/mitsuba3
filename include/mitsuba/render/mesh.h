@@ -393,12 +393,21 @@ public:
      * The ``merge()`` method constructs a mesh from several compatible inputs,
      * which loses information about the original structure. The ``Part`` API
      * exists to persist this information. It annotates a range ``[face_offset,
-     * face_offset + face_count)`` of faces along with the original mesh name
-     * and bounding box.
+     * face_offset + face_count)`` of faces along with the names and bounding
+     * box of the original mesh.
      */
     struct Part {
         /// Label of the part, e.g. the id of the source mesh
         std::string id;
+
+        /**
+         * Name assigned by the mes source
+         *
+         * This field records names that a :monosp:`serialized` file stores
+         * along with the geometry (e.g., the mesh name exported from Blender),
+         * or the file name for formats that store no name of their own.
+         */
+        std::string label;
 
         /// Index of the first face of the part
         ScalarIndex face_offset = 0;

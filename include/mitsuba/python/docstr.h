@@ -5939,8 +5939,8 @@ R"doc(Provenance record of a contiguous face range
 The ``merge()`` method constructs a mesh from several compatible inputs,
 which loses information about the original structure. The ``Part`` API
 exists to persist this information. It annotates a range ``[face_offset,
-face_offset + face_count)`` of faces along with the original mesh name
-and bounding box.)doc";
+face_offset + face_count)`` of faces along with the names and bounding
+box of the original mesh.)doc";
 
 static const char *__doc_mitsuba_Mesh_Part_bbox = R"doc(Bounds of the part's positions when the record was created)doc";
 
@@ -5949,6 +5949,15 @@ static const char *__doc_mitsuba_Mesh_Part_face_count = R"doc(Number of faces co
 static const char *__doc_mitsuba_Mesh_Part_face_offset = R"doc(Index of the first face of the part)doc";
 
 static const char *__doc_mitsuba_Mesh_Part_id = R"doc(Label of the part, e.g. the id of the source mesh)doc";
+
+static const char *__doc_mitsuba_Mesh_Part_label =
+R"doc(Name that the source mesh carries itself
+
+This names the mesh independently of the scene it appears in: the label
+that a :monosp:`serialized` file stores next to the geometry, or the
+file name for formats that store no name of their own. The ``id`` field
+instead holds the name that the Mitsuba scene knows the shape by, and
+the two differ whenever the scene assigns an id.)doc";
 
 static const char *__doc_mitsuba_Mesh_add_attribute =
 R"doc(Add the mesh attribute ``name``
