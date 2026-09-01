@@ -1778,14 +1778,10 @@ static Task* instantiate_node(const ParserConfig &config,
         // Root node is always instantiated on the main thread
         // First wait for all dependencies
         std::exception_ptr eptr;
-        for (Task* task : deps) {
-            try {
-                if (task)
-                    task_wait(task);
-            } catch (...) {
-                if (!eptr)
-                    eptr = std::current_exception();
-            }
+        try {
+            task_wait_exclusive_n(deps.size(), deps.data());
+        } catch (...) {
+            eptr = std::current_exception();
         }
 
         // Release all tasks
