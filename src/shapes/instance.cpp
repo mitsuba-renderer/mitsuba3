@@ -81,7 +81,8 @@ public:
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+        cb->put("to_world", m_to_world,
+                ParamFlags::Differentiable | ParamFlags::Discontinuous);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -145,109 +146,6 @@ public:
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
-
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     const PreliminaryIntersection3f &pi,
-                                                     uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
-                                                     Mask active) const override {
-        MI_MASK_ARGUMENT(active);
-
-        const AffineTransform4f& to_world  = m_to_world.value();
-        AffineTransform4f to_object = to_world.inverse();
-
-        constexpr bool IsDiff = dr::is_diff_v<Float>;
-        bool grad_enabled = dr::grad_enabled(to_world);
-
-        if constexpr (IsDiff) {
-            if (grad_enabled && m_shapegroup->parameters_grad_enabled())
-                Throw("Cannot differentiate instance parameters and shapegroup "
-                      "internal parameters at the same time!");
-        }
-
-        // Nested instancing is not supported
-        if (recursion_depth > 0)
-            return dr::zeros<SurfaceInteraction3f>();
-
-        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        bool follow_shape = has_flag(ray_flags, RayFlags::FollowShape);
-
-        // If necessary, temporally suspend gradient tracking for all shape
-        // parameters to construct a surface interaction completely detach from
-        // the shape.
-        dr::suspend_grad<Float> scope(detach_shape, to_world, to_object);
-
-        SurfaceInteraction3f si;
-        {
-            // Temporally suspend gradient tracking when `to_world` need to be
-            // differentiated as the various terms of `si` will be recomputed
-            // to account for the motion of `si` already.
-            dr::suspend_grad<Float> scope2(grad_enabled);
-            si = m_shapegroup->compute_surface_interaction(
-                to_object * ray, pi, ray_flags,
-                recursion_depth, active);
-        }
-
-        // Hit point `si.p` is only attached to the surface motion
-        si.p = to_world * si.p;
-        si.n = dr::normalize(dr::detach(to_world) * si.n);
-
-        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
-            AffineTransform4f to_world_d = dr::detach(to_world);
-
-            // Transforming a normal applies the inverse transpose, which does
-            // not preserve its length. Differentiating the re-normalization
-            // projects the transformed partials back onto the tangent plane.
-            Normal3f n = to_world_d * si.sh_frame.n;
-            Float inv_len = dr::rcp(dr::norm(n));
-            n *= inv_len;
-            si.sh_frame.n = n;
-
-            if (has_flag(ray_flags, RayFlags::NormalPartials)) {
-                Vector3f dn_du = to_world_d * Normal3f(si.dn_du) * inv_len,
-                         dn_dv = to_world_d * Normal3f(si.dn_dv) * inv_len;
-
-                si.dn_du = dr::fnmadd(n, dr::dot(n, dn_du), dn_du);
-                si.dn_dv = dr::fnmadd(n, dr::dot(n, dn_dv), dn_dv);
-            }
-
-            // A tangent direction supplied by the nested shape transforms
-            // along; finalize_surface_interaction() orthonormalizes it
-            // against the transformed normal and derives the bitangent. A
-            // mirroring instance transform flips the orientation of the
-            // nested parameterization.
-            si.sh_frame.s = to_world_d * si.sh_frame.s;
-            si.frame_flipped ^= dr::det(Matrix3f(to_world_d.matrix)) < 0.f;
-        }
-
-        if constexpr (IsDiff) {
-            if (follow_shape && grad_enabled) {
-                // Recompute si.t in a differential manner as the distance
-                // between the ray origin and the hit point following the moving
-                // surface.
-                si.t = dr::sqrt(dr::squared_norm(si.p - ray.o) / dr::squared_norm(ray.d));
-            } else if (!follow_shape && grad_enabled) {
-                // Differential recomputation of the intersection of the ray
-                // with the moving plane tangent to the hit point. In this
-                // scenario, it is important that `si.p` stays along the ray as
-                // the surface moves.
-                si.t = (dr::dot(si.n, si.p) - dr::dot(si.n, ray.o)) / dr::dot(si.n, ray.d);
-                si.p = ray(si.t);
-                // TODO what can we do about the normals? Take into account curvature?
-                // TODO si.uv should be attached but we don't know about the underlying parameterization
-            }
-        }
-
-        if (likely(has_flag(ray_flags, RayFlags::Shading))) {
-            si.dp_du = to_world * si.dp_du;
-            si.dp_dv = to_world * si.dp_dv;
-        }
-
-        si.prim_index = pi.prim_index;
-        si.instance = this;
-
-        return si;
-    }
 
     // =============================================================
 

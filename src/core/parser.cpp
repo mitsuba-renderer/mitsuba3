@@ -1457,32 +1457,50 @@ void transform_reorder(const ParserConfig &/*config*/, ParserState &state) {
 }
 
 void transform_merge_meshes(const ParserConfig &/*config*/, ParserState &state) {
-    if (state.empty() || state.root().type != ObjectType::Scene)
+    if (state.empty())
         return;
 
-    Properties &root_props = state.root().props;
-    std::vector<std::pair<std::string, size_t>> children;
-    for (const auto &prop : root_props.filter(Properties::Type::ResolvedReference))
-        children.emplace_back(std::string(prop.name()),
-                                prop.get<Properties::ResolvedReference>().index());
+    // Move the references of node ``node_idx`` into a new child ``merge``
+    // shape node, which collapses compatible meshes when instantiated and
+    // passes all other objects through unchanged.
+    auto wrap_children = [&state](size_t node_idx) {
+        Properties &props = state[node_idx].props;
+        std::vector<std::pair<std::string, size_t>> children;
+        for (const auto &prop : props.filter(Properties::Type::ResolvedReference))
+            children.emplace_back(std::string(prop.name()),
+                                  prop.get<Properties::ResolvedReference>().index());
 
-    // If there are no references to move, we're done
-    if (children.empty())
-        return;
+        // If there are no references to move, we're done
+        if (children.empty())
+            return;
 
-    // Create a new merge shape node
-    SceneNode merge_node;
-    merge_node.type = ObjectType::Shape;
-    merge_node.props.set_plugin_name("merge");
+        // Create a new merge shape node
+        SceneNode merge_node;
+        merge_node.type = ObjectType::Shape;
+        merge_node.props.set_plugin_name("merge");
 
-    for (const auto &[name, ref_idx] : children) {
-        merge_node.props.set(name, Properties::ResolvedReference(ref_idx), false);
-        root_props.remove_property(name);
+        for (const auto &[name, ref_idx] : children) {
+            merge_node.props.set(name, Properties::ResolvedReference(ref_idx), false);
+            props.remove_property(name);
+        }
+        // Use auto-generated argument name to avoid property validation issues
+        props.set("_arg_0", Properties::ResolvedReference(state.size()), false);
+
+        state.nodes.push_back(std::move(merge_node));
+    };
+
+    // Collapse geometry within each shape group
+    size_t node_count = state.size();
+    for (size_t i = 0; i < node_count; ++i) {
+        const SceneNode &node = state[i];
+        if (node.type == ObjectType::Shape &&
+            node.props.plugin_name() == "shapegroup")
+            wrap_children(i);
     }
-    // Use auto-generated argument name to avoid property validation issues
-    root_props.set("_arg_0", Properties::ResolvedReference(state.size()), false);
 
-    state.nodes.push_back(std::move(merge_node));
+    // .. and at the top level of the scene
+    if (state.root().type == ObjectType::Scene)
+        wrap_children(0);
 }
 
 void transform_relocate(const ParserConfig &/*config*/, ParserState &state,

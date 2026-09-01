@@ -1,7 +1,6 @@
 #pragma once
 
 #include <mitsuba/core/frame.h>
-#include <mitsuba/core/profiler.h>
 #include <mitsuba/core/ray.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/render/fwd.h>
@@ -91,6 +90,28 @@ enum class RayFlags : uint32_t {
 };
 
 MI_DECLARE_ENUM_OPERATORS(RayFlags)
+
+/**
+ * Visibility mask bits for scene ray tracing queries.
+ *
+ * Every shape advertises an 8-bit visibility mask, and the ray tracing methods
+ * of `Scene` accept a ray-side counterpart. A shape can only be intersected
+ * when the bitwise AND of the two masks is nonzero.
+ *
+ * Mitsuba uses this mechanism to hide emitters from directly visible
+ * (i.e., camera) rays. Integrators trace such rays with `RayMask.Camera`
+ * and use `RayMask.All` everywhere else. The remaining bits are currently
+ * unused.
+ */
+enum class RayMask : uint32_t {
+    /// Matched by all shapes except emitters marked as invisible
+    Camera = 0x01,
+
+    /// Default ray mask, matched by every shape
+    All = 0xFF
+};
+
+MI_DECLARE_ENUM_OPERATORS(RayMask)
 
 // -----------------------------------------------------------------------------
 
@@ -255,8 +276,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Primitive index, e.g. the triangle ID (if applicable)
     Index prim_index;
 
-    /// Stores a pointer to the parent instance (if applicable)
-    ShapePtr instance = nullptr;
+    /// Instance index. The value 0 encodes that the shape is not instanced.
+    Index instance_index = 0;
 
     // =============================================================
 
@@ -285,25 +306,19 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     void zero_(size_t size = 1) override {
         Interaction<Float_, Spectrum_>::zero_(size);
-        uv            = dr::zeros<Point2f>(size);
-        sh_frame      = dr::zeros<Frame3f>(size);
-        frame_flipped = dr::zeros<Bool>(size);
-        dp_du         = dr::zeros<Vector3f>(size);
-        dp_dv         = dr::zeros<Vector3f>(size);
-        dn_du         = dr::zeros<Vector3f>(size);
-        dn_dv         = dr::zeros<Vector3f>(size);
-        duv_dx        = dr::zeros<Vector2f>(size);
-        duv_dy        = dr::zeros<Vector2f>(size);
-        wi            = dr::zeros<Vector3f>(size);
-        prim_index    = dr::zeros<Index>(size);
-
-        if constexpr (dr::is_jit_v<Float_>) {
-            shape       = dr::zeros<ShapePtr>(size);
-            instance    = dr::zeros<ShapePtr>(size);
-        } else {
-            shape       = nullptr;
-            instance    = nullptr;
-        }
+        uv             = dr::zeros<Point2f>(size);
+        sh_frame       = dr::zeros<Frame3f>(size);
+        frame_flipped  = dr::zeros<Bool>(size);
+        dp_du          = dr::zeros<Vector3f>(size);
+        dp_dv          = dr::zeros<Vector3f>(size);
+        dn_du          = dr::zeros<Vector3f>(size);
+        dn_dv          = dr::zeros<Vector3f>(size);
+        duv_dx         = dr::zeros<Vector2f>(size);
+        duv_dy         = dr::zeros<Vector2f>(size);
+        wi             = dr::zeros<Vector3f>(size);
+        prim_index     = dr::zeros<Index>(size);
+        instance_index = dr::zeros<Index>(size);
+        shape          = dr::zeros<ShapePtr>(size);
     }
 
     /// Convert a local shading-space vector into world space
@@ -319,10 +334,16 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * Return the emitter associated with the intersection (if any)
      *
+     * The ``visibility_mask`` should be the ray-side mask of the trace that
+     * produced this interaction (see `RayMask`). Escaped rays report the
+     * environment emitter only when the mask matches its visibility.
+     *
      * Note:
      *     Defined in scene.h
      */
-    EmitterPtr emitter(const Scene *scene, Mask active = true) const;
+    EmitterPtr emitter(const Scene *scene, Mask active = true,
+                       const dr::uint32_array_t<Float> &visibility_mask
+                           = (uint32_t) RayMask::All) const;
 
     /// Is the intersected shape also a sensor?
     Mask is_sensor() const { return shape->is_sensor(); }
@@ -504,8 +525,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     }
 
     /**
-     * Attach the motion of this interaction under the requested
-     * differentiation mode
+     * Attach the motion of this interaction under the requested differentiation mode
      *
      * This function exists for use within implementations of
      * `Shape.compute_surface_interaction()`. It reads ``t``, ``p`` and ``n`` and
@@ -564,8 +584,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dr::masked(t, !active) = dr::Infinity<Float>;
         active &= is_valid();
 
-        dr::masked(shape, !active)    = nullptr;
-        dr::masked(instance, !active) = nullptr;
+        dr::masked(shape, !active)          = nullptr;
+        dr::masked(instance_index, !active) = 0u;
 
         time        = ray.time;
         wavelengths = ray.wavelengths;
@@ -615,7 +635,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
                  sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                 duv_dy, wi, prim_index, instance)
+                 duv_dy, wi, prim_index, instance_index)
 };
 
 // -----------------------------------------------------------------------------
@@ -675,12 +695,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
         sigma_t             = dr::zeros<UnpolarizedSpectrum>(size);
         combined_extinction = dr::zeros<UnpolarizedSpectrum>(size);
         mint                = dr::zeros<Float>(size);
-
-        if constexpr (dr::is_jit_v<Float_>) {
-            medium      = dr::zeros<MediumPtr>(size);
-        } else {
-            medium      = nullptr;
-        }
+        medium              = dr::zeros<MediumPtr>(size);
     }
 
     /// Convert a local shading-space (defined by `wi`) vector into world space
@@ -710,8 +725,8 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
  * stores whether the shape is intersected by a given ray, and cache
  * preliminary information about the intersection if that is the case.
  *
- * If the intersection is deemed relevant, detailed intersection information can later be
- * obtained via the  `compute_surface_interaction()` method.
+ * If the intersection is deemed relevant, detailed intersection information
+ * can later be obtained via `Scene.compute_surface_interaction()`.
  */
 template <typename Float_, typename Shape_>
 struct PreliminaryIntersection {
@@ -748,14 +763,11 @@ struct PreliminaryIntersection {
     /// Primitive index, e.g. the triangle ID (if applicable)
     Index prim_index;
 
-    /// Shape index, e.g. the shape ID in shapegroup (if applicable)
-    Index shape_index;
+    /// Instance index. The value 0 encodes that the shape is not instanced.
+    Index instance_index = 0;
 
-    /// Pointer to the associated shape
+    /// Pointer to the associated shape (the leaf shape for instanced hits)
     ShapePtr shape = nullptr;
-
-    /// Stores a pointer to the parent instance (if applicable)
-    ShapePtr instance = nullptr;
 
     // =============================================================
 
@@ -769,19 +781,12 @@ struct PreliminaryIntersection {
      * ``valid`` and sets ``t`` to infinity for invalid intersection records.
      */
     void zero_(size_t size = 1) {
-        valid       = dr::zeros<Mask>(size);
-        t           = dr::full<Float>(dr::Infinity<Float>, size);
-        prim_uv     = dr::zeros<Point2f>(size);
-        prim_index  = dr::zeros<Index>(size);
-        shape_index = dr::zeros<Index>(size);
-
-        if constexpr (dr::is_jit_v<Float_>) {
-            shape       = dr::zeros<ShapePtr>(size);
-            instance    = dr::zeros<ShapePtr>(size);
-        } else {
-            shape       = nullptr;
-            instance    = nullptr;
-        }
+        valid          = dr::zeros<Mask>(size);
+        t              = dr::full<Float>(dr::Infinity<Float>, size);
+        prim_uv        = dr::zeros<Point2f>(size);
+        prim_index     = dr::zeros<Index>(size);
+        instance_index = dr::zeros<Index>(size);
+        shape          = dr::zeros<ShapePtr>(size);
     }
 
     /// Is the current interaction valid?
@@ -789,49 +794,10 @@ struct PreliminaryIntersection {
         return valid;
     }
 
-    /**
-     * Compute and return detailed information related to a surface interaction
-     *
-     * Args:
-     *     ray: Ray associated with the ray intersection
-     *
-     *     ray_flags: Flags specifying which information should be computed
-     *
-     * Returns:
-     *     A data structure containing the detailed information
-     */
-    auto compute_surface_interaction(const Ray3f &ray,
-                                     uint32_t ray_flags = +RayFlags::Default,
-                                     Mask active = true) {
-        if constexpr (!std::is_same_v<Shape_, Shape<Float, Spectrum>>) {
-            Throw("PreliminaryIntersection::compute_surface_interaction(): not implemented!");
-        } else {
-            using SurfaceInteraction3f = SurfaceInteraction<Float, Spectrum>;
-            using ShapePtr = typename SurfaceInteraction3f::ShapePtr;
-
-            active &= is_valid();
-            if (dr::none_or<false>(active)) {
-                SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-                si.wi = -ray.d;
-                si.wavelengths = ray.wavelengths;
-                return si;
-            }
-
-            ScopedPhase sp(ProfilerPhase::CreateSurfaceInteraction);
-
-            ShapePtr target = dr::select(instance == nullptr, shape, instance);
-            SurfaceInteraction3f si =
-                target->compute_surface_interaction(ray, *this, ray_flags, 0u, active);
-            si.finalize_surface_interaction(*this, ray, ray_flags, active);
-
-            return si;
-        }
-    }
-
     // =============================================================
 
     DRJIT_STRUCT(PreliminaryIntersection, valid, t, prim_uv, prim_index,
-                 shape_index, shape, instance);
+                 instance_index, shape);
 };
 
 // -----------------------------------------------------------------------------
@@ -878,7 +844,7 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
-           << "  instance = " << string::indent(it.instance, 13) << std::endl
+           << "  instance_index = " << it.instance_index << std::endl
            << "]";
     }
     return os;
@@ -912,9 +878,8 @@ std::ostream &operator<<(std::ostream &os, const PreliminaryIntersection<Float, 
            << "  t = " << pi.t << "," << std::endl
            << "  prim_uv = " << pi.prim_uv << "," << std::endl
            << "  prim_index = " << pi.prim_index << "," << std::endl
-           << "  shape_index = " << pi.shape_index << "," << std::endl
+           << "  instance_index = " << pi.instance_index << "," << std::endl
            << "  shape = " << string::indent(pi.shape, 6) << "," << std::endl
-           << "  instance = " << string::indent(pi.instance, 6) << "," << std::endl
            << "]";
     }
     return os;

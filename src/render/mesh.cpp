@@ -867,6 +867,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
             m_dedge = nullptr;
             // Derived from the pairing, so it cannot outlive it
             m_sil_dedge_pmf = DiscreteDistribution<Float>();
+            // The recorded face ranges no longer describe the new topology
+            m_parts.clear();
         }
 
         // The inverse index maps follow the maps they were built from
@@ -1475,11 +1477,24 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
     size_t V = 0, F = 0, P = 0, N = 0;
     bool any_pmap = false, any_nmap = false, any_bsdf = false;
     ScalarBoundingBox3f bbox;
+    std::vector<Part> parts;
+    parts.reserve(meshes.size());
 
     for (const Mesh *m : meshes) {
         if (m->merge_key() != key || m->has_mesh_attributes())
             Throw("Mesh::merge(): the meshes are incompatible (%s and %s)!",
                   first->to_string(), m->to_string());
+
+        // Retain information about the original mesh parts
+        if (m->m_parts.empty()) {
+            std::string_view id = m->id();
+            parts.push_back({ std::string(id.empty() ? m->m_filename : id),
+                              (ScalarIndex) F, m->m_face_count, m->m_bbox });
+        } else {
+            for (const Part &p : m->m_parts)
+                parts.push_back({ p.id, (ScalarIndex) (F + p.face_offset),
+                                  p.face_count, p.bbox });
+        }
 
         V += m->m_vertex_count;   F += m->m_face_count;
         P += m->m_position_count; N += m->m_normal_count;
@@ -1610,8 +1625,22 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
                         TensorXu32(std::move(faces), { F, MeshFaceStride }),
                         TensorXf32(std::move(vertices), { V, MeshVertexStride }),
                         pidx, nidx, any_pmap ? P : 0, any_nmap ? N : 0, &bbox);
+    result->m_parts = std::move(parts);
 
     return result;
+}
+
+MI_VARIANT const typename Mesh<Float, Spectrum>::Part *
+Mesh<Float, Spectrum>::find_part(ScalarIndex prim_index) const {
+    auto it = std::upper_bound(
+        m_parts.begin(), m_parts.end(), prim_index,
+        [](ScalarIndex v, const Part &p) { return v < p.face_offset; });
+    if (it == m_parts.begin())
+        return nullptr;
+    --it;
+    if (prim_index - it->face_offset >= it->face_count)
+        return nullptr;
+    return &*it;
 }
 
 MI_VARIANT bool Mesh<Float, Spectrum>::needs_parameterization() const {
@@ -1755,7 +1784,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
         return dr::zeros<SurfaceInteraction3f>();
 
     SurfaceInteraction3f si =
-        compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        compute_surface_interaction(ray, pi, ray_flags, active);
     si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
     return si;
@@ -2277,15 +2306,10 @@ MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
                                                    uint32_t ray_flags,
-                                                   uint32_t recursion_depth,
                                                    Mask active) const {
     MI_MASK_ARGUMENT(active);
 
     SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-
-    // Early exit when tracing isn't necessary
-    if (!m_is_instance && recursion_depth > 0)
-        return si;
 
     constexpr bool IsDiff = dr::is_diff_v<Float>;
     bool detach  = IsDiff && has_flag(ray_flags, RayFlags::DetachShape),
@@ -2466,7 +2490,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.prim_index = pi.prim_index;
     si.shape    = this;
-    si.instance = nullptr;
+    si.instance_index = 0;
 
     return si;
 }

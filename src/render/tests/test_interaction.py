@@ -34,7 +34,7 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.duv_dy = [26, 27]
     si.wi = [31, 32, 33]
     si.prim_index = 34
-    si.instance = None
+    si.instance_index = 0
     assert si.sh_frame == mi.Frame3f([9, 10, 11], [12, 13, 14], [15, 16, 17])
 
     assert repr(si).strip() == """SurfaceInteraction[
@@ -59,7 +59,7 @@ def test02_intersection_construction(variant_scalar_rgb):
   duv_dy=[26, 27],
   wi=[31, 32, 33],
   prim_index=34,
-  instance=0x0
+  instance_index=0
 ]"""
 
 

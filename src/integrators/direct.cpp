@@ -31,11 +31,6 @@ Direct illumination integrator (:monosp:`direct`)
      using the BSDF sampling strategies implemented by the scene's surfaces.
      (Default: set to the value of :monosp:`shading_samples`)
 
- * - hide_emitters
-   - |bool|
-   - Hide directly visible emitters.
-     (Default: no, i.e. |false|)
-
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/integrator_direct_bsdf.jpg
    :caption: (**a**) BSDF sampling only
@@ -80,7 +75,7 @@ or BSDF sampling-only integrator.
 template <typename Float, typename Spectrum>
 class DirectIntegrator : public SamplingIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(SamplingIntegrator, m_hide_emitters)
+    MI_IMPORT_BASE(SamplingIntegrator)
     MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     DirectIntegrator(const Properties &props) : Base(props) {
@@ -119,31 +114,20 @@ public:
                                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
+        // The camera mask hides emitters marked as invisible
         SurfaceInteraction3f si = scene->ray_intersect(
-            ray, +RayFlags::Default, /* coherent = */ true, active);
+            ray, +RayFlags::Default, /* coherent = */ true, active,
+            +RayMask::Camera);
 
         Spectrum result(0.f);
 
         // ----------------------- Visible emitters -----------------------
 
-        if (m_hide_emitters) {
-            // Skip all area emitters along this ray
-            Mask skip_emitters =
-                si.is_valid() && (si.shape->emitter() != nullptr) && active;
-
-            if (dr::any_or<true>(skip_emitters)) {
-                Ray3f ray_skip = si.spawn_ray(ray.d);
-                PreliminaryIntersection3f pi =
-                    Base::skip_area_emitters(scene, ray_skip, true, skip_emitters);
-                SurfaceInteraction3f si_after_skip = pi.compute_surface_interaction(
-                        ray, +RayFlags::Default, skip_emitters);
-                dr::masked(si, skip_emitters) = si_after_skip;
-            }
-        } else {
-            EmitterPtr emitter_vis = si.emitter(scene, active);
-            if (dr::any_or<true>(emitter_vis != nullptr))
-                result += emitter_vis->eval(si, active);
-        }
+        // The emitter lookup reuses the camera mask so that escaped rays
+        // ignore a hidden environment emitter
+        EmitterPtr emitter_vis = si.emitter(scene, active, +RayMask::Camera);
+        if (dr::any_or<true>(emitter_vis != nullptr))
+            result += emitter_vis->eval(si, active);
 
         Mask valid_ray = active && si.is_valid();
 

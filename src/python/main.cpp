@@ -28,6 +28,7 @@ MI_PY_DECLARE(rfilter);
 MI_PY_DECLARE(Thread);
 MI_PY_DECLARE(Timer);
 MI_PY_DECLARE(Properties);
+MI_PY_DECLARE(ParameterTable);
 MI_PY_DECLARE(parser);
 MI_PY_DECLARE(misc);
 
@@ -99,23 +100,18 @@ NB_MODULE(mitsuba_ext, m) {
     );
 
     m.def("set_log_level", [](mitsuba::LogLevel level) {
-        if (!mitsuba::logger()) {
-            Throw("No Logger instance is set on the current thread! This is likely due to "
-                  "set_log_level being called from a non-Mitsuba thread. You can manually set a "
-                  "thread's ThreadEnvironment (which includes the logger) using "
-                  "ScopedSetThreadEnvironment e.g.\n"
-                  "# Main thread\n"
-                  "env = mi.ThreadEnvironment()\n"
-                  "# Secondary thread\n"
-                  "with mi.ScopedSetThreadEnvironment(env):\n"
-                  "   mi.set_log_level(mi.LogLevel.Info)\n"
-                  "   mi.Log(mi.LogLevel.Info, 'Message')\n");
+        Logger *logger = mitsuba::logger();
+        if (!logger) {
+            Throw("Could not set log level, global Logger instance is null!");
         }
-
-        mitsuba::logger()->set_log_level(level);
+        logger->set_log_level(level);
     }, "Sets the log level.");
     m.def("log_level", []() {
-        return mitsuba::logger()->log_level();
+        Logger *logger = mitsuba::logger();
+        if (!logger) {
+            Throw("Could not get log level, global Logger instance is null!");
+        }
+        return logger->log_level();
     }, "Returns the current log level.");
 
     Thread::static_initialization();
@@ -156,6 +152,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(Thread);
     MI_PY_IMPORT(Timer);
     MI_PY_IMPORT(Properties);
+    MI_PY_IMPORT(ParameterTable);
     MI_PY_IMPORT(parser);
     MI_PY_IMPORT(misc);
 

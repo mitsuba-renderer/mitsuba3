@@ -10,7 +10,7 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/scene_ir.h>
 #include <drjit/packet.h>
-#include <tsl/robin_map.h>
+#include <map>
 
 #if defined(MI_ENABLE_CUDA)
 #  include <mitsuba/render/optix/common.h>
@@ -551,7 +551,6 @@ public:
     virtual SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                              const PreliminaryIntersection3f &pi,
                                                              uint32_t ray_flags = +RayFlags::Default,
-                                                             uint32_t recursion_depth = 0,
                                                              Mask active = true) const;
 
     /**
@@ -805,6 +804,12 @@ public:
     /// Is this shape an instance?
     bool is_instance() const { return shape_type() == +ShapeType::Instance; };
 
+    /// Return the object-to-world transformation
+    AffineTransform4f to_world() const { return m_to_world.value(); }
+
+    /// Return the object-to-world transformation (scalar form)
+    const ScalarAffineTransform4f &scalar_to_world() const { return m_to_world.scalar(); }
+
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
                                                m_exterior_medium.get() != nullptr; }
@@ -832,6 +837,16 @@ public:
 
     /// Return the area emitter associated with this shape (if any)
     Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
+
+    /**
+     * Return the shape's 8-bit visibility mask (see `RayMask`)
+     *
+     * A ray can only intersect this shape when the bitwise AND of its
+     * ray-side mask and this value is nonzero. Ordinary shapes match every
+     * ray. Shapes with an attached emitter return its
+     * `Emitter.visibility_mask()`.
+     */
+    uint32_t visibility_mask() const;
 
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }
@@ -936,8 +951,7 @@ protected:
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
 
-    tsl::robin_map<std::string, ref<Texture>, std::hash<std::string_view>,
-                   std::equal_to<>> m_texture_attributes;
+    std::map<std::string, ref<Texture>, std::less<>> m_texture_attributes;
 
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
@@ -1017,7 +1031,7 @@ NAMESPACE_END(mitsuba)
         const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
         MI_MASK_ARGUMENT(active);                                                           \
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
-        std::tie(pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index) =               \
+        std::tie(pi.valid, pi.t, pi.prim_uv, std::ignore, pi.prim_index) =                  \
             ray_intersect_preliminary_impl<Float>(ray, prim_index, active);                 \
         pi.shape = this;                                                                    \
         return pi;                                                                          \

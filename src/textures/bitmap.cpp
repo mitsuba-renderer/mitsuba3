@@ -455,12 +455,12 @@ public:
         m_raw(raw),
         m_srgb(srgb) {
 
-        // Compute the mean without migrating texture data, i.e. avoid the
-        // m_texture.tensor() call that would trigger a migration. On CUDA we
-        // ideally keep the data solely as a GPU texture.
+        // Compute the mean from the input tensor, i.e. avoid the
+        // m_texture.tensor() call that would read the data back from the
+        // GPU texture.
         rebuild_internals(tensor, true, false);
 
-        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel, accel,
+        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel,
                                     filter_mode, wrap_mode, srgb);
     }
 
@@ -476,14 +476,14 @@ public:
         if (keys.empty() || string::contains(keys, "data")) {
             const size_t channels = m_texture.channel_count();
             if (channels != 1 && channels != 3)
-                Throw("parameters_changed(): The bitmap texture %s was changed "
+                Throw("parameters_changed(): The bitmap texture \"%s\" was changed "
                       "to have %d channels, only textures with 1 or 3 channels "
                       "are supported!",
-                      to_string(), channels);
+                      m_name, channels);
             else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
-                Throw("parameters_changed(): The bitmap texture %s was changed,"
+                Throw("parameters_changed(): The bitmap texture \"%s\" was changed,"
                       " it must be at least 2x2 pixels in size!",
-                      to_string());
+                      m_name);
 
             m_texture.update_inplace();
             rebuild_internals(m_texture.tensor(), true, m_distr2d != nullptr);
@@ -499,10 +499,10 @@ public:
 
         const size_t channels = m_texture.channel_count();
         if (channels == 3 && is_spectral_v<Spectrum> && m_raw)
-            Throw("eval(): The bitmap texture %s was queried for a spectrum, "
+            Throw("eval(): The bitmap texture \"%s\" was queried for a spectrum, "
                   "but texture conversion into spectra was explicitly "
                   "disabled! (raw=true)",
-                  to_string());
+                  m_name);
 
         if (dr::none_or<false>(active))
             return dr::zeros<UnpolarizedSpectrum>();
@@ -526,10 +526,10 @@ public:
 
         const size_t channels = m_texture.channel_count();
         if (stores_spectral_coeffs(channels))
-            Throw("eval_1(): The bitmap texture %s was queried for a "
+            Throw("eval_1(): The bitmap texture \"%s\" was queried for a "
                   "monochromatic value, but texture conversion to color "
                   "spectra had previously been requested! (raw=false)",
-                  to_string());
+                  m_name);
 
         if (dr::none_or<false>(active))
             return dr::zeros<Float>();
@@ -547,10 +547,10 @@ public:
         const size_t channels = m_texture.channel_count();
         if (stores_spectral_coeffs(channels))
             Throw(
-                "eval_1_grad(): The bitmap texture %s was queried for a "
+                "eval_1_grad(): The bitmap texture \"%s\" was queried for a "
                 "monochromatic gradient value, but texture conversion to color "
                 "spectra had previously been requested! (raw=false)",
-                to_string());
+                m_name);
 
         if (dr::none_or<false>(active))
             return dr::zeros<Vector2f>();
@@ -606,14 +606,14 @@ public:
 
         const size_t channels = m_texture.channel_count();
         if (channels != 3)
-            Throw("eval_3(): The bitmap texture %s was queried for a RGB "
+            Throw("eval_3(): The bitmap texture \"%s\" was queried for a RGB "
                   "value, but it is monochromatic!",
-                  to_string());
+                  m_name);
         if (stores_spectral_coeffs(channels))
-            Throw("eval_3(): The bitmap texture %s was queried for a RGB "
+            Throw("eval_3(): The bitmap texture \"%s\" was queried for a RGB "
                   "value, but texture conversion to color spectra had "
                   "previously been requested! (raw=false)",
-                  to_string());
+                  m_name);
 
         if (dr::none_or<false>(active))
             return dr::zeros<Color3f>();

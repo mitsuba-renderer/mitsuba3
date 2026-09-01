@@ -319,7 +319,8 @@ extern MI_EXPORT_LIB void transform_merge_equivalent(const ParserConfig &config,
  * Adapt the scene description to merge geometry whenever possible
  *
  * This transformation moves all top-level geometry (i.e., occurring directly
- * within the ``<scene>``) into a shape plugin of type ``merge``.
+ * within the ``<scene>``) into a shape plugin of type ``merge``. It applies
+ * the same treatment to the contents of each ``shapegroup``.
  *
  * When instantiated, this ``merge`` shape:
  *

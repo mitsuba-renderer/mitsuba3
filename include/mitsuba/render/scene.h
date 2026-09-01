@@ -135,6 +135,13 @@ public:
      *         and when using ``llvm_*`` variants of the renderer along with
      *         Embree. It has no effect in scalar or CUDA/OptiX variants.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A detailed surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -142,8 +149,11 @@ public:
     SurfaceInteraction3f ray_intersect(const Ray3f &ray,
                                        uint32_t ray_flags,
                                        Mask coherent,
-                                       Mask active = true) const {
-        return ray_intersect(ray, ray_flags, coherent, false, 0, 0, active);
+                                       Mask active = true,
+                                       const UInt32 &visibility_mask
+                                           = (uint32_t) RayMask::All) const {
+        return ray_intersect(ray, ray_flags, coherent, false, 0, 0, active,
+                             visibility_mask);
     }
 
     /**
@@ -223,6 +233,13 @@ public:
      *         At most, 16 bits can be used. This flag has no effect in scalar or
      *         LLVM variants, or if the ``reorder`` parameter is ``False``.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A detailed surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -233,7 +250,35 @@ public:
                                        bool reorder,
                                        UInt32 reorder_hint,
                                        uint32_t reorder_hint_bits,
-                                       Mask active = true) const;
+                                       Mask active = true,
+                                       const UInt32 &visibility_mask
+                                           = (uint32_t) RayMask::All) const;
+
+    /**
+     * Expand a preliminary intersection into a detailed surface interaction
+     *
+     * This function turns a `PreliminaryIntersection3f` into a
+     * `SurfaceInteraction3f`, which provides a richer description of the
+     * intersection's differentiable geometry.
+     *
+     * Args:
+     *     ray: Ray associated with the preliminary ray intersection ``pi``
+     *
+     *     pi: Preliminary intersection to be expanded
+     *
+     *     ray_flags: An integer combining flag bits from `RayFlags` (merged
+     *         using binary or).
+     *
+     * Returns:
+     *     A detailed surface interaction record. Its ``is_valid()`` method
+     *     should be queried to check if an intersection was actually found.
+     */
+    SurfaceInteraction3f compute_surface_interaction(
+        const Ray3f &ray, const PreliminaryIntersection3f &pi,
+        uint32_t ray_flags = +RayFlags::Default, Mask active = true) const;
+
+    /// Return the ``instance`` shape with the given index.
+    const Shape *instance(size_t index) const { return m_instances[index]; }
 
     /**
      * Intersect a ray with the shapes comprising the scene and return a
@@ -292,10 +337,16 @@ public:
      *         and when using ``llvm_*`` variants of the renderer along with
      *         Embree. It has no effect in scalar or CUDA/OptiX variants.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only occlude the ray when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero.
+     *
      * Returns:
      *     ``True`` if an intersection was found
      */
-    Mask ray_test(const Ray3f &ray, Mask coherent, Mask active) const;
+    Mask ray_test(const Ray3f &ray, Mask coherent, Mask active,
+                  const UInt32 &visibility_mask
+                      = (uint32_t) RayMask::All) const;
 
     /**
      * Intersect a ray with the shapes comprising the scene and return
@@ -352,8 +403,11 @@ public:
      */
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask coherent = false,
-                                                        Mask active = true) const {
-        return ray_intersect_preliminary(ray, coherent, false, 0, 0, active);
+                                                        Mask active = true,
+                                                        const UInt32 &visibility_mask
+                                                            = (uint32_t) RayMask::All) const {
+        return ray_intersect_preliminary(ray, coherent, false, 0, 0, active,
+                                         visibility_mask);
     }
 
     /**
@@ -423,6 +477,13 @@ public:
      *         At most, 16 bits can be used. This flag has no effect in scalar or
      *         LLVM variants, or if the ``reorder`` parameter is ``False``.
      *
+     *     visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
+     *         can only be intersected when the bitwise AND of this value and
+     *         the shape's `Shape.visibility_mask()` is nonzero. The default,
+     *         `RayMask.All`, matches every shape; camera rays should pass
+     *         `RayMask.Camera` so that emitters flagged as invisible are
+     *         skipped.
+     *
      * Returns:
      *     A preliminary surface interaction record. Its ``is_valid()`` method
      *     should be queried to check if an intersection was actually found.
@@ -430,9 +491,11 @@ public:
     PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
                                                         Mask coherent,
                                                         bool reorder,
-                                                        UInt32 reorder_hint ,
+                                                        UInt32 reorder_hint,
                                                         uint32_t reorder_hint_bits,
-                                                        Mask active = true) const;
+                                                        Mask active = true,
+                                                        const UInt32 &visibility_mask
+                                                            = (uint32_t) RayMask::All) const;
 
     /**
      * Ray intersection using a brute force search. Used in
@@ -722,6 +785,16 @@ public:
     /// Returns a union of ShapeType flags denoting what is present in the scene
     uint32_t shape_types() const;
 
+    /**
+     * \brief Should the BVH builder compact the acceleration data structure?
+     *
+     * BVH Compaction can significantly reduce memory usage but also requires
+     * device <-> host synchronization. If ``m_compact_accel_auto`` is set,
+     * only compact on the first build and switch to non-compacting builds later
+     * to avoid the sync cost in inverse rendering optimization iterations.
+     */
+    bool compact_accel();
+
     /// Return a human-readable string representation of the scene contents.
     virtual std::string to_string() const override;
 
@@ -736,6 +809,9 @@ public:
 protected:
     /// Unmarks all shapes as dirty
     void clear_shapes_dirty();
+
+    /// Repack the per-instance transform records (see below)
+    void update_instance_transforms();
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
@@ -777,6 +853,25 @@ protected:
     /// Compact GPU acceleration structures after building. This reduces BLAS
     /// memory at the cost of an extra build-time query and compaction pass.
     bool m_compact_accel;
+    /// Has an acceleration structure build already taken place?
+    bool m_accel_built = false;
+    /// Enable/disable automatic BVH compaction criterion in compact_accel().
+    bool m_compact_accel_auto;
+
+    /// Instances in order of appearance in ``m_shapes``.
+    /// `PreliminaryIntersection3f.instance_index` references this array biased
+    /// by one, since 0 marks non-instanced intersections.
+    std::vector<const Shape *> m_instances;
+
+    /// Flattened sequence of instance ``to_world`` matrices (12 floats each)
+    DynamicBuffer<Float> m_instance_transforms;
+
+    /// Instancing-aware expansion of a preliminary intersection (see
+    /// ``compute_surface_interaction()``, which forwards here when the
+    /// record may reference instanced geometry)
+    SurfaceInteraction3f compute_surface_interaction_instanced(
+        const Ray3f &ray, const PreliminaryIntersection3f &pi,
+        uint32_t ray_flags, Mask active) const;
 
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;
@@ -785,20 +880,31 @@ protected:
                            m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
-                           m_silhouette_shapes_dr, m_silhouette_distr)
+                           m_silhouette_shapes_dr, m_silhouette_distr,
+                           m_instance_transforms)
 };
 
 // See interaction.h
 template <typename Float, typename Spectrum>
 typename SurfaceInteraction<Float, Spectrum>::EmitterPtr
-SurfaceInteraction<Float, Spectrum>::emitter(const Scene *scene, Mask active) const {
+SurfaceInteraction<Float, Spectrum>::emitter(
+        const Scene *scene, Mask active,
+        const dr::uint32_array_t<Float> &visibility_mask) const {
     if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(active);
-        return is_valid() ? shape->emitter() : scene->environment();
+        if (is_valid())
+            return shape->emitter();
+        const Emitter *env = scene->environment();
+        return (env && (visibility_mask & env->visibility_mask()) != 0)
+                   ? env : nullptr;
     } else {
         EmitterPtr emitter = shape->emitter(active);
-        if (scene && scene->environment())
-            emitter = dr::select(is_valid(), emitter, scene->environment() & active);
+        const Emitter *env = scene ? scene->environment() : nullptr;
+        if (env) {
+            Mask env_visible =
+                active && ((visibility_mask & env->visibility_mask()) != 0u);
+            emitter = dr::select(is_valid(), emitter, env & env_visible);
+        }
         return emitter;
     }
 }

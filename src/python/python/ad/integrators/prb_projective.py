@@ -168,10 +168,12 @@ class PathProjectiveIntegrator(PSIntegrator):
         if dr.hint(ignore_ray, mode='scalar'):
             si = si_shade
         else:
-            pi = scene.ray_intersect_preliminary(ray,
-                                                 coherent=True,
-                                                 reorder=False,
-                                                 active=active)
+            # Depth-0 lanes use the camera mask, which hides emitters marked
+            # as invisible
+            pi = scene.ray_intersect_preliminary(
+                ray, coherent=True, reorder=False, active=active,
+                visibility_mask=dr.select(depth_init == 0, mi.RayMask.Camera,
+                                          mi.RayMask.All))
 
         # Variables caching information from the previous bounce
         ray_prev        = mi.Ray3f(ray)
@@ -195,18 +197,16 @@ class PathProjectiveIntegrator(PSIntegrator):
             # In primal mode, this is just an ordinary ray tracing operation.
             use_si_shade = ignore_ray & (depth == depth_init)
             with dr.resume_grad(when=not primal):
-                si = pi.compute_surface_interaction(ray,
+                si = scene.compute_surface_interaction(ray, pi,
                                                     ray_flags=mi.RayFlags.Default,
                                                     active=active_next & ~use_si_shade)
 
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
-                    si_prev_diff = pi_prev.compute_surface_interaction(
-                        ray_prev,
-                        ray_flags=mi.RayFlags.Minimal,
-                        active=active_next & ~use_si_shade
-                    )
+                    si_prev_diff = scene.compute_surface_interaction(
+                        ray_prev, pi_prev, ray_flags=mi.RayFlags.Minimal,
+                        active=active_next & ~use_si_shade)
                     si_prev = dr.replace_grad(si_prev, si_prev_diff)
                     si_detached = dr.detach(si) # Ignore motion of current point
                     wi_global = dr.normalize(si_prev.p - si_detached.p)
@@ -220,12 +220,14 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Hide the environment emitter if necessary
-            if dr.hint(self.hide_emitters, mode='scalar'):
-                active_next &= ~((depth == 0) & ~si.is_valid())
+            # Ray mask of the trace that produced si. The emitter lookup uses
+            # it to hide an invisible environment from escaped depth-0 rays.
+            ray_mask = dr.select(depth == 0, mi.RayMask.Camera,
+                                 mi.RayMask.All)
 
             # Compute MIS weight for emitter sample from previous bounce
-            ds = mi.DirectionSample3f(scene, si=si, ref=si_prev)
+            ds = mi.DirectionSample3f(scene, si=si, ref=si_prev,
+                                      visibility_mask=ray_mask)
 
             mis = mis_weight(
                 bsdf_pdf_prev,
@@ -380,9 +382,9 @@ class PathProjectiveIntegrator(PSIntegrator):
             # ------------------ Differential phase only ------------------
 
             if dr.hint(not primal, mode='scalar'):
-                si_next = pi_next.compute_surface_interaction(ray_next,
-                                                              ray_flags=mi.RayFlags.Minimal,
-                                                              active=active_next)
+                si_next = scene.compute_surface_interaction(
+                    ray_next, pi_next, ray_flags=mi.RayFlags.Minimal,
+                    active=active_next)
 
                 with dr.resume_grad():
                     # If the current interaction point is moving, we need
@@ -488,8 +490,8 @@ class PathProjectiveIntegrator(PSIntegrator):
 
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
-        si_fg = pi_fg.compute_surface_interaction(
-            dummy_ray, mi.RayFlags.Default, active)
+        si_fg = scene.compute_surface_interaction(
+            dummy_ray, pi_fg, mi.RayFlags.Default, active)
 
         # If smooth normals are used, it is possible that the computed
         # shading normal near visibility silhouette points to the wrong side

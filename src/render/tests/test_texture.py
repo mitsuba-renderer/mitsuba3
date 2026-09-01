@@ -42,7 +42,7 @@ def test02_trampoline(variants_vec_backends_once_rgb):
         def resolution(self):
             return 123
 
-        def to_string(self):
+        def __repr__(self):
             return f"DummyTexture"
 
     mi.register_texture('dummy_texture', DummyTexture)

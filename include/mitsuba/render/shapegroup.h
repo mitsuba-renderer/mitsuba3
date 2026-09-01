@@ -28,12 +28,6 @@ public:
     bool ray_test_scalar(const ScalarRay3f &ray) const override;
 #endif
 
-    SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
-                                                     const PreliminaryIntersection3f &pi,
-                                                     uint32_t ray_flags,
-                                                     uint32_t recursion_depth,
-                                                     Mask active) const override;
-
     ScalarSize primitive_count() const override;
 
     ScalarBoundingBox3f bbox() const override{ return m_bbox; }
@@ -64,10 +58,6 @@ private:
     ScalarBoundingBox3f m_bbox;
     std::vector<ref<Base>> m_shapes;
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
-    DynamicBuffer<UInt32> m_shapes_registry_ids;
-#endif
-
 #if !defined(MI_ENABLE_EMBREE)
     ref<ShapeKDTree> m_kdtree;
 #endif
@@ -80,11 +70,7 @@ private:
     mutable bool m_parameters_grad_enabled_cache = false;
     mutable bool m_parameters_grad_enabled_dirty = true;
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
-    MI_DECLARE_TRAVERSE_CB(m_shapes, m_shapes_registry_ids, m_accel_handles)
-#else
     MI_DECLARE_TRAVERSE_CB(m_shapes, m_accel_handles)
-#endif
 };
 
 MI_EXTERN_CLASS(ShapeGroup)

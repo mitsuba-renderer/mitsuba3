@@ -203,9 +203,11 @@ void build_gas(const OptixDeviceContext &context,
         size_t shapes_count = geoms.size();
 
         OptixAccelBuildOptions accel_options = {};
-        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE;
-        if (compact)
-            accel_options.buildFlags |= OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
+        // ALLOW_COMPACTION must always be present so that the flags agree with
+        // the builtin curve modules (init_optix_config); `compact` only decides
+        // whether the compaction pass below runs.
+        accel_options.buildFlags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE |
+                                   OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
         accel_options.operation  = OPTIX_BUILD_OPERATION_BUILD;
         accel_options.motionOptions.numKeys = 0;
 
@@ -375,15 +377,9 @@ void prepare_ias(const SceneIR &sd,
                              ? OPTIX_INSTANCE_FLAG_NONE
                              : OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING;
 
-        // instanceId is recovered on the device as pi.instance: the owning
-        // Instance's registry id for an instanced hit, or 0 (null) for a
-        // top-level shape.
-        uint32_t instance_id = inst.owner_registry_id == SCENE_IR_NO_OWNER
-                                   ? 0u
-                                   : inst.owner_registry_id;
+        uint32_t instance_id = inst.instance_index;
 
-        // to_world is column-major 3x4 (to_world[col*3 + row]). OptiX wants
-        // row-major 3x4.
+        // to_world is col-major 3x4. OptiX wants row-major 3x4.
         float t[12];
         for (int row = 0; row < 3; ++row)
             for (int col = 0; col < 4; ++col)
@@ -394,7 +390,7 @@ void prepare_ias(const SceneIR &sd,
               t[4], t[5], t[6],  t[7],
               t[8], t[9], t[10], t[11] },
             instance_id, blas_sbt_offset[inst.blas_index],
-            /* visibilityMask = */ 255, flags,
+            blas.visibility_mask, flags,
             blas_handle[inst.blas_index], /* pads = */ { 0, 0 }
         };
     }

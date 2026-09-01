@@ -61,12 +61,27 @@ The language provides
 - Binary and ternary functions: ``min``, ``max``, ``pow``, ``atan2``,
   ``fmod``, ``lerp(a, b, t)``, ``clip(x, lo, hi)``, ``fma(a, b, c)``.
 
+- Color handling: ``rgb(r, g, b)`` assembles a trichromatic value, and the
+  suffixes ``.r``, ``.g``, and ``.b`` extract a single channel of an
+  expression and broadcast it to all channels. The functions ``mean`` and
+  ``luminance`` reduce a value to its channel average or ITU-R BT.709
+  luminance, which they likewise broadcast to all channels.
+
 - Floating point literals and the constants ``pi`` and ``e``.
 
 Operator precedence follows the C language. The language only supports floating
 point values and represents Boolean values as ``0.0`` and ``1.0``.
 Monochromatic, trichromatic, and spectral texture queries apply the expression
 separately to each input channel.
+
+The color handling operations are the exception to the last rule. Channel
+``k`` of ``rgb(r, g, b)`` evaluates to channel ``k`` of its ``k``-th argument,
+and the component suffixes copy one channel to all others. In monochromatic
+queries, component extraction and ``luminance`` return their argument
+unchanged, and ``rgb`` reduces to the luminance of its three arguments.
+Spectral queries in spectral variants process wavelength samples that lack a
+channel interpretation. There, ``mean`` averages the wavelength samples, while
+``rgb``, component extraction, and ``luminance`` raise an error.
 
 The plugin compiles the expression into a compact stack machine bytecode
 representation that is interpreted during texture evaluation. In JIT-compiled
@@ -116,7 +131,10 @@ enum class Op : uint8_t {
     // Operators
     Add, Sub, Mul, Div, Neg,
     Lt, Le, Gt, Ge, Eq, Ne,
-    Select
+    Select,
+
+    // Color handling. 'Chan' extracts the channel given by the 'imm' field.
+    Rgb, Chan, Mean, Luminance
 
     #define F1(name) , name
     #define F2(name, drname) , name
@@ -142,6 +160,8 @@ static const Fn fn_table[] = {
     #undef F1
     #undef F2
     #undef F3
+    { "rgb", Op::Rgb, 3 }, { "mean", Op::Mean, 1 },
+    { "luminance", Op::Luminance, 1 }
 };
 
 /// Binary operator precedence levels, following the C language
@@ -167,7 +187,8 @@ static const BinOp bin_ops[] = {
 ///     program := ( 'tmp[' num ']' '=' expr ';' )* expr
 ///     expr    := binary ( '?' expr ':' expr )?
 ///     binary  := unary ( <binary operator> unary )*
-///     unary   := ( '-' | '!' )* primary
+///     unary   := ( '-' | '!' )* postfix
+///     postfix := primary ( '.' ( 'r' | 'g' | 'b' ) )*
 ///     primary := '(' expr ')' | number | 'pi' | 'e' | 'in[' num ']'
 ///                | 'tmp[' num ']' | function '(' expr ( ',' expr )* ')'
 ///
@@ -293,7 +314,27 @@ struct MathParser {
             unary();
             cmp_zero(Op::Eq);
         } else {
-            primary();
+            postfix();
+        }
+    }
+
+    /// Component access suffixes ``.r``, ``.g``, ``.b``
+    void postfix() {
+        primary();
+        while (match('.')) {
+            whitespace();
+            const char *save = p;
+            std::string_view name = ident();
+            if (name == "r") {
+                emit(Op::Chan, 0, 0);
+            } else if (name == "g") {
+                emit(Op::Chan, 0, 1);
+            } else if (name == "b") {
+                emit(Op::Chan, 0, 2);
+            } else {
+                p = save;
+                fail("expected a component name ('r', 'g', or 'b')");
+            }
         }
     }
 
@@ -519,6 +560,11 @@ public:
         return false;
     }
 
+    Float mean() const override {
+        // Approximation: the expression evaluated at the input means
+        return run([&](uint32_t i) { return m_inputs[i]->mean(); });
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "MathTexture[" << std::endl
@@ -536,6 +582,11 @@ protected:
     /// callback and may be a monochromatic, RGB, or spectral quantity.
     template <typename F> auto run(F &&eval_input) const {
         using T = decltype(eval_input(0u));
+
+        // Spectral queries carry wavelength samples that the color handling
+        // operations cannot interpret as channels
+        constexpr bool SpectralQuery =
+            is_spectral_v<Spectrum> && std::is_same_v<T, UnpolarizedSpectrum>;
 
         uint32_t n_inputs = (uint32_t) m_inputs.size(),
                  n = n_inputs + m_tmp_count + m_stack_size;
@@ -569,6 +620,40 @@ protected:
                 case Op::Ne: --sp; sp[-1] = dr::select(sp[-1] != sp[0], T(1), T(0)); break;
 
                 case Op::Select: sp -= 2; sp[-1] = dr::select(sp[-1] != T(0), sp[0], sp[1]); break;
+
+                case Op::Rgb:
+                    sp -= 2;
+                    if constexpr (SpectralQuery)
+                        Throw("math texture: rgb() cannot be used in spectral "
+                              "texture queries (expression \"%s\")", m_expression);
+                    else if constexpr (dr::size_v<T> == 3)
+                        sp[-1] = T(sp[-1].entry(0), sp[0].entry(1), sp[1].entry(2));
+                    else if constexpr (dr::is_static_array_v<T>)
+                        sp[-1] = T(luminance(Color3f(sp[-1].entry(0), sp[0].entry(0), sp[1].entry(0))));
+                    else
+                        sp[-1] = T(luminance(Color3f(sp[-1], sp[0], sp[1])));
+                    break;
+
+                case Op::Chan:
+                    if constexpr (SpectralQuery)
+                        Throw("math texture: component access (.r/.g/.b) cannot be used "
+                              "in spectral texture queries (expression \"%s\")", m_expression);
+                    else if constexpr (dr::is_static_array_v<T>)
+                        sp[-1] = T(sp[-1].entry(imm < (size_t) dr::size_v<T> ? imm : 0));
+                    break;
+
+                case Op::Mean:
+                    if constexpr (dr::is_static_array_v<T>)
+                        sp[-1] = T(dr::sum(sp[-1]) / (ScalarFloat) dr::size_v<T>);
+                    break;
+
+                case Op::Luminance:
+                    if constexpr (SpectralQuery)
+                        Throw("math texture: luminance() cannot be used in spectral "
+                              "texture queries (expression \"%s\")", m_expression);
+                    else if constexpr (dr::size_v<T> == 3)
+                        sp[-1] = T(luminance(sp[-1]));
+                    break;
 
                 #define F1(name)         case Op::name: sp[-1] = dr::name(sp[-1]); break;
                 #define F2(name, drname) case Op::name: --sp; sp[-1] = dr::drname(sp[-1], sp[0]); break;

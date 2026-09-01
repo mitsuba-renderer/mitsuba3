@@ -262,14 +262,14 @@ public:
                     TensorXf(scaled_data.get(), { (size_t) res.z(),
                                                   (size_t) res.y(),
                                                   (size_t) res.x(), 4 }),
-                    m_accel, m_accel, filter_mode, wrap_mode);
+                    m_accel, filter_mode, wrap_mode);
             } else if (volume_grid) {
                 m_texture = Texture3f(
                     TensorXf(volume_grid->data(), { (size_t) res.z(),
                                                     (size_t) res.y(),
                                                     (size_t) res.x(),
                                                     channel_count }),
-                    m_accel, m_accel, filter_mode, wrap_mode);
+                    m_accel, filter_mode, wrap_mode);
                 m_max = volume_grid->max();
                 m_max_per_channel.resize(volume_grid->channel_count());
                 volume_grid->max_per_channel(m_max_per_channel.data());
@@ -280,7 +280,7 @@ public:
                                                 (size_t) res.y(),
                                                 (size_t) res.x(),
                                                 channel_count }),
-                    m_accel, m_accel, filter_mode, wrap_mode);
+                    m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
             }

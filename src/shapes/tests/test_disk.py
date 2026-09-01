@@ -114,25 +114,25 @@ def test05_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     dr.enable_grad(ray.d)
 
     # If the ray origin is shifted along the x-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     si.p *= 1.0
     dr.forward(ray.o.x)
     assert dr.allclose(dr.grad(si.p), [1, 0, 0])
 
     # If the ray origin is shifted along the y-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     si.p *= 1.0
     dr.forward(ray.o.y)
     assert dr.allclose(dr.grad(si.p), [0, 1, 0])
 
     # If the ray origin is shifted along the z-axis, so does si.t
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     si.t *= 1.0
     dr.forward(ray.o.z)
     assert dr.allclose(dr.grad(si.t), -1)
 
     # If the ray direction is shifted along the x-axis, so does si.p
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     si.p *= 1.0
     dr.forward(ray.d.x)
     assert dr.allclose(dr.grad(si.p), [10, 0, 0])
@@ -167,13 +167,13 @@ def test06_differentiable_surface_interaction_ray_backward(variants_all_ad_rgb):
     dr.enable_grad(ray.o)
 
     # If si.p is shifted along the x-axis, so does the ray origin
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     dr.backward(si.p.x)
     assert dr.allclose(dr.grad(ray.o), [1, 0, 0])
 
     # If si.t is changed, so does the ray origin along the z-axis
     dr.set_grad(ray.o, 0.0)
-    si = pi.compute_surface_interaction(ray)
+    si = shape.compute_surface_interaction(ray, pi)
     dr.backward(si.t)
     assert dr.allclose(dr.grad(ray.o), [0, 0, -1])
 

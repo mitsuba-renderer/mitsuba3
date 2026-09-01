@@ -217,7 +217,8 @@ static void compact_blases(id<MTLDevice> device, id<MTLCommandQueue> queue,
 /// scene variable.
 static std::pair<MetalAccelData *, uint32_t>
 build_impl(const std::vector<BlasEntry> &blases,
-           const std::vector<InstanceEntry> &instances, bool compact) {
+           const std::vector<InstanceEntry> &instances,
+           const std::vector<uint32_t> &user_ids, bool compact) {
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>) jit_metal_context();
         id<MTLCommandQueue> queue =
@@ -545,10 +546,9 @@ build_impl(const std::vector<BlasEntry> &blases,
         // ------------------------------------------------------------------
         // Build the TLAS over all instances
         // ------------------------------------------------------------------
-        // userID is recovered on the device as pi.instance: the owning
-        // Instance's registry id, or 0 (a null shape) for a top-level shape,
-        // matching the OptiX backend. [[instance_id]] stays the raw instance
-        // index the IFT lookup table is keyed by.
+        // userID is the entry's base index into the shape recovery table
+        // (see scene_metal.inl). [[instance_id]] is the raw TLAS entry index
+        // the IFT lookup table is keyed by.
         size_t n_inst = instances.size();
         BufferAllocation inst_alloc(
             n_inst * sizeof(MTLAccelerationStructureUserIDInstanceDescriptor),
@@ -571,13 +571,10 @@ build_impl(const std::vector<BlasEntry> &blases,
             if (any_backface_culled_triangles &&
                 !blas_backface_cull[inst.blas_index])
                 d.options |= MTLAccelerationStructureInstanceOptionDisableTriangleCulling;
-            d.mask                            = 0xFFu;
+            d.mask                            = blases[inst.blas_index].visibility_mask;
             d.intersectionFunctionTableOffset = blas_ift_base[inst.blas_index];
             d.accelerationStructureIndex      = inst.blas_index;
-            d.userID                          =
-                inst.owner_registry_id == SCENE_IR_NO_OWNER
-                    ? 0u
-                    : inst.owner_registry_id;
+            d.userID                          = user_ids[i];
         }
 
         NSMutableArray<id<MTLAccelerationStructure>> *blas_array =
@@ -678,8 +675,9 @@ build_impl(const std::vector<BlasEntry> &blases,
 }
 
 std::pair<MetalAccelData *, uint32_t>
-build_metal_accel(const SceneIR &sd, bool compact) {
-    return build_impl(sd.blases, sd.instances, compact);
+build_metal_accel(const SceneIR &sd, const std::vector<uint32_t> &user_ids,
+                  bool compact) {
+    return build_impl(sd.blases, sd.instances, user_ids, compact);
 }
 
 void release_metal_accel(MetalAccelData *accel, uint32_t scene_index) {
