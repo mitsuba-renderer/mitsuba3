@@ -97,7 +97,7 @@ RENDER_SECTIONS: dict[str, list[str]] = {
 # stub that Mitsuba keeps for backward compatibility.
 EXCLUDED: list[str] = [
     r'_.*', 'casters', 'cast_object', r'mitsuba_\w+', 'DRJIT_STRUCT',
-    'get_property', 'set_property', 'float_dtype', 'Thread']
+    'float_dtype', 'Thread']
 
 # Modules that serve the implementation rather than the user. They keep a page,
 # since annotations refer to what they declare, but stay out of the visible

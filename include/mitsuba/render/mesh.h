@@ -373,9 +373,59 @@ public:
      * All meshes must share the same ``merge_key()`` and none of them may
      * carry custom attributes.
      *
+     * The faces of the inputs occupy consecutive ranges of the result, and
+     * the method records one `Part` per input so that the provenance
+     * of each face remains available (see `parts()`).
+     *
      * The method raises an exception when called with incompatible inputs.
      */
     static ref<Mesh> merge(const std::vector<Shape<Float, Spectrum> *> &shapes);
+
+    // =========================================================================
+
+    // =========================================================================
+    // Mesh parts
+    // =========================================================================
+
+    /**
+     * Provenance record of a contiguous face range
+     *
+     * The ``merge()`` method constructs a mesh from several compatible inputs,
+     * which loses information about the original structure. The ``Part`` API
+     * exists to persist this information. It annotates a range ``[face_offset,
+     * face_offset + face_count)`` of faces along with the names and bounding
+     * box of the original mesh.
+     */
+    struct Part {
+        /// Label of the part, e.g. the id of the source mesh
+        std::string id;
+
+        /**
+         * Name that the source mesh carries itself
+         *
+         * This names the mesh independently of the scene it appears in: the
+         * label that a :monosp:`serialized` file stores next to the geometry,
+         * or the file name for formats that store no name of their own. The
+         * ``id`` field instead holds the name that the Mitsuba scene knows
+         * the shape by, and the two differ whenever the scene assigns an id.
+         */
+        std::string label;
+
+        /// Index of the first face of the part
+        ScalarIndex face_offset = 0;
+
+        /// Number of faces covered by the part
+        ScalarSize face_count = 0;
+
+        /// Bounds of the part's positions when the record was created
+        ScalarBoundingBox3f bbox;
+    };
+
+    /// Return the list of mesh parts, ordered by face range
+    const std::vector<Part> &parts() const { return m_parts; }
+
+    /// Return the part containing the face ``prim_index``, or ``nullptr``
+    const Part *find_part(ScalarIndex prim_index) const;
 
     // =========================================================================
 
@@ -909,7 +959,6 @@ public:
     SurfaceInteraction3f compute_surface_interaction(const Ray3f &ray,
                                                      const PreliminaryIntersection3f &pi,
                                                      uint32_t ray_flags,
-                                                     uint32_t recursion_depth = 0,
                                                      Mask active = true) const override;
 
     Mask has_attribute(std::string_view name, Mask active = true) const override;
@@ -1047,9 +1096,13 @@ protected:
      * The ``flip_normals`` flag turns the surface inside out as the records
      * are written, which `from_fields()` uses to bake the property of
      * the same name. See ``validate_impl()`` for ``updating``.
+     *
+     * The caller can provide a bounding box (if known), in which case
+     * the implementation does not need to recompute it.
      */
     void pack(bool regenerate_normals, bool flip_normals = false,
-              bool updating = false);
+              bool updating = false,
+              const ScalarBoundingBox3f *bbox = nullptr);
 
     /**
      * Implementation of `validate()`
@@ -1075,8 +1128,8 @@ protected:
      */
     void refresh(const ScalarBoundingBox3f *bbox = nullptr);
 
-    /// (Re-)compute the bounding box from the packed positions
-    void recompute_bbox();
+    /// (Re-)compute the bounding box from the packed positions.
+    void recompute_bbox() const;
 
     /// Release the field views and make the packed state authoritative
     void drop_views();
@@ -1202,8 +1255,11 @@ protected:
     /// Short human-readable label used in log and error messages.
     std::string m_filename;
 
-    /// Bounding box of the mesh positions
-    ScalarBoundingBox3f m_bbox;
+    /// Bounding box of the mesh positions, computed on demand by `bbox()`
+    mutable ScalarBoundingBox3f m_bbox;
+
+    /// Does `m_bbox` reflect the current positions?
+    mutable bool m_bbox_valid = false;
 
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
@@ -1245,6 +1301,9 @@ protected:
     TensorXu32 m_faces;
     IndexBuffer m_bsdf_index;
     TensorXf32 m_tangents;
+
+    /// Provenance records, see `parts()`. Usually empty.
+    std::vector<Part> m_parts;
 
     /// Half-edge adjacency, null until `dedge()` builds it
     mutable ref<DirectedEdge> m_dedge;

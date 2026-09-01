@@ -201,6 +201,9 @@ private:
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Vector3f m_dx, m_dy;
+
+    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization,
+                   m_dx, m_dy)
 };
 
 MI_EXPORT_PLUGIN(OrthographicCamera)

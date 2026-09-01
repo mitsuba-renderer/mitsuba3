@@ -52,17 +52,6 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
     }
 #endif
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_METAL)
-    if constexpr (dr::is_llvm_v<Float> || dr::is_metal_v<Float>) {
-        // Get shapes registry ids
-        std::unique_ptr<uint32_t[]> data(new uint32_t[m_shapes.size()]);
-        for (size_t i = 0; i < m_shapes.size(); i++)
-            data[i] = jit_registry_id(m_shapes[i]);
-        m_shapes_registry_ids =
-            dr::load<DynamicBuffer<UInt32>>(data.get(), m_shapes.size());
-    }
-#endif
-
     // Initialize gradient enabled cache
     m_parameters_grad_enabled_cache = false;
     for (auto s : m_shapes) {
@@ -80,9 +69,8 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::traverse(TraversalCallback *cb) {
     for (auto s : m_shapes) {
         std::string_view id = s->id();
         if (id.empty() || string::starts_with(id, "_unnamed_"))
-            cb->put("shape", s, ParamFlags::Differentiable);
-        else
-            cb->put(std::string(id), s, ParamFlags::Differentiable);
+            id = "";
+        cb->put(id, s, ParamFlags::Differentiable);
     }
 }
 
@@ -100,37 +88,6 @@ MI_VARIANT void ShapeGroup<Float, Spectrum>::parameters_changed(const std::vecto
     Base::parameters_changed();
 }
 
-
-MI_VARIANT typename ShapeGroup<Float, Spectrum>::SurfaceInteraction3f
-ShapeGroup<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
-                                                         const PreliminaryIntersection3f &pi,
-                                                         uint32_t ray_flags,
-                                                         uint32_t recursion_depth,
-                                                         Mask active) const {
-    MI_MASK_ARGUMENT(active);
-
-    if (recursion_depth > 0)
-        return dr::zeros<SurfaceInteraction3f>();
-
-    ShapePtr shape = pi.shape;
-
-    // OptiX and Metal recover the hit child shape directly: ``pi.shape`` is set
-    // per-geometry (from the SBT record / the Metal geom_shape table), so it
-    // already names the actual child. The scalar and LLVM/Embree backends instead
-    // resolve it from a within-group leaf index (``pi.shape_index``).
-    if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>) {
-        if constexpr (!dr::is_array_v<Float>) {
-            Assert(pi.shape_index < m_shapes.size());
-            shape = m_shapes[pi.shape_index];
-        } else {
-#if defined(MI_ENABLE_LLVM)
-            shape = dr::gather<UInt32>(m_shapes_registry_ids, pi.shape_index, active);
-#endif
-        }
-    }
-
-    return shape->compute_surface_interaction(ray, pi, ray_flags, 1, active);
-}
 
 MI_VARIANT typename ShapeGroup<Float, Spectrum>::ScalarSize
 ShapeGroup<Float, Spectrum>::primitive_count() const {
@@ -155,7 +112,9 @@ std::tuple<bool,
            typename ShapeGroup<Float, Spectrum>::ScalarUInt32>
 ShapeGroup<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const {
     auto pi = m_kdtree->template ray_intersect_scalar<false>(ray);
-    return { pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index };
+    // The kd-tree repurposes ``instance_index`` to report the index of the
+    // hit child shape (see kdtree.h)
+    return { pi.valid, pi.t, pi.prim_uv, pi.instance_index, pi.prim_index };
 }
 
 MI_VARIANT

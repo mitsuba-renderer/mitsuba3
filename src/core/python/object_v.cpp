@@ -32,120 +32,51 @@ class TraversalCallbackPublicist : public TraversalCallback {
 public:
     using TraversalCallback::put_value;
     using TraversalCallback::put_object;
+    using TraversalCallback::keep_alive;
 };
-
-#define TRY_SCALAR_GET(T)                                                      \
-    if (*type == typeid(T))                                                    \
-        return nb::cast(*(T *) ptr)
-
-#define TRY_SCALAR_SET(T)                                                      \
-    if (*type == typeid(T)) {                                                  \
-        *(T *) ptr = nb::cast<T>(src);                                         \
-        return;                                                                \
-    }
-
-/// Return a Python object from a specific memory address as raw reference or safe reference
-static nb::object get_property(void *ptr, void *type_, nb::handle parent) {
-    const std::type_info *type = (const std::type_info *) type_;
-
-    TRY_SCALAR_GET(float);
-    TRY_SCALAR_GET(double);
-    TRY_SCALAR_GET(bool);
-    TRY_SCALAR_GET(uint32_t);
-    TRY_SCALAR_GET(int32_t);
-
-    nb::rv_policy rvp = parent.is_valid() ? nb::rv_policy::reference_internal_v
-                                          : nb::rv_policy::reference_v;
-    nb::detail::cleanup_list cleanup(parent.ptr());
-
-    nb::object r = nb::steal(NB_CALL(nb_type_put)(
-        NB_CTX, type, nullptr, ptr, rvp, &cleanup, nullptr));
-
-    if (!r.is_valid())
-        Throw("get_property(): unsupported type \"%s\"!", type->name());
-
-    cleanup.release();
-    return r;
-}
-
-/// "Overwrite an object at a specific memory address with the contents of a compatible Python object"
-static void set_property(void *ptr, void *type_, nb::object src) {
-    const std::type_info *type = (const std::type_info *) type_;
-
-    TRY_SCALAR_SET(float);
-    TRY_SCALAR_SET(double);
-    TRY_SCALAR_SET(bool);
-    TRY_SCALAR_SET(uint32_t);
-    TRY_SCALAR_SET(int32_t);
-
-    nb::object dst = get_property(ptr, type_, nb::handle());
-    nb::handle tp  = dst.type();
-
-    if (!nb::type_check(tp))
-        nb::raise_type_error("set_property(): Target property type "
-                             "(%s) is not a nanobind type!",
-                             nb::type_name(tp).c_str());
-
-    if (!tp.is(src.type()))
-        src = tp(src);
-
-    nb::inst_replace_copy(dst, src);
-}
 
 MI_PY_EXPORT(Object) {
     MI_PY_IMPORT_TYPES()
     // Define ObjectPtr for DrJit array binding based on current Float type
     using ObjectPtr = dr::replace_scalar_t<Float, const Object *>;
 
-    m.def("get_property", &get_property, "ptr"_a, "type"_a, "parent"_a,
-          "Return a Python object from a specific memory address as raw "
-          "reference or safe reference");
-
-    // Overwrite a Python object at a specific memory address with 'value'
-    m.def("set_property", &set_property, "ptr"_a, "type"_a, "src"_a,
-          "Overwrite an object at a specific memory address with the contents "
-          "of a compatible Python object");
-
-    m.def("set_property",
-          [](nb::handle dst, nb::object src) {
-              nb::handle tp = dst.type();
-              if (!nb::type_check(tp))
-                  nb::raise_type_error("set_property(): Target property type "
-                                       "(%s) is not a nanobind type!",
-                                       nb::type_name(tp).c_str());
-
-              if (!tp.is(src.type()))
-                  src = tp(src);
-
-              nb::inst_replace_copy(dst, src);
-          },
-          "dst"_a, "src"_a);
-
     MI_PY_CHECK_ALIAS(TraversalCallback, "TraversalCallback") {
+        auto put = [](TraversalCallback &self_, nb::str name_,
+                      nb::handle value, uint32_t flags) {
+            TraversalCallbackPublicist *self = (TraversalCallbackPublicist *) &self_;
+            std::string_view name = name_.c_str();
+
+            if (!nb::inst_check(value)) {
+                // A value without bindings, such as a scalar Python float object
+                self->put_value(name, value.ptr(), flags, typeid(PyObject *));
+                return;
+            }
+
+            Object *o = nullptr;
+            if (nb::try_cast(value, o)) {
+                self->put_object(name, o, flags);
+            } else {
+                // The value may be a temporary of the Python plugin that
+                // reported it, see TraversalCallback::keep_alive()
+                self->keep_alive(value.ptr());
+                nb::handle tp = value.type();
+                const std::type_info &tpi = nb::type_info(tp);
+                self->put_value(name, nb::inst_ptr<void>(value), flags, tpi);
+            }
+        };
+
         nb::class_<TraversalCallback, PyTraversalCallback>(
             m, "TraversalCallback", D(TraversalCallback))
             .def(nb::init<>())
 
             // Unified put() function that handles both objects and values
-            .def("put",
-                 [] (TraversalCallback &self_, std::string_view name, nb::handle value, uint32_t flags) {
-                    TraversalCallbackPublicist *self = (TraversalCallbackPublicist *) &self_;
-                    if (!nb::inst_check(value))
-                        nb::raise_type_error(
-                            "TraversalCallback::put(): type '%s' was not "
-                            "registered by nanobind.",
-                            nb::inst_name(value).c_str());
-
-                    Object *o = nullptr;
-                    if (nb::try_cast(value, o)) {
-                        self->put_object(name, o, flags);
-                    } else {
-                        nb::handle tp = value.type();
-                        const std::type_info &tpi = nb::type_info(tp);
-                        self->put_value(name, nb::inst_ptr<void>(value), flags, tpi);
-                    }
-                 },
-                 "name"_a, "value"_a, "flags"_a,
-                 "Unified method to register both objects and values with the traversal callback");
+            .def("put", put, "name"_a, "value"_a, "flags"_a,
+                 "Unified method to register both objects and values with the traversal callback")
+            .def("put_object", put, "name"_a, "value"_a, "flags"_a,
+                 "Alias of put(), retained for plugins written against the "
+                 "older interface")
+            .def("put_value", put, "name"_a, "value"_a, "flags"_a,
+                 "Alias of put(), retained for plugins written against the "
+                 "older interface");
     }
 }

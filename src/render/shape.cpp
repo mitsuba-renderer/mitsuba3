@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene.h>
 #include <mitsuba/render/scene_ir.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/bsdf.h>
@@ -88,6 +89,11 @@ Shape<Float, Spectrum>::describe(ShapeIR &g) const {
         d[3] = (float) b.max.x(); d[4] = (float) b.max.y(); d[5] = (float) b.max.z();
     };
 #endif
+}
+
+MI_VARIANT uint32_t Shape<Float, Spectrum>::visibility_mask() const {
+    return m_emitter ? m_emitter->visibility_mask()
+                     : (uint32_t) RayMask::All;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
@@ -228,7 +234,6 @@ MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
                                                     const PreliminaryIntersection3f &/*pi*/,
                                                     uint32_t /*ray_flags*/,
-                                                    uint32_t /*recursion_depth*/,
                                                     Mask /*active*/) const {
     NotImplementedError("compute_surface_interaction");
 }
@@ -236,8 +241,22 @@ Shape<Float, Spectrum>::compute_surface_interaction(const Ray3f & /*ray*/,
 MI_VARIANT typename Shape<Float, Spectrum>::SurfaceInteraction3f
 Shape<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags, Mask active) const {
     MI_MASK_ARGUMENT(active);
-    auto pi = ray_intersect_preliminary(ray, 0, active);
-    return pi.compute_surface_interaction(ray, ray_flags, active);
+    PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
+
+    active &= pi.is_valid();
+    if (dr::none_or<false>(active)) {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.wi = -ray.d;
+        si.wavelengths = ray.wavelengths;
+        return si;
+    }
+
+    // Route through the ShapePtr so that JIT variants trace the call like
+    // any other hit expansion
+    SurfaceInteraction3f si =
+        pi.shape->compute_surface_interaction(ray, pi, ray_flags, active);
+    si.finalize_surface_interaction(pi, ray, ray_flags, active);
+    return si;
 }
 
 MI_VARIANT void
@@ -364,8 +383,8 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *cb) {
 
     cb->put("silhouette_sampling_weight", m_silhouette_sampling_weight, ParamFlags::NonDifferentiable);
 
-    for (auto it = m_texture_attributes.begin(); it != m_texture_attributes.end(); ++it)
-        cb->put(it.key(), it.value(), ParamFlags::Differentiable);
+    for (auto &[name, texture] : m_texture_attributes)
+        cb->put(name, texture, ParamFlags::Differentiable);
 }
 
 MI_VARIANT

@@ -20,11 +20,14 @@ NAMESPACE_BEGIN(mitsuba)
 struct MetalAccelData;
 
 /// Build the lowered scene's acceleration structures (same-kind BLASes plus the
-/// flattened TLAS instances) and register them with Dr.Jit. ``compact`` shrinks
-/// the BLASes after building. Returns the owning `MetalAccelData` and the
-/// scene's JIT variable index (caller-owned), to pass to jit_metal_ray_trace().
+/// flattened TLAS instances) and register them with Dr.Jit. ``user_ids``
+/// supplies each TLAS entry's userID (see scene_metal.inl). ``compact``
+/// shrinks the BLASes after building. Returns the owning `MetalAccelData` and
+/// the scene's JIT variable index (caller-owned), to pass to
+/// jit_metal_ray_trace().
 extern MI_EXPORT_LIB std::pair<MetalAccelData *, uint32_t>
-build_metal_accel(const SceneIR &sd, bool compact);
+build_metal_accel(const SceneIR &sd, const std::vector<uint32_t> &user_ids,
+                  bool compact);
 
 /// Release a scene built with `build_metal_accel()`: drop the JIT variable
 /// reference and free the Metal objects (deferred until no kernel/recording

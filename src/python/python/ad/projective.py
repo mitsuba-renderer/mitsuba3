@@ -739,8 +739,9 @@ class ProjectiveDetail():
             pi.prim_index = ss.prim_index
             pi.shape = ss.shape
             dummy_ray = dr.zeros(mi.Ray3f, dr.width(ss))
-            si_jump = pi.compute_surface_interaction(
-                dummy_ray, mi.RayFlags.Default | mi.RayFlags.NormalPartials,
+            si_jump = scene.compute_surface_interaction(
+                dummy_ray, pi,
+                mi.RayFlags.Default | mi.RayFlags.NormalPartials,
                 active=active)
 
             # Perform the jump operation

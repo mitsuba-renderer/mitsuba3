@@ -7,6 +7,7 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Emitter<Float, Spectrum>::Emitter(const Properties &props) : Base(props, ObjectType::Emitter) {
     m_sampling_weight = props.get<ScalarFloat>("sampling_weight", 1.f);
+    m_visible = props.get<bool>("visible", true);
 }
 
 MI_VARIANT void Emitter<Float, Spectrum>::traverse(TraversalCallback *cb) {

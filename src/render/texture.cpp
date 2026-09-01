@@ -36,7 +36,9 @@ MI_VARIANT Float Texture<Float, Spectrum>::eval_1(const SurfaceInteraction3f &, 
 
 MI_VARIANT typename Texture<Float, Spectrum>::Vector2f
 Texture<Float, Spectrum>::eval_1_grad(const SurfaceInteraction3f &, Mask) const {
-    NotImplementedError("eval_1_grad");
+    Throw("%s::eval_1_grad(): not implemented! Only textures that represent "
+          "a single-channel image or height field provide this operation.",
+          class_name());
 }
 
 MI_VARIANT typename Texture<Float, Spectrum>::Color3f

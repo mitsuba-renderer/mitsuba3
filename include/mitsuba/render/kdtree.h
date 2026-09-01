@@ -2193,18 +2193,20 @@ public:
     }
 
     template <bool ShadowRay>
-    MI_INLINE PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                                   Mask active) const {
+    MI_INLINE PreliminaryIntersection3f
+    ray_intersect_preliminary(const Ray3f &ray, Mask active,
+                              uint32_t visibility_mask = (uint32_t) RayMask::All) const {
         DRJIT_MARK_USED(active);
         if constexpr (!dr::is_array_v<Float>)
-            return ray_intersect_scalar<ShadowRay>(ray);
+            return ray_intersect_scalar<ShadowRay>(ray, visibility_mask);
         else
             Throw("kdtree should only be used in scalar mode");
     }
 
     template <bool ShadowRay>
     MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
-    ray_intersect_scalar(ScalarRay3f ray) const {
+    ray_intersect_scalar(ScalarRay3f ray,
+                         uint32_t visibility_mask = (uint32_t) RayMask::All) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2273,7 +2275,7 @@ public:
                     Index prim_index = m_indices[i];
 
                     PreliminaryIntersection<ScalarFloat, Shape> prim_pi =
-                        intersect_prim<ShadowRay>(prim_index, ray);
+                        intersect_prim<ShadowRay>(prim_index, ray, visibility_mask);
 
                     if (unlikely(prim_pi.is_valid())) {
                         if constexpr (ShadowRay)
@@ -2303,12 +2305,14 @@ public:
     /// Brute force intersection routine for debugging purposes
     template <bool ShadowRay>
     MI_INLINE PreliminaryIntersection3f
-    ray_intersect_naive(Ray3f ray, Mask active) const {
+    ray_intersect_naive(Ray3f ray, Mask active,
+                        uint32_t visibility_mask = (uint32_t) RayMask::All) const {
         if constexpr (!dr::is_array_v<Float>) {
             PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
 
             for (Size i = 0; i < primitive_count(); ++i) {
-                PreliminaryIntersection3f prim_pi = intersect_prim<ShadowRay>(i, ray);
+                PreliminaryIntersection3f prim_pi =
+                    intersect_prim<ShadowRay>(i, ray, visibility_mask);
 
                 if constexpr (dr::is_array_v<Float>) {
                     dr::masked(pi, prim_pi.is_valid()) = prim_pi;
@@ -2367,12 +2371,19 @@ protected:
      */
     template <bool ShadowRay = false>
     MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
-    intersect_prim(Index prim_index, const ScalarRay3f &ray) const {
+    intersect_prim(Index prim_index, const ScalarRay3f &ray,
+                   uint32_t visibility_mask = (uint32_t) RayMask::All) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
         const Mesh *mesh = (const Mesh *) shape;
 
         PreliminaryIntersection<ScalarFloat, Shape> pi;
+
+        // A full ray mask matches every shape, so the test is skipped entirely
+        // on the common path
+        if (visibility_mask != (uint32_t) RayMask::All &&
+            (visibility_mask & shape->visibility_mask()) == 0)
+            return pi;
 
         if constexpr (ShadowRay) {
             bool hit;
@@ -2385,20 +2396,18 @@ protected:
             pi.valid = hit;
             pi.t = dr::select(hit, ScalarFloat(0), dr::Infinity<ScalarFloat>);
         } else {
-            uint32_t inst_index = (uint32_t) -1;
             if (shape->is_mesh()) {
                 std::tie(pi.valid, pi.t, pi.prim_uv) =
                     mesh->ray_intersect_triangle_scalar(prim_index, ray);
             } else {
-                std::tie(pi.valid, pi.t, pi.prim_uv, inst_index, prim_index) =
+                std::tie(pi.valid, pi.t, pi.prim_uv, std::ignore, prim_index) =
                     shape->ray_intersect_preliminary_scalar(ray);
             }
             pi.prim_index = prim_index;
-
-            bool hit_inst  = (inst_index != (uint32_t) -1);
-            pi.shape       = hit_inst ? (const Shape *) (size_t) shape_index : shape; // shape_index for LLVM + kdtree
-            pi.instance    = hit_inst ? shape : nullptr;
-            pi.shape_index = hit_inst ? inst_index : shape_index;
+            pi.shape      = shape;
+            // Repurposed to convey the top-level shape index (the kd-tree
+            // does not support instancing)
+            pi.instance_index = shape_index;
         }
 
         return pi;

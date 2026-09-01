@@ -35,17 +35,17 @@ struct MetalAccel {
     PreliminaryIntersection3f ray_intersect_preliminary(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
         bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
-        Mask active) const;
+        Mask active, const UInt32 &visibility_mask) const;
     Mask ray_test(const Scene<Float, Spectrum> *scene, const Ray3f &ray,
-                  Mask coherent, Mask active) const;
+                  Mask coherent, Mask active,
+                  const UInt32 &visibility_mask) const;
     /// Metal has no brute-force traversal; defer to the accelerated path.
     SurfaceInteraction3f ray_intersect_naive(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray,
         Mask active) const;
 
-    // --- Declarative traversal (scene handle + recovery tables) ---
-    DRJIT_TRAVERSE(MetalAccel, accel_handle, geom_shape_offsets,
-                   geom_shape_table)
+    // --- Declarative traversal (scene handle + recovery table) ---
+    DRJIT_TRAVERSE(MetalAccel, accel_handle, geom_shape_table)
 
     /// Opaque handle owning the Metal objects (TLAS/BLAS/buffers/library)
     MetalAccelData *accel = nullptr;
@@ -53,16 +53,18 @@ struct MetalAccel {
     uint32_t scene_index = 0;
     /// Handle variable representing the Metal scene for @dr.freeze
     UInt64 accel_handle;
-    /// Per-instance recovery tables resolving ``pi.shape`` from a hit's
-    /// (instance_id, geometry_id), built in scene_metal.inl.
-    DynamicBuffer<UInt32> geom_shape_offsets;
+    /// Recovery table indexed by TLAS userID + geometry ID, resolving a hit
+    /// into ``pi.shape`` (see scene_metal.inl)
     DynamicBuffer<UInt32> geom_shape_table;
+    /// Layout of ``geom_shape_table``: (shape id, instance index) pairs when
+    /// true, plain shape ids otherwise
+    bool has_instances = false;
 
 private:
     /// Trace ``ray``, writing eight result variable indices to ``out``. With
     /// ``shadow``, an occlusion query writes only ``out[0]``.
-    void trace(const Ray3f &ray, Mask active, uint32_t out[8],
-               bool shadow) const;
+    void trace(const Ray3f &ray, Mask active, const UInt32 &visibility_mask,
+               uint32_t out[8], bool shadow) const;
 };
 
 NAMESPACE_END(mitsuba)

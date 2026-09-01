@@ -354,7 +354,8 @@ Mesh<Float, Spectrum>::from_packed(Layout layout,
     // normal/tangent state does not match the requirements will need
     // to be re-packed.
     if ((!normals && !m_face_normals) || needs_tangents() != packs_tangent()) {
-        pack(/* regenerate_normals */ !normals && !m_face_normals);
+        pack(/* regenerate_normals */ !normals && !m_face_normals,
+             /* flip_normals */ false, /* updating */ false, bbox);
         drop_views();
     } else {
         refresh(bbox);
@@ -561,7 +562,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::validate_impl(bool check_bounds,
 
 MI_VARIANT
 void Mesh<Float, Spectrum>::pack(bool regenerate_normals, bool flip_normals,
-                                 bool updating) {
+                                 bool updating,
+                                 const ScalarBoundingBox3f *bbox) {
     ensure_views();
 
     size_t P = m_positions.ndim() == 2 ? m_positions.shape(0) : 0,
@@ -679,7 +681,7 @@ void Mesh<Float, Spectrum>::pack(bool regenerate_normals, bool flip_normals,
             return rec;
         });
 
-    refresh();
+    refresh(bbox);
     m_built = true;
 }
 
@@ -787,10 +789,14 @@ Mesh<Float, Spectrum>::geometric_faces() const {
 
 MI_VARIANT
 void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox) {
-    if (bbox)
+    if (bbox) {
         m_bbox = *bbox;
-    else
-        recompute_bbox();
+        m_bbox_valid = true;
+    } else {
+        // Computed on demand by bbox(). The computation synchronizes with
+        // the device, which must not happen while scenes load in parallel.
+        m_bbox_valid = false;
+    }
 
     // Eagerly build sampling tables for emitters/sensors, and keep existing ones
     bool needs_pmf = m_emitter || m_sensor || !m_area_pmf.empty();
@@ -867,6 +873,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
             m_dedge = nullptr;
             // Derived from the pairing, so it cannot outlive it
             m_sil_dedge_pmf = DiscreteDistribution<Float>();
+            // The recorded face ranges no longer describe the new topology
+            m_parts.clear();
         }
 
         // The inverse index maps follow the maps they were built from
@@ -881,7 +889,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
     } else if (needs_tangents() != packs_tangent()) {
         // Nothing of the mesh itself changed, but the notification may
         // originate from the attached BSDF, whose flags decide the layout
-        pack(false);
+        pack(false, false, false, m_bbox_valid ? &m_bbox : nullptr);
     }
 
     // Schedule the written attributes for evaluation. An attribute-only
@@ -903,6 +911,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
 Mesh<Float, Spectrum>::bbox() const {
+    // Unsynchronized lazy initialization, which is fine in the expected
+    // usage (see dedge())
+    if (!m_bbox_valid)
+        recompute_bbox();
     return m_bbox;
 }
 
@@ -939,7 +951,7 @@ Mesh<Float, Spectrum>::set_bsdf(typename Mesh<Float, Spectrum>::BSDF *bsdf) {
         m_sil_dedge_pmf = DiscreteDistribution<Float>();
 
     if (m_built && needs_tangents() != packs_tangent())
-        pack(false);
+        pack(false, false, false, m_bbox_valid ? &m_bbox : nullptr);
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::write_ply(const fs::path &filename) const {
@@ -1155,7 +1167,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_serialized(Stream *stream) const {
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_normals() {
     // Tangents follow along: they regenerate in the new normals' plane
-    pack(/* regenerate_normals */ true);
+    pack(/* regenerate_normals */ true, false, false,
+         m_bbox_valid ? &m_bbox : nullptr);
 }
 
 MI_VARIANT
@@ -1351,10 +1364,11 @@ Mesh<Float, Spectrum>::compute_tangents() const {
     return TensorXf32(std::move(flat), { m_vertex_count, 3 });
 }
 
-MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() {
+MI_VARIANT void Mesh<Float, Spectrum>::recompute_bbox() const {
     m_bbox = reduce_bbox<
         /* Type = */ ScalarPoint3f,
         /* Stride = */ MeshVertexStride>(m_packed_vertices, m_vertex_count);
+    m_bbox_valid = true;
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_pmf() {
@@ -1475,18 +1489,33 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
     size_t V = 0, F = 0, P = 0, N = 0;
     bool any_pmap = false, any_nmap = false, any_bsdf = false;
     ScalarBoundingBox3f bbox;
+    std::vector<Part> parts;
+    parts.reserve(meshes.size());
 
     for (const Mesh *m : meshes) {
         if (m->merge_key() != key || m->has_mesh_attributes())
             Throw("Mesh::merge(): the meshes are incompatible (%s and %s)!",
                   first->to_string(), m->to_string());
 
+        // Retain information about the original mesh parts
+        if (m->m_parts.empty()) {
+            std::string_view id = m->id();
+            parts.push_back({ std::string(id.empty() ? m->m_filename : id),
+                              m->m_filename, (ScalarIndex) F, m->m_face_count,
+                              m->bbox() });
+        } else {
+            for (const Part &p : m->m_parts)
+                parts.push_back({ p.id, p.label,
+                                  (ScalarIndex) (F + p.face_offset),
+                                  p.face_count, p.bbox });
+        }
+
         V += m->m_vertex_count;   F += m->m_face_count;
         P += m->m_position_count; N += m->m_normal_count;
         any_pmap |= m->m_position_index.size() != 0;
         any_nmap |= m->m_normal_index.size() != 0;
         any_bsdf |= m->has_face_bsdfs();
-        bbox.expand(m->m_bbox);
+        bbox.expand(m->bbox());
     }
 
     // Name the result after its inputs. A scene may merge many thousands of
@@ -1610,8 +1639,22 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
                         TensorXu32(std::move(faces), { F, MeshFaceStride }),
                         TensorXf32(std::move(vertices), { V, MeshVertexStride }),
                         pidx, nidx, any_pmap ? P : 0, any_nmap ? N : 0, &bbox);
+    result->m_parts = std::move(parts);
 
     return result;
+}
+
+MI_VARIANT const typename Mesh<Float, Spectrum>::Part *
+Mesh<Float, Spectrum>::find_part(ScalarIndex prim_index) const {
+    auto it = std::upper_bound(
+        m_parts.begin(), m_parts.end(), prim_index,
+        [](ScalarIndex v, const Part &p) { return v < p.face_offset; });
+    if (it == m_parts.begin())
+        return nullptr;
+    --it;
+    if (prim_index - it->face_offset >= it->face_count)
+        return nullptr;
+    return &*it;
 }
 
 MI_VARIANT bool Mesh<Float, Spectrum>::needs_parameterization() const {
@@ -1755,7 +1798,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
         return dr::zeros<SurfaceInteraction3f>();
 
     SurfaceInteraction3f si =
-        compute_surface_interaction(ray, pi, ray_flags, 0, active);
+        compute_surface_interaction(ray, pi, ray_flags, active);
     si.finalize_surface_interaction(pi, ray, ray_flags, active);
 
     return si;
@@ -2277,15 +2320,10 @@ MI_VARIANT typename Mesh<Float, Spectrum>::SurfaceInteraction3f
 Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
                                                    const PreliminaryIntersection3f &pi,
                                                    uint32_t ray_flags,
-                                                   uint32_t recursion_depth,
                                                    Mask active) const {
     MI_MASK_ARGUMENT(active);
 
     SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-
-    // Early exit when tracing isn't necessary
-    if (!m_is_instance && recursion_depth > 0)
-        return si;
 
     constexpr bool IsDiff = dr::is_diff_v<Float>;
     bool detach  = IsDiff && has_flag(ray_flags, RayFlags::DetachShape),
@@ -2466,7 +2504,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
 
     si.prim_index = pi.prim_index;
     si.shape    = this;
-    si.instance = nullptr;
+    si.instance_index = 0;
 
     return si;
 }
@@ -2771,7 +2809,7 @@ MI_VARIANT std::string Mesh<Float, Spectrum>::to_string() const {
     std::ostringstream oss;
     oss << class_name() << "[" << std::endl
         << "  filename = \"" << m_filename << "\"," << std::endl
-        << "  bbox = " << string::indent(m_bbox) << "," << std::endl
+        << "  bbox = " << string::indent(bbox()) << "," << std::endl
         << "  position_count = " << position_count() << "," << std::endl
         << "  normal_count = " << normal_count() << "," << std::endl
         << "  vertex_count = " << m_vertex_count << "," << std::endl

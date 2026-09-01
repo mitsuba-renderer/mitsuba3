@@ -358,8 +358,141 @@ def test12_many_top_level_analytic_shapes(variants_vec_backends_once_rgb):
     assert dr.all(si.is_valid())
     dr.assert_allclose(si.p.x, cx, atol=1e-3)
     # Top-level hits carry no instance
-    assert dr.all(si.instance == dr.zeros(mi.ShapePtr))
+    assert dr.all(si.instance_index == 0)
     # The hit shape recovered for ray i must be exactly the i-th shape
     for i in range(n):
         got = dr.gather(mi.ShapePtr, si.shape, mi.UInt32(i))
         assert dr.all(got == shapes[i])
+
+
+def make_visibility_scene(visible, integrator='path'):
+    """A camera at z=3 looks along -z at an area emitter (z=1) that faces it.
+    A diffuse wall at z=-1 sits behind the emitter (on its dark side) and only
+    receives light indirectly, via the large wall at z=4 behind the camera."""
+    T = mi.ScalarTransform4f
+    return mi.load_dict({
+        'type': 'scene',
+        'integrator': {'type': integrator, 'max_depth': 4},
+        'sensor': {
+            'type': 'perspective',
+            'fov': 20,
+            'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0],
+                                    up=[0, 1, 0]),
+            'film': {'type': 'hdrfilm', 'width': 8, 'height': 8,
+                     'rfilter': {'type': 'box'}},
+            'sampler': {'type': 'independent', 'sample_count': 64},
+        },
+        'light': {
+            'type': 'rectangle',
+            'to_world': T().translate([0, 0, 1]) @ T().scale(0.5),
+            'emitter': {
+                'type': 'area',
+                'radiance': {'type': 'rgb', 'value': 5.0},
+                'visible': visible,
+            },
+        },
+        'back_wall': {
+            'type': 'rectangle',
+            'to_world': T().translate([0, 0, -1]) @ T().scale(2.0),
+            'bsdf': {'type': 'diffuse',
+                     'reflectance': {'type': 'rgb', 'value': 0.5}},
+        },
+        'front_wall': {
+            'type': 'rectangle',
+            'to_world': T().translate([0, 0, 4])
+                        @ T().rotate([1, 0, 0], 180)
+                        @ T().scale(4.0),
+            'bsdf': {'type': 'diffuse',
+                     'reflectance': {'type': 'rgb', 'value': 0.5}},
+        },
+    })
+
+
+def test13_visibility_mask_queries(variants_all_rgb):
+    """Camera rays skip shapes whose emitter has visible=False; other
+    rays still see and are occluded by them."""
+    scene = make_visibility_scene(visible=False)
+
+    for shape in scene.shapes():
+        if shape.is_emitter():
+            assert shape.visibility_mask() == 0xFE
+            assert not shape.emitter().visible()
+            assert mi.has_flag(shape.emitter().flags(),
+                               mi.EmitterFlags.Invisible)
+        else:
+            assert shape.visibility_mask() == 0xFF
+
+    ray = mi.Ray3f([0, 0, 3], [0, 0, -1])
+
+    # Default mask: the emitter is hit like any other shape
+    si = scene.ray_intersect(ray)
+    dr.assert_allclose(si.t, 2)
+
+    # Camera mask: the ray passes through and hits the wall behind
+    si = scene.ray_intersect(ray, mi.RayFlags.Default, False, True,
+                             visibility_mask=mi.RayMask.Camera)
+    dr.assert_allclose(si.t, 4)
+    pi = scene.ray_intersect_preliminary(ray,
+                                         visibility_mask=mi.RayMask.Camera)
+    dr.assert_allclose(pi.t, 4)
+
+    # Occlusion follows the same rule
+    short_ray = mi.Ray3f([0, 0, 3], [0, 0, -1], 2.5, 0.0, [])
+    assert dr.all(scene.ray_test(short_ray))
+    assert not dr.any(scene.ray_test(short_ray, False, True,
+                                     visibility_mask=mi.RayMask.Camera))
+
+
+def test14_visibility_mask_render(variants_all_rgb):
+    """A hidden area emitter does not appear in the rendered image but still
+    illuminates the scene."""
+    img_visible = mi.render(make_visibility_scene(visible=True))
+    img_hidden = mi.render(make_visibility_scene(visible=False))
+
+    n = mi.TensorXf(img_visible).shape[0]
+    c = n // 2
+    center_visible = np.array(img_visible)[c, c, :]
+    center_hidden = np.array(img_hidden)[c, c, :]
+
+    # Directly visible emitter radiance vs. the indirectly lit wall behind it
+    assert np.all(center_visible > 3)
+    assert np.all(center_hidden < 1)
+    # The wall behind the emitter is still indirectly illuminated by it
+    # (light -> front wall -> back wall)
+    assert np.all(center_hidden > 1e-4)
+
+
+def test15_visibility_env_emitter(variants_all_rgb):
+    """A hidden environment emitter produces no directly visible radiance but
+    still illuminates the scene."""
+    T = mi.ScalarTransform4f
+
+    def make_scene(visible):
+        return mi.load_dict({
+            'type': 'scene',
+            'integrator': {'type': 'path', 'max_depth': 4},
+            'sensor': {
+                'type': 'perspective',
+                'fov': 40,
+                'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0],
+                                        up=[0, 1, 0]),
+                'film': {'type': 'hdrfilm', 'width': 8, 'height': 8,
+                         'rfilter': {'type': 'box'}},
+                'sampler': {'type': 'independent', 'sample_count': 16},
+            },
+            'env': {'type': 'constant',
+                    'radiance': {'type': 'rgb', 'value': 1.0},
+                    'visible': visible},
+            'ball': {'type': 'sphere', 'to_world': T().scale(0.4),
+                     'bsdf': {'type': 'diffuse'}},
+        })
+
+    img_visible = np.array(mi.render(make_scene(True)))
+    img_hidden = np.array(mi.render(make_scene(False)))
+
+    # Escaped camera rays see the environment only when it is visible
+    assert np.allclose(img_visible[0, 0], 1.0, atol=1e-3)
+    assert np.allclose(img_hidden[0, 0], 0.0)
+    # The sphere in the image center is lit identically in both cases
+    assert img_hidden[4, 4, 0] > 0.1
+    assert np.allclose(img_visible[4, 4], img_hidden[4, 4], rtol=0.2)

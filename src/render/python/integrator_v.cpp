@@ -165,6 +165,14 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
 };
 
 /**
@@ -277,6 +285,14 @@ public:
         NB_OVERRIDE(to_string);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
     using Base::m_hide_emitters;
 };
 
@@ -314,9 +330,7 @@ MI_PY_EXPORT(Integrator) {
             "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
-        .def_method(Integrator, aov_names)
-        .def_method(Integrator, skip_area_emitters, "scene"_a, "ray"_a,
-                    "coherent"_a = false, "active"_a = true);
+        .def_method(Integrator, aov_names);
 
     drjit::bind_traverse(cls);
 

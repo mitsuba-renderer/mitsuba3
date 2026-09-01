@@ -8,6 +8,8 @@
 #include <string>
 #include <string_view>
 #include <stdexcept>
+#include <cstdlib>
+#include <cstring>
 #include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -288,14 +290,39 @@ template <typename Derived>
 class JitObject : public Object {
 public:
     /// Return the identifier of this instance
-    std::string_view id() const override { return m_id; }
+    std::string_view id() const override {
+        const char *p = id_ptr();
+        return p ? std::string_view(p) : std::string_view();
+    }
 
     /// Set the identifier of this instance
-    void set_id(std::string_view id) override { m_id = id; }
+    void set_id(std::string_view id) override {
+        uintptr_t flag = m_state & 1;
+        delete[] id_ptr();
+        char *p = nullptr;
+        if (!id.empty()) {
+            p = new char[id.size() + 1];
+            memcpy(p, id.data(), id.size());
+            p[id.size()] = '\0';
+        }
+        m_state = (uintptr_t) p | flag;
+    }
+
+    /// Withdraw this instance from the JIT registry. This can be useful when
+    /// an instance should not be reached by traced function calls.
+    void unregister() {
+        if constexpr (dr::is_jit_v<typename Derived::UInt32>) {
+            if (!(m_state & 1)) {
+                jit_registry_remove(this);
+                m_state |= 1;
+            }
+        }
+    }
 
 protected:
     /// Constructor with ID and optional ObjectType
-    JitObject(std::string_view id, ObjectType type = ObjectType::Unknown) : m_id(id) {
+    JitObject(std::string_view id, ObjectType type = ObjectType::Unknown) {
+        JitObject::set_id(id);
         if constexpr (dr::is_jit_v<typename Derived::UInt32>) {
             const char *domain = type == ObjectType::Unknown
                                      ? Derived::Domain
@@ -318,13 +345,22 @@ protected:
 
     /// Deregister from JIT registry on destruction
     ~JitObject() {
-        if constexpr (dr::is_jit_v<typename Derived::UInt32>)
-            jit_registry_remove(this);
+        if constexpr (dr::is_jit_v<typename Derived::UInt32>) {
+            if (!(m_state & 1))
+                jit_registry_remove(this);
+        }
+        delete[] id_ptr();
     }
 
 private:
-    /// Stores the identifier of this instance
-    std::string m_id;
+    const char *id_ptr() const {
+        return (const char *) (m_state & ~(uintptr_t) 1);
+    }
+
+    /// Combined storage for two pieces of information:
+    /// - Is the instance registered with Dr.Jit (lowest bit)
+    /// - A heap-allocated identifier string returned by ``id()``
+    uintptr_t m_state = 0;
 };
 
 
@@ -403,8 +439,10 @@ MI_DECLARE_ENUM_OPERATORS(ParamFlags)
  * through the `TraversalCallback.put()` methods, which distinguish
  * between regular parameters and references to other scene objects that are
  * handled recursively.
+ *
+ * Passing an empty name asks the callback to derive one.
  */
-class TraversalCallback {
+class MI_EXPORT_LIB TraversalCallback {
 public:
     template <typename T, typename Flags> void put(std::string_view name, ref<T> &value, Flags flags) {
         put_object(name, value.get(), (uint32_t) flags);
@@ -440,6 +478,16 @@ protected:
     virtual void put_object(std::string_view name,
                             Object *value,
                             uint32_t flags) = 0;
+
+    /**
+     * Extend the lifetime of a Python object whose contents were
+     * reported to `put()`
+     *
+     * A plugin written in Python can report a value that exists only for the
+     * duration of the call. It must invoke this funcdtion with the borrowed
+     * ``PyObject*`` so that the caller can keep it alive.
+     */
+    virtual void keep_alive(void *python_object);
 };
 
 /// Prints the canonical string representation of an object instance

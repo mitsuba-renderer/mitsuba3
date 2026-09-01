@@ -1,5 +1,6 @@
 #include <embree3/rtcore.h>
 #include <nanothread/nanothread.h>
+#include <tsl/robin_map.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/scene_ir.h>
@@ -124,9 +125,14 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
     ShapeIR g;
     shape->describe(g);
 
+    // Each case sets the per-shape visibility mask, which Embree tests
+    // against the per-lane ray mask (this requires EMBREE_RAY_MASK).
+    // Instances keep the all-bits default, since Embree also tests the masks
+    // of the geometries within the instanced scene.
     switch (g.kind) {
         case ShapeIR::Kind::Custom: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetGeometryUserPrimitiveCount(geom, (unsigned int) g.prim_count);
             rtcSetGeometryUserData(geom, (void *) shape);
             rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
@@ -139,6 +145,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
         case ShapeIR::Kind::Triangles:
         case ShapeIR::Kind::TrianglesCulled: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
                                        g.vertex_stride, g.vertex_count);
@@ -149,6 +156,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 rtcSetGeometryIntersectFilterFunction(geom, embree_backface_cull);
                 rtcSetGeometryOccludedFilterFunction(geom, embree_backface_cull);
             }
+            rtcSetGeometryUserData(geom, (void *) shape);
             rtcCommitGeometry(geom);
             return geom;
         }
@@ -159,12 +167,14 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 device, g.kind == ShapeIR::Kind::BSplineCurve
                             ? RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE
                             : RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
+            rtcSetGeometryMask(geom, shape->visibility_mask());
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT4, g.cp_ptr, 0,
                                        4 * sizeof(float), g.cp_count);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
                                        RTC_FORMAT_UINT, g.seg_ptr, 0,
                                        sizeof(uint32_t), g.seg_count);
+            rtcSetGeometryUserData(geom, (void *) shape);
             rtcCommitGeometry(geom);
             return geom;
         }
@@ -183,6 +193,8 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
             }
             rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
+            // Scalar-mode hits resolve nested geometry through the group
+            rtcSetGeometryUserData(inst, (void *) g.group_id);
             rtcCommitGeometry(inst);
             return inst;
         }
@@ -231,9 +243,6 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
     Log(Info, "Embree ready. (took %s)",
         util::time_string((float) timer.value()));
-
-    if constexpr (dr::is_llvm_v<Float>)
-        shapes_registry_ids = build_registry_ids<Float, Spectrum>(scene->m_shapes);
 }
 
 template <typename Float, typename Spectrum>
@@ -242,7 +251,7 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
-    for (int geo : geometries)
+    for (unsigned int geo : geometries)
         rtcDetachGeometry(accel, geo);
     geometries.clear();
 
@@ -259,7 +268,13 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
         for (const ref<Shape> &child : group->shapes()) {
             RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
                 embree_device, child.get(), group_scenes);
-            rtcAttachGeometry(nested, cg);
+            if constexpr (dr::is_llvm_v<Float>)
+                // The child's registry id doubles as its geometry ID, so a
+                // nested hit directly reports the child shape
+                rtcAttachGeometryByID(nested, cg,
+                                      jit_registry_id(child.get()));
+            else
+                rtcAttachGeometry(nested, cg);
             rtcReleaseGeometry(cg);
         }
         // Publish the uncommitted nested scene for top-level Instances.
@@ -267,10 +282,27 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
         nested_scenes.push_back(nested);
     }
 
+    // Attach top-level geometry using the explicit ID scheme described in
+    // accel_embree.h
+    instance_count = 0;
+    for (Shape *shape : scene->m_shapes)
+        instance_count += shape->is_instance() ? 1 : 0;
+
+    uint32_t instance_index = 0, scalar_id = instance_count;
     for (Shape *shape : scene->m_shapes) {
         RTCGeometry geom = embree_make_geometry<Float, Spectrum>(
             embree_device, shape, group_scenes);
-        geometries.push_back(rtcAttachGeometry(accel, geom));
+        unsigned int id;
+        if (shape->is_instance()) {
+            id = instance_index++;
+        } else {
+            if constexpr (dr::is_llvm_v<Float>)
+                id = instance_count + jit_registry_id(shape);
+            else
+                id = scalar_id++;
+        }
+        rtcAttachGeometryByID(accel, geom, id);
+        geometries.push_back(id);
         rtcReleaseGeometry(geom);
     }
 
@@ -368,7 +400,7 @@ typename EmbreeAccel<Float, Spectrum>::PreliminaryIntersection3f
 EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
     bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
-    Mask active) const {
+    Mask active, const UInt32 &visibility_mask) const {
     using Single = dr::float32_array_t<Float>;
     DRJIT_MARK_USED(scene);
 
@@ -392,7 +424,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         dr::store(&rh.ray.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         rh.ray.tfar = ray_maxt;
-        rh.ray.mask = 0;
+        rh.ray.mask = visibility_mask;
         rh.ray.id = 0;
         rh.ray.flags = 0;
         rh.hit.geomID = (uint32_t) -1;
@@ -400,27 +432,27 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         rtcIntersect1(accel, &context, &rh);
 
         if (rh.hit.geomID != RTC_INVALID_GEOMETRY_ID) {
-            uint32_t shape_index = rh.hit.geomID;
-            uint32_t prim_index  = rh.hit.primID;
+            uint32_t geom_id = rh.hit.geomID;
 
             // We get level 0 because we only support one level of instancing
             uint32_t inst_index = rh.hit.instID[0];
 
-            // If the hit is not on an instance
-            bool hit_instance = inst_index != RTC_INVALID_GEOMETRY_ID;
-            uint32_t index = hit_instance ? inst_index : shape_index;
-
-            ShapePtr shape = scene->m_shapes[index];
-            if (hit_instance)
-                pi.instance = shape;
-            else
-                pi.shape = shape;
+            if (inst_index != RTC_INVALID_GEOMETRY_ID) {
+                // Instanced hit: the top-level ID is the instance index, and
+                // the nested geometry ID identifies the leaf child within the
+                // shape group (positional attachment order)
+                const auto *group = (const ShapeGroup<Float, Spectrum> *)
+                    rtcGetGeometryUserData(rtcGetGeometry(accel, inst_index));
+                pi.shape = group->shapes()[geom_id].get();
+                pi.instance_index = inst_index + 1;
+            } else {
+                pi.shape = (const Shape *) rtcGetGeometryUserData(
+                    rtcGetGeometry(accel, geom_id));
+            }
 
             pi.valid = true;
-            pi.shape_index = shape_index;
-
             pi.t = rh.ray.tfar;
-            pi.prim_index = prim_index;
+            pi.prim_index = rh.hit.primID;
             pi.prim_uv = Point2f(rh.hit.u, rh.hit.v);
         }
 
@@ -433,11 +465,36 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
                                   (void *) accel, accel_handle.index(), ray_o,
                                   ray_d, ray_time, ray_maxt, coherent, active,
-                                  0, out);
+                                  visibility_mask, 0, out);
 
         // Embree traces in float32, so the hit fields are stolen as ``Single``.
-        return decode_cpu_llvm_pi<Float, Spectrum, Single>(out,
-                                                           shapes_registry_ids);
+        PreliminaryIntersection3f pi;
+        pi.valid      = Mask::steal(out[0]);
+        pi.t          = Float(Single::steal(out[1]));
+        pi.prim_uv    = Vector2f(Single::steal(out[2]), Single::steal(out[3]));
+        pi.prim_index = UInt32::steal(out[4]);
+
+        UInt32 geom_id    = UInt32::steal(out[5]),
+               inst_index = UInt32::steal(out[6]);
+        Mask hit_inst = Mask::steal(out[7]);
+
+        // Undo the geometry ID encoding (see accel_embree.h). The shape
+        // pointer of missed lanes must be masked (stale IDs would index
+        // dispatch tables out of bounds). ``inst_index`` is -1 unless the
+        // lane has an instanced hit; adding 1 therefore needs no mask.
+        if (instance_count > 0) {
+            UInt32 shape_id =
+                dr::select(hit_inst, geom_id, geom_id - instance_count);
+            pi.shape = dr::reinterpret_array<ShapePtr, UInt32>(
+                dr::select(pi.valid, shape_id, 0u));
+            pi.instance_index = inst_index + 1u;
+        } else {
+            pi.shape = dr::reinterpret_array<ShapePtr, UInt32>(
+                dr::select(pi.valid, geom_id, 0u));
+            pi.instance_index = dr::zeros<UInt32>();
+        }
+
+        return pi;
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);
@@ -450,7 +507,8 @@ template <typename Float, typename Spectrum>
 typename EmbreeAccel<Float, Spectrum>::Mask
 EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                        const Ray3f &ray, Mask coherent,
-                                       Mask active) const {
+                                       Mask active,
+                                       const UInt32 &visibility_mask) const {
     using Single = dr::float32_array_t<Float>;
 
     // Be careful with 'ray.maxt' in double precision variants
@@ -471,7 +529,7 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
         dr::store(&ray2.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         ray2.tfar = (float) ray_maxt;
-        ray2.mask = 0;
+        ray2.mask = visibility_mask;
         ray2.id = 0;
         ray2.flags = 0;
 
@@ -489,7 +547,8 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
         cpu_llvm_ray_trace<Float>((void *) occlude_func_ptr,
                                   occlude_handle.index(), (void *) accel,
                                   accel_handle.index(), ray_o, ray_d, ray_time,
-                                  ray_maxt, coherent, active, 1, out);
+                                  ray_maxt, coherent, active, visibility_mask,
+                                  1, out);
 
         return Mask::steal(out[0]);
     } else {

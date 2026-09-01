@@ -5,6 +5,7 @@
 #include <drjit-core/jit.h>
 #include <drjit-core/hash.h>
 #include <tsl/robin_map.h>
+#include <algorithm>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -25,6 +26,7 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
     for (size_t i = 0; i < shapes.size(); ++i) {
         ShapeIR g;
         shapes[i]->describe(g);
+        g.visibility_mask = shapes[i]->visibility_mask();
         g.data_slot = slot++;
         if (g.kind == ShapeIR::Kind::Instance)
             inst_shapes.push_back(std::move(g));
@@ -38,23 +40,37 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         group_geoms[i].resize(children.size());
         for (size_t j = 0; j < children.size(); ++j) {
             children[j]->describe(group_geoms[i][j]);
+            group_geoms[i][j].visibility_mask = children[j]->visibility_mask();
             group_geoms[i][j].data_slot = slot++;
         }
     }
 
-    // Move same-kind geometry into one BLAS each (enumerator order), appending
-    // them to sd.blases and reporting their indices. Instances have already been
-    // routed away, so every geom here belongs to a geometry kind.
+    // Group the geometry into BLASes, appending them to sd.blases and
+    // reporting their indices. Shapes share a BLAS when they agree in kind
+    // and visibility mask. The mask split lets OptiX/Metal express per-shape
+    // visibility via per-instance masks, and scenes without hidden emitters
+    // still get one BLAS per kind. Instances were routed away earlier, so
+    // every geom here has a geometry kind.
     auto bucket_into_blases = [&](std::vector<ShapeIR> &&geoms,
                                   std::vector<uint32_t> &out_indices) {
-        std::vector<ShapeIR> buckets[NumGeometryKinds];
-        for (ShapeIR &g : geoms)
-            buckets[(size_t) g.kind].push_back(std::move(g));
+        std::vector<std::pair<uint32_t, std::vector<ShapeIR>>>
+            buckets[NumGeometryKinds];
+        for (ShapeIR &g : geoms) {
+            auto &kb = buckets[(size_t) g.kind];
+            auto it = std::find_if(kb.begin(), kb.end(), [&](const auto &p) {
+                return p.first == g.visibility_mask;
+            });
+            if (it == kb.end())
+                it = kb.emplace(kb.end(), g.visibility_mask,
+                                std::vector<ShapeIR>());
+            it->second.push_back(std::move(g));
+        }
         for (size_t k = 0; k < NumGeometryKinds; ++k) {
-            if (buckets[k].empty())
-                continue;
-            out_indices.push_back((uint32_t) sd.blases.size());
-            sd.blases.push_back(BlasEntry{ (ShapeIR::Kind) k, std::move(buckets[k]) });
+            for (auto &[mask, bucket] : buckets[k]) {
+                out_indices.push_back((uint32_t) sd.blases.size());
+                sd.blases.push_back(
+                    BlasEntry{ (ShapeIR::Kind) k, mask, std::move(bucket) });
+            }
         }
     };
 
@@ -76,12 +92,16 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         sd.instances.push_back(e);
     }
     // ...then, per Instance shape, one instance per BLAS of its ShapeGroup.
+    // ``inst_shapes`` preserves the order of appearance in the scene's shape
+    // list, so the running index below matches the numbering used by
+    // Scene::update_instance_transforms().
+    uint32_t instance_index = 0;
     for (const ShapeIR &inst : inst_shapes) {
-        uint32_t owner = jit_registry_id(inst.ctx);
+        ++instance_index;
         for (uint32_t bi : sd.group_blases[group_index.at(inst.group_id)]) {
             InstanceEntry e;
             e.blas_index = bi;
-            e.owner_registry_id = owner;
+            e.instance_index = instance_index;
             for (int k = 0; k < 12; ++k)
                 e.to_world[k] = inst.to_world[k];
             sd.instances.push_back(e);

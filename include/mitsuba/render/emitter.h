@@ -39,6 +39,9 @@ enum class EmitterFlags : uint32_t {
     /// The emission depends on the UV coordinates
     SpatiallyVarying     = 0x00010,
 
+    /// The emitter is hidden from directly visible (camera) rays
+    Invisible            = 0x00020,
+
     // =============================================================
     //                  Compound lobe attributes
     // =============================================================
@@ -64,8 +67,25 @@ public:
     /// The emitter's sampling weight.
     ScalarFloat sampling_weight() const { return m_sampling_weight; }
 
-    /// Flags for all components combined.
-    uint32_t flags(dr::mask_t<Float> /*active*/ = true) const { return m_flags; }
+    /// Is this emitter visible to directly visible (camera) rays?
+    bool visible() const { return m_visible; }
+
+    /// Return the 8-bit visibility mask (see `RayMask`). Invisible emitters
+    /// clear the `RayMask.Camera` bit.
+    uint32_t visibility_mask() const {
+        uint32_t mask = (uint32_t) RayMask::All;
+        if (!m_visible)
+            mask &= ~(uint32_t) RayMask::Camera;
+        return mask;
+    }
+
+    /// Flags for all components combined. The ``visible`` property is
+    /// merged in here (rather than stored in ``m_flags``) because plugin
+    /// constructors assign ``m_flags`` after the base class has run.
+    uint32_t flags(dr::mask_t<Float> /*active*/ = true) const {
+        return m_flags |
+               (m_visible ? 0u : (uint32_t) EmitterFlags::Invisible);
+    }
 
     void traverse(TraversalCallback *callback) override;
 
@@ -90,8 +110,20 @@ protected:
     /// Sampling weight
     ScalarFloat m_sampling_weight;
 
+    /// False if the emitter is hidden from camera rays
+    bool m_visible;
+
     /// True if the emitter's parameters have changed
     bool m_dirty = false;
+
+private:
+    /// Used by the Scene to implement the deprecated ``hide_emitters``
+    /// integrator flag before building its acceleration data structures
+    void set_visible(bool visible) { m_visible = visible; }
+
+    // Qualified, since ``Endpoint`` already declares a ``Scene`` type alias
+    // that MSVC would otherwise pick up here
+    friend class mitsuba::Scene<Float, Spectrum>;
 
     MI_TRAVERSE_CB(Base)
 };

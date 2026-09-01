@@ -37,6 +37,11 @@ struct ShapeIR {
     Kind kind = Kind::Custom;
     ShapeType type{};
 
+    /// 8-bit visibility mask (see ``Shape::visibility_mask()``), filled in by
+    /// ``SceneIRBuilder``. Backends with per-instance masks (OptiX, Metal)
+    /// rely on same-mask geometry sharing one BLAS.
+    uint32_t visibility_mask = 0xFFu;
+
     // --- Custom (implicit / bounding-box) shapes ---
 
     /// Number of AABBs / primitives this shape contributes.
@@ -114,12 +119,11 @@ static constexpr size_t NumGeometryKinds = (size_t) ShapeIR::Kind::Instance;
 //  Whole-scene descriptor
 // ---------------------------------------------------------------------------
 
-/// ``InstanceEntry.owner_registry_id`` for a top-level BLAS.
-static constexpr uint32_t SCENE_IR_NO_OWNER = (uint32_t) -1;
-
-/// One bottom-level acceleration structure holding same-kind geometry.
+/// One bottom-level acceleration structure holding geometry that shares one
+/// kind and one visibility mask.
 struct BlasEntry {
     ShapeIR::Kind        kind;
+    uint32_t             visibility_mask;
     std::vector<ShapeIR> geoms;
 };
 
@@ -132,8 +136,8 @@ struct InstanceEntry {
     float    to_world[12] = { 1.f, 0.f, 0.f, 0.f, 1.f, 0.f,
                               0.f, 0.f, 1.f, 0.f, 0.f, 0.f };
 
-    /// JIT registry ID of the ShapeGroup, or ``SCENE_IR_NO_OWNER``.
-    uint32_t owner_registry_id = SCENE_IR_NO_OWNER;
+    /// Index + 1 of the owning ``instance``, or 0 for a top-level BLAS.
+    uint32_t instance_index = 0;
 };
 
 /// Scene description consumed by acceleration-structure builders.
@@ -164,9 +168,9 @@ struct MI_EXPORT_LIB SceneIRBuilder {
      *    Backends use the slot as the persistent index for per-shape storage
      *    such as custom primitive data buffers.
      *
-     * 2. Partition non-instance geometry by ``ShapeIR.Kind``. Each non-empty
-     *    bucket becomes one ``BlasEntry``. Emit top-level BLASes first, then
-     *    one shared BLAS set per ShapeGroup.
+     * 2. Partition non-instance geometry by ``ShapeIR.Kind`` and visibility
+     *    mask. Each non-empty bucket becomes one ``BlasEntry``. Emit top-level
+     *    BLASes first, then one shared BLAS set per ShapeGroup.
      *
      * 3. Flatten the TLAS/IAS instance list: one identity ``InstanceEntry`` per
      *    top-level BLAS, then one transformed entry for every ``Instance`` and

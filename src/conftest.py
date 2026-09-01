@@ -39,7 +39,6 @@ def _variant_fixture_impl(request, variant):
     # Clean up after test
     dr.sync_thread()
     dr.flush_kernel_cache()
-    dr.kernel_history_clear()
     dr.flush_malloc_cache()
     dr.detail.malloc_clear_statistics()
     dr.detail.clear_registry()
