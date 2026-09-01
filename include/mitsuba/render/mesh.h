@@ -1085,9 +1085,13 @@ protected:
      * The ``flip_normals`` flag turns the surface inside out as the records
      * are written, which `from_fields()` uses to bake the property of
      * the same name. See ``validate_impl()`` for ``updating``.
+     *
+     * The caller can provide a bounding box (if known), in which case
+     * the implementation does not need to recompute it.
      */
     void pack(bool regenerate_normals, bool flip_normals = false,
-              bool updating = false);
+              bool updating = false,
+              const ScalarBoundingBox3f *bbox = nullptr);
 
     /**
      * Implementation of `validate()`
@@ -1113,8 +1117,8 @@ protected:
      */
     void refresh(const ScalarBoundingBox3f *bbox = nullptr);
 
-    /// (Re-)compute the bounding box from the packed positions
-    void recompute_bbox();
+    /// (Re-)compute the bounding box from the packed positions.
+    void recompute_bbox() const;
 
     /// Release the field views and make the packed state authoritative
     void drop_views();
@@ -1240,8 +1244,11 @@ protected:
     /// Short human-readable label used in log and error messages.
     std::string m_filename;
 
-    /// Bounding box of the mesh positions
-    ScalarBoundingBox3f m_bbox;
+    /// Bounding box of the mesh positions, computed on demand by `bbox()`
+    mutable ScalarBoundingBox3f m_bbox;
+
+    /// Does `m_bbox` reflect the current positions?
+    mutable bool m_bbox_valid = false;
 
     ScalarSize m_vertex_count = 0;
     ScalarSize m_face_count = 0;
