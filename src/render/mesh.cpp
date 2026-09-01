@@ -1501,10 +1501,12 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
         if (m->m_parts.empty()) {
             std::string_view id = m->id();
             parts.push_back({ std::string(id.empty() ? m->m_filename : id),
-                              (ScalarIndex) F, m->m_face_count, m->bbox() });
+                              m->m_filename, (ScalarIndex) F, m->m_face_count,
+                              m->bbox() });
         } else {
             for (const Part &p : m->m_parts)
-                parts.push_back({ p.id, (ScalarIndex) (F + p.face_offset),
+                parts.push_back({ p.id, p.label,
+                                  (ScalarIndex) (F + p.face_offset),
                                   p.face_count, p.bbox });
         }
 

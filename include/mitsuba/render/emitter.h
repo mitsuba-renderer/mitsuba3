@@ -121,7 +121,9 @@ private:
     /// integrator flag before building its acceleration data structures
     void set_visible(bool visible) { m_visible = visible; }
 
-    friend class Scene<Float, Spectrum>;
+    // Qualified, since ``Endpoint`` already declares a ``Scene`` type alias
+    // that MSVC would otherwise pick up here
+    friend class mitsuba::Scene<Float, Spectrum>;
 
     MI_TRAVERSE_CB(Base)
 };

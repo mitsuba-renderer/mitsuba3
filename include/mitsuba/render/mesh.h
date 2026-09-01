@@ -393,12 +393,23 @@ public:
      * The ``merge()`` method constructs a mesh from several compatible inputs,
      * which loses information about the original structure. The ``Part`` API
      * exists to persist this information. It annotates a range ``[face_offset,
-     * face_offset + face_count)`` of faces along with the original mesh name
-     * and bounding box.
+     * face_offset + face_count)`` of faces along with the names and bounding
+     * box of the original mesh.
      */
     struct Part {
         /// Label of the part, e.g. the id of the source mesh
         std::string id;
+
+        /**
+         * Name that the source mesh carries itself
+         *
+         * This names the mesh independently of the scene it appears in: the
+         * label that a :monosp:`serialized` file stores next to the geometry,
+         * or the file name for formats that store no name of their own. The
+         * ``id`` field instead holds the name that the Mitsuba scene knows
+         * the shape by, and the two differ whenever the scene assigns an id.
+         */
+        std::string label;
 
         /// Index of the first face of the part
         ScalarIndex face_offset = 0;
