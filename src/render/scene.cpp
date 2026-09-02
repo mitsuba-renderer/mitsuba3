@@ -260,7 +260,7 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
     size_t n = m_instances.size();
     std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[12 * n]);
     for (size_t i = 0; i < n; ++i)
-        pack_matrix(data.get() + 12 * i, m_instances[i]->scalar_to_world());
+        pack_matrix(data.get() + 12 * i, m_instances[i]->to_world_scalar());
     m_instance_transforms =
         dr::load<DynamicBuffer<Float>>(data.get(), 12 * n);
 

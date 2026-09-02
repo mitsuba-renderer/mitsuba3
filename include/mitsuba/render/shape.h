@@ -808,7 +808,7 @@ public:
     AffineTransform4f to_world() const { return m_to_world.value(); }
 
     /// Return the object-to-world transformation (scalar form)
-    const ScalarAffineTransform4f &scalar_to_world() const { return m_to_world.scalar(); }
+    const ScalarAffineTransform4f &to_world_scalar() const { return m_to_world.scalar(); }
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||

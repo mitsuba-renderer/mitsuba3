@@ -3925,6 +3925,13 @@ static const char *__doc_mitsuba_Endpoint_traverse_cb_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
+static const char *__doc_mitsuba_Endpoint_world_transform_scalar =
+R"doc(Return the local space to world space transformation as a scalar
+transform
+
+This mirrors `world_transform()` without touching the device: reading
+the JIT representation back would wait for all queued work.)doc";
+
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
 
@@ -9971,7 +9978,7 @@ anything except creating clones.)doc";
 
 static const char *__doc_mitsuba_Sensor_set_film = R"doc(Replace the film)doc";
 
-static const char *__doc_mitsuba_Sensor_set_world_transform =
+static const char *__doc_mitsuba_Sensor_set_world_transform_scalar =
 R"doc(Replace the sensor-to-world transformation.
 
 This convenience method replaces the camera view
@@ -10797,8 +10804,6 @@ Args:
 Returns:
     Silhouette sample record.)doc";
 
-static const char *__doc_mitsuba_Shape_scalar_to_world = R"doc(Return the object-to-world transformation (scalar form))doc";
-
 static const char *__doc_mitsuba_Shape_sensor = R"doc(Return the area sensor associated with this shape (if any))doc";
 
 static const char *__doc_mitsuba_Shape_sensor_2 = R"doc(Return the area sensor associated with this shape (if any))doc";
@@ -10824,6 +10829,8 @@ static const char *__doc_mitsuba_Shape_texture_attribute = R"doc(Return the text
 static const char *__doc_mitsuba_Shape_texture_attribute_2 = R"doc(Return the texture attribute associated with ``name``.)doc";
 
 static const char *__doc_mitsuba_Shape_to_world = R"doc(Return the object-to-world transformation)doc";
+
+static const char *__doc_mitsuba_Shape_to_world_scalar = R"doc(Return the object-to-world transformation (scalar form))doc";
 
 static const char *__doc_mitsuba_Shape_traverse = R"doc()doc";
 

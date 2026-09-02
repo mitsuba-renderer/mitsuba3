@@ -118,7 +118,7 @@ public:
      * This convenience method replaces the camera view
      * matrix with a scalar (host-side) value.
      */
-    void set_world_transform(const ScalarAffineTransform4f &to_world) {
+    void set_world_transform_scalar(const ScalarAffineTransform4f &to_world) {
         this->m_to_world = to_world;
         dr::make_opaque(this->m_to_world);
     }

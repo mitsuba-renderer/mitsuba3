@@ -485,8 +485,8 @@ MI_PY_EXPORT(Shape) {
 
     auto shape = MI_PY_CLASS(Shape, Object)
         .def("to_world", &Shape::to_world, D(Shape, to_world))
-        .def("scalar_to_world", &Shape::scalar_to_world,
-             D(Shape, scalar_to_world))
+        .def("to_world_scalar", &Shape::to_world_scalar,
+             D(Shape, to_world_scalar))
         .def("bbox", nb::overload_cast<>(
             &Shape::bbox, nb::const_), D(Shape, bbox))
         .def("bbox", nb::overload_cast<ScalarUInt32>(

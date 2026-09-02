@@ -318,6 +318,17 @@ public:
     }
 
     /**
+     * \brief Return the local space to world space transformation as a
+     * scalar transform
+     *
+     * This mirrors `world_transform()` without touching the device: reading
+     * the JIT representation back would wait for all queued work.
+     */
+    const ScalarAffineTransform4f &world_transform_scalar() const {
+        return m_to_world.scalar();
+    }
+
+    /**
      * Does the method `sample_ray()` require a uniformly distributed
      * 2D sample for the ``sample2`` parameter?
      */
