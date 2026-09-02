@@ -1330,8 +1330,8 @@ protected:
     /// Pointer to the scene that owns this mesh
     Scene<Float, Spectrum>* m_scene = nullptr;
 
+    // 'm_positions', 'm_normals' and 'm_texcoords' are handled by traverse_cb()
     MI_DECLARE_TRAVERSE_CB(m_packed_vertices, m_packed_faces,
-                           m_positions, m_normals, m_texcoords,
                            m_position_index, m_normal_index,
                            m_dedge, m_sil_dedge_pmf, m_mesh_attributes,
                            m_area_pmf, m_parameterization)

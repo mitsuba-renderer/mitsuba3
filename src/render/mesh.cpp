@@ -2887,6 +2887,26 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
     return dr::grad_enabled(m_packed_vertices);
 }
 
-MI_IMPLEMENT_TRAVERSE_CB(Mesh, Base)
+MI_VARIANT void
+Mesh<Float, Spectrum>::traverse_cb(void *payload,
+                                   const drjit::TraverseVisitor &cb) {
+    if (cb.role != drjit::TraverseRole::Freeze)
+        return;
+
+    Base::traverse_cb(payload, cb);
+    size_t i = 0;
+    drjit::traverse_1(this->traverse_cb_fields_(), [&](auto &x) {
+        drjit::traverse_fn(x, payload, cb, traverse_cb_names_[i++]);
+    });
+
+    // Only traverse into symbolic readback expressions when they track gradients
+    if (dr::grad_enabled(m_positions.array()))
+        drjit::traverse_fn(m_positions, payload, cb, "m_positions");
+    if (dr::grad_enabled(m_normals.array()))
+        drjit::traverse_fn(m_normals, payload, cb, "m_normals");
+    if (dr::grad_enabled(m_texcoords.array()))
+        drjit::traverse_fn(m_texcoords, payload, cb, "m_texcoords");
+}
+
 MI_INSTANTIATE_CLASS(Mesh)
 NAMESPACE_END(mitsuba)
