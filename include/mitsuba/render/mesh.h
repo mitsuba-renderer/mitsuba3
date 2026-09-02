@@ -1018,6 +1018,18 @@ public:
 
     void set_scene(Scene<Float, Spectrum> *scene) { m_scene = scene; }
 
+    /**
+     * Initialize the ``m_parameterization`` field for mapping UV
+     * coordinates to positions
+     *
+     * Internally, the function creates a nested scene to leverage optimized
+     * ray tracing functionality in `eval_parameterization()`
+     */
+    void build_parameterization();
+
+    /// Does a spatially varying emitter require ``m_parameterization?``
+    bool needs_parameterization() const;
+
     size_t vertex_data_bytes() const;
     size_t face_data_bytes() const;
 
@@ -1043,18 +1055,6 @@ protected:
      * rebuilds it on the next use.
      */
     const DiscreteDistribution<Float> &sil_dedge_pmf() const;
-
-    /**
-     * Initialize the ``m_parameterization`` field for mapping UV
-     * coordinates to positions
-     *
-     * Internally, the function creates a nested scene to leverage optimized
-     * ray tracing functionality in `eval_parameterization()`
-     */
-    void build_parameterization();
-
-    /// Does a spatially varying emitter require ``m_parameterization?``
-    bool needs_parameterization() const;
 
     // Ensures that the sampling table are ready.
     DRJIT_INLINE void ensure_pmf_built() const {

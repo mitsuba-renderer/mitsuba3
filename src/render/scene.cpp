@@ -103,6 +103,13 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     clear_shapes_dirty();
     update_instance_transforms();
 
+    // Set up the UV parameterization mesh emitters if needed
+    for (Shape *shape : m_shapes) {
+        Mesh *mesh = dynamic_cast<Mesh *>(shape);
+        if (mesh && mesh->needs_parameterization())
+            mesh->build_parameterization();
+    }
+
     if (!m_emitters.empty()) {
         // Inform environment emitters etc. about the scene bounds
         for (Emitter *emitter: m_emitters)
@@ -759,10 +766,6 @@ MI_VARIANT bool Scene<Float, Spectrum>::compact_accel() {
         return m_compact_accel;
     return first_build;
 }
-
-    // . Later builds come from geometry edits,
-    // as in a differentiable rendering optimization loop, where the compaction
-    // pass and its device-to-host synchronization would slow down every step.
 
 MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     bool accel_is_dirty = false;

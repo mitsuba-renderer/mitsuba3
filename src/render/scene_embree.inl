@@ -225,13 +225,9 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
     Timer timer;
 
-    // Check if another scene was passed to the constructor
-    for (auto &prop : props.objects()) {
-        if (prop.try_get<Scene<Float, Spectrum>>()) {
-            is_nested_scene = true;
-            break;
-        }
-    }
+    // A nested scene may be built while its host scene renders, which
+    // decides how the commit below runs
+    is_nested_scene = props.has_property("parent_scene");
 
     accel = rtcNewScene(embree_device);
     rtcSetSceneBuildQuality(accel, RTC_BUILD_QUALITY_HIGH);

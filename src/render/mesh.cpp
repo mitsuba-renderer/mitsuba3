@@ -804,10 +804,6 @@ void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox) {
     if (needs_pmf)
         build_pmf();
 
-    m_parameterization = nullptr;
-    if (m_scene && needs_parameterization())
-        build_parameterization();
-
     // The silhouette density depends on the vertex positions, which may have
     // just moved. The adjacency is purely combinatorial and survives.
     m_sil_dedge_pmf = DiscreteDistribution<Float>();
@@ -883,6 +879,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         if (has("normal_index"))
             m_normal_rep = IndexBuffer();
 
+        // Free the UV parameterization when the topology/UVs change
+        if (topology || has("texcoords"))
+            m_parameterization = nullptr;
+
         pack(/* regenerate_normals */
              (topology || has("positions")) && !has("normals"),
              /* flip_normals */ false, /* updating */ true);
@@ -891,6 +891,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
         // originate from the attached BSDF, whose flags decide the layout
         pack(false, false, false, m_bbox_valid ? &m_bbox : nullptr);
     }
+
+    if (!m_parameterization && m_scene && needs_parameterization())
+        build_parameterization();
 
     // Schedule the written attributes for evaluation. An attribute-only
     // batch skips pack() and hence needs an explicit validation call.
@@ -1677,37 +1680,33 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {
     mesh_props.set("face_normals", true);
     ref<Mesh> mesh = new Mesh(mesh_props);
 
-    const FloatBuffer &packed_host = dr::migrate(m_packed_vertices, JitBackend::None);
-    if constexpr (dr::is_jit_v<Float>)
-        dr::sync_thread();
+    // The helper mesh places each vertex at (u, v, 0).
+    FloatBuffer rec = interleaved<MeshVertexStride, FloatBuffer>(
+        m_vertex_count, [&](const UInt32 &i) {
+            Point<Float32, 2> uv = vertex_texcoord(i);
+            PackedVertex v = dr::zeros<PackedVertex>();
+            v[0] = uv.x();
+            v[1] = uv.y();
+            return v;
+        });
 
-    const InputFloat *ptr_uv = packed_host.data() + PackedTexcoordOffset;
-
-    // The helper mesh places each vertex at (u, v, 0) and reuses the face records
-    std::vector<InputFloat> rec((size_t) m_vertex_count * MeshVertexStride,
-                                0.f);
-    ScalarBoundingBox3f bbox;
-    for (size_t i = 0; i < m_vertex_count; ++i) {
-        InputFloat u = ptr_uv[MeshVertexStride * i],
-                   v = ptr_uv[MeshVertexStride * i + 1];
-        rec[i * MeshVertexStride + 0] = u;
-        rec[i * MeshVertexStride + 1] = v;
-        bbox.expand(ScalarPoint3f(u, v, 0.f));
-    }
+    // Provide a dummy bounding box to prevent `from_packed()`` from trying
+    // to compute an accurate one. It is not needed by the UV mapping
+    ScalarBoundingBox3f bbox(ScalarPoint3f(0.f), ScalarPoint3f(1.f, 1.f, 0.f));
 
     mesh->from_packed(
         Layout::Positions,
         TensorXu32(m_packed_faces, { m_face_count, MeshFaceStride }),
-        TensorXf32(dr::load<FloatBuffer>(rec.data(), rec.size()),
-                   { m_vertex_count, MeshVertexStride }),
+        TensorXf32(rec, { m_vertex_count, MeshVertexStride }),
         IndexBuffer(), IndexBuffer(), 0, 0, &bbox);
 
     Properties props;
     props.set("mesh", mesh.get());
-
+    // disable compaction to avoid a GPU<->CPU sync point
+    props.set("compact_accel", false);
+    // The nested scene joins the ray tracing pipeline of the owning scene
     if (m_scene)
-        props.set("parent_scene", m_scene);
-
+        props.set_any("parent_scene", m_scene);
     m_parameterization = new Scene<Float, Spectrum>(props);
 }
 

@@ -46,6 +46,9 @@ struct MiOptixSceneState {
     /// follow the host scene's. Set once in init().
     uint32_t sbt_record_base = 0;
     uint32_t sbt_jit_index;
+    /// Hit record buffers replaced by nested scenes. Queued copies may still
+    /// read them, so they are released together with the scene.
+    std::vector<void *> retired_sbt;
 
     /// Copies of MiOptixConfig fields, cached to avoid a hash lookup + mutex lock.
     uint32_t config_key;
@@ -468,6 +471,8 @@ static void optix_rebuild_accel(
                 jit_free(s->ias_data.inputs);
                 for (void *buf : s->shape_data)
                     jit_free(buf);
+                for (void *buf : s->retired_sbt)
+                    jit_free(buf);
                 delete s;
             }
         },
@@ -485,17 +490,13 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     state = new MiOptixSceneState();
     MiOptixSceneState &s = *state;
 
-    // Check if another scene was passed to the constructor
+    // A nested scene shares the host scene's configuration, pipeline, and
+    // shader binding table so both scenes can be ray traced within one
+    // megakernel. The host scene is passed as a plain pointer because it may
+    // still be under construction.
     Scene<Float, Spectrum> *other_scene = nullptr;
-    for (auto &prop : props.objects()) {
-        other_scene = prop.try_get<Scene<Float, Spectrum>>();
-        if (other_scene)
-            break;
-    }
-
-    // A scene passed via props shares the host scene's configuration, pipeline,
-    // and shader binding table so both scenes can be ray traced within one
-    // megakernel.
+    if (props.has_property("parent_scene"))
+        other_scene = props.get_any<Scene<Float, Spectrum> *>("parent_scene");
 
     // The following manipulates global state placed within a critical section
     std::lock_guard<std::mutex> guard(optix_configs_lock);
@@ -521,14 +522,13 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         MiOptixSceneState &s2 = *other_scene->m_accel.state;
         const MiOptixConfig &config = optix_configs[s2.config_key];
 
-        HitGroupSbtRecord* prev_data
-            = (HitGroupSbtRecord*) jit_malloc_migrate(s2.sbt.hitgroupRecordBase, JitBackend::None, 1);
-        dr::sync_thread();
-
         // The updated SBT keeps the host scene's records up front, then appends
-        // this scene's records in one shared buffer.
-        size_t prev_count = s2.sbt.hitgroupRecordCount;
-        size_t shapes_count = prev_count + count_hitgroup_records(sd.blases);
+        // this scene's records. The new records are packed on the host and
+        // uploaded, after which the host scene's records are copied into place
+        // with a device-to-device copy on the same queue. Nothing here waits
+        // for the device.
+        size_t prev_count = s2.sbt.hitgroupRecordCount,
+               shapes_count = prev_count + count_hitgroup_records(sd.blases);
 
         // This scene's records follow the host scene's (see sbt_record_base).
         s.sbt_record_base = (uint32_t) prev_count;
@@ -536,14 +536,15 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         auto *records = (HitGroupSbtRecord *) jit_malloc(
             JitBackend::CUDA, shapes_count * sizeof(HitGroupSbtRecord),
             /* shared = */ 1);
-        memcpy(records, prev_data, prev_count * sizeof(HitGroupSbtRecord));
-        jit_free(prev_data);
-
         fill_records(records, prev_count, config);
+        records = (HitGroupSbtRecord *) jit_malloc_migrate(
+            records, JitBackend::CUDA, 1);
+        jit_memcpy_async(JitBackend::CUDA, records, s2.sbt.hitgroupRecordBase,
+                         prev_count * sizeof(HitGroupSbtRecord));
+        s2.retired_sbt.push_back(s2.sbt.hitgroupRecordBase);
 
         s2.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
-        s2.sbt.hitgroupRecordBase =
-            jit_malloc_migrate(records, JitBackend::CUDA, 1);
+        s2.sbt.hitgroupRecordBase = records;
 
         jit_optix_update_sbt(s2.sbt_jit_index, &s2.sbt);
 
