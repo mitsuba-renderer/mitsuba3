@@ -138,9 +138,11 @@ public:
                     UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
-                    bool evaluate = true) override {
+                    bool evaluate = true,
+                    bool profile = false) override {
         m_sensor = sensor;
-        TensorXf result = Base::render(scene, sensor, seed, spp, develop, evaluate);
+        TensorXf result = Base::render(scene, sensor, seed, spp, develop,
+                                       evaluate, profile);
         m_sensor = nullptr;
         return result;
     }

@@ -74,8 +74,10 @@ public:
                     UInt32 seed,
                     uint32_t spp,
                     bool develop,
-                    bool evaluate) override {
-        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate);
+                    bool evaluate,
+                    bool profile) override {
+        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate,
+                    profile);
     }
 
     TensorXf render_forward(Scene* scene,
@@ -149,8 +151,10 @@ public:
                     UInt32 seed,
                     uint32_t spp,
                     bool develop,
-                    bool evaluate) override {
-        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate);
+                    bool evaluate,
+                    bool profile) override {
+        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate,
+                    profile);
     }
 
     void sample(const Scene *scene, const Sensor *sensor, Sampler *sampler,
@@ -213,8 +217,10 @@ public:
                     UInt32 seed,
                     uint32_t spp,
                     bool develop,
-                    bool evaluate) override {
-        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate);
+                    bool evaluate,
+                    bool profile) override {
+        NB_OVERRIDE(render, scene, sensor, seed, spp, develop, evaluate,
+                    profile);
     }
 
     TensorXf render_forward(Scene* scene,
@@ -308,26 +314,30 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, Sensor *sensor,
-                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate,
+                bool profile) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp, develop,
-                                          evaluate);
+                                          evaluate, profile);
             },
             D(Integrator, render), "scene"_a, "sensor"_a, "seed"_a = 0,
-            "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
+            "spp"_a = 0, "develop"_a = true, "evaluate"_a = true,
+            "profile"_a = false)
 
         .def(
             "render",
             [&](Integrator *integrator, Scene *scene, uint32_t sensor,
-                UInt32 seed, uint32_t spp, bool develop, bool evaluate) {
+                UInt32 seed, uint32_t spp, bool develop, bool evaluate,
+                bool profile) {
                 nb::gil_scoped_release release;
                 ScopedSignalHandler sh(integrator);
                 return integrator->render(scene, sensor, seed, spp,
-                                          develop, evaluate);
+                                          develop, evaluate, profile);
             },
             D(Integrator, render, 2), "scene"_a, "sensor"_a = 0,
-            "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true)
+            "seed"_a = 0, "spp"_a = 0, "develop"_a = true, "evaluate"_a = true,
+            "profile"_a = false)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
         .def_method(Integrator, aov_names);

@@ -4832,10 +4832,14 @@ Args:
 
     evaluate: This parameter is only relevant for JIT variants of Mitsuba (LLVM,
         CUDA). If set to ``True``, the rendering step evaluates the generated
-        image and waits for its completion. A log message also denotes the
-        rendering time. Otherwise, the returned tensor
+        image and waits for its completion. Otherwise, the returned tensor
         (``develop=true``) or modified film (``develop=false``)
-        represent the rendering task as an unevaluated computation graph.)doc";
+        represent the rendering task as an unevaluated computation graph.
+
+    profile: If set to ``True``, the function logs timing information at
+        the ``Info`` log level. In JIT variants, this separately reports
+        the host time spent tracing the rendering task and the device
+        time spent executing it (the latter requires ``evaluate=true``).)doc";
 
 static const char *__doc_mitsuba_Integrator_render_2 =
 R"doc(Render the scene

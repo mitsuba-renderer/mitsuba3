@@ -22,6 +22,57 @@ NAMESPACE_BEGIN(mitsuba)
 
 // -----------------------------------------------------------------------------
 
+/**
+ * \brief Optional timing of the JIT rendering paths
+ *
+ * This class uses a pair of Dr.Jit event to determine the device-side execution
+ * time.
+ */
+template <typename Float> class RenderProfiler {
+public:
+    RenderProfiler(bool enabled) {
+        if constexpr (dr::is_jit_v<Float>) {
+            if (enabled && !jit_flag(JitFlag::FreezingScope) &&
+                !dr::is_metal_v<Float>) {
+                m_start = jit_event_create(dr::backend_v<Float>, 1);
+                m_end   = jit_event_create(dr::backend_v<Float>, 1);
+                jit_event_record(m_start);
+            }
+        }
+    }
+
+    ~RenderProfiler() {
+        if (m_start) {
+            jit_event_destroy(m_start);
+            jit_event_destroy(m_end);
+        }
+    }
+
+    /// Stop the host timer once all work has been queued
+    void host_done() {
+        m_host_time = (float) m_timer.value();
+        if (m_end)
+            jit_event_record(m_end);
+    }
+
+    /// Format the results. The device time requires a prior synchronization.
+    std::string summary(bool evaluated) const {
+        std::string result = util::time_string(m_host_time, true) + " trace time";
+        if (evaluated && m_end)
+            result += ", " +
+                      util::time_string(jit_event_elapsed_time(m_start, m_end), true) +
+                      " device time";
+        return result;
+    }
+
+private:
+    Timer m_timer;
+    JitEvent m_start = nullptr, m_end = nullptr;
+    float m_host_time = 0.f;
+};
+
+// -----------------------------------------------------------------------------
+
 MI_VARIANT Integrator<Float, Spectrum>::Integrator(const Properties &props)
     : JitObject<Integrator>(props.id()), m_stop(false) {
     m_timeout = props.get<ScalarFloat>("timeout", -1.f);
@@ -41,12 +92,13 @@ Integrator<Float, Spectrum>::render(Scene *scene,
                                     UInt32 seed,
                                     uint32_t spp,
                                     bool develop,
-                                    bool evaluate) {
+                                    bool evaluate,
+                                    bool profile) {
     if (sensor_index >= scene->sensors().size())
         Throw("Scene::render(): sensor index %i is out of bounds!", sensor_index);
 
     return render(scene, scene->sensors()[sensor_index].get(),
-                  seed, spp, develop, evaluate);
+                  seed, spp, develop, evaluate, profile);
 }
 
 MI_VARIANT typename Integrator<Float, Spectrum>::TensorXf
@@ -129,7 +181,8 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                                             UInt32 seed,
                                             uint32_t spp,
                                             bool develop,
-                                            bool evaluate) {
+                                            bool evaluate,
+                                            bool profile) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
@@ -247,6 +300,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         if (develop)
             result = film->develop();
+
+        if (profile && !m_stop)
+            Log(Info, "Rendering finished (%s render time)",
+                util::time_string((float) m_render_timer.value(), true));
     } else {
         size_t wavefront_size = (size_t) film_size.x() *
                                 (size_t) film_size.y() * (size_t) spp_per_pass,
@@ -268,7 +325,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
                 wavefront_size, n_passes);
         }
 
-        dr::sync_thread(); // Separate from scene initialization (for timings)
+        RenderProfiler<Float> profiler(profile);
 
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
@@ -322,7 +379,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         // Scale factor that will be applied to ray differentials
         ScalarFloat diff_scale_factor = dr::rsqrt((ScalarFloat) spp);
 
-        Timer timer;
         std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
         // Potentially render multiple passes
@@ -339,12 +395,6 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         film->put_block(block);
 
-        if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
-            jit_flag(JitFlag::LoopRecord)) {
-            Log(Info, "Computation graph recorded. (took %s)",
-                util::time_string((float) timer.reset(), true));
-        }
-
         if (develop) {
             result = film->develop();
             dr::schedule(result);
@@ -352,26 +402,17 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             film->schedule_storage();
         }
 
-        if (evaluate) {
+        if (evaluate)
             dr::eval();
 
-            if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
-                jit_flag(JitFlag::LoopRecord)) {
-                Log(Info, "Code generation finished. (took %s)",
-                    util::time_string((float) timer.value(), true));
+        profiler.host_done();
 
-                // Separate computation graph recording from the actual
-                // rendering time in single-pass mode
-                m_render_timer.reset();
-            }
-
+        if (evaluate)
             dr::sync_thread();
-        }
-    }
 
-    if (!m_stop && (evaluate || !dr::is_jit_v<Float>))
-        Log(Info, "Rendering finished. (took %s)",
-            util::time_string((float) m_render_timer.value(), true));
+        if (profile)
+            Log(Info, "Rendering finished (%s)", profiler.summary(evaluate));
+    }
 
     return result;
 }
@@ -560,7 +601,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                                            UInt32 seed,
                                            uint32_t spp,
                                            bool develop,
-                                           bool evaluate) {
+                                           bool evaluate,
+                                           bool profile) {
     ScopedPhase sp(ProfilerPhase::Render);
     m_stop = false;
 
@@ -680,6 +722,10 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         if (develop)
             result = film->develop();
+
+        if (profile && !m_stop)
+            Log(Info, "Rendering finished (%s render time)",
+                util::time_string((float) m_render_timer.value(), true));
     } else {
         if (n_passes > 1 && !evaluate) {
             Log(Warn, "render(): forcing 'evaluate=true' since multi-pass "
@@ -704,6 +750,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                 samples_per_pass, n_passes);
         }
 
+        RenderProfiler<Float> profiler(profile);
+
         Log(Info, "Starting render job (%ux%u, %u sample%s%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",
             n_passes > 1 ? tfm::format(", %u passes", n_passes) : "");
@@ -727,7 +775,6 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         // (they are highly irregular in any particle tracing-based method)
         block->set_coalesce(false);
 
-        Timer timer;
         for (size_t i = 0; i < n_passes; i++) {
             sample(scene, sensor, sampler, block, sample_scale);
 
@@ -747,26 +794,17 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             film->schedule_storage();
         }
 
-        if (evaluate) {
+        if (evaluate)
             dr::eval();
 
-            if (n_passes == 1 && jit_flag(JitFlag::VCallRecord) &&
-                jit_flag(JitFlag::LoopRecord)) {
-                Log(Info, "Code generation finished. (took %s)",
-                    util::time_string((float) timer.value(), true));
+        profiler.host_done();
 
-                // Separate computation graph recording from the actual
-                // rendering time in single-pass mode
-                m_render_timer.reset();
-            }
-
+        if (evaluate)
             dr::sync_thread();
-        }
-    }
 
-    if (!m_stop && (evaluate || !dr::is_jit_v<Float>))
-        Log(Info, "Rendering finished. (took %s)",
-            util::time_string((float) m_render_timer.value(), true));
+        if (profile)
+            Log(Info, "Rendering finished (%s)", profiler.summary(evaluate));
+    }
 
     return result;
 }

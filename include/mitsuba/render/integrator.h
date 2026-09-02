@@ -63,17 +63,22 @@ public:
      *
      *     evaluate: This parameter is only relevant for JIT variants of Mitsuba (LLVM,
      *         CUDA). If set to ``True``, the rendering step evaluates the generated
-     *         image and waits for its completion. A log message also denotes the
-     *         rendering time. Otherwise, the returned tensor
+     *         image and waits for its completion. Otherwise, the returned tensor
      *         (``develop=true``) or modified film (``develop=false``)
      *         represent the rendering task as an unevaluated computation graph.
+     *
+     *     profile: If set to ``True``, the function logs timing information at
+     *         the ``Info`` log level. In JIT variants, this separately reports
+     *         the host time spent tracing the rendering task and the device
+     *         time spent executing it (the latter requires ``evaluate=true``).
      */
     virtual TensorXf render(Scene *scene,
                             Sensor *sensor,
                             UInt32 seed = 0,
                             uint32_t spp = 0,
                             bool develop = true,
-                            bool evaluate = true) = 0;
+                            bool evaluate = true,
+                            bool profile = false) = 0;
 
     /**
      * Render the scene
@@ -87,7 +92,8 @@ public:
                     UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
-                    bool evaluate = true);
+                    bool evaluate = true,
+                    bool profile = false);
 
 
     // =========================================================================
@@ -391,7 +397,8 @@ public:
                     UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
-                    bool evaluate = true) override;
+                    bool evaluate = true,
+                    bool profile = false) override;
 
     // =========================================================================
 
@@ -526,7 +533,8 @@ public:
                     UInt32 seed = 0,
                     uint32_t spp = 0,
                     bool develop = true,
-                    bool evaluate = true) override;
+                    bool evaluate = true,
+                    bool profile = false) override;
 
     // =========================================================================
 

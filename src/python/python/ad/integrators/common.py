@@ -49,7 +49,8 @@ class ADIntegrator(mi.CppADIntegrator):
                seed: mi.UInt32 = 0,
                spp: int = 0,
                develop: bool = True,
-               evaluate: bool = True) -> mi.TensorXf:
+               evaluate: bool = True,
+               profile: bool = False) -> mi.TensorXf:
         if not develop:
             raise Exception("develop=True must be specified when "
                             "invoking AD integrators")

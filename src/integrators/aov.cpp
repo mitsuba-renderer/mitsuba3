@@ -310,7 +310,8 @@ public:
                     UInt32 seed,
                     uint32_t spp,
                     bool develop,
-                    bool evaluate) override {
+                    bool evaluate,
+                    bool profile) override {
 
         // Prepare shape indexing data structure for scalar variants
         if constexpr (!dr::is_jit_v<Float>) {
@@ -321,7 +322,8 @@ public:
                     m_shape_to_idx[shape.get()] = (uint32_t) counter++;
             }
         }
-        return Base::render(scene, sensor, seed, spp, develop, evaluate);
+        return Base::render(scene, sensor, seed, spp, develop, evaluate,
+                            profile);
     }
 
     std::vector<std::string> aov_names() const override {
@@ -391,21 +393,24 @@ public:
                     UInt32 seed,
                     uint32_t spp,
                     bool develop,
-                    bool evaluate) override {
+                    bool evaluate,
+                    bool profile) override {
         Film *film = sensor->film();
         size_t base_channel_count = film->base_channels_count();
         size_t raw_channel_count = base_channel_count + 1 /* W channel */;
 
         std::vector<TensorXf> inner_images, inner_raw_tensors;
         for (auto& integrator : m_integrators) {
-            auto image = integrator->render(scene, sensor, seed, spp, develop, evaluate);
+            auto image = integrator->render(scene, sensor, seed, spp, develop,
+                                            evaluate, profile);
             inner_images.push_back(image);
             inner_raw_tensors.push_back(film->develop(true));
         }
 
         TensorXf aovs_image, aovs_raw_tensor;
         if (m_aov_integrator) {
-            aovs_image = m_aov_integrator->render(scene, sensor, seed, spp, develop, evaluate);
+            aovs_image = m_aov_integrator->render(scene, sensor, seed, spp,
+                                                  develop, evaluate, profile);
             aovs_raw_tensor = film->develop(true);
             if (develop)
                 aovs_image = get_channels_slice(aovs_image, base_channel_count, m_nested_aovs_count);

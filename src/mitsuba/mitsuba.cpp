@@ -156,7 +156,8 @@ void render(Object *scene_, size_t sensor_i, fs::path filename) {
                        0 /* seed */,
                        0 /* spp */,
                        false /* develop */,
-                       true /* evaluate */);
+                       true /* evaluate */,
+                       true /* profile */);
 
     develop_callback_fn = nullptr;
 
