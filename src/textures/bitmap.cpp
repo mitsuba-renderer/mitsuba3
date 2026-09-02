@@ -939,15 +939,9 @@ protected:
             }
         }
 
-        if (init_distr) {
-            auto&& data = dr::migrate(values, JitBackend::None);
-
-            if constexpr (dr::is_jit_v<Float>)
-                dr::sync_thread();
-
+        if (init_distr)
             m_distr2d = std::make_unique<DiscreteDistribution2D<Float>>(
-                data.data(), resolution());
-        }
+                values, resolution());
 
         if (range_issue)
             Log(Warn,

@@ -128,6 +128,36 @@ public:
         m_normalization = dr::opaque<Float>(1.0 / accum_marg);
     }
 
+    /**
+     * Construct a marginal sample warping scheme from a row-major array of
+     * ``prod(size)`` values that lives on the device
+     *
+     * The tables are computed with prefix sums on the device, which avoids a
+     * synchronization with the host. On scalar backends this delegates to
+     * the host constructor.
+     */
+    DiscreteDistribution2D(const FloatStorage &data,
+                           const ScalarVector2u &size)
+        : m_size(size) {
+        if constexpr (dr::is_jit_v<Float>) {
+            // Correct any non-monotonicity that may be present in the prefix sum
+            auto monotone_cdf = [](const FloatStorage &sum, uint32_t block_size) {
+                return dr::block_prefix_reduce(ReduceOp::Max, sum, block_size, false);
+            };
+
+            FloatStorage values = dr::detach(data);
+            m_cond_cdf = monotone_cdf(
+                dr::block_prefix_sum(values, size.x(), false), size.x());
+            m_marg_cdf = monotone_cdf(
+                dr::prefix_sum(dr::block_sum(values, size.x()), false), size.y());
+            m_inv_normalization =
+                dr::gather<Float>(m_marg_cdf, UInt32(size.y() - 1));
+            m_normalization = dr::rcp(m_inv_normalization);
+        } else {
+            *this = DiscreteDistribution2D(data.data(), size);
+        }
+    }
+
     /// Evaluate the function value at the given integer position
     Float eval(const Point2u &pos, Mask active = true) const {
         UInt32 index = pos.x() + pos.y() * m_size.x();
