@@ -254,13 +254,6 @@ public:
             return Base::eval_3(si, active);
     }
 
-    Float mean() const override {
-        if (m_nested_texture)
-            return m_nested_texture->mean();
-        else
-            return dr::mean(m_value);
-    }
-
     ScalarVector2i resolution() const override {
         if (m_nested_texture)
             return m_nested_texture->resolution();

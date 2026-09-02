@@ -11935,15 +11935,6 @@ implementation throws an exception.
 
 Even if the operation is provided, it may only return an approximation.)doc";
 
-static const char *__doc_mitsuba_Texture_mean =
-R"doc(Return the mean value of the spectrum over the support
-(``MI_WAVELENGTH_MIN``..``MI_WAVELENGTH_MAX``)
-
-Not every implementation necessarily provides this function. The default
-implementation throws an exception.
-
-Even if the operation is provided, it may only return an approximation.)doc";
-
 static const char *__doc_mitsuba_Texture_pdf_position = R"doc(Returns the probability per unit area of `sample_position()`)doc";
 
 static const char *__doc_mitsuba_Texture_pdf_spectrum =

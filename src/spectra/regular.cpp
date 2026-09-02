@@ -139,11 +139,6 @@ public:
         }
     }
 
-    Float mean() const override {
-        ScalarVector2f range = m_distr.range();
-        return m_distr.integral() / (range[1] - range[0]);
-    }
-
     ScalarVector2f wavelength_range() const override {
         return m_distr.range();
     }

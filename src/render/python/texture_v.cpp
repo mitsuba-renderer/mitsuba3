@@ -67,10 +67,6 @@ public:
         NB_OVERRIDE(eval_3, si, active);
     }
 
-    Float mean() const override {
-        NB_OVERRIDE(mean);
-    }
-
     ScalarFloat max() const override {
         NB_OVERRIDE(max);
     }
@@ -152,9 +148,6 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
              [](Ptr texture, const SurfaceInteraction3f &si,
                 Mask active) { return texture->eval_1_grad(si, active); },
              "si"_a, "active"_a = true, D(Texture, eval_1_grad))
-        .def("mean",
-             [](Ptr texture) { return texture->mean(); },
-             D(Texture, mean))
         .def("max",
              [](Ptr texture) { return texture->max(); },
              D(Texture, max))

@@ -560,11 +560,6 @@ public:
         return false;
     }
 
-    Float mean() const override {
-        // Approximation: the expression evaluated at the input means
-        return run([&](uint32_t i) { return m_inputs[i]->mean(); });
-    }
-
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "MathTexture[" << std::endl

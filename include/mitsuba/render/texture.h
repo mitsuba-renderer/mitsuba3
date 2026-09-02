@@ -162,17 +162,6 @@ public:
                            Mask active = true) const;
 
     /**
-     * Return the mean value of the spectrum over the support
-     * (``MI_WAVELENGTH_MIN``..``MI_WAVELENGTH_MAX``)
-     *
-     * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
-     *
-     * Even if the operation is provided, it may only return an approximation.
-     */
-    virtual Float mean() const;
-
-    /**
      * Returns the resolution of the texture, assuming that it is based
      * on a discrete representation.
      *
@@ -241,7 +230,6 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
     DRJIT_CALL_METHOD(eval_1)
     DRJIT_CALL_METHOD(eval_1_grad)
     DRJIT_CALL_METHOD(eval_3)
-    DRJIT_CALL_METHOD(mean)
 
     DRJIT_CALL_GETTER(max)
     DRJIT_CALL_GETTER(is_spatially_varying)

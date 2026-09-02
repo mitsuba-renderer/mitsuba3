@@ -46,11 +46,6 @@ Texture<Float, Spectrum>::eval_3(const SurfaceInteraction3f &, Mask) const {
     NotImplementedError("eval_3");
 }
 
-MI_VARIANT Float
-Texture<Float, Spectrum>::mean() const {
-    NotImplementedError("mean");
-}
-
 MI_VARIANT
 std::pair<typename Texture<Float, Spectrum>::Point2f, Float>
 Texture<Float, Spectrum>::sample_position(const Point2f &sample,

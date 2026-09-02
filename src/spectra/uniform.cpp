@@ -109,8 +109,6 @@ public:
         }
     }
 
-    Float mean() const override { return m_value; }
-
     ScalarVector2f wavelength_range() const override {
         return m_range;
     }

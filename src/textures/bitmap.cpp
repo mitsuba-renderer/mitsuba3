@@ -455,10 +455,8 @@ public:
         m_raw(raw),
         m_srgb(srgb) {
 
-        // Compute the mean from the input tensor, i.e. avoid the
-        // m_texture.tensor() call that would read the data back from the
-        // GPU texture.
-        rebuild_internals(tensor, true, false);
+        // The sampling distribution is built on first use
+        rebuild_internals(tensor, false, true);
 
         m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel,
                                     filter_mode, wrap_mode, srgb);
@@ -486,7 +484,7 @@ public:
                       m_name);
 
             m_texture.update_inplace();
-            rebuild_internals(m_texture.tensor(), true, m_distr2d != nullptr);
+            rebuild_internals(m_texture.tensor(), m_distr2d != nullptr, true);
         }
 
         if ((keys.empty() || string::contains(keys, "to_uv")) && m_distr2d)
@@ -729,8 +727,6 @@ public:
         return { (int) shape[1], (int) shape[0] };
     }
 
-    Float mean() const override { return m_mean; }
-
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {
@@ -739,7 +735,6 @@ public:
             << "  name = \"" << m_name << "\"," << std::endl
             << "  resolution = \"" << resolution() << "\"," << std::endl
             << "  raw = " << (int) m_raw << "," << std::endl
-            << "  mean = " << m_mean << "," << std::endl
             << "  transform = " << string::indent(m_transform) << std::endl
             << "]";
         return oss.str();
@@ -857,7 +852,7 @@ protected:
      *
      * For 8-bit storage this normalizes to [0, 1] and undoes the sRGB curve (if
      * enabled); for float/half storage it is a plain cast resolved at compile
-     * time. Used to derive the mean and 2D distribution from the stored tensor.
+     * time. Used to derive the 2D distribution from the stored tensor.
      * Works for a scalar value or a Dr.Jit array of stored values alike.
      */
     template <typename T>
@@ -872,12 +867,19 @@ protected:
     }
 
     /**
-     * Recompute mean and 2D sampling distribution (if requested)
-     * following an update
+     * Recompute the 2D sampling distribution (if requested) following an
+     * update, and warn about float data outside of [0, 1]. Neither is needed
+     * for a plain 8-bit texture, which then costs nothing.
      */
-    void rebuild_internals(const StoredTensorXf& tensor, bool init_mean, bool init_distr) {
+    void rebuild_internals(const StoredTensorXf& tensor, bool init_distr,
+                           bool check_range) {
         if (m_transform != ScalarAffineTransform3f())
             dr::make_opaque(m_transform);
+
+        // 8-bit storage cannot leave the [0, 1] range
+        check_range &= !m_raw && !IsUInt8;
+        if (!init_distr && !check_range)
+            return;
 
         const dr::vector<size_t> &shape = tensor.shape();
         size_t pixel_count = shape[0] * shape[1],
@@ -891,9 +893,7 @@ protected:
             if (channels == 3) {
                 StoredColor3f stored = dr::gather<StoredColor3f>(
                     tensor.array(), dr::arange<UInt32>(pixel_count));
-                Color<FloatStorage, 3> c3(decode(stored.x()), decode(stored.y()),
-                                          decode(stored.z()));
-
+                Color<FloatStorage, 3> c3(decode(stored));
                 if (is_spectral_v<Spectrum> && !m_raw)
                     values = srgb_model_mean(c3);
                 else
@@ -902,14 +902,12 @@ protected:
                 values = decode(tensor.array());
             }
 
-            if (init_mean)
-                m_mean = dr::mean(values);
-            if (!m_raw)
+            if (check_range)
                 range_issue = dr::any(values < 0 || values > 1);
         } else {
             // Reduce each texel to a single value (luminance, or spectral mean)
-            // in one pass, accumulating the average, a [0, 1] range check, and —
-            // when requested — the per-texel values backing the 2D distribution.
+            // in one pass, accumulating a [0, 1] range check and, when
+            // requested, the per-texel values backing the 2D distribution.
             StoredScalar *ptr = (StoredScalar *) tensor.data();
             ScalarFloat *out = nullptr;
             if (init_distr) {
@@ -918,15 +916,12 @@ protected:
             }
 
             auto reduce = [&](auto texel_value) {
-                ScalarFloat mean = 0;
                 for (size_t i = 0; i < pixel_count; ++i) {
                     ScalarFloat v = texel_value(ptr);
                     if (out)
                         *out++ = v;
-                    mean += v;
-                    range_issue |= v < 0 || v > 1;
+                    range_issue |= check_range && (v < 0 || v > 1);
                 }
-                m_mean = mean / pixel_count;
             };
 
             if (channels == 3) {
@@ -954,7 +949,7 @@ protected:
                 data.data(), resolution());
         }
 
-        if (!m_raw && range_issue)
+        if (range_issue)
             Log(Warn,
                 "BitmapTexture: texture named \"%s\" contains pixels that "
                 "exceed the [0, 1] range!",
@@ -968,7 +963,7 @@ protected:
             check_sampling_transform();
             dr::scoped_eval_scope<Float> guard;
             auto self = const_cast<BitmapTextureImpl *>(this);
-            self->rebuild_internals(m_texture.tensor(), false, true);
+            self->rebuild_internals(m_texture.tensor(), true, false);
         }
     }
 
@@ -997,14 +992,14 @@ protected:
     ScalarAffineTransform3f m_transform;
     bool m_raw;
     bool m_srgb;
-    Float m_mean;
     StoredTexture2f m_texture;
 
-    // Optional: distribution for importance sampling
+    // The sampling distribution is built on first use, under 'm_mutex'
+    // since textures may be shared between threads
     mutable std::mutex m_mutex;
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 
-    MI_TRAVERSE_CB(Texture, m_mean, m_texture, m_distr2d)
+    MI_TRAVERSE_CB(Texture, m_texture, m_distr2d)
 };
 
 MI_EXPORT_PLUGIN(BitmapTexture)

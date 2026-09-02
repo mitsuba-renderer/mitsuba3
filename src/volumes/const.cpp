@@ -77,8 +77,8 @@ public:
         return result;
     }
 
-    Float eval_1(const Interaction3f & /* it */, Mask /* active */) const override {
-        return m_value->mean();
+    Float eval_1(const Interaction3f &it, Mask active) const override {
+        return dr::mean(eval(it, active));
     }
 
     ScalarFloat max() const override { return m_value->max(); }

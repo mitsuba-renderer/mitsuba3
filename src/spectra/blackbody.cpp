@@ -234,10 +234,6 @@ public:
         }
     }
 
-    Float mean() const override {
-        return m_integral / (m_wavelength_range.y() - m_wavelength_range.x());
-    }
-
     ScalarVector2f wavelength_range() const override {
         return m_wavelength_range;
     }

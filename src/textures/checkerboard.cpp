@@ -109,10 +109,6 @@ public:
         return result;
     }
 
-    Float mean() const override {
-        return .5f * (m_color0->mean() + m_color1->mean());
-    }
-
     bool is_spatially_varying() const override { return true; }
 
     std::string to_string() const override {

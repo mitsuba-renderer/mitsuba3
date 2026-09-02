@@ -75,10 +75,9 @@ def test03_sample_spectrum(variants_all):
                 tex.eval(si)
 
 
-def test04_mean_max(variants_all):
+def test04_max(variants_all):
     for v in ([-0.5, 4.0, -3.3], -0.5):
         vmax = 4.0 if isinstance(v, list) else v
         tex = make_texture(v)
 
-        assert dr.allclose(tex.mean(), dr.mean(v))
         assert dr.allclose(tex.max(), vmax)

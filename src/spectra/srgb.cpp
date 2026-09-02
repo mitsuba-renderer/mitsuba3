@@ -93,7 +93,10 @@ public:
 
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        return mean();
+        if constexpr (is_spectral_v<Spectrum>)
+            return dr::mean(srgb_model_mean(m_value));
+        else
+            return dr::mean(dr::mean(m_value));
     }
 
     std::pair<Wavelength, UnpolarizedSpectrum>
@@ -112,13 +115,6 @@ public:
             UnpolarizedSpectrum value = eval(_si, active);
             return { dr::empty<Wavelength>(), value };
         }
-    }
-
-    Float mean() const override {
-        if constexpr (is_spectral_v<Spectrum>)
-            return dr::mean(srgb_model_mean(m_value));
-        else
-            return dr::mean(dr::mean(m_value));
     }
 
     ScalarFloat max() const override {

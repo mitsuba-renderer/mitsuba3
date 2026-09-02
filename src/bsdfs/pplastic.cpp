@@ -228,17 +228,20 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        /* Compute weights that further steer samples towards
-           the specular or diffuse components */
-        Float d_mean = m_diffuse_reflectance->mean(),
-              s_mean = 1.f;
+        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v);
+    }
 
+    /**
+     * Compute the weight that steers samples towards the specular or diffuse
+     * component from the reflectance of both at the shading point
+     */
+    Float specular_sampling_weight(const SurfaceInteraction3f &si,
+                                   Mask active) const {
+        Float d = dr::mean(m_diffuse_reflectance->eval(si, active)),
+              s = 1.f;
         if (m_specular_reflectance)
-            s_mean = m_specular_reflectance->mean();
-
-        m_specular_sampling_weight = s_mean / (d_mean + s_mean);
-
-        dr::make_opaque(m_eta, m_alpha_u, m_alpha_v, m_specular_sampling_weight);
+            s = dr::mean(m_specular_reflectance->eval(si, active));
+        return s / dr::maximum(d + s, dr::Epsilon<Float>);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -258,7 +261,7 @@ public:
         if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return { bs, 0.f };
 
-        Float prob_specular = m_specular_sampling_weight;
+        Float prob_specular = specular_sampling_weight(si, active);
         if (unlikely(has_specular != has_diffuse))
             prob_specular = has_specular ? 1.f : 0.f;
 
@@ -451,7 +454,7 @@ public:
         if (unlikely((!has_specular && !has_diffuse) || dr::none_or<false>(active)))
             return 0.f;
 
-        Float prob_specular = m_specular_sampling_weight,
+        Float prob_specular = specular_sampling_weight(si, active),
               prob_diffuse  = 1.f - prob_specular;
         if (unlikely(has_specular != has_diffuse))
             prob_specular = has_specular ? 1.f : 0.f;
@@ -508,11 +511,8 @@ private:
     /// Relative refractive index
     ref<Texture> m_eta;
 
-    /// Sampling weight for specular component
-    Float m_specular_sampling_weight;
-
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
-                   m_alpha_u, m_alpha_v, m_eta, m_specular_sampling_weight)
+                   m_alpha_u, m_alpha_v, m_eta)
 };
 
 MI_EXPORT_PLUGIN(PolarizedPlastic)

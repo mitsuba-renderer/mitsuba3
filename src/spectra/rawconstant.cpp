@@ -100,10 +100,6 @@ public:
         return { wavelengths, eval(si, active) };
     }
 
-    Float mean() const override {
-        return dr::mean(m_value);
-    }
-
     ScalarFloat max() const override {
         return dr::max_nested(m_value);
     }
