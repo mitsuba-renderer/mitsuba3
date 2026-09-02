@@ -1476,6 +1476,13 @@ void Bitmap::write_exr(Stream *stream, int quality) const {
 //   JPEG bitmap I/O
 // -----------------------------------------------------------------------------
 
+/// Identify a stream in a log message, preferably by file name
+static std::string stream_name(const Stream *stream) {
+    if (const FileStream *fs = dynamic_cast<const FileStream *>(stream))
+        return fs->path().string();
+    return std::string(stream->class_name());
+}
+
 extern "C" {
     static const size_t jpeg_buffer_size = 0x8000;
 
@@ -1490,6 +1497,15 @@ extern "C" {
         JOCTET * buffer;
         Stream *stream;
     } jbuf_out_t;
+
+    typedef struct {
+        struct jpeg_error_mgr mgr;
+        Stream *stream;
+    } jerr_t;
+
+    static std::string jpeg_stream_name(j_common_ptr cinfo) {
+        return stream_name(((jerr_t *) cinfo->err)->stream);
+    }
 
     METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
         jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
@@ -1561,20 +1577,28 @@ extern "C" {
     METHODDEF(void) jpeg_error_exit(j_common_ptr cinfo) {
         char msg[JMSG_LENGTH_MAX];
         (*cinfo->err->format_message) (cinfo, msg);
-        Throw("Critical libjpeg error: %s", msg);
+        Throw("Critical libjpeg error in \"%s\": %s", jpeg_stream_name(cinfo), msg);
+    }
+
+    METHODDEF(void) jpeg_output_message(j_common_ptr cinfo) {
+        char msg[JMSG_LENGTH_MAX];
+        (*cinfo->err->format_message) (cinfo, msg);
+        Log(Warn, "libjpeg warning in \"%s\": %s", jpeg_stream_name(cinfo), msg);
     }
 };
 
 void Bitmap::read_jpeg(Stream *stream) {
     ScopedPhase phase(ProfilerPhase::BitmapRead);
     struct jpeg_decompress_struct cinfo;
-    struct jpeg_error_mgr jerr;
+    jerr_t jerr;
     jbuf_in_t jbuf;
 
     memset(&jbuf, 0, sizeof(jbuf_in_t));
 
-    cinfo.err = jpeg_std_error(&jerr);
-    jerr.error_exit = jpeg_error_exit;
+    cinfo.err = jpeg_std_error(&jerr.mgr);
+    jerr.stream = stream;
+    jerr.mgr.error_exit = jpeg_error_exit;
+    jerr.mgr.output_message = jpeg_output_message;
     jpeg_create_decompress(&cinfo);
     cinfo.src = (struct jpeg_source_mgr *) &jbuf;
     jbuf.mgr.init_source = jpeg_init_source;
@@ -1630,7 +1654,7 @@ void Bitmap::read_jpeg(Stream *stream) {
 void Bitmap::write_jpeg(Stream *stream, int quality) const {
     ScopedPhase phase(ProfilerPhase::BitmapWrite);
     struct jpeg_compress_struct cinfo;
-    struct jpeg_error_mgr jerr;
+    jerr_t jerr;
     jbuf_out_t jbuf;
 
     int components = 0;
@@ -1646,8 +1670,10 @@ void Bitmap::write_jpeg(Stream *stream, int quality) const {
               m_component_format, sj::Type::UInt8);
 
     memset(&jbuf, 0, sizeof(jbuf_out_t));
-    cinfo.err = jpeg_std_error(&jerr);
-    jerr.error_exit = jpeg_error_exit;
+    cinfo.err = jpeg_std_error(&jerr.mgr);
+    jerr.stream = stream;
+    jerr.mgr.error_exit = jpeg_error_exit;
+    jerr.mgr.output_message = jpeg_output_message;
     jpeg_create_compress(&cinfo);
 
     cinfo.dest = (struct jpeg_destination_mgr *) &jbuf;
@@ -1703,14 +1729,18 @@ static void png_write_data(png_structp png_ptr, png_bytep data, png_size_t lengt
     ((Stream *) write_io_ptr)->write(data, length);
 }
 
-static void png_error_func(png_structp, png_const_charp msg) {
-    Throw("Fatal libpng error: %s\n", msg);
+static std::string png_stream_name(png_structp png_ptr) {
+    return stream_name((const Stream *) png_get_error_ptr(png_ptr));
 }
 
-static void png_warn_func(png_structp, png_const_charp msg) {
+static void png_error_func(png_structp png_ptr, png_const_charp msg) {
+    Throw("Fatal libpng error in \"%s\": %s", png_stream_name(png_ptr), msg);
+}
+
+static void png_warn_func(png_structp png_ptr, png_const_charp msg) {
     if (strstr(msg, "iCCP: known incorrect sRGB profile") != nullptr)
         return;
-    Log(Warn, "libpng warning: %s\n", msg);
+    Log(Warn, "libpng warning in \"%s\": %s", png_stream_name(png_ptr), msg);
 }
 
 void Bitmap::read_png(Stream *stream) {
@@ -1719,7 +1749,7 @@ void Bitmap::read_png(Stream *stream) {
 
     // Create buffers
     png_structp png_ptr = png_create_read_struct(
-        PNG_LIBPNG_VER_STRING, nullptr, &png_error_func, &png_warn_func);
+        PNG_LIBPNG_VER_STRING, stream, &png_error_func, &png_warn_func);
     if (png_ptr == nullptr)
         Throw("read_png(): Unable to create PNG data structure");
 
@@ -1842,7 +1872,7 @@ void Bitmap::write_png(Stream *stream, int compression) const {
             return;
     }
 
-    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, nullptr,
+    png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, stream,
                                       &png_error_func, &png_warn_func);
     if (png_ptr == nullptr)
         Throw("Error while creating PNG data structure");
