@@ -235,6 +235,17 @@ struct MI_EXPORT_LIB PackedMesh {
     float *add_attribute(std::string_view name, size_t dim,
                          bool upsample_srgb = true);
 
+    /**
+     * Generate tangents for a mesh with normals and texture coordinates
+     *
+     * This commit populates the packed mesh data with vertex tangent frames,
+     * matching the behavior of `Mesh::compute_tangents()`. In contrast to
+     * this method, the computation is done on the host machine.
+     * Call this after every face and vertex record has been written and
+     * transformed.
+     */
+    void add_tangents();
+
     /// Dr.Jit backend of the allocated buffers
     JitBackend backend = JitBackend::None;
 

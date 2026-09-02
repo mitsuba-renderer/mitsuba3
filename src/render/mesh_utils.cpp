@@ -2,8 +2,11 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/stream.h>
+#include <mitsuba/core/vector.h>
+#include <drjit/sphere.h>
 #include <cmath>
 #include <cstring>
+#include <memory>
 #include <utility>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -174,6 +177,103 @@ float *PackedMesh::add_attribute(std::string_view name, size_t dim,
     attrs.push_back({ std::string(name), dim, upsample_srgb,
                       alloc<float>(backend, rows * dim) });
     return attrs.back().values.data();
+}
+
+void PackedMesh::add_tangents() {
+    if (!has_flag(layout, Layout::Normals) ||
+        !has_flag(layout, Layout::Texcoords))
+        Throw("PackedMesh::add_tangents(): normals and texture coordinates "
+              "are required.");
+    if (has_flag(layout, Layout::Tangents))
+        return;
+
+    float *vrec = vertices.data();
+    auto position = [&](uint32_t i) {
+        return dr::load<ScalarPoint3f>(vrec + i * MeshVertexStride +
+                                       PackedPositionOffset);
+    };
+    auto normal = [&](uint32_t i) {
+        return dr::load<ScalarVector3f>(vrec + i * MeshVertexStride +
+                                        PackedFrameOffset);
+    };
+    auto texcoord = [&](uint32_t i) {
+        return dr::load<ScalarVector2f>(vrec + i * MeshVertexStride +
+                                        PackedTexcoordOffset);
+    };
+
+    // Project an edge into the plane of the vertex normal and normalize
+    auto project = [](const ScalarVector3f &e, const ScalarVector3f &n) {
+        ScalarVector3f d = dr::fnmadd(n, dr::dot(n, e), e);
+        float l = dr::norm(d);
+        return l > 0.f ? d / l : ScalarVector3f(0.f);
+    };
+
+    // Each corner of a non-degenerate triangle contributes the face tangent,
+    // projected into the plane of the corner's normal and weighted by the
+    // corner's interior angle
+    std::unique_ptr<float[]> acc(new float[vertex_count * 3]());
+    uint32_t *frec = faces.data();
+    for (size_t f = 0; f < face_count; ++f, frec += MeshFaceStride) {
+        uint32_t fi[3] = { frec[0], frec[1], frec[2] };
+        ScalarPoint3f p[3] = { position(fi[0]), position(fi[1]),
+                               position(fi[2]) };
+        ScalarVector2f uv[3] = { texcoord(fi[0]), texcoord(fi[1]),
+                                 texcoord(fi[2]) };
+
+        ScalarVector2f t1 = uv[1] - uv[0], t2 = uv[2] - uv[0];
+        float area2 = dr::fmsub(t1.x(), t2.y(), t1.y() * t2.x());
+        if (area2 < 0.f)
+            frec[3] |= FaceUVFlipped;
+
+        ScalarVector3f vos =
+            dr::fmsub(t2.y(), p[1] - p[0], t1.y() * (p[2] - p[0]));
+        float len = dr::norm(vos);
+
+        // Faces that are degenerate in position or UV space (this includes
+        // collapsed vertices) contribute nothing
+        if (!(dr::abs(area2) > 0.f && len > 0.f &&
+              dr::squared_norm(dr::cross(p[1] - p[0], p[2] - p[0])) > 0.f))
+            continue;
+        vos *= (area2 > 0.f ? 1.f : -1.f) / len;
+
+        for (int k = 0; k < 3; ++k) {
+            ScalarVector3f n = normal(fi[k]);
+            ScalarVector3f t = dr::fnmadd(n, dr::dot(n, vos), vos);
+            float tl = dr::norm(t);
+            if (!(tl > 0.f))
+                continue;
+
+            ScalarVector3f e1 = project(p[(k + 1) % 3] - p[k], n),
+                           e2 = project(p[(k + 2) % 3] - p[k], n);
+
+            // An edge parallel to the normal leaves the angle undefined,
+            // which MikkTSpace resolves to a right angle
+            float angle =
+                dr::squared_norm(e1) * dr::squared_norm(e2) > 0.f
+                    ? dr::unit_angle(e1, e2)
+                    : dr::Pi<float> * .5f;
+
+            float *a = acc.get() + (size_t) fi[k] * 3;
+            ScalarVector3f c = t * (angle / tl);
+            a[0] += c.x();
+            a[1] += c.y();
+            a[2] += c.z();
+        }
+    }
+
+    // Normalize each vertex's tangent. Vertices without a valid
+    // contribution fall back to an arbitrary perpendicular direction
+    float *rec = vrec;
+    for (size_t v = 0; v < vertex_count; ++v, rec += MeshVertexStride) {
+        ScalarVector3f n = dr::load<ScalarVector3f>(rec + PackedFrameOffset),
+                       t = dr::load<ScalarVector3f>(acc.get() + v * 3);
+        float len = dr::norm(t);
+        t = len > 0.f ? t / len : coordinate_system(n).first;
+        dr::store(rec + PackedFrameOffset,
+                  frame_encode(ScalarNormal3f(n), t));
+    }
+
+    layout |= Layout::Tangents;
 }
 
 /// Missing indexed corner entries resolve to zeros

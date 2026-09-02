@@ -694,6 +694,14 @@ MI_VARIANT void Mesh<Float, Spectrum>::from_packed(PackedMesh &&data) {
     static constexpr JitBackend Backend = dr::backend_v<Float>;
     std::string ctx = tfm::format("from_packed(): mesh \"%s\"", m_filename);
 
+    // A material that shades with tangents would otherwise force a repack
+    // of the mesh through the JIT, see from_packed(Layout, ...)
+    if (!m_face_normals && m_bsdf &&
+        has_flag(m_bsdf->flags(), BSDFFlags::NeedsTangents) &&
+        has_flag(data.layout, Layout::Normals) &&
+        has_flag(data.layout, Layout::Texcoords))
+        data.add_tangents();
+
     size_t V = data.vertex_count, F = data.face_count;
 
     ScalarBoundingBox3f bbox = data.bbox;
