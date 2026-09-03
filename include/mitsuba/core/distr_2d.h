@@ -153,6 +153,7 @@ public:
             m_inv_normalization =
                 dr::gather<Float>(m_marg_cdf, UInt32(size.y() - 1));
             m_normalization = dr::rcp(m_inv_normalization);
+            dr::eval(m_normalization);
         } else {
             *this = DiscreteDistribution2D(data.data(), size);
         }

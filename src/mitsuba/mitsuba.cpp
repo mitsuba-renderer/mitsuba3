@@ -290,7 +290,6 @@ int main(int argc, char *argv[]) {
         if (jit) {
             if (*arg_optim_lev) {
                 int lev = arg_optim_lev->as_int();
-                jit_set_flag(JitFlag::VCallDeduplicate, lev > 0);
                 jit_set_flag(JitFlag::ConstantPropagation, lev > 1);
                 jit_set_flag(JitFlag::ValueNumbering, lev > 2);
                 jit_set_flag(JitFlag::VCallOptimize, lev > 3);
