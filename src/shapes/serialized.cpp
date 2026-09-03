@@ -442,8 +442,8 @@ public:
         uint32_t attr_count = 0;
         stream->read(attr_count);
         for (uint32_t i = 0; i < attr_count; ++i) {
-            std::string name;
-            stream->read(name);
+            std::string attr_name;
+            stream->read(attr_name);
             uint8_t aflags = 0;
             stream->read(aflags);
             bool coeffs = (aflags & 1) != 0;
@@ -453,9 +453,10 @@ public:
                 Log(Warn, "\"%s\": attribute \"%s\" stores spectral "
                     "upsampling coefficients; a non-spectral variant "
                     "cannot reproduce the original colors.",
-                    m_filename, name);
-            float *dst = pm.add_attribute(name, dim, /* upsample_srgb */ !coeffs);
-            stream->read_array(dst, (string::starts_with(name, "face_")
+                    m_filename, attr_name);
+            float *dst = pm.add_attribute(attr_name, dim,
+                                          /* upsample_srgb */ !coeffs);
+            stream->read_array(dst, (string::starts_with(attr_name, "face_")
                                          ? face_count : vertex_count) * dim);
         }
 

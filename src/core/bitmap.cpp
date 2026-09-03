@@ -1483,30 +1483,30 @@ static std::string stream_name(const Stream *stream) {
     return std::string(stream->class_name());
 }
 
+static const size_t jpeg_buffer_size = 0x8000;
+
+typedef struct {
+    struct jpeg_source_mgr mgr;
+    JOCTET * buffer;
+    Stream *stream;
+} jbuf_in_t;
+
+typedef struct {
+    struct jpeg_destination_mgr mgr;
+    JOCTET * buffer;
+    Stream *stream;
+} jbuf_out_t;
+
+typedef struct {
+    struct jpeg_error_mgr mgr;
+    Stream *stream;
+} jerr_t;
+
+static std::string jpeg_stream_name(j_common_ptr cinfo) {
+    return stream_name(((jerr_t *) cinfo->err)->stream);
+}
+
 extern "C" {
-    static const size_t jpeg_buffer_size = 0x8000;
-
-    typedef struct {
-        struct jpeg_source_mgr mgr;
-        JOCTET * buffer;
-        Stream *stream;
-    } jbuf_in_t;
-
-    typedef struct {
-        struct jpeg_destination_mgr mgr;
-        JOCTET * buffer;
-        Stream *stream;
-    } jbuf_out_t;
-
-    typedef struct {
-        struct jpeg_error_mgr mgr;
-        Stream *stream;
-    } jerr_t;
-
-    static std::string jpeg_stream_name(j_common_ptr cinfo) {
-        return stream_name(((jerr_t *) cinfo->err)->stream);
-    }
-
     METHODDEF(void) jpeg_init_source(j_decompress_ptr cinfo) {
         jbuf_in_t *p = (jbuf_in_t *) cinfo->src;
         p->buffer = new JOCTET[jpeg_buffer_size];
@@ -1585,7 +1585,7 @@ extern "C" {
         (*cinfo->err->format_message) (cinfo, msg);
         Log(Warn, "libjpeg warning in \"%s\": %s", jpeg_stream_name(cinfo), msg);
     }
-};
+}
 
 void Bitmap::read_jpeg(Stream *stream) {
     ScopedPhase phase(ProfilerPhase::BitmapRead);

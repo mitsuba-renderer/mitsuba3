@@ -193,10 +193,10 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         film_size += 2 * film->rfilter()->border_size();
 
     // Potentially adjust the number of samples per pixel if spp != 0
-    Sampler *sampler = sensor->sampler();
+    Sampler *sensor_sampler = sensor->sampler();
     if (spp)
-        sampler->set_sample_count(spp);
-    spp = sampler->sample_count();
+        sensor_sampler->set_sample_count(spp);
+    spp = sensor_sampler->sample_count();
 
     uint32_t spp_per_pass = (m_samples_per_pass == (uint32_t) -1)
                                     ? spp
@@ -611,10 +611,10 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
                    crop_size = film->crop_size();
 
     // Potentially adjust the number of samples per pixel if spp != 0
-    Sampler *sampler = sensor->sampler();
+    Sampler *sensor_sampler = sensor->sampler();
     if (spp)
-        sampler->set_sample_count(spp);
-    spp = sampler->sample_count();
+        sensor_sampler->set_sample_count(spp);
+    spp = sensor_sampler->sample_count();
 
     // Figure out how to divide up samples into passes, if needed
     uint32_t spp_per_pass = (m_samples_per_pass == (uint32_t) -1)

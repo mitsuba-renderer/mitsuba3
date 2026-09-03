@@ -527,7 +527,9 @@ public:
         parser.program();
 
         m_code = std::move(parser.code);
-        m_consts.assign(parser.consts.begin(), parser.consts.end());
+        m_consts.reserve(parser.consts.size());
+        for (double value : parser.consts)
+            m_consts.push_back((ScalarFloat) value);
         m_tmp_count = parser.n_tmp;
         m_stack_size = parser.stack_size;
     }
