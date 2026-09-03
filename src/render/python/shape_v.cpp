@@ -80,6 +80,14 @@ public:
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
 };
 
 template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
@@ -620,6 +628,7 @@ MI_PY_EXPORT(Shape) {
     using MeshPart = typename Mesh::Part;
     nb::class_<MeshPart>(mesh_cls, "Part", D(Mesh, Part))
         .def_ro("id", &MeshPart::id, D(Mesh, Part, id))
+        .def_ro("label", &MeshPart::label, D(Mesh, Part, label))
         .def_ro("face_offset", &MeshPart::face_offset,
                 D(Mesh, Part, face_offset))
         .def_ro("face_count", &MeshPart::face_count,
@@ -627,8 +636,9 @@ MI_PY_EXPORT(Shape) {
         .def_ro("bbox", &MeshPart::bbox, D(Mesh, Part, bbox))
         .def("__repr__", [](const MeshPart &p) {
             return tfm::format(
-                "Part[id=\"%s\", face_offset=%u, face_count=%u, bbox=%s]",
-                p.id, p.face_offset, p.face_count, p.bbox);
+                "Part[id=\"%s\", label=\"%s\", face_offset=%u, "
+                "face_count=%u, bbox=%s]",
+                p.id, p.label, p.face_offset, p.face_count, p.bbox);
         });
 
     bind_mesh_generic<Mesh *>(mesh_cls);

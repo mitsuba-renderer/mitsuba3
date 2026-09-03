@@ -316,8 +316,11 @@ public:
 
         uint32_t flags = 0;
         stream->read(flags);
-        if (version == MI_FILEFORMAT_VERSION_V4)
-            m_filename = read_cstring(stream);
+        if (version == MI_FILEFORMAT_VERSION_V4) {
+            std::string name = read_cstring(stream);
+            if (!name.empty())
+                m_filename = std::move(name);
+        }
 
         size_t vertex_count, face_count;
         stream->read(vertex_count);
@@ -397,7 +400,13 @@ public:
 
         uint32_t flags = 0;
         stream->read(flags);
-        stream->read(m_filename);
+
+        // A mesh that was written without a name keeps the "<file>@<index>"
+        // label that the constructor derived from the scene description
+        std::string name;
+        stream->read(name);
+        if (!name.empty())
+            m_filename = std::move(name);
 
         if (!(flags & (uint32_t) SerializedFlags::SinglePrecision))
             Throw("\"%s\": version 5 serialized meshes are stored in single "

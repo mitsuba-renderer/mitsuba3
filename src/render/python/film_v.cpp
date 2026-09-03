@@ -70,6 +70,14 @@ public:
         NB_OVERRIDE_PURE(to_string);
     }
 
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
     using Film::m_flags;
     using Film::m_size;
     using Film::m_crop_size;
