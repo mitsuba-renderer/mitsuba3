@@ -1642,7 +1642,7 @@ struct ScopedSetJITScope {
 
 
 static Task* instantiate_node(const ParserConfig &config,
-                              ParserState &state,
+                              const ParserState &state,
                               std::vector<Scratch> &scratch,
                               size_t index) {
     Scratch &s = scratch[index];
@@ -1692,12 +1692,15 @@ static Task* instantiate_node(const ParserConfig &config,
     // Lambda function to instantiate a node once its children are ready
     auto instantiate = [&config, &state, &scratch, index, backend, scope]() {
         ScopedSetJITScope set_scope(config.parallel ? backend : 0u, scope);
-        ScopedFileResolver set_resolver(state.resolver ? state.resolver.get()
-                                                       : file_resolver());
+        FileResolver *resolver = const_cast<FileResolver *>(state.resolver.get());
+        ScopedFileResolver set_resolver(resolver ? resolver : file_resolver());
 
         Scratch &s = scratch[index];
-        SceneNode &node = state[index];
-        Properties &props = node.props;
+        const SceneNode &node = state[index];
+
+        // Work on a copy so that the parser state keeps referring to nodes
+        // by index and does not retain the instantiated objects
+        Properties props = node.props;
 
         // Replace ResolvedReference properties with actual objects
         for (auto &key : props.filter(Properties::Type::ResolvedReference)) {
@@ -1819,7 +1822,7 @@ static Task* instantiate_node(const ParserConfig &config,
     }
 }
 
-std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &state) {
+std::vector<ref<Object>> instantiate(const ParserConfig &config, const ParserState &state) {
     if (state.empty())
         Throw("No nodes to instantiate");
 
@@ -1837,11 +1840,26 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, ParserState &st
     }
 #endif
 
-    std::vector<Scratch> scratch(state.size());
-    instantiate_node(config, state, scratch, 0);
+    std::vector<ref<Object>> objects;
+    {
+        std::vector<Scratch> scratch(state.size());
+        instantiate_node(config, state, scratch, 0);
 
-    // Return the expanded root objects
-    return scratch[0].objects;
+        // Keep the expanded root objects. The remaining scratch entries
+        // hold intermediate objects such as the source meshes of merged
+        // shapes, which are released here.
+        objects = std::move(scratch[0].objects);
+    }
+
+#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
+    // Flush the allocation cache to release the many transient buffers created
+    // by scene loading.
+    if (!string::starts_with(config.variant, "scalar_") &&
+        !jit_flag(JitFlag::FreezingScope))
+        jit_flush_malloc_cache();
+#endif
+
+    return objects;
 }
 
 // ===========================================================================

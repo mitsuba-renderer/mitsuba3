@@ -446,7 +446,7 @@ MI_PY_EXPORT(parser) {
           D(parser, file_location));
 
     parser.def("instantiate",
-          [](const ParserConfig &config, ParserState &state) -> nb::object {
+          [](const ParserConfig &config, const ParserState &state) -> nb::object {
               std::vector<ref<Object>> objects;
               {
                   nb::gil_scoped_release release;

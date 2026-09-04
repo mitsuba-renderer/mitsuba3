@@ -471,7 +471,7 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  *     Expanded top-level object
  */
 extern MI_EXPORT_LIB std::vector<ref<Object>> instantiate(const ParserConfig &config,
-                                                          ParserState &state);
+                                                          const ParserState &state);
 
 /**
  * Write scene data back to XML file
