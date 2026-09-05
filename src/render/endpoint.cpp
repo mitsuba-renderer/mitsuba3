@@ -8,22 +8,13 @@
 NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props)
-    : JitObject<Endpoint>(props.id(), ObjectType::Unknown) {
-    m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
-    dr::make_opaque(m_to_world);
-
-    for (auto &prop : props.objects()) {
-        if (Medium *medium = prop.try_get<Medium>()) {
-            if (m_medium)
-                Throw("Only a single medium can be specified per endpoint (e.g. per emitter or sensor)");
-            set_medium(medium);
-        }
-    }
-}
+    : Endpoint(props, ObjectType::Unknown) { }
 
 MI_VARIANT Endpoint<Float, Spectrum>::Endpoint(const Properties &props, ObjectType type)
     : JitObject<Endpoint>(props.id(), type) {
-    m_to_world = props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+    auto [to_world, anim] = AnimatedTransform4f::from_properties(props, "to_world");
+    m_to_world = to_world;
+    m_to_world_anim = anim;
     dr::make_opaque(m_to_world);
 
     for (auto &prop : props.objects()) {
@@ -122,10 +113,21 @@ MI_VARIANT void Endpoint<Float, Spectrum>::traverse(TraversalCallback *cb) {
 }
 
 MI_VARIANT void Endpoint<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
-    if (keys.empty() || string::contains(keys, "to_world")) {
+    if (!m_to_world_anim && (keys.empty() || string::contains(keys, "to_world"))) {
         m_to_world = m_to_world.value().update();
         dr::make_opaque(m_to_world);
     }
+}
+
+MI_VARIANT typename Endpoint<Float, Spectrum>::ScalarBoundingBox3f
+Endpoint<Float, Spectrum>::position_bounds() const {
+    if (!m_to_world_anim)
+        return ScalarBoundingBox3f(ScalarPoint3f(m_to_world.scalar().translation()));
+
+    ScalarBoundingBox3f bbox;
+    for (const auto &[time, kf] : m_to_world_anim->keyframes())
+        bbox.expand(ScalarPoint3f(kf.T));
+    return bbox;
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Endpoint, Object)

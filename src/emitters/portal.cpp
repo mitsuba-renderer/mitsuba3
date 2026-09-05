@@ -60,10 +60,13 @@ reduces noise in enclosed spaces and leaves the expected image unchanged.
 template <typename Float, typename Spectrum>
 class Portal final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_to_world_anim)
     MI_IMPORT_TYPES(Shape)
 
     Portal(const Properties &props) : Base(props) {
+        if (m_to_world_anim)
+            Throw("Animated portals are not supported!");
+
         // Solid angle sampling needs a rectangle
         ScalarVector3f du = m_to_world.scalar() * ScalarVector3f(1.f, 0.f, 0.f),
                        dv = m_to_world.scalar() * ScalarVector3f(0.f, 1.f, 0.f);

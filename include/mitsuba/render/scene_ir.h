@@ -25,6 +25,15 @@ inline uint32_t accel_mask(ShapeVisibility visibility, bool has_null) {
     return (uint32_t) visibility << (has_null ? 3 : 0);
 }
 
+/// Decomposed keyframe intermediate representation for hardware acceleration backends.
+struct KeyframeIR {
+    float time;
+    float scale[3];
+    /// Rotation quaternion in ``(x, y, z, w)`` order
+    float quat[4];
+    float trans[3];
+};
+
 struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see ``NumGeometryKinds``).
@@ -108,6 +117,9 @@ struct ShapeIR {
 
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
+
+    /// Keyframes for animated instances.
+    std::vector<KeyframeIR> keyframes;
 };
 
 /// Number of geometry kinds and the bucket-array size for BLAS partitioning.
@@ -164,6 +176,21 @@ struct SceneIR {
     /// ``ShapeIR::isect_func``), released with the IR. Bindings retain
     /// their own reference.
     std::vector<uint32_t> isect_funcs;
+
+    /// Does any instance have more than one keyframe?
+    bool has_motion = false;
+
+    /// Time range spanned by the keyframes of all animated instances
+    float time_min = 0.f, time_max = 0.f;
+
+    /// Return the keyframes of the instance that owns ``inst``. The result is
+    /// empty for static instances and top-level BLAS entries.
+    const std::vector<KeyframeIR> &keyframes(const InstanceEntry &inst) const {
+        static const std::vector<KeyframeIR> empty;
+        return inst.instance_index
+                   ? instance_shapes[inst.instance_index - 1].keyframes
+                   : empty;
+    }
 
     SceneIR() = default;
     SceneIR(SceneIR &&) = default;

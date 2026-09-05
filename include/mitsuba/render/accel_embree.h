@@ -98,6 +98,23 @@ struct EmbreeAccel {
     /// instance index. Non-instanced geometry follows at ``instance_count``
     /// plus its registry ID (LLVM mode) or sequentially (scalar mode)
     uint32_t instance_count = 0;
+
+    /// Scene-wide keyframe bounds used to normalize ray and keyframe times
+    /// to Embree's ``[0, 1]`` interval.
+    ScalarFloat time_min = 0.f;
+    ScalarFloat time_max = 0.f;
+
+    /**
+     * Map a ray time onto Embree's ``[0, 1]`` interval
+     *
+     * Clamp times outside the combined range of all animated instances
+     * to the nearest boundary.
+     */
+    template <typename Value> Value normalize_ray_time(const Value &time) const {
+        if (time_max <= time_min)
+            return Value(0.f);
+        return dr::clip((time - Value(time_min)) / Value(time_max - time_min), 0.f, 1.f);
+    }
 };
 
 NAMESPACE_END(mitsuba)

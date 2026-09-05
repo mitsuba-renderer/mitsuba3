@@ -643,6 +643,167 @@ Args:
 
 static const char *__doc_mitsuba_AdjointIntegrator_traverse_cb = R"doc()doc";
 
+static const char *__doc_mitsuba_AnimatedTransform =
+R"doc(Animated transformation
+
+This class stores a sequence of keyframes and interpolates between them
+using linear interpolation for scale and translation and spherical linear
+interpolation for rotation. Keyframes are stored in decomposed form, which
+cannot express shear. Transformations with more than one keyframe must
+therefore be free of shear. Constant (single-keyframe) transformations are
+exempt, since they are evaluated as a plain matrix.
+
+`traverse` exposes the keyframes as four tensors.
+
+.. list-table::
+   :header-rows: 1
+
+   * - Component
+     - Shape
+     - Contents
+   * - ``times``
+     - ``(N,)``
+     - Keyframe times
+   * - ``scale``
+     - ``(N, 3)``
+     - Per-axis scale factors
+   * - ``rotation``
+     - ``(N, 4)``
+     - Rotation quaternions in ``(x, y, z, w)`` order
+   * - ``translation``
+     - ``(N, 3)``
+     - Translations
+
+The tensors share one buffer and must agree on ``N``. Changing the number
+of keyframes therefore requires updating all four together.
+
+A single-keyframe transformation also exposes a 4x4 matrix under its
+parent's parameter name (e.g. ``"to_world"``). Evaluation uses this matrix,
+which takes precedence when written alongside the component views.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Create a transformation with a single identity keyframe)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_2 = R"doc(Initialize from a constant transformation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_3 = R"doc(Initialize from a vector of time values and keyframes)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Decomposed scale, rotation, and translation of a keyframe.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Q = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_S = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_T = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_pack =
+R"doc(Write ``time`` and the components into ``out``, which must have room for
+``KeyframeStride`` floats)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_add_keyframe = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_build_views =
+R"doc(Point the ``times``/``scale``/``rotation``/``translation`` views at the
+current contents of ``m_data``)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_ensure_uniform_keyframes =
+R"doc(Raise an exception if the keyframes are not uniformly spaced in time.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval =
+R"doc(Evaluate the transformation at a specific time
+
+Interpolate keyframes from the device buffer. Times outside the range
+returned by `get_time_bounds` are clamped to the first or last keyframe.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval_scalar =
+R"doc(Scalar evaluation of the transformation
+
+Version of `eval` that reads the host-side keyframe list.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds =
+R"doc(Approximate the swept bounds of ``bbox`` by sampling the transformation
+at regular intervals and at every keyframe. These bounds may not be
+conservative for nonlinear motion.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Return the time bounds of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds =
+R"doc(Return the bounding box of the translation component of the animated
+transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Check if any keyframe has a scale component different from 1.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_shear =
+R"doc(Check for shear, which is only supported by single-keyframe transforms.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_initialize = R"doc(Initialize keyframe storage and validate the animation.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_is_animated = R"doc(Check if the transformation is animated)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_keyframe_count = R"doc(Returns the number of key frames.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_keyframes = R"doc(Return the host-side keyframes of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_data =
+R"doc(Packed device copy of ``m_keyframes`` (see `Keyframe::pack`), used by `eval`)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_has_shear =
+R"doc(Set when a keyframe transformation contained shear, which the
+decomposition above cannot represent (see `has_shear`))doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_keyframes = R"doc(Host-side keyframes, used by `eval_scalar` and `keyframes`)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_rotation = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_scale = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_times = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc(Matrix form of a single-keyframe transformation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_translation = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_make_transform_opaque =
+R"doc(Make the single-keyframe matrix opaque to prevent its values from being
+baked into JIT kernels.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_pack_data = R"doc(Repack ``m_data`` from the host-side ``m_keyframes``)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_pack_views =
+R"doc(Rebuild ``m_data`` from the (user-written) views, validating that they
+agree on the number of keyframes)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_grad_enabled =
+R"doc(Check whether gradients are enabled on the evaluated representation,
+either the single-keyframe matrix or the packed keyframe buffer.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_traverse = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_traverse_cb = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_unpack_data = R"doc(Rebuild the host-side ``m_keyframes`` from ``m_data``)doc";
+
 static const char *__doc_mitsuba_Any =
 R"doc(Type-erased storage for arbitrary objects
 
@@ -3990,14 +4151,17 @@ static const char *__doc_mitsuba_Endpoint_traverse_cb = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_traverse_cb_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
+static const char *__doc_mitsuba_Endpoint_world_transform_anim =
+R"doc(Return the animated local-to-world transformation, or ``nullptr`` if
+it is constant)doc";
+
+static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local-to-world transformation at ``time``)doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform_scalar =
-R"doc(\brief Return the local space to world space transformation as a
-scalar transform
+R"doc(Return the scalar local-to-world transformation at ``time``
 
-This mirrors `world_transform()` without touching the device: reading
-the JIT representation back would wait for all queued work.)doc";
+This mirrors `world_transform` using host-side data, avoiding a wait
+for queued device work.)doc";
 
 static const char *__doc_mitsuba_FileResolver =
 R"doc(Simple class for resolving paths on Linux/Windows/Mac OS
@@ -8508,6 +8672,14 @@ static const char *__doc_mitsuba_Properties_get_unbounded_texture_2 =
 R"doc(Retrieve an unbounded texture parameter with variant-specific conversions
 (see get_texture_impl for details))doc";
 
+static const char *__doc_mitsuba_Properties_get_animated_transform =
+R"doc(Retrieve an animated transformation parameter
+
+``T`` must be an instance of ``mitsuba::AnimatedTransform<...>``. A
+plain transformation is wrapped into a constant animation, and a missing
+parameter yields the identity. The definition of this method is
+located in ``mitsuba/core/animated_transform.h``.)doc";
+
 static const char *__doc_mitsuba_Properties_get_volume =
 R"doc(Retrieve a volume parameter
 
@@ -9498,9 +9670,8 @@ Returns:
     should be queried to check if an intersection was actually found.)doc";
 
 static const char *__doc_mitsuba_Scene_compute_surface_interaction_instanced =
-R"doc(Instancing-aware expansion of a preliminary intersection (see
-``compute_surface_interaction()``, which forwards here when the
-record may reference instanced geometry))doc";
+R"doc(Expand a preliminary intersection that may reference an instance.
+Called by `compute_surface_interaction`.)doc";
 
 static const char *__doc_mitsuba_Scene_emitters = R"doc(Return the list of emitters)doc";
 
@@ -10516,6 +10687,10 @@ static const char *__doc_mitsuba_Shape_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_to_world_anim =
+R"doc(Return the animated object-to-world transformation, or ``nullptr`` if
+it is constant)doc";
+
 static const char *__doc_mitsuba_Shape_add_texture_attribute =
 R"doc(Add a texture attribute with the given ``name``.
 
@@ -11045,9 +11220,9 @@ static const char *__doc_mitsuba_Shape_texture_attribute = R"doc(Return the text
 
 static const char *__doc_mitsuba_Shape_texture_attribute_2 = R"doc(Return the texture attribute associated with ``name``.)doc";
 
-static const char *__doc_mitsuba_Shape_to_world = R"doc(Return the object-to-world transformation)doc";
+static const char *__doc_mitsuba_Shape_to_world = R"doc(Return the object-to-world transformation at ``time``)doc";
 
-static const char *__doc_mitsuba_Shape_to_world_scalar = R"doc(Return the object-to-world transformation (scalar form))doc";
+static const char *__doc_mitsuba_Shape_to_world_scalar = R"doc(Return the scalar object-to-world transformation at ``time``)doc";
 
 static const char *__doc_mitsuba_Shape_traverse = R"doc()doc";
 
@@ -12355,9 +12530,9 @@ static const char *__doc_mitsuba_Transform_Transform = R"doc(Initialize the tran
 
 static const char *__doc_mitsuba_Transform_Transform_2 = R"doc(Initialize the transformation from the given matrix and its inverse)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Copy constructor with type conversion)doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Initialize an affine transformation from scale, quaternion rotation, and translation)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc(Copy constructor with type conversion)doc";
 
 static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 

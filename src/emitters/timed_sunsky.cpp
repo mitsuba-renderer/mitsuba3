@@ -114,8 +114,9 @@ Timed sun and sky emitter (:monosp:`timed_sunsky`)
      Both implementations integrate to the same total power.
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |transform| or |animation|
+   - Specifies an optional emitter-to-world transformation. Animating this property
+     is currently not supported.  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
 
@@ -188,7 +189,7 @@ public:
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo,
         m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
         m_sky_params_dataset, m_sun_radiance,
-        m_to_world, m_sky_irrad_dataset, m_sun_irrad_dataset,
+        m_to_world, m_to_world_anim, m_sky_irrad_dataset, m_sun_irrad_dataset,
 		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
 
@@ -209,6 +210,9 @@ public:
     MI_IMPORT_TYPES()
 
     TimedSunskyEmitter(const Properties &props) : Base(props) {
+        if (m_to_world_anim)
+            Throw("TimedSunskyEmitter: 'to_world' cannot be animated directly. Please use 'interval'.");
+
         m_shutter_open          = props.get<ScalarFloat>("shutter_open", 0.f);
         m_inv_shutter_open_time = props.get<ScalarFloat>("shutter_close", 1.f) - m_shutter_open;
 

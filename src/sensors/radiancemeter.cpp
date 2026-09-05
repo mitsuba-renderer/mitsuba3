@@ -16,8 +16,8 @@ Radiance meter (:monosp:`radiancemeter`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |transform| or |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
 
  * - origin
@@ -56,7 +56,8 @@ priority.
 MI_VARIANT class RadianceMeter final : public Sensor<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Sensor, m_film, m_to_world, m_needs_sample_2,
-                    m_needs_sample_3, sample_wavelengths)
+                    m_needs_sample_3, sample_wavelengths, world_transform,
+                    world_transform_string)
     MI_IMPORT_TYPES()
 
     RadianceMeter(const Properties &props) : Base(props) {
@@ -111,8 +112,9 @@ public:
         ray.wavelengths = wavelengths;
 
         // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
+        auto to_world = world_transform(time);
+        ray.o = to_world * Point3f(0.f, 0.f, 0.f);
+        ray.d = to_world * Vector3f(0.f, 0.f, 1.f);
         ray.o += ray.d * math::RayEpsilon<Float>;
 
         return { ray, wav_weight };
@@ -126,7 +128,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RadianceMeter[" << std::endl
-            << "  to_world = " << m_to_world << "," << std::endl
+            << "  to_world = " << world_transform_string() << "," << std::endl
             << "  film = " << m_film << "," << std::endl
             << "]";
         return oss.str();

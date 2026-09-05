@@ -243,7 +243,7 @@ public:
             update();
         }
 
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     ScalarSize primitive_count() const override { return m_filled_voxel_count; }

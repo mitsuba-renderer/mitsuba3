@@ -17,8 +17,8 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
  :extra-rows: 8
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |transform| or |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|
 
@@ -144,10 +144,12 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3, m_film, m_sampler,
-                    m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
-                    m_far_clip, m_focus_distance, m_cone_scale,
-                    sample_wavelengths)
+    MI_IMPORT_BASE(ProjectiveCamera, m_needs_sample_3, m_film, m_sampler,
+                    m_resolution, m_shutter_open, m_shutter_open_time,
+                    m_near_clip, m_far_clip, m_focus_distance, m_cone_scale,
+                    sample_wavelengths, world_transform,
+                    traverse_world_transform, world_transform_string,
+                    check_to_world, position_bounds)
     MI_IMPORT_TYPES()
 
     ThinLensCamera(const Properties &props) : Base(props) {
@@ -161,8 +163,7 @@ public:
             m_aperture_radius = dr::Epsilon<Float>;
         }
 
-        if (m_to_world.scalar().has_scale())
-            Throw("Scale factors in the camera-to-world transformation are not allowed!");
+        check_to_world();
 
         update_camera_transforms();
 
@@ -174,16 +175,14 @@ public:
         cb->put("aperture_radius", m_aperture_radius, ParamFlags::NonDifferentiable);
         cb->put("focus_distance",  m_focus_distance,  ParamFlags::NonDifferentiable);
         cb->put("x_fov",           m_x_fov,           ParamFlags::NonDifferentiable);
-        cb->put("to_world",        m_to_world,        ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
 
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            if (m_to_world.scalar().has_scale())
-                Throw("Scale factors in the camera-to-world transformation are not allowed!");
-        }
+        if (keys.empty() || string::contains(keys, "to_world"))
+            check_to_world();
 
         update_camera_transforms();
     }
@@ -242,8 +241,9 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        ray.o = m_to_world.value() * aperture_p;
-        ray.d = m_to_world.value() * d;
+        auto to_world = world_transform(time);
+        ray.o = to_world * aperture_p;
+        ray.d = to_world * d;
 
         Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
@@ -265,11 +265,12 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world.value();
+        AffineTransform4f trafo = world_transform(it.time);
         Point3f ref_p = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+        ds.time = it.time;
         ds.pdf = 0.f;
         active &= (ref_p.z() >= m_near_clip) && (ref_p.z() <= m_far_clip);
         if (dr::none_or<false>(active))
@@ -309,10 +310,7 @@ public:
     }
 
 
-    ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     std::string to_string() const override {
         using string::indent;
@@ -328,7 +326,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  to_world = " << indent(m_to_world)  << std::endl
+            << "  to_world = " << indent(world_transform_string())  << std::endl
             << "]";
         return oss.str();
     }

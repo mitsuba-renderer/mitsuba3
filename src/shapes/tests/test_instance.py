@@ -493,3 +493,209 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
                 ('theta', int(ray_flags), output, gd_theta[0], gi_theta[0])
             assert dr.allclose(gd_phi, gi_phi, rtol=1e-4, atol=1e-5), \
                 ('phi', int(ray_flags), output, gd_phi[0], gi_phi[0])
+
+
+@pytest.mark.parametrize("num_keyframes", [2, 3, 5])
+def test09_animated_instance(variants_all_rgb, num_keyframes):
+    """Rays hit a translating instance at the interpolated position"""
+    from mitsuba import ScalarTransform4f as T
+
+    keyframes = {}
+    for i in range(num_keyframes):
+        t = 10.0 * i / (num_keyframes - 1)
+        # Create keyframes outside the [0, 1] interval
+        keyframes[t + 5] = T().translate([0, 0, t / 10.0])
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'sphere'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f(keyframes)
+        }
+    })
+
+    o = mi.Point3f(0, 0, -3)
+    d = mi.Vector3f(0, 0, 1)
+    # Check valid interaction before defined keyframe range
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=0.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-6)
+
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=10.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -0.5], atol=1e-6)
+
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=15.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+    # Check valid interaction after defined keyframe range
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=100.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+
+def test10_animated_instance_rotation_scaling(variants_all_rgb):
+    """Rotation and scale of an instance are interpolated during ray tracing"""
+    from mitsuba import ScalarTransform4f as T
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'rectangle'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().rotate([0, 1, 0], 0).scale([1, 1, 1]),
+                10.0: T().rotate([0, 1, 0], 90).scale([2, 2, 2])
+            })
+        },
+        'instance_2': {
+            # Unrelated second moving instance
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().translate([0, 10, 0]).scale([1, 1, 1]),
+                10.0: T().translate([0, 15, 0]).scale([2, 3, 2])
+            })
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+    assert dr.allclose(dr.abs(si.n), [0, 0, 1], atol=1e-4)
+
+    # At t=0, scale is 1.0, so a ray at y=1.2 misses the rectangle (height [-1, 1])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=0.0)
+    assert not dr.any(scene.ray_intersect(ray_off).is_valid())
+
+    # At t=5, rotation is 45 deg around Y and scale is 1.5
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(dr.abs(si.n), [dr.sqrt(0.5), 0, dr.sqrt(0.5)], atol=1e-2)
+
+    # At t=5, scale is 1.5, so a ray at y=1.2 now hits the rectangle (height [-1.5, 1.5])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=5.0)
+    assert dr.all(scene.ray_intersect(ray_off).is_valid())
+
+    # At t=10, rotation is 90 deg around Y and scale is 2.0
+    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-5)
+    assert dr.allclose(dr.abs(si.n), [1, 0, 0], atol=1e-4)
+
+
+@pytest.mark.parametrize("times, uniform", [
+    ([0.0, 1.0], True),
+    ([0.0, 0.5, 1.0], True),
+    ([-2.0, -1.5, -1.0], True),
+    ([0.0, 0.3, 1.0], False),
+])
+def test11_uniform_keyframes(variant_scalar_rgb, times, uniform):
+    """Instances accept evenly spaced keyframes and reject the rest"""
+    from mitsuba import ScalarTransform4f as T
+
+    def load():
+        return mi.load_dict({
+            'type': 'instance',
+            'group': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+            'to_world': mi.AnimatedTransform4f({
+                t: T().translate([0, 0, i]) for i, t in enumerate(times)
+            })
+        })
+
+    if uniform:
+        load()
+    else:
+        with pytest.raises(RuntimeError, match="uniform range of keyframes"):
+            load()
+
+
+def test12_animated_bbox(variant_scalar_rgb):
+    """The bounding box of an animated instance covers its swept volume"""
+    from mitsuba import ScalarTransform4f as T
+
+    def bbox(times, offsets):
+        return mi.load_dict({
+            'type': 'instance',
+            'group': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+            'to_world': mi.AnimatedTransform4f({
+                t: T().translate(o) for t, o in zip(times, offsets)
+            })
+        }).bbox()
+
+    b = bbox([0.0, 1.0], [[0, 0, 0], [10, 0, 0]])
+    assert dr.allclose(b.min, [-1, -1, -1])
+    assert dr.allclose(b.max, [11, 1, 1])
+
+    # Keyframes that lie off the internal sample grid must be included
+    b = bbox([0.0, 0.25, 0.5, 0.75, 1.0],
+             [[0, 0, 0], [0, 100, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    assert b.max[1] >= 101.0
+
+
+def test13_animated_instances_with_differing_time_ranges(variants_all_rgb):
+    """Instances with different keyframe ranges follow the backend's clamping rules"""
+    from mitsuba import ScalarTransform4f as T
+
+    def instance(keyframes):
+        return {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f(keyframes)
+        }
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+        # Spans the whole [0, 2] range and thereby defines it
+        'inst_a': instance({0.0: T().translate([-4, 0, 0]),
+                            2.0: T().translate([-4, 0, 1])}),
+        # Covers only the second half of it
+        'inst_b': instance({1.0: T().translate([0, 0, 0]),
+                            2.0: T().translate([0, 0, 1])}),
+        # Neither end of its range lines up with [0, 2], and its keyframe
+        # spacing (0.4) does not divide the gaps (0.6) on either side
+        'inst_c': instance({0.6: T().translate([4, 0, 0]),
+                            1.0: T().translate([4, 0, 1]),
+                            1.4: T().translate([4, 0, 2])}),
+    })
+
+    is_embree = mi.MI_ENABLE_EMBREE and (mi.is_scalar or mi.is_llvm)
+    for time in [0.0, 0.3, 0.6, 0.8, 1.0, 1.2, 1.4, 1.7, 2.0]:
+        # 'inst_a' spans the full [0, 2] range, so it is always valid
+        si_a = scene.ray_intersect(mi.Ray3f(o=[-4, 0, -5], d=[0, 0, 1], time=time))
+        assert dr.all(si_a.is_valid()), time
+        assert dr.allclose(si_a.p.z, time / 2 - 1, atol=1e-4), time
+
+        # 'inst_b' spans [1.0, 2.0].
+        # In Embree, geometry outside its keyframe range is not visible.
+        # Other backends clamp to the end poses.
+        si_b = scene.ray_intersect(mi.Ray3f(o=[0, 0, -5], d=[0, 0, 1], time=time))
+        z_b = dr.clip(time - 1.0, 0, 1)
+        if is_embree and time < 1.0:
+            assert not dr.any(si_b.is_valid()), time
+        else:
+            assert dr.all(si_b.is_valid()), time
+            assert dr.allclose(si_b.p.z, z_b - 1, atol=1e-4), time
+
+        # 'inst_c' spans [0.6, 1.4].
+        si_c = scene.ray_intersect(mi.Ray3f(o=[4, 0, -5], d=[0, 0, 1], time=time))
+        z_c = dr.clip((time - 0.6) / 0.4, 0, 2)
+        if is_embree and (time < 0.6 or time >= 1.4):
+            assert not dr.any(si_c.is_valid()), time
+        else:
+            assert dr.all(si_c.is_valid()), time
+            assert dr.allclose(si_c.p.z, z_c - 1, atol=1e-4), time

@@ -26,8 +26,8 @@ Distant radiancemeter sensor (:monosp:`distant`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Sensor-to-world transformation matrix.
+   - |transform| or |animation|
+   - Sensor-to-world transformation matrix (can be animated).
 
  * - direction
    - |vector|
@@ -136,7 +136,8 @@ protected:
 template <typename Float, typename Spectrum, RayTargetType TargetType>
 class DistantSensorImpl final : public Sensor<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths)
+    MI_IMPORT_BASE(Sensor, m_to_world, m_film, sample_wavelengths,
+                   world_transform, world_transform_string)
     MI_IMPORT_TYPES(Scene, Shape)
 
     DistantSensorImpl(const Properties &props) : Base(props) {
@@ -212,7 +213,7 @@ public:
         Spectrum ray_weight = 0.f;
 
         // Set ray direction
-        ray.d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
+        ray.d = world_transform(time) * Vector3f{ 0.f, 0.f, 1.f };
 
         // Sample target point and position ray origin
         if constexpr (TargetType == RayTargetType::Point) {
@@ -229,7 +230,7 @@ public:
             Point2f offset =
                 warp::square_to_uniform_disk_concentric(aperture_sample);
             Vector3f perp_offset =
-                m_to_world.value() * Vector3f(offset.x(), offset.y(), 0.f);
+                world_transform(time) * Vector3f(offset.x(), offset.y(), 0.f);
             ray.o = m_bsphere.center + perp_offset * m_bsphere.radius - ray.d * m_bsphere.radius;
             ray_weight = wav_weight;
         }
@@ -244,7 +245,7 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "DistantSensor[" << std::endl
-            << "  to_world = " << m_to_world << "," << std::endl
+            << "  to_world = " << world_transform_string() << "," << std::endl
             << "  film = " << m_film << "," << std::endl;
 
         if constexpr (TargetType == RayTargetType::Point)

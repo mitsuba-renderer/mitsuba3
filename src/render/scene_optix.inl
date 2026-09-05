@@ -30,6 +30,8 @@ struct MiOptixSceneState {
     } ias_data;
     /// Intersection function bindings of the custom shapes
     std::vector<JitIsectBinding *> isect_bindings;
+    /// Device buffer holding the SRT motion transforms of animated instances
+    void *motion_transforms = nullptr;
     /// Per-ShapeGroup GAS, index-aligned with scene->m_shapegroups (sized once;
     /// only dirty groups rebuild, keeping the freeze-visible handles stable).
     std::vector<MiOptixAccelData> group_accel;
@@ -70,6 +72,9 @@ struct MiOptixConfig {
 // Array storing previously initialized optix configurations
 static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
 static std::mutex optix_configs_lock;
+// Motion-blur pipelines need a distinct traversable-graph flag, so they are
+// cached under a separate config key.
+static constexpr uint32_t OptixConfigMotionBlurKey = 1u << 30;
 
 /// Determine what kinds of shapes the scene contains
 static unsigned int optix_prim_flags(const SceneIR &sd) {
@@ -98,9 +103,12 @@ static unsigned int optix_prim_flags(const SceneIR &sd) {
     return prim_flags;
 }
 
-const MiOptixConfig &init_optix_config(unsigned int prim_flags) {
-    // Use the primitive flags as config index in optix_configs
+const MiOptixConfig &init_optix_config(unsigned int prim_flags,
+                                       bool uses_motion_blur) {
+    // The primitive flags and the motion blur flag index optix_configs
     uint32_t key = prim_flags;
+    if (uses_motion_blur)
+        key |= OptixConfigMotionBlurKey;
     auto [it, success] = optix_configs.try_emplace(key);
     if (!success)
         return it->second;
@@ -126,12 +134,15 @@ const MiOptixConfig &init_optix_config(unsigned int prim_flags) {
         module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     }
 
-    config.pipeline_compile_options.usesMotionBlur     = false;
+    config.pipeline_compile_options.usesMotionBlur     = uses_motion_blur;
     config.pipeline_compile_options.numPayloadValues   = 0;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+    // SRT motion transforms add a transform node above the GAS, which requires
+    // the more permissive traversable graph.
     config.pipeline_compile_options.traversableGraphFlags =
-        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+        uses_motion_blur ? OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY
+                         : OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
     if (jit_flag(JitFlag::Debug))
         config.pipeline_compile_options.exceptionFlags =
@@ -350,7 +361,9 @@ static void optix_rebuild_accel(
         auto *ias = (OptixInstance *) jit_malloc(
             JitBackend::CUDA, ias_count * sizeof(OptixInstance), /* shared = */ 1);
 
-        prepare_ias(sd, blas_handle, blas_sbt_offset, ias);
+        jit_free(s.motion_transforms);
+        s.motion_transforms =
+            prepare_ias(sd, blas_handle, blas_sbt_offset, s.context, ias);
 
         // Build a "master" IAS that contains all the GAS of the scene (meshes,
         // custom shapes, curves, ...)
@@ -410,6 +423,7 @@ static void optix_rebuild_accel(
                 jit_free(s->ias_data.inputs);
                 for (JitIsectBinding *binding : s->isect_bindings)
                     jit_isect_unbind(binding);
+                jit_free(s->motion_transforms);
                 delete s;
             }
         },
@@ -485,7 +499,7 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         // =====================================================
 
         const MiOptixConfig &config =
-            init_optix_config(optix_prim_flags(sd));
+            init_optix_config(optix_prim_flags(sd), sd.has_motion);
 
         // =====================================================
         //  Shader Binding Table generation

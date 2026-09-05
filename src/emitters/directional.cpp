@@ -24,8 +24,8 @@ Distant directional emitter (:monosp:`directional`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Emitter-to-world transformation matrix.
+   - |transform| or |animation|
+   - Emitter-to-world transformation matrix (can be animated).
    - |exposed|
 
  * - direction
@@ -59,7 +59,8 @@ radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
 
 MI_VARIANT class DirectionalEmitter final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3,
+                   world_transform, traverse_world_transform)
     MI_IMPORT_TYPES(Scene, Texture)
 
     DirectionalEmitter(const Properties &props) : Base(props) {
@@ -92,7 +93,7 @@ public:
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         cb->put("irradiance",  m_irradiance,  ParamFlags::Differentiable);
-        cb->put("to_world",    m_to_world,    ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void set_scene(const Scene *scene) override {
@@ -122,11 +123,10 @@ public:
         Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
 
         // 2. "Sample" directional component (fixed, no actual sampling required)
-        const auto trafo = m_to_world.value();
-        Vector3f d_global = trafo * Vector3f{ 0.f, 0.f, 1.f };
+        auto to_world = world_transform(time);
+        Vector3f d_global = to_world * Vector3f{ 0.f, 0.f, 1.f };
 
-        Vector3f perp_offset =
-            trafo * Vector3f{ offset.x(), offset.y(), 0.f };
+        Vector3f perp_offset = to_world * Vector3f{ offset.x(), offset.y(), 0.f };
         Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component
@@ -150,7 +150,7 @@ public:
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = m_to_world.value() * Vector3f{ 0.f, 0.f, 1.f };
+        Vector3f d = world_transform(it.time) * Vector3f{ 0.f, 0.f, 1.f };
         // Needed when the reference point is on the sensor, which is not part of the bbox
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;

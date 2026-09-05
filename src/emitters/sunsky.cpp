@@ -101,8 +101,10 @@ Sun and sky emitter (:monosp:`sunsky`)
      Both implementations integrate to the same total power.
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |transform| or |animation|
+   - Specifies an optional emitter-to-world transformation. At the moment,
+     specifying animation keyframes is not supported here. See :ref:`timed_sunsky <emitter-timed_sunsky>`
+     for a temporal sunsky model.  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
 This plugin implements an environment emitter for the sun and sky dome.
@@ -197,7 +199,7 @@ public:
     MI_IMPORT_BASE(BaseSunskyEmitter,
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
         m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
-        m_sky_params_dataset, m_to_world,
+        m_sky_params_dataset, m_to_world, m_to_world_anim,
         m_sky_irrad_dataset, m_sun_irrad_dataset,
 		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
@@ -216,6 +218,11 @@ public:
     MI_IMPORT_TYPES(Scene, Texture)
 
     SunskyEmitter(const Properties &props) : Base(props) {
+        if (m_to_world_anim)
+            Throw("Animating the to_world matrix of a sunsky emitter is not "
+                  "supported. Please use the timed_sunsky emitter for "
+                  "temporal control.");
+
         if (props.has_property("sun_direction")) {
             if (props.has_property("latitude") || props.has_property("longitude")
                 || props.has_property("timezone") || props.has_property("year")

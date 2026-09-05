@@ -282,6 +282,30 @@ Mitsuba 3.10.0
   PTX, and MSL libraries with precompiled binaries. They additionally required
   backend-specific POD layouts and data-transfer logic.
 
+- **Animation and motion blur**. Mitsuba can now represent and render motion
+  blur due to moving sensors, emitters, and shapes. At the XML level, a new
+  ``<animation>`` tag lists keyframes in place of a ``<transform>``:
+
+  .. code-block:: xml
+
+      <animation name="to_world">
+          <transform time="0.0">
+              <translate value="0, 0, 0"/>
+          </transform>
+          <transform time="1.0">
+              <translate value="1, 0, 0"/>
+          </transform>
+      </animation>
+
+  The feature builds on native time support in the OptiX, Metal, and Embree
+  backends. For details, see the :ref:`documentation section on animation
+  <sec-animation>`. (contributed by `Delio Vicini <https://github.com/dvicini>`__).
+
+  ⚠️ The ``position`` parameter of the point emitter is no longer exposed by
+  ``mi.traverse()``. Replace ``params['emitter.position']`` with
+  ``params['emitter.to_world']`` and a translation. The ``position`` scene
+  description property is unchanged.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

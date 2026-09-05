@@ -15,8 +15,8 @@ Orthographic camera (:monosp:`orthographic`)
 .. pluginparameters::
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |transform| or |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|
 
@@ -78,10 +78,12 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class OrthographicCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_anim, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
-                    m_cone_scale, sample_wavelengths)
+                    m_cone_scale, sample_wavelengths, world_transform,
+                    traverse_world_transform, world_transform_string,
+                    position_bounds)
     MI_IMPORT_TYPES()
 
     OrthographicCamera(const Properties &props) : Base(props) {
@@ -91,7 +93,7 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -106,16 +108,18 @@ public:
 
         m_normalization = 1.f / m_image_rect.volume();
 
+        m_dx = m_sample_to_camera * Vector3f(1.f / m_resolution.x(), 0.f, 0.f);
+        m_dy = m_sample_to_camera * Vector3f(0.f, 1.f / m_resolution.y(), 0.f);
+
         // Compute the world-space (geometric) mean width of a pixel
         // which is used to initialize the ray cone 'width' field
-        AffineTransform4f to_world = m_to_world.value();
-        Vector3f dx = to_world * (m_sample_to_camera *
-                                  Vector3f(1.f / m_resolution.x(), 0.f, 0.f)),
-                 dy = to_world * (m_sample_to_camera *
-                                  Vector3f(0.f, 1.f / m_resolution.y(), 0.f));
+        AffineTransform4f to_world = world_transform();
+        Vector3f dx = to_world * m_dx,
+                 dy = to_world * m_dy;
         m_pixel_width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
 
-        dr::make_opaque(m_sample_to_camera, m_normalization, m_pixel_width);
+        dr::make_opaque(m_sample_to_camera, m_normalization, m_pixel_width,
+                        m_dx, m_dy);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -136,10 +140,17 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        ray.o = m_to_world.value() * near_p;
-        ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
+        auto to_world = world_transform(time);
+        ray.o = to_world * near_p;
+        ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
-        ray.cone.width = m_pixel_width;
+        if (m_to_world_anim) {
+            Vector3f dx = to_world * m_dx,
+                     dy = to_world * m_dy;
+            ray.cone.width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
+        } else {
+            ray.cone.width = m_pixel_width;
+        }
 
         return { ray, wav_weight };
     }
@@ -149,10 +160,7 @@ public:
         return ProjectiveTransform4f(camera_to_sample.matrix);
     }
 
-    ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     std::string to_string() const override {
         using string::indent;
@@ -166,7 +174,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  world_transform = " << indent(m_to_world)  << std::endl
+            << "  world_transform = " << indent(world_transform_string())  << std::endl
             << "]";
         return oss.str();
     }
@@ -177,9 +185,10 @@ private:
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Float m_pixel_width;
+    Vector3f m_dx, m_dy;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization,
-                   m_pixel_width)
+                   m_pixel_width, m_dx, m_dy)
 };
 
 MI_EXPORT_PLUGIN(OrthographicCamera)

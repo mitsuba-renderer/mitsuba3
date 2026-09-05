@@ -1,3 +1,4 @@
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
@@ -31,8 +32,11 @@ ShapeVisibility parse_visibility(std::string_view value) {
 
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     : JitObject<Shape>(props.id()) {
-    m_to_world =
-        (ScalarAffineTransform4f) props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+    // The 'instance' plugin looks up the animation itself
+    auto [to_world, anim] = AnimatedTransform4f::from_properties(props, "to_world");
+    if (anim && props.plugin_name() != "instance")
+        Throw("Shape animation requires the use of the instance plugin");
+    m_to_world = to_world;
 
     for (auto &prop : props.objects()) {
         if (Emitter *emitter = prop.try_get<Emitter>()) {

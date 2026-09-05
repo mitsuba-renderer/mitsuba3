@@ -307,10 +307,33 @@ void build_gas(const OptixDeviceContext &context,
     }
 }
 
-void prepare_ias(const SceneIR &sd,
-                 const std::vector<OptixTraversableHandle> &blas_handle,
-                 const std::vector<uint32_t> &blas_sbt_offset,
-                 OptixInstance *out) {
+void *prepare_ias(const SceneIR &sd,
+                  const std::vector<OptixTraversableHandle> &blas_handle,
+                  const std::vector<uint32_t> &blas_sbt_offset,
+                  OptixDeviceContext context,
+                  OptixInstance *out) {
+    // The motion transforms of all animated instances share one buffer, in
+    // which each transform must start at an 8 byte boundary
+    auto srt_size = [](size_t n_keyframes) {
+        size_t size = sizeof(OptixSRTMotionTransform) +
+                      (n_keyframes - 2) * sizeof(OptixSRTData);
+        return (size + 7) & ~(size_t) 7;
+    };
+
+    size_t mt_size = 0;
+    for (const InstanceEntry &inst : sd.instances) {
+        size_t n_keyframes = sd.keyframes(inst).size();
+        if (n_keyframes > 1)
+            mt_size += srt_size(n_keyframes);
+    }
+
+    void *mt_device = nullptr, *mt_staging = nullptr;
+    if (mt_size) {
+        mt_device  = jit_malloc(JitBackend::CUDA, mt_size);
+        mt_staging = jit_malloc(JitBackend::CUDA, mt_size, /* shared = */ 1);
+    }
+    size_t mt_offset = 0;
+
     for (size_t i = 0; i < sd.instances.size(); ++i) {
         const InstanceEntry &inst = sd.instances[i];
         const BlasEntry &blas = sd.blases[inst.blas_index];
@@ -323,22 +346,74 @@ void prepare_ias(const SceneIR &sd,
                              : OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING;
 
         uint32_t instance_id = inst.instance_index;
+        const std::vector<KeyframeIR> &keyframes = sd.keyframes(inst);
 
-        // to_world is col-major 3x4. OptiX wants row-major 3x4.
-        float t[12];
-        for (int row = 0; row < 3; ++row)
-            for (int col = 0; col < 4; ++col)
-                t[row * 4 + col] = inst.to_world[col * 3 + row];
+        if (keyframes.size() > 1) {
+            // For an animated instance, wrap the BLAS in an SRT motion-transform
+            // traversable so intersections interpolate the instance-to-world
+            // transform across time. The IAS then references that traversable
+            // through an identity instance transform.
+            size_t n_keyframes = keyframes.size();
+            // 'numKeys' below is an unsigned short
+            if (n_keyframes > 65535)
+                Throw("prepare_ias(): an animated instance may have at most "
+                      "65535 keyframes, but %zu were given.", n_keyframes);
+            auto *mt = (OptixSRTMotionTransform *) ((uint8_t *) mt_staging + mt_offset);
+            mt->child                   = blas_handle[inst.blas_index];
+            mt->motionOptions.numKeys   = (unsigned short) n_keyframes;
+            mt->motionOptions.flags     = 0;
+            mt->motionOptions.timeBegin = keyframes.front().time;
+            mt->motionOptions.timeEnd   = keyframes.back().time;
+            for (size_t k = 0; k < n_keyframes; ++k) {
+                const KeyframeIR &kf = keyframes[k];
+                OptixSRTData &srt = mt->srtData[k];
+                srt.sx = kf.scale[0]; srt.sy = kf.scale[1]; srt.sz = kf.scale[2];
+                srt.a = srt.b = srt.c = 0.f; // no shear
+                srt.pvx = srt.pvy = srt.pvz = 0.f;
+                srt.qx = kf.quat[0]; srt.qy = kf.quat[1];
+                srt.qz = kf.quat[2]; srt.qw = kf.quat[3];
+                srt.tx = kf.trans[0]; srt.ty = kf.trans[1]; srt.tz = kf.trans[2];
+            }
 
-        out[i] = OptixInstance{
-            { t[0], t[1], t[2],  t[3],
-              t[4], t[5], t[6],  t[7],
-              t[8], t[9], t[10], t[11] },
-            instance_id, blas_sbt_offset[inst.blas_index],
-            blas.visibility_mask, flags,
-            blas_handle[inst.blas_index], /* pads = */ { 0, 0 }
-        };
+            OptixTraversableHandle motion_handle;
+            jit_optix_check(optixConvertPointerToTraversableHandle(
+                context, (CUdeviceptr) ((uint8_t *) mt_device + mt_offset),
+                OPTIX_TRAVERSABLE_TYPE_SRT_MOTION_TRANSFORM, &motion_handle));
+            mt_offset += srt_size(n_keyframes);
+
+            out[i] = OptixInstance{
+                { 1.f, 0.f, 0.f, 0.f,
+                  0.f, 1.f, 0.f, 0.f,
+                  0.f, 0.f, 1.f, 0.f },
+                instance_id, blas_sbt_offset[inst.blas_index],
+                blas.visibility_mask, flags,
+                motion_handle, /* pads = */ { 0, 0 }
+            };
+        } else {
+            // Static instance. to_world is col-major 3x4
+            // (to_world[col*3 + row]). OptiX wants row-major 3x4.
+            float t[12];
+            for (int row = 0; row < 3; ++row)
+                for (int col = 0; col < 4; ++col)
+                    t[row * 4 + col] = inst.to_world[col * 3 + row];
+
+            out[i] = OptixInstance{
+                { t[0], t[1], t[2],  t[3],
+                  t[4], t[5], t[6],  t[7],
+                  t[8], t[9], t[10], t[11] },
+                instance_id, blas_sbt_offset[inst.blas_index],
+                blas.visibility_mask, flags,
+                blas_handle[inst.blas_index], /* pads = */ { 0, 0 }
+            };
+        }
     }
+
+    if (mt_size) {
+        jit_memcpy_async(JitBackend::CUDA, mt_device, mt_staging, mt_size);
+        jit_free(mt_staging);
+    }
+
+    return mt_device;
 }
 
 NAMESPACE_END(mitsuba)

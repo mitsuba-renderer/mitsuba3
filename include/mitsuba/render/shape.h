@@ -792,6 +792,10 @@ public:
     /// Return the object-to-world transformation (scalar form)
     const ScalarAffineTransform4f &to_world_scalar() const { return m_to_world.scalar(); }
 
+    /// Return the animated object-to-world transformation, or ``nullptr`` if
+    /// it is constant. Only instances can be animated.
+    virtual const AnimatedTransform4f *to_world_anim() const { return nullptr; }
+
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
                                                m_exterior_medium.get() != nullptr; }
