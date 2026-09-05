@@ -98,18 +98,22 @@ void MetalAccel<Float, Spectrum>::trace(const Ray3f &ray, Mask active,
     using Single = dr::float32_array_t<Float>;
     dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
     Single ray_tmin(0.f), ray_tmax(ray.maxt);
+    Single ray_time(ray.time);
 
     // Be careful with 'ray.maxt' in double precision variants
     if constexpr (!std::is_same_v<Single, Float>)
         ray_tmax = dr::minimum(ray_tmax, dr::Largest<Single>);
 
-    uint32_t args[9] = {
+    // Argument order is fixed by jit_metal_ray_trace(): the ray time occupies
+    // slot 8 and the optional visibility mask slot 9.
+    uint32_t args[10] = {
         ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
         ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-        ray_tmin.index(), ray_tmax.index(), visibility_mask.index()
+        ray_tmin.index(), ray_tmax.index(), ray_time.index(),
+        visibility_mask.index()
     };
 
-    jit_metal_ray_trace(9, args, active.index(), out, 8, scene_index, shadow);
+    jit_metal_ray_trace(10, args, active.index(), out, 8, scene_index, shadow);
 }
 
 template <typename Float, typename Spectrum>
