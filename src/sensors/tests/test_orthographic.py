@@ -117,3 +117,26 @@ def test04_ray_cone(variants_all_backends_once):
     ray, _ = camera.sample_ray(0, 0.5, [0.5, 0.5], [0.5, 0.5])
     assert dr.allclose(ray.cone.width, 0.2, rtol=1e-5)
     assert dr.allclose(ray.cone.spread, 0)
+
+
+def test05_ray_cone_animated(variants_all_backends_once):
+    """The ray cone width follows the interpolated scale of an animated sensor"""
+    # Scale doubles from [10, 10, 1] at t=0 to [20, 20, 1] at t=1
+    camera = mi.load_dict({
+        'type': 'orthographic',
+        'to_world': mi.AnimatedTransform4f({
+            0.0: mi.ScalarAffineTransform4f().scale([10, 10, 1]),
+            1.0: mi.ScalarAffineTransform4f().scale([20, 20, 1])
+        }),
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 50}
+    })
+    ray0, _ = camera.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    ray_mid, _ = camera.sample_ray(0.5, 0.5, [0.5, 0.5], [0.5, 0.5])
+    ray1, _ = camera.sample_ray(1.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    assert dr.allclose(ray0.cone.width, 0.2, rtol=1e-5)
+    assert dr.allclose(ray_mid.cone.width, 0.3, rtol=1e-5)
+    assert dr.allclose(ray1.cone.width, 0.4, rtol=1e-5)
+    assert dr.allclose(ray0.cone.spread, 0)
+    assert dr.allclose(ray_mid.cone.spread, 0)
+    assert dr.allclose(ray1.cone.spread, 0)
+

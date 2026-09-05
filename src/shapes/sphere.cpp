@@ -115,7 +115,8 @@ template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
-                   initialize, mark_dirty, get_children_string)
+                   initialize, mark_dirty, get_children_string, to_world,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -155,10 +156,10 @@ public:
         m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
-        m_to_world =
-            m_to_world.scalar() *
+        m_to_world = new AnimatedTransform4f(
+            to_world_scalar() *
             ScalarAffineTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
-            ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
+            ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f)));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
 
@@ -170,12 +171,13 @@ public:
 
     void update() {
         // A sphere must be uniformly scaled (else it is an ellipsoid)
-        if (!m_to_world.scalar().is_similarity())
+        if (!to_world_scalar().is_similarity())
             Log(Warn, "'to_world' transform shouldn't contain non-uniform "
                       "scaling or shearing!");
 
-        m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
-        m_center = m_to_world.value() * Point3f(0.f);
+        AffineTransform4f to_world = this->to_world();
+        m_radius = dr::norm(to_world * Vector3f(1.f, 0.f, 0.f));
+        m_center = to_world * Point3f(0.f);
 
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -202,10 +204,8 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             update();
         }
-
         Base::parameters_changed(keys);
     }
 
@@ -229,7 +229,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         Point3f local = warp::square_to_uniform_sphere(sample);
-        Vector3f dir = m_to_world.value() * Vector3f(local);
+        Vector3f dir = this->to_world() * Vector3f(local);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p = m_center.value() + dir;
@@ -350,8 +350,9 @@ public:
         MI_MASK_ARGUMENT(active);
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
-                                                  : m_to_world.value();
+        AffineTransform4f to_world_value = this->to_world();
+        AffineTransform4f to_world = detach_shape ? dr::detach(to_world_value)
+                                                  : to_world_value;
         Point3f center = detach_shape ? dr::detach(m_center.value())
                                       : m_center.value();
         Float radius = detach_shape ? dr::detach(m_radius.value())
@@ -450,7 +451,7 @@ public:
             Float theta = si.uv.y() * dr::Pi<Float>;
             Point3f local = dr::detach(sph_to_dir(theta, phi));
 
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = this->to_world() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -486,7 +487,7 @@ public:
         ss.p = dr::fmadd(OXd, radius, center);
         ss.d = dr::normalize(ss.p - viewpoint);
         ss.n = OXd;
-        ss.uv = local_to_uv(m_to_world.value().inverse() * ss.p);
+        ss.uv = local_to_uv(this->to_world().inverse() * ss.p);
         ss.silhouette_d = dr::cross(ss.n, -ss.d);
 
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
@@ -616,7 +617,7 @@ public:
 
         const Point3f& center = m_center.value();
         const Float& radius = m_radius.value();
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         AffineTransform4f to_object = to_world.inverse();
 
         // If necessary, temporally suspend gradient tracking for all shape
@@ -682,7 +683,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     // =============================================================

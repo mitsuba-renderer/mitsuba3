@@ -1,6 +1,7 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/bbox.h>
 #include <mitsuba/core/warp.h>
 
@@ -17,8 +18,8 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
  :extra-rows: 8
 
  * - to_world
-   - |transform|
-   - Specifies an optional camera-to-world transformation.
+   - |transform| or |animation|
+   - Specifies an optional camera-to-world transformation (can be animated).
      (Default: none (i.e. camera space = world space))
    - |exposed|
 
@@ -161,7 +162,9 @@ public:
             m_aperture_radius = dr::Epsilon<Float>;
         }
 
-        if (m_to_world.scalar().has_scale())
+        if (m_to_world->has_shear())
+            Throw("Shear in the camera-to-world transformation is not allowed!");
+        if (m_to_world->has_scale())
             Throw("Scale factors in the camera-to-world transformation are not allowed!");
 
         update_camera_transforms();
@@ -181,7 +184,9 @@ public:
         Base::parameters_changed(keys);
 
         if (keys.empty() || string::contains(keys, "to_world")) {
-            if (m_to_world.scalar().has_scale())
+            if (m_to_world->has_shear())
+                Throw("Shear in the camera-to-world transformation is not allowed!");
+            if (m_to_world->has_scale())
                 Throw("Scale factors in the camera-to-world transformation are not allowed!");
         }
 
@@ -242,8 +247,9 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(focus_p - aperture_p));
 
-        ray.o = m_to_world.value() * aperture_p;
-        ray.d = m_to_world.value() * d;
+        auto to_world = m_to_world->eval(time);
+        ray.o = to_world * aperture_p;
+        ray.d = to_world * d;
 
         Float inv_z = dr::rcp(d.z());
         Float near_t = m_near_clip * inv_z,
@@ -265,11 +271,12 @@ public:
     sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world.value();
+        AffineTransform4f trafo = m_to_world->eval(it.time);
         Point3f ref_p = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
         DirectionSample3f ds = dr::zeros<DirectionSample3f>();
+        ds.time = it.time;
         ds.pdf = 0.f;
         active &= (ref_p.z() >= m_near_clip) && (ref_p.z() <= m_far_clip);
         if (dr::none_or<false>(active))
@@ -310,8 +317,7 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarPoint3f p = m_to_world.scalar() * ScalarPoint3f(0.f);
-        return ScalarBoundingBox3f(p, p);
+        return m_to_world->get_translation_bounds();
     }
 
     std::string to_string() const override {

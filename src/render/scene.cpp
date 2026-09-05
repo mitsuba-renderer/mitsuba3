@@ -378,6 +378,129 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
                         true, ReduceMode::NoConflicts);
         }
     }
+
+    // If any instance is animated, build per-instance keyframe buffers used by
+    // eval_instance_to_world() for time-dependent (motion-blurred) lookups.
+    // Static instances contribute a single keyframe so the buffers remain
+    // addressable for every instance. The interpolation math is skipped for
+    // them via a per-lane count check.
+    m_static_instance_count = 0;
+    for (size_t i = 0; i < n; ++i)
+        m_static_instance_count +=
+            !m_instances[i]->animated_to_world()->is_animated();
+
+    if (m_static_instance_count == n) {
+        m_instance_kf_data = dr::zeros<DynamicBuffer<Float>>(0);
+        m_instance_kf_meta = dr::zeros<DynamicBuffer<Float>>(0);
+        return;
+    }
+    using ScalarUInt = dr::uint_array_t<ScalarFloat>;
+
+    std::vector<ScalarFloat> meta(4 * n), chunks;
+    size_t running = 0;
+    for (size_t i = 0; i < n; ++i) {
+        const auto &kfs = m_instances[i]->animated_to_world()->keyframes();
+        size_t k = kfs.size();
+        // Uniform spacing, as required by the ray tracing backends and
+        // enforced by Instance's calls to ensure_uniform_keyframes(). The step
+        // is unused for static instances but kept nonzero to avoid a division
+        // by zero when forming the reciprocal below.
+        ScalarFloat tstep =
+            k > 1 ? (kfs.back().first - kfs.front().first) / (k - 1) : 1.f;
+        // See the layout documented alongside m_instance_kf_meta. Dividing by
+        // the step here keeps the vectorized lookup free of a division.
+        meta[4 * i + 0] = kfs.front().first;
+        meta[4 * i + 1] = 1.f / tstep;
+        meta[4 * i + 2] = dr::reinterpret_array<ScalarFloat>((ScalarUInt) running);
+        meta[4 * i + 3] = dr::reinterpret_array<ScalarFloat>((ScalarUInt) (k - 1));
+        for (const auto &[time, kf] : kfs) {
+            size_t base = chunks.size();
+            chunks.resize(base + KeyframeStride);
+            kf.pack(time, chunks.data() + base);
+        }
+        running += k;
+    }
+
+    // The vectorized lookup addresses keyframes with 32 bit indices
+    constexpr size_t max_keyframes = 0xFFFFFFFFu / KeyframeStride;
+    if (running > max_keyframes)
+        Throw("Scene::update_instance_transforms(): the scene's instances have "
+              "%zu keyframes in total, which exceeds the limit of %zu.",
+              running, max_keyframes);
+
+    // m_instance_kf_data is a read-only acceleration cache populated on the
+    // host for primal motion blur evaluation during ray tracing and surface
+    // interaction reconstruction. Dynamic keyframe data is non-differentiable.
+    m_instance_kf_data = dr::load<DynamicBuffer<Float>>(chunks.data(), chunks.size());
+    m_instance_kf_meta = dr::load<DynamicBuffer<Float>>(meta.data(), meta.size());
+}
+
+// Reconstructs the instance-to-world transform at the specified ray time.
+// Interpolation matches the ray tracing backend used during ray intersection.
+// Metal and OptiX use normalized linear interpolation (nlerp) on quaternions.
+// Embree uses spherical linear interpolation (slerp) on quaternions.
+MI_VARIANT typename Scene<Float, Spectrum>::AffineTransform4f
+Scene<Float, Spectrum>::eval_instance_to_world(const UInt32 &i0,
+                                               const Float &time,
+                                               Mask active) const {
+    auto gather_static = [&]() {
+        // Each record holds the matrix and its inverse (24 values).
+        // Transpose the stored inverse to avoid an inversion per hit.
+        auto rec = dr::gather<dr::Array<Float, 24>>(m_instance_transforms, i0,
+                                                    active);
+        return AffineTransform4f(
+            unpack_matrix<Matrix4f>(rec),
+            dr::transpose(unpack_matrix<Matrix4f>(rec, 12)));
+    };
+
+    // There are no animated instances in the scene, so nothing needs interpolation.
+    if (m_instance_kf_meta.size() == 0)
+        return gather_static();
+
+    // The metadata record is laid out so that one packet load retrieves it
+    // (see m_instance_kf_meta)
+    Vector4f meta = dr::gather<Vector4f>(m_instance_kf_meta, i0, active);
+    Float tmin = meta.x(), inv_tstep = meta.y();
+    using UInt = dr::uint_array_t<Float>;
+    UInt32 base  = UInt32(dr::reinterpret_array<UInt>(meta.z())),
+           k_max = UInt32(dr::reinterpret_array<UInt>(meta.w()));
+
+    Mask animated = active && (k_max > 0u);
+
+    // Bracketing keyframes on the uniform time grid
+    Float f    = dr::clip((time - tmin) * inv_tstep, 0.f, Float(k_max));
+    Float k0   = dr::floor(f);
+    Float frac = f - k0;
+
+    UInt32 ki   = UInt32(k0),
+           ki0  = base + ki,
+           ki1  = base + dr::minimum(ki + 1u, k_max);
+
+    // Gather each contiguous keyframe as a packet
+    using PackedKeyframe = dr::Array<Float, KeyframeStride>;
+    PackedKeyframe a = dr::gather<PackedKeyframe>(m_instance_kf_data, ki0, animated),
+                   b = dr::gather<PackedKeyframe>(m_instance_kf_data, ki1, animated);
+
+    Vector3f s0(a[1], a[2], a[3]), s1(b[1], b[2], b[3]);
+    Quaternion4f q0(a[4], a[5], a[6], a[7]), q1(b[4], b[5], b[6], b[7]);
+    Vector3f tr0(a[8], a[9], a[10]), tr1(b[8], b[9], b[10]);
+
+    AffineTransform4f animated_to_world = [&]() {
+        if constexpr (dr::is_metal_v<Float> || dr::is_cuda_v<Float>) {
+            Quaternion4f q = dr::normalize(dr::lerp(q0, q1, frac));
+            return AffineTransform4f(
+                dr::lerp(s0, s1, frac), q, dr::lerp(tr0, tr1, frac));
+        } else {
+            return AffineTransform4f(
+                dr::lerp(s0, s1, frac), dr::slerp(q0, q1, frac), dr::lerp(tr0, tr1, frac));
+        }
+    }();
+
+    // Every instance is animated, so the static matrices are unused
+    if (m_static_instance_count == 0)
+        return animated_to_world;
+
+    return dr::select(animated, animated_to_world, gather_static());
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -422,16 +545,14 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
     // group. Both parameterizations share the same distance value ``t``
     // because the direction is not re-normalized.
     auto [ray_l_o, ray_l_d] = dr::if_stmt(
-        std::make_tuple(ray.o, ray.d, pi.instance_index),
+        std::make_tuple(ray.o, ray.d, ray.time, pi.instance_index),
         has_inst,
 
         [this, detach_shape](const Point3f &o, const Vector3f &d,
-                             const UInt32 &index) {
+                             const Float &time, const UInt32 &index) {
             DRJIT_MARK_USED(detach_shape);
-            Matrix4f to_object_m = unpack_matrix<Matrix4f>(
-                dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
-                                                 2u * (index - 1u) + 1u));
-            AffineTransform4f to_object(to_object_m, dr::identity<Matrix4f>());
+            AffineTransform4f to_object =
+                eval_instance_to_world(index - 1u, time, true).inverse();
 
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
@@ -442,7 +563,7 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
                                   Vector3f(to_object * d));
         },
 
-        [](const Point3f &o, const Vector3f &d,
+        [](const Point3f &o, const Vector3f &d, const Float &,
            const UInt32 &) { return std::make_pair(o, d); },
 
         "Scene::compute_surface_interaction_instanced() [ray transform]");
@@ -464,13 +585,8 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
             DRJIT_MARK_USED(detach_shape);
             DRJIT_MARK_USED(follow_shape);
             DRJIT_MARK_USED(grad_enabled);
-            // The inverse transpose of the transform is the transpose of the
-            // stored inverse, so no inversion happens per hit
-            auto rec = dr::gather<dr::Array<Float, 24>>(m_instance_transforms,
-                                                        index - 1u);
-            AffineTransform4f to_world(
-                unpack_matrix<Matrix4f>(rec),
-                dr::transpose(unpack_matrix<Matrix4f>(rec, 12)));
+            AffineTransform4f to_world =
+                eval_instance_to_world(index - 1u, ray.time, true);
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
                     to_world = dr::detach(to_world);

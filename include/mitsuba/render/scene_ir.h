@@ -25,6 +25,14 @@ inline uint32_t accel_mask(ShapeVisibility visibility, bool has_null) {
     return (uint32_t) visibility << (has_null ? 3 : 0);
 }
 
+/// Decomposed keyframe intermediate representation for hardware acceleration backends.
+struct KeyframeIR {
+    float time;
+    float scale[3];
+    float quat[4];
+    float trans[3];
+};
+
 struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see ``NumGeometryKinds``).
@@ -108,6 +116,9 @@ struct ShapeIR {
 
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
+
+    /// Keyframes for animated instances.
+    std::vector<KeyframeIR> keyframes;
 };
 
 /// Number of geometry kinds and the bucket-array size for BLAS partitioning.
@@ -137,6 +148,9 @@ struct InstanceEntry {
 
     /// Index + 1 of the owning ``instance``, or 0 for a top-level BLAS.
     uint32_t instance_index = 0;
+
+    /// Keyframes for animated instances (empty if the instance is static).
+    std::vector<KeyframeIR> keyframes;
 };
 
 /// Scene description consumed by acceleration-structure builders.

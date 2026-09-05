@@ -127,11 +127,17 @@ struct ParameterTable::Builder : TraversalCallback {
      * Return a unique name for a member reported as ``name``
      *
      * The first occurrence of a name keeps it and later ones gain a numeric
-     * suffix. An unnamed member is named after the class of ``obj`` and
-     * always carries a suffix. A suffixed candidate that collides with an
-     * explicitly written sibling of the same name is skipped.
+     * suffix. An unnamed *object* is named after its class and always carries a
+     * suffix. A suffixed candidate that collides with an explicitly written
+     * sibling of the same name is skipped.
+     *
+     * An unnamed *value* keeps the empty name, and ``key()`` then addresses it
+     * under its node's own path.
      */
     std::string decorate(std::string_view name, const Object *obj) {
+        if (name.empty() && !obj)
+            return "";
+
         bool named = !name.empty();
         if (!named && obj)
             name = obj->class_name();
@@ -226,6 +232,8 @@ std::string ParameterTable::key(uint32_t index) const {
     const std::string &path = m_nodes[p.node].path;
     if (path.empty())
         return p.name;
+    if (p.name.empty())
+        return path;
 
     std::string result;
     result.reserve(path.size() + 1 + p.name.size());

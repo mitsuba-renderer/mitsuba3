@@ -465,6 +465,17 @@ public:
     ref<T> get_volume(std::string_view name, Float def_val) const;
 
     /**
+     * Retrieve an animated transformation parameter
+     *
+     * ``T`` must be an instance of ``mitsuba::AnimatedTransform<...>``. A
+     * plain transformation is wrapped into a constant animation, and a missing
+     * parameter yields the identity. The definition of this method is
+     * located in ``mitsuba/core/animated_transform.h``.
+     */
+    template <typename T>
+    ref<T> get_animated_transform(std::string_view name) const;
+
+    /**
      * Retrieve an arbitrarily typed value for inter-plugin communication
      *
      * This method enables plugins to exchange custom types that are not

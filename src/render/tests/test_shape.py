@@ -221,3 +221,33 @@ def test05_python_shape_side_effect(variants_vec_backends_once_rgb):
     mi.register_shape('badshape', BadShape)
     with pytest.raises(RuntimeError, match='side effect'):
         mi.load_dict({'type': 'scene', 'shape': {'type': 'badshape'}})
+
+
+def test06_to_world_and_animated_to_world(variant_scalar_rgb):
+    """Shape.to_world() and to_world_scalar() evaluate the animation at a time"""
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([10, 0, 0])
+    })
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sg': {
+            'type': 'shapegroup',
+            'sphere': {'type': 'sphere'}
+        },
+        'inst': {
+            'type': 'instance',
+            'shapegroup': {'type': 'ref', 'id': 'sg'},
+            'to_world': at
+        }
+    })
+
+    shape = scene.shapes()[0]
+    assert shape.animated_to_world().is_animated()
+    assert dr.allclose(shape.to_world().translation(), [0, 0, 0])
+    assert dr.allclose(shape.to_world(0.5).translation(), [5, 0, 0])
+    assert dr.allclose(shape.to_world(1.0).translation(), [10, 0, 0])
+    assert dr.allclose(shape.to_world_scalar().translation(), [0, 0, 0])
+    assert dr.allclose(shape.to_world_scalar(0.5).translation(), [5, 0, 0])
+    assert dr.allclose(shape.to_world_scalar(1.0).translation(), [10, 0, 0])

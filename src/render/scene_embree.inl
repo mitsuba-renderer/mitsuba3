@@ -208,17 +208,56 @@ embree_make_geometry(RTCDevice device, const ShapeIR &g,
         case ShapeIR::Kind::Instance: {
             RTCScene nested = accel.group_scenes.at(g.group_id);
 
+            size_t n_keyframes = g.keyframes.size();
+            if (n_keyframes > RTC_MAX_TIME_STEP_COUNT)
+                Throw("embree_make_geometry(): an animated instance may span at most "
+                      "%u time steps, but keyframes had %zu.",
+                      (unsigned int) RTC_MAX_TIME_STEP_COUNT, n_keyframes);
+
             RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
             rtcSetGeometryInstancedScene(inst, nested);
-            rtcSetGeometryTimeStepCount(inst, 1);
-            // Column-major 3x4 (g.to_world[col*3+row]) -> column-major 4x4.
-            float M[16];
-            for (int col = 0; col < 4; ++col) {
-                for (int row = 0; row < 3; ++row)
-                    M[col * 4 + row] = g.to_world[col * 3 + row];
-                M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+
+            if (n_keyframes > 1) {
+                float t_min = (float) accel.time_min, t_max = (float) accel.time_max,
+                      t_head = g.keyframes.front().time,
+                      t_tail = g.keyframes.back().time;
+
+                if (t_head > t_min || t_tail < t_max)
+                    Log(Warn, "embree_make_geometry(): animated instance does not cover the "
+                              "full time range [%f, %f] (instance time range: [%f, %f]). "
+                              "Outside this range the geometry will not be visible in Embree.",
+                              t_min, t_max, t_head, t_tail);
+
+                rtcSetGeometryTimeStepCount(inst, (unsigned int) n_keyframes);
+
+                float inv_time_range = t_max > t_min ? 1.f / (t_max - t_min) : 0.f;
+                float start_time = t_head <= t_min ? 0.f : (t_head - t_min) * inv_time_range;
+                float end_time   = t_tail >= t_max ? 1.f : (t_tail - t_min) * inv_time_range;
+                rtcSetGeometryTimeRange(inst, start_time, end_time);
+
+                for (size_t i = 0; i < n_keyframes; ++i) {
+                    const auto &kf = g.keyframes[i];
+                    RTCQuaternionDecomposition rtc_decomp;
+                    rtcInitQuaternionDecomposition(&rtc_decomp);
+                    rtcQuaternionDecompositionSetQuaternion(
+                        &rtc_decomp, kf.quat[0], kf.quat[1], kf.quat[2], kf.quat[3]);
+                    rtcQuaternionDecompositionSetScale(
+                        &rtc_decomp, kf.scale[0], kf.scale[1], kf.scale[2]);
+                    rtcQuaternionDecompositionSetTranslation(
+                        &rtc_decomp, kf.trans[0], kf.trans[1], kf.trans[2]);
+                    rtcSetGeometryTransformQuaternion(inst, (unsigned int) i, &rtc_decomp);
+                }
+            } else {
+                // Static case is a simple transform
+                rtcSetGeometryTimeStepCount(inst, 1);
+                float M[16];
+                for (int col = 0; col < 4; ++col) {
+                    for (int row = 0; row < 3; ++row)
+                        M[col * 4 + row] = g.to_world[col * 3 + row];
+                    M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
+                }
+                rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
             }
-            rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
             // Scalar-mode hits resolve nested geometry through this scene
             rtcSetGeometryUserData(inst, (void *) nested);
             rtcCommitGeometry(inst);
@@ -319,6 +358,22 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
     for (unsigned int geo : geometries)
         rtcDetachGeometry(accel, geo);
     geometries.clear();
+
+    // Compute scene-wide keyframe time bounds across all animated instances
+    time_min = dr::Infinity<ScalarFloat>;
+    time_max = -dr::Infinity<ScalarFloat>;
+    for (const Shape *inst : scene->m_instances) {
+        const auto *to_world = inst->animated_to_world();
+        if (to_world && to_world->is_animated()) {
+            ScalarBoundingBox1f bounds = to_world->get_time_bounds();
+            time_min = std::min(time_min, bounds.min.x());
+            time_max = std::max(time_max, bounds.max.x());
+        }
+    }
+    if (time_min > time_max) {
+        time_min = 0.f;
+        time_max = 0.f;
+    }
 
     // Rebuild nested scenes first so Instances can reference them. Attach all
     // geometry before the single LLVM sync below.
@@ -456,9 +511,10 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
 
         using Vector3s = Vector<Single, 3>;
 
+        Single ray_time = normalize_ray_time(Single(ray.time));
         RTCRayHit rh;
         dr::store(&rh.ray.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
-        dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
+        dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray_time)));
         rh.ray.tfar = ray_maxt;
         rh.ray.mask = ray_mask;
         rh.ray.id = 0;
@@ -495,8 +551,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         return pi;
     } else if constexpr (dr::is_llvm_v<Float>) {
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_time(ray.time);
-
+        Single ray_time = normalize_ray_time(Single(ray.time));
         uint32_t out[8] { };
         cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
                                   (void *) accel, accel_handle.index(), ray_o,
@@ -566,9 +621,10 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
 
         using Vector3s = Vector<Single, 3>;
 
+        Single ray_time = normalize_ray_time(Single(ray.time));
         RTCRay ray2;
         dr::store(&ray2.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
-        dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
+        dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray_time)));
         ray2.tfar = (float) ray_maxt;
         ray2.mask = ray_mask;
         ray2.id = 0;
@@ -581,7 +637,7 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
     } else if constexpr (dr::is_llvm_v<Float>) {
         // Conversion, in case this is a double precision build
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-        Single ray_time(ray.time);
+        Single ray_time = normalize_ray_time(Single(ray.time));
 
         // Shadow ray: trace against rtcOccludedN, which accepts any hit and
         // terminates traversal early.

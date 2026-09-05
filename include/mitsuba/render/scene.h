@@ -803,12 +803,31 @@ protected:
     /// inverses (2 x 12 floats each)
     DynamicBuffer<Float> m_instance_transforms;
 
-    /// Instancing-aware expansion of a preliminary intersection (see
-    /// ``compute_surface_interaction()``, which forwards here when the
-    /// record may reference instanced geometry)
+    /// Packed keyframes of all instances (see ``AnimatedTransform4f::Keyframe::pack()``)
+    DynamicBuffer<Float> m_instance_kf_data;
+
+    /// Metadata of keyframes within ``m_instance_kf_data``. Each instance has
+    /// four entries ``[t_min, 1 / t_step, base, k_max]``, where ``base`` is the
+    /// index of the instance's first keyframe and ``k_max`` its keyframe count
+    /// minus one (0 = static). The two UInt32 indices are reinterpreted as
+    /// floats so that the whole record can be packed-loaded.
+    DynamicBuffer<Float> m_instance_kf_meta;
+
+    /// Number of instances with a static ``to_world``.
+    size_t m_static_instance_count = 0;
+
+    /// Expand a preliminary intersection that may reference an instance.
+    /// Called by `compute_surface_interaction`.
     SurfaceInteraction3f compute_surface_interaction_instanced(
         const Ray3f &ray, const PreliminaryIntersection3f &pi,
         uint32_t ray_flags, Mask active) const;
+
+    /// Evaluate the transform of instance ``i0`` at ``time``. Animated
+    /// instances interpolate keyframes using the active backend's rotation
+    /// interpolation. Static instances use the differentiable matrix in
+    /// ``m_instance_transforms``.
+    AffineTransform4f eval_instance_to_world(const UInt32 &i0, const Float &time,
+                                             Mask active) const;
 
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;
@@ -819,7 +838,8 @@ protected:
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
                            m_silhouette_shapes_dr, m_silhouette_distr,
-                           m_instance_transforms)
+                           m_instance_transforms, m_instance_kf_data,
+                           m_instance_kf_meta)
 };
 
 // See interaction.h

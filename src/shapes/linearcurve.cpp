@@ -119,7 +119,7 @@ template <typename Float, typename Spectrum>
 class LinearCurve final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_shape_type, initialize, mark_dirty,
-                   get_children_string)
+                   get_children_string, to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -222,7 +222,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar() * p;
+            p = to_world_scalar() * p;
 
             // Vertex radius
             InputFloat r;

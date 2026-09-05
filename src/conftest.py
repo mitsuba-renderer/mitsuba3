@@ -111,6 +111,7 @@ variant_groups = {
     "all_scalar": v.all("scalar"),
     "all_rgb": v.all("rgb"),
     "all_rgb_unpolarized": v.all("rgb").exclude("polarized"),
+    "cpu_rgb": v.all("rgb").exclude("cuda", "metal"),
     "all_spectral": v.all("spectral"),
     "all_backends_once": v.all("scalar").one()
     + v.all("llvm").one()

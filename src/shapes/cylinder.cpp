@@ -93,7 +93,8 @@ template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
-                   initialize, mark_dirty, get_children_string)
+                   initialize, mark_dirty, get_children_string, to_world,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -110,10 +111,10 @@ public:
         ScalarVector3f d = p1 - p0;
         ScalarFloat length = dr::norm(d);
 
-        m_to_world =
-            m_to_world.scalar() * ScalarAffineTransform4f::translate(p0) *
+        m_to_world = new AnimatedTransform4f(
+            to_world_scalar() * ScalarAffineTransform4f::translate(p0) *
             ScalarAffineTransform4f::to_frame(ScalarFrame3f(d / length)) *
-            ScalarAffineTransform4f::scale(ScalarVector3f(radius, radius, length));
+            ScalarAffineTransform4f::scale(ScalarVector3f(radius, radius, length)));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::AllTypes;
         m_shape_type = ShapeType::Cylinder;
@@ -124,7 +125,7 @@ public:
 
     void update() {
         // The columns must be orthogonal, with equal lengths along X and Y
-        const ScalarAffineTransform4f &tw = m_to_world.scalar();
+        const ScalarAffineTransform4f &tw = to_world_scalar();
         ScalarVector3f cx = tw * ScalarVector3f(1.f, 0.f, 0.f),
                        cy = tw * ScalarVector3f(0.f, 1.f, 0.f),
                        cz = tw * ScalarVector3f(0.f, 0.f, 1.f);
@@ -138,8 +139,9 @@ public:
         if (dr::abs(lx - ly) > 1e-4f * lx)
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
-        m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
-        m_length = dr::norm(m_to_world.value() * Vector3f(0.f, 0.f, 1.f));
+        AffineTransform4f to_world = this->to_world();
+        m_radius = dr::norm(to_world * Vector3f(1.f, 0.f, 0.f));
+        m_length = dr::norm(to_world * Vector3f(0.f, 0.f, 1.f));
 
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -159,20 +161,20 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             update();
         }
-
         Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarVector3f x1 = m_to_world.scalar() * ScalarVector3f(1.f, 0.f, 0.f),
-                       x2 = m_to_world.scalar() * ScalarVector3f(0.f, 1.f, 0.f),
+        ScalarAffineTransform4f to_world = to_world_scalar();
+
+        ScalarVector3f x1 = to_world * ScalarVector3f(1.f, 0.f, 0.f),
+                       x2 = to_world * ScalarVector3f(0.f, 1.f, 0.f),
                        x  = dr::sqrt(dr::square(x1) + dr::square(x2));
 
-        ScalarPoint3f p0 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f),
-                      p1 = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 1.f);
+        ScalarPoint3f p0 = to_world * ScalarPoint3f(0.f, 0.f, 0.f),
+                      p1 = to_world * ScalarPoint3f(0.f, 0.f, 1.f);
 
         // To bound the cylinder, it is sufficient to find the
         // smallest box containing the two circles at the endpoints.
@@ -187,9 +189,9 @@ public:
         using Vector3fP8      = Vector<FloatP8, 3>;
         using BoundingBox3fP8 = BoundingBox<Point3fP8>;
 
-        ScalarPoint3f cyl_p = m_to_world.scalar() * ScalarPoint3f(0.f, 0.f, 0.f);
-        ScalarVector3f cyl_d =
-            m_to_world.scalar() * ScalarVector3f(0.f, 0.f, 1.f);
+        ScalarAffineTransform4f to_world = to_world_scalar();
+        ScalarPoint3f cyl_p = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
+        ScalarVector3f cyl_d = to_world * ScalarVector3f(0.f, 0.f, 1.f);
 
         // Compute a base bounding box
         ScalarBoundingBox3f bbox(this->bbox());
@@ -249,7 +251,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * sample.y());
 
         Point3f p(cos_theta, sin_theta, sample.x());
@@ -280,8 +282,9 @@ public:
         MI_MASK_ARGUMENT(active);
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
-                                                  : m_to_world.value();
+        AffineTransform4f to_world_value = this->to_world();
+        AffineTransform4f to_world = detach_shape ? dr::detach(to_world_value)
+                                                  : to_world_value;
         Float radius = detach_shape ? dr::detach(m_radius.value())
                                     : m_radius.value();
 
@@ -322,7 +325,7 @@ public:
                                          Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
@@ -423,7 +426,7 @@ public:
 
             auto [sin_theta, cos_theta] = dr::sincos(dr::TwoPi<Float> * uv.x());
             Point3f local(cos_theta, sin_theta, uv.y());
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = this->to_world() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -436,7 +439,7 @@ public:
                                                        Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
@@ -460,7 +463,7 @@ public:
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             // Squared distance of the viewpoint from the axis in object space
-            Point3f local = m_to_world.value().inverse() * viewpoint;
+            Point3f local = this->to_world().inverse() * viewpoint;
             Float dist_2 = dr::square(local.x()) + dr::square(local.y());
 
             Float OV_theta = dr::atan2(local.y(), local.x());
@@ -561,9 +564,9 @@ public:
         // Object space contains the unit cylinder along the Z axis
         Ray3fP ray;
         if constexpr (!dr::is_jit_v<FloatP>)
-            ray = m_to_world.scalar().inverse() * ray_;
+            ray = to_world_scalar().inverse() * ray_;
         else
-            ray = m_to_world.value().inverse() * ray_;
+            ray = this->to_world().inverse() * ray_;
 
         // Shift the ray origin to the point closest to the axis (see sphere.cpp)
         Vector2fP l(ray.o.x(), ray.o.y()),
@@ -624,7 +627,7 @@ public:
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
 
         const Float& radius = m_radius.value();
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         AffineTransform4f to_object = to_world.inverse();
 
         // If necessary, temporally suspend gradient tracking for all shape
@@ -686,7 +689,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     std::string to_string() const override {
