@@ -166,6 +166,62 @@ Mitsuba 3.10.0
     ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 
+- **Animation and motion blur**. Transformations can now vary over time.
+  Sensors and emitters accept an animated ``to_world``, and shapes can be
+  animated by placing them in a ``shapegroup`` and referencing them from an
+  animated ``instance``, whose motion is resolved by the acceleration structure
+  of the active backend (Embree, OptiX and Metal are all supported). Scenes
+  describe the keyframes with a new ``<animation>`` XML tag, or with
+  ``mi.AnimatedTransform4f`` from Python. Note that an animated transformation
+  by itself does not produce motion blur: rays are all traced at time 0 unless
+  the sensor's ``shutter_close`` is set. See :ref:`sec-animation` for the
+  shutter interval, the list of what can and cannot be animated, and the
+  interpolation differences between the ray tracing backends.
+
+  ⚠️ **WARNING** ⚠️: This is an **API-breaking change**, because ``to_world``
+  is now an object rather than a plain matrix.
+
+  - **Scene parameters**. The ``to_world`` of every shape, sensor and emitter
+    is now a nested object, so its matrix moved one level down. Code that
+    reads or writes ``params['<obj>.to_world']`` must use
+    ``params['<obj>.to_world.transform']`` instead::
+
+        params['sensor.to_world.transform'] = mi.Transform4f().translate([0, 0, 1])
+
+    The ``transform`` key exists only while the transformation holds a single
+    keyframe. Independently of the keyframe count, the transformation also
+    exposes its keyframes as four component tensors -- ``times`` ``(N,)``,
+    ``scale`` ``(N, 3)``, ``rotation`` ``(N, 4)`` and ``translation``
+    ``(N, 3)`` -- which can be edited individually. Writing all four with a
+    different row count is how the number of keyframes is changed, after which
+    :py:func:`mitsuba.traverse()` has to be called again.
+
+  - **The point emitter's** ``position`` **parameter was removed** from the
+    traversal in favor of ``to_world``. Replace
+    ``params['emitter.position']`` with
+    ``params['emitter.to_world.transform']`` and a translation. The
+    ``position`` scene-description property is unchanged.
+
+  - **Endpoint::world_transform()** now returns the ``AnimatedTransform``
+    object rather than a 4x4 matrix. In Python, ``sensor.world_transform()``
+    has to be evaluated at a point in time, e.g.
+    ``sensor.world_transform().eval(0.0)``, or replaced by
+    ``sensor.world_transform_scalar()`` where a host-side matrix is wanted.
+
+  - **C++ plugins**. ``Shape::m_to_world`` and ``Endpoint::m_to_world`` changed
+    from ``field<AffineTransform4f, ScalarAffineTransform4f>`` to
+    ``ref<AnimatedTransform4f>``. Use ``to_world()`` / ``to_world_scalar()``
+    (shapes) and ``world_transform()`` / ``world_transform_scalar()``
+    (endpoints) to read them.
+
+  - **Animated instances are not differentiable.** The scene keeps its own copy
+    of every instance's keyframes for the vectorized time lookup, and rebuilds
+    it from a host-side decomposition. Gradients attached to its keyframe
+    components therefore do not reach the rendered image, and differentiating
+    with respect to them yields zero. An ``instance`` holding a
+    single keyframe is differentiable as before, through
+    ``to_world.transform``.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*
