@@ -2,6 +2,7 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 
+
 def create_camera(o, d, fov=34, fov_axis="x", s_open=1.5, s_close=5, near_clip=1.0):
     t = [o[0] + d[0], o[1] + d[1], o[2] + d[2]]
 
@@ -33,7 +34,6 @@ origins = [[1.0, 0.0, 1.5], [1.0, 4.0, 1.5]]
 directions = [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]]
 
 
-
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
 @pytest.mark.parametrize("s_open", [0.0, 1.5])
@@ -50,7 +50,6 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
     assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
-
 
 
 @pytest.mark.parametrize("origin", origins)
@@ -132,7 +131,6 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     assert dr.allclose(ray_dy.d, ray_center.d_y)
 
 
-
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])
 @pytest.mark.parametrize("direction", [[0.0, 0.0, 1.0], [1.0, 0.0, 0.0]])
 @pytest.mark.parametrize("fov", [34, 80])
@@ -163,7 +161,6 @@ def test04_fov_axis(variants_vec_spectral, origin, direction, fov):
     camera = create_camera(origin, direction, fov=fov, fov_axis='diagonal')
     for sample in [[0.0, 0.0], [0.0, 1.0], [1.0, 0.0], [1.0, 1.0]]:
             check_fov(camera, sample)
-
 
 
 def test05_spectrum_sampling(variants_vec_spectral):
@@ -203,7 +200,6 @@ def test05_spectrum_sampling(variants_vec_spectral):
         })
 
 
-
 def test06_animated_transform(variant_scalar_rgb):
     t = mi.AnimatedTransform4f({
         0.0: mi.Transform4f().translate([0, 0, 0]),
@@ -217,6 +213,26 @@ def test06_animated_transform(variant_scalar_rgb):
     ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
 
+
+def test07_animation_xml(variant_scalar_rgb):
+    xml = """
+    <scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="0" y="0" z="1"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>
+    """
+    scene = mi.load_string(xml)
+    sensor = scene.sensors()[0]
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
 
 
 def test08_camera_shear_rejection(variant_scalar_rgb):
@@ -250,7 +266,6 @@ def test08_camera_shear_rejection(variant_scalar_rgb):
                 1.0: sheared
             })
         })
-
 
 
 def test09_sensor_to_world_transform_parameter_update(variant_scalar_rgb):

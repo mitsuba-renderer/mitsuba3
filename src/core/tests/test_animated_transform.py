@@ -2,11 +2,10 @@ import pytest
 import drjit as dr
 import mitsuba as mi
 import numpy as np
+
 def test01_empty(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
     assert not at.is_animated()
-
-
 
 def test02_basics(variant_scalar_rgb):
     # Test construction from constant transform
@@ -30,8 +29,6 @@ def test02_basics(variant_scalar_rgb):
     mid = at.eval_scalar(0.5)
     assert dr.allclose(mid.matrix, mi.ScalarAffineTransform4f.translate([0.5, 1, 1.5]).matrix)
 
-
-
 def test03_rotation_interpolation(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 0),
@@ -44,8 +41,6 @@ def test03_rotation_interpolation(variant_scalar_rgb):
     assert dr.allclose(mid.matrix, expected.matrix)
     assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
 
-
-
 def test04_scaling_interpolation(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.scale([1, 1, 1]),
@@ -56,8 +51,6 @@ def test04_scaling_interpolation(variant_scalar_rgb):
     expected = mi.ScalarAffineTransform4f.scale([1.5, 2.5, 4.5])
     assert dr.allclose(mid.matrix, expected.matrix)
     assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
-
-
 
 def test05_complex_interpolation(variant_scalar_rgb):
     t0 = mi.ScalarAffineTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 30).scale([1, 2, 1])
@@ -75,8 +68,6 @@ def test05_complex_interpolation(variant_scalar_rgb):
 
     assert dr.allclose(at.eval_scalar(0.5).matrix, expected_mid.matrix)
     assert dr.allclose(at.eval_scalar(0.5).inverse().matrix, expected_mid.inverse().matrix)
-
-
 
 def test06_vectorized_eval(variants_vec_backends_once):
     at = mi.AnimatedTransform4f({
@@ -97,8 +88,6 @@ def test06_vectorized_eval(variants_vec_backends_once):
     assert dr.allclose(trafos.translation(), expected_translations)
     assert dr.allclose(trafos.inverse().matrix, mi.AffineTransform4f.translate(expected_translations).inverse().matrix)
 
-
-
 def test07_scalar_eval(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
@@ -113,8 +102,6 @@ def test07_scalar_eval(variant_scalar_rgb):
     for i, t in enumerate(times_list):
         trafo = at.eval_scalar(t)
         assert dr.allclose(trafo.translation(), expected_translations[:, i])
-
-
 
 def test08_shear_error(variant_scalar_rgb):
     m = mi.Matrix4f(1)
@@ -132,8 +119,6 @@ def test08_shear_error(variant_scalar_rgb):
         mi.AnimatedTransform4f({0.0: trafo,
                                 1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])})
 
-
-
 def test09_no_keyframes_error(variant_scalar_rgb):
     at = mi.AnimatedTransform4f()
     with pytest.raises(RuntimeError, match="at least one keyframe"):
@@ -141,8 +126,6 @@ def test09_no_keyframes_error(variant_scalar_rgb):
 
     with pytest.raises(RuntimeError, match="at least one keyframe"):
         at.eval(mi.Float(0.5))
-
-
 
 def test10_properties(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
@@ -158,6 +141,36 @@ def test10_properties(variant_scalar_rgb):
     assert retrieved is not None
     assert props.type("to_world") == mi.Properties.Type.Object
 
+def test11_xml_loading(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="1" y="2" z="3"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>"""
+
+    scene = mi.load_string(xml)
+    at = scene.sensors()[0].world_transform()
+    assert at.is_animated()
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [1, 2, 3])
+    assert dr.allclose(at.eval_scalar(0.5).translation(), [0.5, 1, 1.5])
+
+    # An <animation> may also sit directly under <scene>, in which case it is
+    # instantiated as a plain child object.
+    standalone = mi.load_string("""<scene version="3.0.0">
+        <animation name="test_anim">
+            <transform time="0"><translate x="0" y="0" z="0"/></transform>
+            <transform time="1"><translate x="1" y="2" z="3"/></transform>
+        </animation>
+    </scene>""")
+    assert standalone is not None
 
 
 def test12_translation_bounds(variant_scalar_rgb):
@@ -170,7 +183,6 @@ def test12_translation_bounds(variant_scalar_rgb):
     bbox = at.get_translation_bounds()
     assert dr.allclose(bbox.min, [-1, -2, 0])
     assert dr.allclose(bbox.max, [1, 5, 8])
-
 
 
 def test13_has_scale(variant_scalar_rgb):
@@ -186,8 +198,6 @@ def test13_has_scale(variant_scalar_rgb):
     })
     assert at2.has_scale()
 
-
-
 def test14_time_bounds(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
         0.5: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
@@ -197,8 +207,6 @@ def test14_time_bounds(variant_scalar_rgb):
     bbox = at.get_time_bounds()
     assert bbox.min == 0.5
     assert bbox.max == 1.5
-
-
 
 def test15_spatial_bounds(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
@@ -211,7 +219,6 @@ def test15_spatial_bounds(variant_scalar_rgb):
 
     assert dr.allclose(spatial_bounds.min, [0, 0, 0])
     assert dr.allclose(spatial_bounds.max, [11, 1, 1])
-
 
 
 def test16_parameters_changed(variants_vec_backends_once):
@@ -228,7 +235,6 @@ def test16_parameters_changed(variants_vec_backends_once):
     at.parameters_changed(["translation"])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])
     assert dr.allclose(at.eval(mi.Float(1.0)).translation(), [2.5, 0, 0])
-
 
 
 def test17_change_frame_number(variants_vec_backends_once):
@@ -260,8 +266,6 @@ def test17_change_frame_number(variants_vec_backends_once):
     assert dr.allclose(at.eval_scalar(0.0).translation(), [5.0, 0.0, 0.0])
     assert dr.allclose(at.eval_scalar(1.0).translation(), [5.0, 0.0, 0.0])
 
-
-
 def test18_ensure_uniform_keyframes(variant_scalar_rgb):
     # Uniform keyframes
     at = mi.AnimatedTransform4f({
@@ -291,13 +295,11 @@ def test18_ensure_uniform_keyframes(variant_scalar_rgb):
         at4.ensure_uniform_keyframes()
 
 
-
 def make_translation_anim(times, offsets):
     return mi.AnimatedTransform4f({
         t: mi.ScalarAffineTransform4f.translate(o)
         for t, o in zip(times, offsets)
     })
-
 
 
 def test19_vectorized_eval_many_keyframes(variants_vec_backends_once):
@@ -314,7 +316,6 @@ def test19_vectorized_eval_many_keyframes(variants_vec_backends_once):
     assert dr.allclose(got, expected)
 
 
-
 def test20_eval_matches_eval_scalar(variants_vec_backends_once):
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 10),
@@ -327,7 +328,6 @@ def test20_eval_matches_eval_scalar(variants_vec_backends_once):
                            mi.Matrix4f(at.eval_scalar(t).matrix), atol=1e-5)
 
 
-
 def test21_clamping_outside_time_range(variant_scalar_rgb):
     at = make_translation_anim([1.0, 2.0], [[0, 0, 0], [10, 0, 0]])
 
@@ -338,14 +338,12 @@ def test21_clamping_outside_time_range(variant_scalar_rgb):
         assert dr.allclose(at.eval_scalar(t).translation(), [10, 0, 0])
 
 
-
 def test22_clamping_outside_time_range_vec(variants_vec_backends_once):
     at = make_translation_anim([1.0, 2.0, 3.0], [[0, 0, 0], [10, 0, 0], [20, 0, 0]])
     got = at.eval(mi.Float([-5.0, 1.0, 3.0, 99.0])).translation()
     assert dr.allclose(got, np.array([[0.0, 0.0, 20.0, 20.0],
                                       [0.0, 0.0, 0.0, 0.0],
                                       [0.0, 0.0, 0.0, 0.0]]))
-
 
 
 def test23_large_rotation_hemisphere(variant_scalar_rgb):
@@ -361,7 +359,6 @@ def test23_large_rotation_hemisphere(variant_scalar_rgb):
     assert dr.allclose(mid.matrix, expected.matrix)
 
 
-
 def test24_unsorted_keyframes_are_sorted(variant_scalar_rgb):
     at = mi.AnimatedTransform4f([
         (2.0, mi.ScalarAffineTransform4f.translate([2, 0, 0])),
@@ -375,7 +372,6 @@ def test24_unsorted_keyframes_are_sorted(variant_scalar_rgb):
     assert dr.allclose(at.eval_scalar(2.0).translation(), [2, 0, 0])
 
 
-
 def test25_duplicate_keyframe_times(variant_scalar_rgb):
     # Coincident keyframes would divide by zero during interpolation.
     with pytest.raises(RuntimeError, match="same time"):
@@ -383,7 +379,6 @@ def test25_duplicate_keyframe_times(variant_scalar_rgb):
             (1.0, mi.ScalarAffineTransform4f.translate([0, 0, 0])),
             (1.0, mi.ScalarAffineTransform4f.translate([1, 0, 0])),
         ])
-
 
 
 def test26_static_data_edit(variants_vec_backends_once):
@@ -398,7 +393,6 @@ def test26_static_data_edit(variants_vec_backends_once):
 
     assert dr.allclose(at.eval_scalar(0.0).translation(), [5, 0, 0])
     assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [5, 0, 0])
-
 
 
 def test27_static_transform_edit(variants_vec_backends_once):
@@ -419,7 +413,6 @@ def test27_static_transform_edit(variants_vec_backends_once):
     assert dr.allclose(bbox.min, [0, 7, 0]) and dr.allclose(bbox.max, [0, 7, 0])
 
 
-
 def test28_grad_enabled(variants_all_ad_rgb):
     static = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
     assert not static.parameters_grad_enabled()
@@ -437,7 +430,6 @@ def test28_grad_enabled(variants_all_ad_rgb):
     assert animated.parameters_grad_enabled()
 
 
-
 def test29_spatial_bounds_hits_keyframes(variant_scalar_rgb):
     # A keyframe that is an extremum but does not fall on the uniform sample
     # grid must still be included in the swept bounds.
@@ -447,6 +439,32 @@ def test29_spatial_bounds_hits_keyframes(variant_scalar_rgb):
     bounds = at.get_spatial_bounds(bbox)
     assert bounds.max[1] >= 100.0
 
+
+def test30_xml_roundtrip(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1.5">
+                    <translate x="1" y="2" z="3"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>"""
+
+    state = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), xml)
+    written = mi.parser.write_string(state)
+    assert "<animation" in written
+
+    # Re-parsing the generated document must yield the same animation.
+    state2 = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), written)
+    scene = mi.parser.instantiate(mi.parser.ParserConfig(mi.variant()), state2)
+    at = scene.sensors()[0].world_transform()
+    assert at.is_animated()
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
+    assert dr.allclose(at.eval_scalar(1.5).translation(), [1, 2, 3])
 
 
 def test31_negative_times(variant_scalar_rgb):
