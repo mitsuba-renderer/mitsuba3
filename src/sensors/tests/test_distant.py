@@ -75,7 +75,7 @@ def test_construct(variant_scalar_rgb):
                       [0, 0, 0, 1]]),
     ]:
         sensor = make_sensor(sensor_dict(direction=direction))
-        result = sensor.world_transform().matrix
+        result = sensor.world_transform().eval(0.0).matrix
         assert dr.allclose(result, expected)
         # Couldn't get dr.allclose() to work here
 

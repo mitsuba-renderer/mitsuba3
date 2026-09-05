@@ -123,7 +123,7 @@ class LinearCurve final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
                    initialize, mark_dirty, get_children_string,
-                   parameters_grad_enabled)
+                   parameters_grad_enabled, to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -226,7 +226,7 @@ public:
                 p[i] = string::strtof<InputFloat>(cur, (char **) &cur);
                 parse_error |= cur == orig;
             }
-            p = m_to_world.scalar() * p;
+            p = to_world_scalar() * p;
 
             // Vertex radius
             InputFloat r;

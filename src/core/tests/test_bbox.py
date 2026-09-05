@@ -150,3 +150,29 @@ def test07_traverse(variants_vec_rgb):
     target = mi.BoundingBox3f(mi.Vector3f(0), mi.Vector3f(5))
     assert dr.allclose(res.min, target.min)
     assert dr.allclose(res.max, target.max)
+
+def test08_bbox1f(variant_scalar_rgb):
+    from mitsuba import BoundingBox1f as BBox
+
+    bbox1 = BBox()
+    assert not bbox1.valid()
+
+    bbox2 = BBox(1.5)
+    assert bbox2.valid() and bbox2.collapsed()
+    assert bbox2.center() == 1.5
+    assert bbox2.extents() == 0
+
+    bbox3 = BBox(-1, 3)
+    assert bbox3.valid() and not bbox3.collapsed()
+    assert bbox3.min == -1 and bbox3.max == 3
+    assert bbox3.center() == 1
+    assert bbox3.extents() == 4
+    assert bbox3.contains(0)
+    assert not bbox3.contains(4)
+
+    bbox3.expand(5)
+    assert bbox3.max == 5
+    assert BBox.merge(bbox2, BBox(-1, 3)) == BBox(-1, 3)
+
+    bbox3.reset()
+    assert not bbox3.valid()

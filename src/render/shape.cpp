@@ -18,8 +18,12 @@ NAMESPACE_BEGIN(mitsuba)
 
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     : JitObject<Shape>(props.id()) {
-    m_to_world =
-        (ScalarAffineTransform4f) props.get<ScalarAffineTransform4f>("to_world", ScalarAffineTransform4f());
+    m_to_world = parse_animated_transform<Float, Spectrum>(props, "to_world");
+
+    // Checked here rather than in initialize(), which 'instance' and
+    // 'shapegroup' never call
+    if (props.plugin_name() != "instance" && m_to_world->is_animated())
+        Throw("Shape animation requires the use of the instance plugin");
 
     for (auto &prop : props.objects()) {
         if (Emitter *emitter = prop.try_get<Emitter>()) {
@@ -390,14 +394,6 @@ MI_VARIANT void Shape<Float, Spectrum>::traverse(TraversalCallback *cb) {
 MI_VARIANT
 void Shape<Float, Spectrum>::parameters_changed(const std::vector<std::string> &/*keys*/) {
     if (dirty()) {
-        if constexpr (dr::is_jit_v<Float>) {
-            bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
-                 is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
-
-            if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is used
-                dr::make_opaque(m_to_world);
-        }
-
         if (m_emitter)
             m_emitter->parameters_changed({"parent"});
 
@@ -415,8 +411,10 @@ MI_VARIANT void Shape<Float, Spectrum>::initialize() {
         bool is_bspline_curve = shape_type() == +ShapeType::BSplineCurve,
              is_linear_curve  = shape_type() == +ShapeType::LinearCurve;
 
-        if (!is_mesh() && !is_bspline_curve && !is_linear_curve) // to_world is not used
-            dr::make_opaque(m_to_world);
+        // Meshes and curves bake 'to_world' into their geometry and never
+        // evaluate it, so keeping it literal avoids two dead opaque variables
+        if (!is_mesh() && !is_bspline_curve && !is_linear_curve)
+            m_to_world->make_transform_opaque();
     }
 
     // Explicitly register this shape as the parent of the provided sub-objects

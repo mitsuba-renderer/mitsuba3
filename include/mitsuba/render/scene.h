@@ -866,12 +866,35 @@ protected:
     /// Flattened sequence of instance ``to_world`` matrices (12 floats each)
     DynamicBuffer<Float> m_instance_transforms;
 
+    /// Per-instance animated keyframe data, populated only when at least one
+    /// instance has an animated ``to_world``. Concatenated stride-12 chunks
+    /// ``[time, S.x,S.y,S.z, Q.x,Q.y,Q.z,Q.w, T.x,T.y,T.z, pad]`` per keyframe,
+    /// matching AnimatedTransform's storage layout. The remaining buffers hold,
+    /// per instance, the start chunk index, the keyframe count (1 = static),
+    /// and the uniform time grid (first keyframe time and spacing).
+    DynamicBuffer<Float>  m_instance_kf_data;
+    DynamicBuffer<UInt32> m_instance_kf_offset;
+    DynamicBuffer<UInt32> m_instance_kf_count;
+    DynamicBuffer<Float>  m_instance_kf_tmin;
+    DynamicBuffer<Float>  m_instance_kf_tstep;
+
+    /// Number of instances with a static ``to_world``. Zero means the static
+    /// matrices in ``m_instance_transforms`` are never selected.
+    size_t m_static_instance_count = 0;
+
     /// Instancing-aware expansion of a preliminary intersection (see
     /// ``compute_surface_interaction()``, which forwards here when the
     /// record may reference instanced geometry)
     SurfaceInteraction3f compute_surface_interaction_instanced(
         const Ray3f &ray, const PreliminaryIntersection3f &pi,
         uint32_t ray_flags, Mask active) const;
+
+    /// Evaluate instance ``i0`` (0-based) ``to_world`` at ``time``. Animated
+    /// instances interpolate their keyframes (matching the Embree/OptiX SRT
+    /// motion accel); static instances fall back to the differentiable matrix
+    /// in ``m_instance_transforms``.
+    AffineTransform4f eval_instance_to_world(const UInt32 &i0, const Float &time,
+                                             Mask active) const;
 
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;
@@ -881,7 +904,9 @@ protected:
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
                            m_silhouette_shapes_dr, m_silhouette_distr,
-                           m_instance_transforms)
+                           m_instance_transforms, m_instance_kf_data,
+                           m_instance_kf_offset, m_instance_kf_count,
+                           m_instance_kf_tmin, m_instance_kf_tstep)
 };
 
 // See interaction.h

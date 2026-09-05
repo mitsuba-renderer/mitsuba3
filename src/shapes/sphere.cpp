@@ -124,7 +124,8 @@ class Sphere final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+                   get_children_string, parameters_grad_enabled, to_world,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -135,10 +136,10 @@ public:
         m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
-        m_to_world =
-            m_to_world.scalar() *
+        m_to_world = new AnimatedTransform4f(
+            to_world_scalar() *
             ScalarAffineTransform4f::translate(props.get<ScalarPoint3f>("center", 0.f)) *
-            ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f));
+            ScalarAffineTransform4f::scale(props.get<ScalarFloat>("radius", 1.f)));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::InteriorType;
 
@@ -150,15 +151,17 @@ public:
 
     void update() {
         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = dr::transform_decompose(m_to_world.scalar().matrix, 25);
+        ScalarAffineTransform4f to_world_s = to_world_scalar();
+        auto [S, Q, T] = dr::transform_decompose(to_world_s.matrix, 25);
 
         // A sphere must be uniformly scaled (else it is an ellipsoid)
-        if (!m_to_world.scalar().is_similarity())
+        if (!to_world_s.is_similarity())
             Log(Warn, "'to_world' transform shouldn't contain non-uniform "
                       "scaling or shearing!");
 
-        m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
-        m_center = m_to_world.value() * Point3f(0.f);
+        AffineTransform4f to_world = this->to_world();
+        m_radius = dr::norm(to_world * Vector3f(1.f, 0.f, 0.f));
+        m_center = to_world * Point3f(0.f);
 
         if (S[0][0] <= 0.f) {
             m_radius = dr::abs(m_radius.value());
@@ -185,10 +188,8 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             update();
         }
-
         Base::parameters_changed(keys);
     }
 
@@ -219,7 +220,7 @@ public:
         Point3f local = warp::square_to_uniform_sphere(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value() * local;
+        ps.p = this->to_world() * local;
         ps.n = local;
 
         if (m_flip_normals)
@@ -342,7 +343,7 @@ public:
         Float theta = uv.y() * dr::Pi<Float>;
 
         Point3f local = sph_to_dir(theta, phi);
-        Point3f p = m_to_world.value() * local;
+        Point3f p = this->to_world() * local;
 
         Ray3f ray(p + local, -local, 0, Wavelength(0));
 
@@ -420,7 +421,7 @@ public:
             Float theta = si.uv.y() * dr::Pi<Float>;
             Point3f local = dr::detach(sph_to_dir(theta, phi));
 
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = this->to_world() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -456,7 +457,7 @@ public:
         ss.d = dr::normalize(ss.p - viewpoint);
         ss.n = dr::normalize(ss.p - center);
 
-        Point3f local = m_to_world.value().inverse() * ss.p;
+        Point3f local = this->to_world().inverse() * ss.p;
         Point2f angles = dir_to_sph(Vector3f(local));
         Float theta = angles.x();
         Float phi = angles.y();
@@ -635,7 +636,7 @@ public:
 
         const Point3f& center = m_center.value();
         const Float& radius = m_radius.value();
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         AffineTransform4f to_object = to_world.inverse();
 
         // If necessary, temporally suspend gradient tracking for all shape
@@ -706,7 +707,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_radius) || dr::grad_enabled(m_center) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     // =============================================================

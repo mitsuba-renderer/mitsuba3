@@ -55,7 +55,7 @@ template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_shape_type,
-                   mark_dirty)
+                   mark_dirty, to_world_scalar)
     MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
@@ -64,6 +64,11 @@ public:
 
     Instance(const Properties &props) : Base(props) {
         for (auto &prop : props.objects()) {
+            // An <animation> arrives as an object property; Shape's constructor
+            // already consumed it
+            if (prop.try_get<AnimatedTransform4f>())
+                continue;
+
             ShapeGroup_ *shapegroup = prop.try_get<ShapeGroup_>();
             if (!shapegroup)
                 Throw("Only a shapegroup can be specified in an instance.");
@@ -77,7 +82,10 @@ public:
 
         m_shape_type = ShapeType::Instance;
 
-        dr::make_opaque(m_to_world);
+        m_to_world->ensure_uniform_keyframes();
+        // 'instance' does not call Shape::initialize(), which is where the
+        // other shapes request this
+        m_to_world->make_transform_opaque();
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -87,10 +95,10 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            m_to_world = m_to_world.value().update();
+            m_to_world->ensure_uniform_keyframes();
             mark_dirty();
         }
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     ScalarBoundingBox3f bbox() const override {
@@ -100,10 +108,8 @@ public:
         if (!bbox.valid())
             return bbox;
 
-        ScalarBoundingBox3f result;
-        for (int i = 0; i < 8; ++i)
-            result.expand(m_to_world.scalar() * bbox.corner(i));
-        return result;
+        // Union of the instance bounds across all keyframes
+        return m_to_world->get_spatial_bounds(bbox);
     }
 
     ScalarSize primitive_count() const override { return 1; }
@@ -126,7 +132,7 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world.scalar().inverse() * ray);
+            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -139,7 +145,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_to_world.scalar().inverse() * ray);
+            return m_shapegroup->ray_test_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -159,16 +165,38 @@ public:
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
+        return m_to_world->parameters_grad_enabled() || m_shapegroup->parameters_grad_enabled();
     }
 
     void describe(ShapeIR &g) const override {
         g.kind = ShapeIR::Kind::Instance;
         g.type = m_shape_type;
         g.ctx = this;
+
+        // For animated instances, emit one decomposed keyframe per to_world
+        // keyframe. Backends that support motion blur consume these; the
+        // packed to_world below remains the t=0 fallback.
+        if (m_to_world->is_animated()) {
+            for (const auto &[time, kf] : m_to_world->keyframes()) {
+                KeyframeIR kf_ir;
+                kf_ir.time = (float) time;
+                kf_ir.scale[0] = (float) kf.S.x();
+                kf_ir.scale[1] = (float) kf.S.y();
+                kf_ir.scale[2] = (float) kf.S.z();
+                kf_ir.quat[0] = (float) kf.Q.w();
+                kf_ir.quat[1] = (float) kf.Q.x();
+                kf_ir.quat[2] = (float) kf.Q.y();
+                kf_ir.quat[3] = (float) kf.Q.z();
+                kf_ir.trans[0] = (float) kf.T.x();
+                kf_ir.trans[1] = (float) kf.T.y();
+                kf_ir.trans[2] = (float) kf.T.z();
+                g.keyframes.push_back(kf_ir);
+            }
+        }
+
         // Column-major 3x4 affine (to_world[col*3 + row]). Each backend repacks
         // into its instance-descriptor convention.
-        const auto &M = m_to_world.scalar().matrix;
+        const auto &M = to_world_scalar().matrix;
         for (size_t col = 0; col < 4; ++col)
             for (size_t row = 0; row < 3; ++row)
                 g.to_world[col * 3 + row] = (float) M(row, col);

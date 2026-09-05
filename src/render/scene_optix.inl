@@ -36,6 +36,9 @@ struct MiOptixSceneState {
         void* buffer = nullptr;  // Device-visible storage for IAS
         void* inputs = nullptr;  // Device-visible storage for OptixInstance array
     } ias_data;
+    /// Device allocations backing per-instance SRT motion transforms, owned
+    /// here; freed on rebuild() and when the IAS is released.
+    std::vector<void*> motion_transforms;
     /// Per-shape SBT data buffers, owned here; refreshed on rebuild().
     ShapeDataBuffers shape_data;
     /// Per-ShapeGroup GAS, index-aligned with scene->m_shapegroups (sized once;
@@ -78,8 +81,11 @@ struct MiOptixConfig {
 // Array storing previously initialized optix configurations
 static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
 static std::mutex optix_configs_lock;
+// Motion-blur pipelines need a distinct traversable-graph flag, so they are
+// cached under a separate config key.
+static constexpr uint32_t OptixConfigMotionBlurKey = 1u << 30;
 
-const MiOptixConfig &init_optix_config(uint32_t shape_types) {
+const MiOptixConfig &init_optix_config(uint32_t shape_types, bool uses_motion_blur) {
     // Instances/groups are handled by IAS traversal, not by intersection
     // programs. Mask the bits so they don't spuriously add the CUSTOM flag
     shape_types &= ~((uint32_t) ShapeType::Instance |
@@ -90,6 +96,8 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         key &= ~ShapeType::Rectangle; // Rectangles are actually meshes
         key |= +ShapeType::Mesh;
     }
+    if (uses_motion_blur)
+        key |= OptixConfigMotionBlurKey;
 
     // Use flags as config index in optix_configs
     auto [it, success] = optix_configs.try_emplace(key);
@@ -117,12 +125,15 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
         module_compile_options.debugLevel = OPTIX_COMPILE_DEBUG_LEVEL_NONE;
     }
 
-    config.pipeline_compile_options.usesMotionBlur     = false;
+    config.pipeline_compile_options.usesMotionBlur     = uses_motion_blur;
     config.pipeline_compile_options.numPayloadValues   = 0;
     config.pipeline_compile_options.numAttributeValues = 2; // the minimum legal value
     config.pipeline_compile_options.pipelineLaunchParamsVariableName = "params";
+    // SRT motion transforms add a transform node above the GAS, which requires
+    // the more permissive traversable graph.
     config.pipeline_compile_options.traversableGraphFlags =
-        OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
+        uses_motion_blur ? OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_ANY
+                         : OPTIX_TRAVERSABLE_GRAPH_FLAG_ALLOW_SINGLE_LEVEL_INSTANCING;
 
     if (jit_flag(JitFlag::Debug))
         config.pipeline_compile_options.exceptionFlags =
@@ -336,6 +347,15 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     return config;
 }
 
+/// Does the lowered scene need SRT motion transforms above its BLASes?
+static bool optix_uses_motion_blur(const SceneIR &sd) {
+    for (const InstanceEntry &inst : sd.instances) {
+        if (inst.keyframes.size() > 1)
+            return true;
+    }
+    return false;
+}
+
 // -----------------------------------------------------------------------
 //  OptixAccel<Float, Spectrum> -- lifecycle
 // -----------------------------------------------------------------------
@@ -411,7 +431,13 @@ static void optix_rebuild_accel(
         auto *ias = (OptixInstance *) jit_malloc(
             JitBackend::CUDA, ias_count * sizeof(OptixInstance), /* shared = */ 1);
 
-        prepare_ias(sd, blas_handle, blas_sbt_offset, ias);
+        // Release motion transforms from a previous build before repopulating.
+        for (void *mt : s.motion_transforms)
+            jit_free(mt);
+        s.motion_transforms.clear();
+
+        prepare_ias(sd, blas_handle, blas_sbt_offset, s.context,
+                    s.motion_transforms, ias);
 
         // Build a "master" IAS that contains all the GAS of the scene (meshes,
         // custom shapes, curves, ...)
@@ -473,6 +499,8 @@ static void optix_rebuild_accel(
                     jit_free(buf);
                 for (void *buf : s->retired_sbt)
                     jit_free(buf);
+                for (void *mt : s->motion_transforms)
+                    jit_free(mt);
                 delete s;
             }
         },
@@ -561,8 +589,8 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         //  Initialize OptiX configuration
         // =====================================================
 
-        const MiOptixConfig &config =
-            init_optix_config(scene->shape_types());
+        const MiOptixConfig &config = init_optix_config(
+            scene->shape_types(), optix_uses_motion_blur(sd));
 
         // =====================================================
         //  Shader Binding Table generation
@@ -617,11 +645,85 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     Log(Info, "OptiX ready. (took %s)", util::time_string((float) timer.value()));
 }
 
+/// Move a scene onto the pipeline matching its current motion-blur state
+///
+/// ``usesMotionBlur`` and the traversable graph flags are baked into the
+/// pipeline at compile time, so a write to an instance's keyframes that adds or
+/// removes SRT motion transforms invalidates the pipeline chosen in ``init()``.
+/// Switching pipelines also invalidates the hit records, whose headers are
+/// packed from the old program groups, so they are rebuilt here.
+template <typename Float, typename Spectrum>
+static void optix_switch_config(Scene<Float, Spectrum> *scene,
+                                MiOptixSceneState *state, const SceneIR &sd,
+                                dr::uint64_array_t<Float> &sbt_handle,
+                                bool uses_motion_blur) {
+    using UInt32 = dr::uint32_array_t<Float>;
+    using UInt64 = dr::uint64_array_t<Float>;
+    MiOptixSceneState &s = *state;
+
+    size_t own_count = count_hitgroup_records(sd.blases);
+    if (s.sbt_record_base != 0 || s.sbt.hitgroupRecordCount != own_count)
+        Throw("The number of keyframes of an animated instance cannot be "
+              "changed in a scene that shares its shader binding table with "
+              "another scene. Please rebuild the scene instead.");
+
+    // The following manipulates global state placed within a critical section
+    std::lock_guard<std::mutex> guard(optix_configs_lock);
+
+    const MiOptixConfig &config =
+        init_optix_config(scene->shape_types(), uses_motion_blur);
+
+    Log(Debug, "Switching to OptiX config (key=0x%x): motion blur %s",
+        config.key, uses_motion_blur ? "enabled" : "disabled");
+
+    scoped_optix_context guard2;
+
+    // Re-pack the miss and hit records against the new program groups
+    void *miss = jit_malloc(JitBackend::CUDA, sizeof(MissSbtRecord),
+                            /* shared = */ 1);
+    jit_optix_check(optixSbtRecordPackHeader(config.pg[0], miss));
+
+    auto *records = (HitGroupSbtRecord *) jit_malloc(
+        JitBackend::CUDA, own_count * sizeof(HitGroupSbtRecord),
+        /* shared = */ 1);
+    size_t cursor = 0;
+    fill_hitgroup_records(sd.blases, records, cursor, config.pg,
+                          config.pg_mapping, s.shape_data);
+
+    jit_free(s.sbt.missRecordBase);
+    jit_free(s.sbt.hitgroupRecordBase);
+    s.sbt.missRecordBase = jit_malloc_migrate(miss, JitBackend::CUDA, 1);
+    s.sbt.hitgroupRecordBase =
+        jit_malloc_migrate(records, JitBackend::CUDA, 1);
+
+    // The SBT is bound to a pipeline, so it has to be re-registered rather
+    // than updated in place. Drop the old registration and its handle.
+    sbt_handle = 0;
+    (void) UInt32::steal(s.sbt_jit_index);
+
+    s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
+    s.config_key = config.key;
+    s.context = config.context;
+    s.pipeline_jit_index = config.pipeline_jit_index;
+
+    sbt_handle = UInt64::steal(jit_optix_sbt_owner_handle(s.sbt_jit_index));
+}
+
 template <typename Float, typename Spectrum>
 void OptixAccel<Float, Spectrum>::rebuild(
     Scene<Float, Spectrum> *scene) {
     // Lower the scene once; the GAS and IAS phases read from this.
     SceneIR sd = SceneIRBuilder<Float, Spectrum>::build(scene);
+
+    // Writing an instance's keyframes can add or remove motion transforms,
+    // which the pipeline compiled in init() may not be prepared for
+    bool uses_motion_blur = optix_uses_motion_blur(sd),
+         had_motion_blur  = (state->config_key & OptixConfigMotionBlurKey) != 0;
+    if (uses_motion_blur != had_motion_blur) {
+        dr::sync_thread(); // In-flight kernels still reference the old SBT
+        optix_switch_config<Float, Spectrum>(scene, state, sd, sbt_handle,
+                                             uses_motion_blur);
+    }
 
     optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, sd);
 }

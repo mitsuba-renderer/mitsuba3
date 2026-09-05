@@ -41,7 +41,7 @@ class ProjectiveDetail():
         self.primary_distributions = []
 
         silhouette_shapes = scene.silhouette_shapes()
-        viewpoint = mi.ScalarPoint3f(dr.slice(sensor.world_transform() @ mi.Point3f(0)))
+        viewpoint = mi.ScalarPoint3f(dr.slice(sensor.world_transform().eval(0.0) @ mi.Point3f(0)))
         shapes_weight = []
 
         for i in range(len(silhouette_shapes)):
@@ -112,7 +112,7 @@ class ProjectiveDetail():
         """
 
         # Get transformation matrices
-        to_world = sensor.world_transform()
+        to_world = sensor.world_transform().eval(0.0)
         to_local = to_world.inverse()
         to_film = sensor.projection_transform()
 
@@ -159,7 +159,7 @@ class ProjectiveDetail():
             raise Exception("Only perspective cameras are supported")
 
         with dr.suspend_grad():
-            to_world = sensor.world_transform()
+            to_world = sensor.world_transform().eval(0.0)
             sensor_center = to_world @ mi.Point3f(0)
 
             # Is the boundary point visible or is occluded?

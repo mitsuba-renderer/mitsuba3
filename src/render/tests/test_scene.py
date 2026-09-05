@@ -236,7 +236,7 @@ def test08_scene_bbox_update(variant_scalar_rgb):
     bbox = scene.bbox()
     params = mi.traverse(scene)
     offset = [-1, -1, -1]
-    params['sphere.to_world'] = mi.Transform4f().translate(offset)
+    params['sphere.to_world.transform'] = mi.Transform4f().translate(offset)
     params.update()
 
     expected = mi.BoundingBox3f(bbox.min + offset, bbox.max + offset)
@@ -257,8 +257,8 @@ def test09_scene_silhouette_bijective(variants_all_ad_rgb, flags):
 
     # Make sure every shape is being differentiated
     params = mi.traverse(scene)
-    for key in ('sphere.to_world', 'rectangle.to_world',
-                'cylinder.to_world'):
+    for key in ('sphere.to_world.transform', 'rectangle.to_world.transform',
+                'cylinder.to_world.transform'):
         dr.enable_grad(params[key])
     params.update()
 

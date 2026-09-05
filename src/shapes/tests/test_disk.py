@@ -189,7 +189,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.DetachShape)
 
@@ -207,7 +207,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().scale(1 + theta)
+    params['to_world.transform'] = mi.Transform4f().scale(1 + theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
@@ -231,7 +231,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate([theta, 0.0, 0.0])
+    params['to_world.transform'] = mi.Transform4f().translate([theta, 0.0, 0.0])
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
@@ -249,7 +249,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.Default | mi.RayFlags.FollowShape)
 
@@ -267,7 +267,7 @@ def test07_differentiable_surface_interaction_ray_forward_follow_shape(variants_
 
     theta = mi.Float(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
+    params['to_world.transform'] = mi.Transform4f().rotate([0, 0, 1], 90 * theta)
     params.update()
     si = shape.ray_intersect(ray, mi.RayFlags.Default)
 
@@ -290,7 +290,7 @@ def test08_eval_parameterization(variants_all_ad_rgb):
     si_before = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
 
     params = mi.traverse(shape)
-    params['to_world'] = transform
+    params['to_world.transform'] = transform
     params.update()
 
     si_after = shape.eval_parameterization(mi.Point2f(0.3, 0.6))
@@ -360,7 +360,7 @@ def test13_differential_motion(variants_vec_rgb):
 
     theta = mi.Point3f(0.0)
     dr.enable_grad(theta)
-    params['to_world'] = mi.Transform4f().translate(
+    params['to_world.transform'] = mi.Transform4f().translate(
         [theta.x, 2 * theta.y, 3 * theta.z])
     params.update()
 

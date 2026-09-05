@@ -11,6 +11,15 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Decomposed keyframe intermediate representation for hardware acceleration backends.
+/// Quaternions are stored in w-first order: quat[0] = w, quat[1..3] = (x, y, z).
+struct KeyframeIR {
+    float time;
+    float scale[3];
+    float quat[4];
+    float trans[3];
+};
+
 struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see ``NumGeometryKinds``).
@@ -105,6 +114,9 @@ struct ShapeIR {
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
 
+    /// Keyframes for animated instances.
+    std::vector<KeyframeIR> keyframes;
+
     /// Resolved per-shape POD byte count (see ``data_size``).
     size_t data_size_bytes() const {
         return data_size ? data_size : prim_count * pdata_size;
@@ -138,6 +150,9 @@ struct InstanceEntry {
 
     /// Index + 1 of the owning ``instance``, or 0 for a top-level BLAS.
     uint32_t instance_index = 0;
+
+    /// Keyframes for animated instances (empty if the instance is static).
+    std::vector<KeyframeIR> keyframes;
 };
 
 /// Scene description consumed by acceleration-structure builders.

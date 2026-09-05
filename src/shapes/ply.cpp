@@ -100,7 +100,7 @@ class PLYMesh final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_filename, m_source_path, m_to_world,
                    m_vertex_count, m_face_count, m_flip_normals,
-                   has_face_normals, from_packed)
+                   has_face_normals, from_packed, to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -169,9 +169,9 @@ public:
 
         PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
                       make_layout(has_normals, has_texcoords));
-        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        pm.set_transform(to_world_scalar(), m_flip_normals);
         m_flip_normals = false;
-        m_to_world = ScalarAffineTransform4f();
+        m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f());
 
         // Shared packet-streaming scaffolding of both element types:
         // convert the element's records into 'out_struct' in batches and

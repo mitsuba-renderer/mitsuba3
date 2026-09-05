@@ -94,9 +94,6 @@ an overview of the main missing features:
     recommend that you stick with Mitsuba 0.6 if your application depends on
     them.
 
-- **Animation**: specification and handling of temporally varying
-  transformations, e.g., for motion blur is not yet implemented.
-
 - **Diffusion-based subsurface scattering**: currently missing,
   status undecided.
 

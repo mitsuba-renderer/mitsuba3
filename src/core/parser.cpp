@@ -8,6 +8,7 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/formatter.h>
 #include <mitsuba/core/transform.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/frame.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/mitsuba.h>
@@ -37,7 +38,7 @@ using ScalarAffineTransform4d = AffineTransform<ScalarPoint4d>;
 enum class TagType {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
-    NamedReference, Include, Alias, Default, Resource, Invalid
+    NamedReference, Include, Alias, Default, Resource, Animation, Invalid
 };
 
 /**
@@ -136,6 +137,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
     switch (str[0]) {
         case 'a':
             if (str == "alias") return {TagType::Alias, ObjectType::Unknown};
+            if (str == "animation") return {TagType::Animation, ObjectType::Unknown};
             break;
         case 'b':
             if (str == "boolean") return {TagType::Boolean, ObjectType::Unknown};
@@ -580,6 +582,38 @@ static void parse_transform_node(const ParserState &state, pugi::xml_node node,
     }
 }
 
+/// Reads the `time_<i>` / `transform_<i>` property pairs written by the
+/// <animation> parser back out of `props`, in keyframe order.
+static std::vector<std::pair<double, ScalarAffineTransform4d>>
+extract_animation_keyframes(Properties &props) {
+    std::vector<std::pair<double, ScalarAffineTransform4d>> keyframes;
+    for (size_t i = 0;; ++i) {
+        std::string time_key = tfm::format("time_%zu", i);
+        if (!props.has_property(time_key))
+            break;
+        // Querying marks the properties as used, so that the unqueried-property
+        // check performed after instantiation does not fire.
+        keyframes.push_back({ props.get<double>(time_key),
+                              props.get<ScalarAffineTransform4d>(
+                                  tfm::format("transform_%zu", i)) });
+    }
+    return keyframes;
+}
+
+/// Instantiates an animated transform given Float/Spectrum types.
+template <typename Float, typename Spectrum>
+static ref<Object> instantiate_animated_transform(
+    const std::vector<std::pair<double, ScalarAffineTransform4d>> &keyframes) {
+    using ScalarFloat = dr::scalar_t<Float>;
+    using ScalarAffineTransform4f = AffineTransform<Point<ScalarFloat, 4>>;
+    std::vector<std::pair<ScalarFloat, ScalarAffineTransform4f>> kf;
+    kf.reserve(keyframes.size());
+    for (const auto &[time, trafo] : keyframes) {
+        kf.push_back({ ScalarFloat(time), ScalarAffineTransform4f(trafo) });
+    }
+    return new AnimatedTransform<Float, Spectrum>(kf);
+}
+
 // Helper function to parse XML nodes recursively
 static void parse_xml_node(const ParserConfig &config, ParserState &state,
                           pugi::xml_node node, size_t parent_idx,
@@ -897,6 +931,59 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
 
             // Store the accumulated transform
             state[parent_idx].props.set(name, transform);
+
+            return; // Don't process children again
+        }
+
+        case TagType::Animation: {
+            check_attributes(state, scene_node, node, {"!name"sv, "id"sv});
+            scene_node.props.set_plugin_name("animation");
+            if (pugi::xml_attribute id = node.attribute("id"))
+                scene_node.props.set_id(id.value());
+            size_t n_keyframes = 0;
+            for (pugi::xml_node child : node.children()) {
+                if (child.type() == pugi::node_element) {
+                    if (std::string_view(child.name()) != "transform")
+                         fail(state, scene_node, "unexpected <%s> element inside <animation>", child.name());
+
+                    check_attributes(state, scene_node, child, {"!time"sv});
+                    std::string_view time_str = child.attribute("time").value();
+                    double time = 0.0;
+                    try {
+                        time = string::stof<double>(time_str);
+                    } catch (...) {
+                        fail(state, scene_node, "could not parse time value \"%s\"", time_str);
+                    }
+                    ScalarAffineTransform4d transform;
+                    for (pugi::xml_node op : child.children()) {
+                        if (op.type() == pugi::node_element)
+                            parse_transform_node(state, op, scene_node, transform, params);
+                    }
+                    scene_node.props.set(tfm::format("time_%zu", n_keyframes), time);
+                    scene_node.props.set(tfm::format("transform_%zu", n_keyframes), transform);
+                    n_keyframes++;
+                }
+            }
+            if (n_keyframes == 0)
+                fail(state, scene_node, "<animation> must contain at least one <transform> element");
+
+            // Register the node and link it into the parent. An 'id' makes the
+            // animation addressable by <ref>, so that several instances can
+            // share one set of keyframes.
+            size_t node_idx = state.size();
+            if (!scene_node.props.id().empty()) {
+                auto [it, inserted] = state.id_to_index.insert(
+                    { std::string(scene_node.props.id()), node_idx });
+                if (!inserted) {
+                    const SceneNode &prev_node = state.nodes[it->second];
+                    fail(state, scene_node,
+                         "duplicate ID: \"%s\" (previous was at %s)",
+                         scene_node.props.id(), file_location(state, prev_node));
+                }
+            }
+            state[parent_idx].props.set(
+                std::string(name), Properties::ResolvedReference(node_idx), false);
+            state.nodes.push_back(std::move(scene_node));
 
             return; // Don't process children again
         }
@@ -1726,6 +1813,12 @@ static Task* instantiate_node(const ParserConfig &config,
             if (props.plugin_name() == "rgb" || props.plugin_name() == "spectrum") {
                 // These are special texture types that need to be created via get_texture_impl
                 obj = props.get_texture_impl("value", config.variant, false, false);
+            } else if (props.plugin_name() == "animation") {
+                // <animation> nodes are a core type rather than a plugin, so they
+                // bypass the PluginManager and are constructed directly.
+                auto keyframes = extract_animation_keyframes(props);
+                obj = MI_INVOKE_VARIANT(config.variant,
+                                        instantiate_animated_transform, keyframes);
             } else {
                 obj = PluginManager::instance()->create_object(
                     props, config.variant, node.type);
@@ -1974,6 +2067,35 @@ static bool decompose_transform(const ScalarAffineTransform4d &transform,
     return has_transform;
 }
 
+/// True if `transform` is (numerically) the identity.
+static bool is_identity_transform(const ScalarAffineTransform4d &transform) {
+    using Array = dr::array_t<ScalarMatrix4d>;
+    const double eps = 1e-6;
+    return !dr::any_nested(
+        dr::abs(Array(transform.matrix - dr::identity<ScalarMatrix4d>())) > eps);
+}
+
+/// Write `transform` into `node` as canonical <translate>/<rotate>/<scale>
+/// operations, falling back to a raw <matrix> when it cannot be decomposed
+/// (shear, NaN). The identity emits nothing, which parses back to the identity.
+static void write_transform_ops(const ScalarAffineTransform4d &transform,
+                                pugi::xml_node &node, bool is_sensor = false) {
+    if (is_identity_transform(transform) ||
+        decompose_transform(transform, node, is_sensor))
+        return;
+
+    const ScalarMatrix4d &m = transform.matrix;
+    std::string matrix_str;
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            if (i > 0 || j > 0)
+                matrix_str += " ";
+            matrix_str += tfm::format("%.17g", m(i, j));
+        }
+    }
+    node.append_child("matrix").append_attribute("value").set_value(matrix_str);
+}
+
 // Structure to track state during XML writing
 struct WriterState {
     // Track how many times each node is referenced
@@ -2004,7 +2126,8 @@ static void write_node_to_xml(WriterState &writer_state,
                               size_t node_idx,
                               pugi::xml_node &xml_parent,
                               std::vector<pugi::xml_node> &xml_nodes,
-                              std::string_view property_name) {
+                              std::string_view property_name,
+                              bool parent_is_sensor = false) {
     if (node_idx >= state.size())
         return;
 
@@ -2040,6 +2163,8 @@ static void write_node_to_xml(WriterState &writer_state,
         tag_name = "ref";
     else if (node.props.plugin_name() == "scene")
         tag_name = "scene";
+    else if (node.props.plugin_name() == "animation")
+        tag_name = "animation";
     else if (node.type != ObjectType::Unknown)
         tag_name = plugin_type_name(node.type);
     else
@@ -2070,8 +2195,10 @@ static void write_node_to_xml(WriterState &writer_state,
         return; // Skip properties and children for ref nodes
     }
 
-    // Add type attribute (except for scene root)
-    if (node.props.plugin_name() != "scene")
+    // Add type attribute (except for the scene root and <animation>, whose tag
+    // name already identifies it)
+    if (node.props.plugin_name() != "scene" &&
+        node.props.plugin_name() != "animation")
         xml_node.append_attribute("type").set_value(node.props.plugin_name());
 
     // Add ID only if this node is referenced more than once
@@ -2082,6 +2209,24 @@ static void write_node_to_xml(WriterState &writer_state,
     // Add name attribute if not auto-generated
     if (!property_name.empty() && !string::starts_with(property_name, "_arg_"))
         xml_node.append_attribute("name").set_value(property_name);
+
+    // <animation> nodes carry their keyframes as time_<i>/transform_<i> pairs.
+    if (node.props.plugin_name() == "animation") {
+        for (size_t i = 0;; ++i) {
+            std::string time_key = tfm::format("time_%zu", i);
+            if (!node.props.has_property(time_key))
+                break;
+            pugi::xml_node kf_node = xml_node.append_child("transform");
+            kf_node.append_attribute("time").set_value(
+                tfm::format("%.17g", node.props.get<double>(time_key)));
+            // <animation> carries no type of its own, so the sensor-specific
+            // decomposition has to come from the node it is attached to
+            write_transform_ops(node.props.get<ScalarAffineTransform4d>(
+                                    tfm::format("transform_%zu", i)),
+                                kf_node, parent_is_sensor);
+        }
+        return;
+    }
 
     // Write properties
     for (const auto &prop : node.props) {
@@ -2094,22 +2239,18 @@ static void write_node_to_xml(WriterState &writer_state,
         // Handle resolved references (child nodes) separately as they don't create a property node
         if (prop_type == Properties::Type::ResolvedReference) {
             size_t child_idx = prop.get<Properties::ResolvedReference>().index();
-            write_node_to_xml(writer_state, state, child_idx, xml_node, xml_nodes, key);
+            write_node_to_xml(writer_state, state, child_idx, xml_node,
+                              xml_nodes, key,
+                              node.type == ObjectType::Sensor);
             continue;
         }
 
         pugi::xml_node prop_node;
 
         // Special handling for transforms - check if identity before creating node
-        if (prop_type == Properties::Type::Transform) {
-            ScalarMatrix4d mat = prop.get<ScalarAffineTransform4d>().matrix;
-            using Array = dr::array_t<ScalarMatrix4d>;
-
-            // Skip identity transforms entirely
-            const double eps = 1e-6;
-            if (!dr::any_nested(dr::abs(Array(mat - dr::identity<ScalarMatrix4d>())) > eps))
-                continue;
-        }
+        if (prop_type == Properties::Type::Transform &&
+            is_identity_transform(prop.get<ScalarAffineTransform4d>()))
+            continue; // Skip identity transforms entirely
 
         // Get the tag name from property_type_name
         std::string_view type_name = property_type_name(prop_type);
@@ -2178,28 +2319,8 @@ static void write_node_to_xml(WriterState &writer_state,
             }
 
             case Properties::Type::Transform: {
-                ScalarAffineTransform4d transform = prop.get<ScalarAffineTransform4d>();
-
-                // Try to decompose transform into one of several canonical formats
-                if (decompose_transform(transform, prop_node,
-                                        node.type == ObjectType::Sensor))
-                    break;
-
-                // Fall back to matrix representation
-                ScalarMatrix4d m = transform.matrix;
-                pugi::xml_node matrix_node = prop_node.append_child("matrix");
-
-                // Format the matrix values
-                std::string matrix_str;
-                for (int i = 0; i < 4; ++i) {
-                    for (int j = 0; j < 4; ++j) {
-                        if (i > 0 || j > 0)
-                            matrix_str += " ";
-                        matrix_str += tfm::format("%.17g", m(i, j));
-                    }
-                }
-
-                matrix_node.append_attribute("value").set_value(matrix_str);
+                write_transform_ops(prop.get<ScalarAffineTransform4d>(), prop_node,
+                                    node.type == ObjectType::Sensor);
                 break;
             }
 

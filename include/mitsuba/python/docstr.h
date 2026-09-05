@@ -15327,6 +15327,88 @@ R"doc(Host-side helper: pack the upper three rows of an affine matrix into the
 
 static const char *__doc_struct_jit_type_id = R"doc(Teach struct-jit's compile-time type trait about Dr.Jit's half type)doc";
 
+static const char *__doc_mitsuba_AnimatedTransform =
+R"doc(Animated transformation
+
+This struct stores a sequence of transformations and interpolates between
+them using a combination of linear interpolation (for translation and
+scaling) and spherical linear interpolation (for rotation).
+
+Internally, keyframes are packed into a single DynamicBuffer ``m_data`` with a
+stride of ``KeyframeStride`` floats per keyframe to optimize vectorized loads.
+The layout per keyframe is:
+
+``[time, scale.x, scale.y, scale.z, quat.x, quat.y, quat.z, quat.w, trans.x,
+trans.y, trans.z, unused]``
+
+The class keeps two redundant representations of the same animation: the
+device-side buffer ``m_data`` (read by ``eval()``) and the host-side keyframe
+list ``m_keyframes`` (read by ``eval_scalar()`` and ``keyframes()``). They are
+synchronized by the constructors and by ``parameters_changed()``.
+
+Through ``mitsuba::traverse()`` the transformation always exposes ``"data"``,
+and additionally ``"transform"`` (the plain 4x4 matrix) while it holds a
+single keyframe. That matrix is the representation evaluated in that case,
+and takes precedence if both parameters are written. Writing ``"data"`` can
+change the number of keyframes and hence the set of exposed parameters, so
+``mitsuba::traverse()`` has to be called again afterwards.
+
+Writing ``"data"`` means writing the packed layout above by hand. Its
+invariants are not re-checked and are the caller's responsibility: the width
+is a multiple of ``KeyframeStride``, keyframe times strictly increase, and
+consecutive quaternions lie on the same hemisphere.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Helper struct to store individual, decomposed key frames.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_ensure_uniform_keyframes =
+R"doc(Checks if all keyframes are uniformly spaced in time. Raises an
+exception if this is not the case.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval =
+R"doc(Evaluate the transformation at a specific time
+
+This method performs a vectorized interpolation between keyframes, reading
+from the packed device buffer. Times outside of ``get_time_bounds()`` are
+clamped to the first/last keyframe.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval_scalar =
+R"doc(Scalar evaluation of the transformation
+
+This version is for use on the host (e.g., during AABB construction) and
+reads the host-side keyframe list rather than the device buffer. It agrees
+with ``eval()`` as long as the two representations are in sync (see the
+class-level documentation).)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds =
+R"doc(Evaluates the spatial bounds of the animated transform over the given
+bounding box. This is used to compute the AABB of animated objects.
+Note: This is an approximation computed by sampling the transformation
+at regular intervals. It may not be perfectly conservative for highly
+non-linear motion.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Returns the time bounds of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds =
+R"doc(Returns the bounding box of the translation component of the animated
+transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_initialize = R"doc(One-time initialization call that is used by constructors.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_is_animated = R"doc(Check if the transformation is animated)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_keyframes = R"doc(Returns the host-allocated keyframes of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_grad_enabled =
+R"doc(Checks if JIT AD gradients are enabled on the parameter that is actually
+evaluated: the static transform when there is a single keyframe, and the
+packed keyframe buffer otherwise.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_traverse = R"doc()doc";
+
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop
 #endif

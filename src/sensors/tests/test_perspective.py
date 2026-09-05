@@ -48,7 +48,7 @@ def test01_create(variant_scalar_rgb, origin, direction, s_open, s_time):
     assert dr.allclose(camera.shutter_open_time(), s_time)
     assert not camera.needs_aperture_sample()
     assert camera.bbox() == mi.BoundingBox3f(origin, origin)
-    assert dr.allclose(camera.world_transform().matrix,
+    assert dr.allclose(camera.world_transform().eval(0.0).matrix,
                        mi.Transform4f().look_at(origin, mi.Vector3f(origin) + direction, [0, 1, 0]).matrix)
 
 
@@ -73,7 +73,7 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -104,7 +104,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     assert dr.allclose(mi.unpolarized_spectrum(spec_weight), spec)
     assert dr.allclose(ray.time, time)
 
-    inv_z = dr.rcp((camera.world_transform().inverse() @ ray.d).z)
+    inv_z = dr.rcp((camera.world_transform().eval(0.0).inverse() @ ray.d).z)
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
@@ -198,3 +198,91 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_animated_transform(variant_scalar_rgb):
+    t = mi.AnimatedTransform4f({
+        0.0: mi.Transform4f().translate([0, 0, 0]),
+        1.0: mi.Transform4f().translate([0, 0, 1])
+    })
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'to_world': t,
+    })
+
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+
+def test07_animation_xml(variant_scalar_rgb):
+    xml = """
+    <scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="0" y="0" z="1"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>
+    """
+    scene = mi.load_string(xml)
+    sensor = scene.sensors()[0]
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+
+def test08_camera_shear_rejection(variant_scalar_rgb):
+    """Sensors must reject scale factors and shear in to_world."""
+    from mitsuba import ScalarTransform4f as T
+
+    # Non-uniform scale in static transform
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': T().scale([1.0, 2.0, 1.0])
+        })
+
+    # Scale in animated transform
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().scale([1, 1, 1]),
+                1.0: T().scale([1, 2, 1])
+            })
+        })
+
+    # Sheared animated transform is rejected by AnimatedTransform
+    with pytest.raises(RuntimeError, match="Transformation contains shear"):
+        sheared = T([[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().translate([0, 0, 0]),
+                1.0: sheared
+            })
+        })
+
+
+def test09_sensor_to_world_transform_parameter_update(variant_scalar_rgb):
+    """Updating sensor.to_world.transform should take effect and reject illegal scale."""
+    from mitsuba import ScalarTransform4f as T
+
+    sensor = mi.load_dict({'type': 'perspective'})
+    params = mi.traverse(sensor)
+    assert 'to_world.transform' in params
+
+    # Update to valid translation
+    params['to_world.transform'] = T().translate([0, 0, 5])
+    params.update()
+    ray, _ = sensor.sample_ray(0.0, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 5), atol=0.01)
+
+    # Update to invalid scaled transform via dotted key must be rejected
+    params['to_world.transform'] = T().scale([2, 1, 1])
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        params.update()
