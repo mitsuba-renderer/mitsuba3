@@ -119,8 +119,8 @@ public:
      * matrix with a scalar (host-side) value.
      */
     void set_world_transform_scalar(const ScalarAffineTransform4f &to_world) {
-        this->m_to_world = to_world;
-        dr::make_opaque(this->m_to_world);
+        this->m_to_world = new AnimatedTransform4f(to_world);
+        this->m_to_world->make_transform_opaque();
     }
 
     /**
