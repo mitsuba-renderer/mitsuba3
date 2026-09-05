@@ -222,7 +222,8 @@ class SerializedMesh final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_filename, m_source_path, m_to_world,
                    m_vertex_count, m_face_count, m_face_normals,
-                   m_flip_normals, has_face_normals, from_packed)
+                   m_flip_normals, has_face_normals, from_packed,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarSize;
@@ -338,9 +339,9 @@ public:
 
         PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
                       make_layout(store_normals, has_texcoords));
-        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        pm.set_transform(to_world_scalar(), m_flip_normals);
         m_flip_normals = false;
-        m_to_world = ScalarAffineTransform4f();
+        m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f());
 
         // The temporaries below are interleaved into the packed records
         // right after; a null destination skips a field
@@ -463,9 +464,9 @@ public:
         stream_->close();
 
         // The records arrived in bulk, so they are transformed after the fact
-        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        pm.set_transform(to_world_scalar(), m_flip_normals);
         m_flip_normals = false;
-        m_to_world = ScalarAffineTransform4f();
+        m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f());
         pm.transform_records();
 
         // The stored FaceNormals flag applies when the scene description

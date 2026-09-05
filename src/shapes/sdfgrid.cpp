@@ -112,7 +112,7 @@ class SDFGrid final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
                    initialize, mark_dirty, get_children_string,
-                   parameters_grad_enabled)
+                   parameters_grad_enabled, to_world, to_world_scalar)
     MI_IMPORT_TYPES()
 
     // Grid texture is always stored in single precision
@@ -192,7 +192,7 @@ public:
 
     void update() {
         auto [S, Q, T] =
-            dr::transform_decompose(m_to_world.scalar().matrix, 25);
+            dr::transform_decompose(to_world_scalar().matrix, 25);
         if (dr::abs(Q[0]) > 1e-6f || dr::abs(Q[1]) > 1e-6f ||
             dr::abs(Q[2]) > 1e-6f || dr::abs(Q[3] - 1) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't perform any rotations, "
@@ -241,20 +241,19 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             m_grid_texture.update_inplace();
 
             update();
         }
 
-        Base::parameters_changed();
+        Base::parameters_changed(keys);
     }
 
     ScalarSize primitive_count() const override { return m_filled_voxel_count; }
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = to_world_scalar();
 
         bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 0.f));
         bbox.expand(to_world * ScalarPoint3f(1.f, 0.f, 0.f));
@@ -346,7 +345,7 @@ public:
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
 
-        AffineTransform4f to_world  = m_to_world.value();
+        AffineTransform4f to_world  = this->to_world();
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
@@ -374,10 +373,9 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        Vector3f grad = sdf_grad(m_to_world.value().inverse() * si.p);
+        Vector3f grad = sdf_grad(this->to_world().inverse() * si.p);
 
-        si.n =
-            dr::normalize(m_to_world.value() * Normal3f(grad));
+        si.n = dr::normalize(this->to_world() * Normal3f(grad));
 
         if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
@@ -386,7 +384,7 @@ public:
                     break;
                 case Smooth:
                     si.sh_frame.n =
-                        smooth(m_to_world.value().inverse() * si.p);
+                        smooth(this->to_world().inverse() * si.p);
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -484,11 +482,11 @@ public:
 
     Normal3f smooth(const Point3f &p) const {
         Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
-        return dr::normalize(m_to_world.value() * Normal3f(n));
+        return dr::normalize(this->to_world() * Normal3f(n));
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world);
+        return m_to_world->parameters_grad_enabled();
     }
 
 #if defined(MI_ENABLE_METAL)
@@ -547,7 +545,7 @@ public:
                 data.voxel_size    = { (float) vs[0], (float) vs[1],
                                        (float) vs[2], 0.f };
                 shapedata::fill_affine3x4(
-                    self->m_to_world.scalar().inverse().matrix, data.to_object);
+                    self->to_world_scalar().inverse().matrix, data.to_object);
             };
         }
 #endif
@@ -584,7 +582,7 @@ public:
             hdr.voxel_size[2] = (float) vs.z();
             hdr.pad = 0.f;
             // World->object affine, row-major (rows 0..2; last row implicit).
-            shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+            shapedata::fill_affine3x4(to_world_scalar().inverse().matrix,
                                       hdr.to_object);
 
             uint8_t *dst = (uint8_t *) out;
@@ -637,7 +635,7 @@ private:
         if constexpr (dr::is_jit_v<FloatP>)
             NotImplementedError("ray_intersect_preliminary_common_impl");
 
-        AffineTransform<Point<FloatP, 4>> to_object = m_to_world.scalar().inverse();
+        AffineTransform<Point<FloatP, 4>> to_object = to_world_scalar().inverse();
         Ray3fP ray = to_object * ray_;
 
         auto shape = m_grid_texture.tensor().shape();
@@ -1005,7 +1003,7 @@ private:
                                  static_cast<uint32_t>(shape[0]) };
         uint32_t max_voxel_count =
             (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = to_world_scalar();
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
 

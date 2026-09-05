@@ -4,7 +4,6 @@ import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
-
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
     from mitsuba import ScalarTransform4f as T
@@ -43,6 +42,7 @@ shapes = [
     { 'type' : 'rectangle'},
     { 'type' : 'sphere'},
 ]
+
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -85,6 +85,7 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
                 if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
                     assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
                     assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
+
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -132,6 +133,7 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                     if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
                         assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
                         assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
+
 
 
 @pytest.mark.parametrize('width', [1, 10])
@@ -196,28 +198,29 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[-0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, 0.5]' in instance_str
+    assert 'T=[-0.5, 0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, 0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
 
     assert dr.all(si.is_valid())
     assert dr.all(si.instance_index == 0)
+
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -265,6 +268,7 @@ def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
             assert dr.allclose(si.n, si_inst.n, atol=2e-2)
 
 
+
 def test05_normal_partials_non_similarity(variant_scalar_rgb):
     """The instance transform must not assume that it is a similarity"""
     from drjit.scalar import ArrayXf as ScalarF
@@ -298,6 +302,7 @@ def test05_normal_partials_non_similarity(variant_scalar_rgb):
                                   to_world)
 
     assert hits > 5, hits
+
 
 
 @pytest.mark.parametrize("api", ['scene', 'pi'])
@@ -344,17 +349,18 @@ def test06_ad_gradients(variants_all_ad_rgb, api):
     detach = mi.RayFlags.Default | mi.RayFlags.DetachShape
 
     # Instance transform: the hit point follows the moving instance
-    assert dr.allclose(grad('instance.to_world', follow, 'p.z'), 1.0)
+    assert dr.allclose(grad('instance.to_world.transform', follow, 'p.z'), 1.0)
 
     # Instance transform, default mode: the hit point stays on the ray while
     # the distance tracks the moving tangent plane
-    assert dr.allclose(grad('instance.to_world', mi.RayFlags.Default, 't'), 1.0)
+    assert dr.allclose(grad('instance.to_world.transform', mi.RayFlags.Default, 't'), 1.0)
 
     # DetachShape severs the dependence entirely
-    assert dr.allclose(grad('instance.to_world', detach, 't'), 0.0)
+    assert dr.allclose(grad('instance.to_world.transform', detach, 't'), 0.0)
 
     # Group-internal shape parameters, reached through the instanced hit
-    assert dr.allclose(grad('group.shape.to_world', mi.RayFlags.Default, 't'), 1.0)
+    assert dr.allclose(grad('group.shape.to_world.transform', mi.RayFlags.Default, 't'), 1.0)
+
 
 
 @fresolver_append_path
@@ -399,7 +405,7 @@ def test07_ad_gradients_vs_direct_mesh(variants_all_ad_rgb, api):
                 'instance': {'type': 'instance',
                              'group': {'type': 'ref', 'id': 'group'}}})
             params = mi.traverse(scene)
-            params['instance.to_world'] = mi.Transform4f(to_world) @ \
+            params['instance.to_world.transform'] = mi.Transform4f(to_world) @ \
                 mi.Transform4f().translate([0, 0, theta])
             params.update()
         else:
@@ -424,6 +430,7 @@ def test07_ad_gradients_vs_direct_mesh(variants_all_ad_rgb, api):
             g_inst = grad(True, ray_flags, output)
             assert dr.allclose(g_direct, g_inst, rtol=1e-4), \
                 (int(ray_flags), output, g_direct[0], g_inst[0])
+
 
 
 @fresolver_append_path
@@ -467,7 +474,7 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
                 'instance': {'type': 'instance',
                              'group': {'type': 'ref', 'id': 'group'}}})
             params = mi.traverse(scene)
-            params['instance.to_world'] = mi.Transform4f(to_world) @ \
+            params['instance.to_world.transform'] = mi.Transform4f(to_world) @ \
                 mi.Transform4f().translate([0, 0, theta])
             displace(params, 'group.shape.positions', mi.Vector3f(1, 0, 0), phi)
             params.update()
@@ -493,3 +500,21 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
                 ('theta', int(ray_flags), output, gd_theta[0], gi_theta[0])
             assert dr.allclose(gd_phi, gi_phi, rtol=1e-4, atol=1e-5), \
                 ('phi', int(ray_flags), output, gd_phi[0], gi_phi[0])
+
+
+
+def test13_shape_animation_rejection(variants_all_rgb):
+    """Non-instance shapes must reject animated transforms at construction time."""
+    from mitsuba import ScalarTransform4f as T
+
+    anim_trafo = mi.AnimatedTransform4f({
+        0.0: T().translate([0, 0, 0]),
+        1.0: T().translate([1, 0, 0])
+    })
+
+    for shape_type in ['sphere', 'disk', 'cylinder', 'rectangle']:
+        with pytest.raises(RuntimeError, match="Shape animation requires the use of the instance plugin"):
+            mi.load_dict({
+                'type': shape_type,
+                'to_world': anim_trafo
+            })

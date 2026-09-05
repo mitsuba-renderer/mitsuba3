@@ -50,7 +50,8 @@ of this shape maps every face onto the rectangle :math:`[0, 1]^2` in uv space.
 
 MI_VARIANT class Cube final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_filename, m_to_world, m_flip_normals, from_packed)
+    MI_IMPORT_BASE(Mesh, m_filename, m_to_world, m_flip_normals, from_packed,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::InputNormal3f;
@@ -93,9 +94,9 @@ public:
         // positions reference the 8 distinct corners
         PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
                       make_layout(true, true), corner_count);
-        pm.set_transform(m_to_world.scalar(), m_flip_normals);
+        pm.set_transform(to_world_scalar(), m_flip_normals);
         m_flip_normals = false;
-        m_to_world = ScalarAffineTransform4f();
+        m_to_world = new AnimatedTransform4f(ScalarAffineTransform4f());
         memcpy(pm.position_index.data(), position_index,
                sizeof(position_index));
 

@@ -93,7 +93,8 @@ class Disk final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
                    m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+                   get_children_string, parameters_grad_enabled, to_world,
+                   to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -101,9 +102,9 @@ public:
 
     Disk(const Properties &props) : Base(props) {
         if (props.get<bool>("flip_normals", false))
-            m_to_world =
-                m_to_world.scalar() *
-                ScalarAffineTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+            m_to_world = new AnimatedTransform4f(
+                to_world_scalar() *
+                ScalarAffineTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f)));
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -114,13 +115,14 @@ public:
     }
 
     void update() {
-        Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
-        Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
+        AffineTransform4f to_world = this->to_world();
+        Vector3f dp_du = to_world * Vector3f(1.f, 0.f, 0.f);
+        Vector3f dp_dv = to_world * Vector3f(0.f, 1.f, 0.f);
 
         m_du = dr::norm(dp_du);
         m_dv = dr::norm(dp_dv);
 
-        Normal3f n = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
+        Normal3f n = dr::normalize(to_world * Normal3f(0.f, 0.f, 1.f));
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -140,7 +142,6 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             update();
         }
         Base::parameters_changed(keys);
@@ -148,7 +149,7 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = to_world_scalar();
 
         ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
@@ -178,7 +179,7 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p    = m_to_world.value() * Point3f(p.x(), p.y(), 0.f);
+        ps.p    = this->to_world() * Point3f(p.x(), p.y(), 0.f);
         ps.n    = m_frame.n;
         ps.pdf  = m_inv_surface_area;
         ps.time = time;
@@ -204,7 +205,7 @@ public:
         auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.y());
         Point3f local(uv.x() * cos_phi, uv.x() * sin_phi, 0.f);
 
-        Point3f p = m_to_world.value() * local;
+        Point3f p = this->to_world() * local;
 
         Ray3f ray(p + m_frame.n, -m_frame.n, 0, Wavelength(0));
 
@@ -235,7 +236,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const AffineTransform4f& to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         /// Sample a point on the shape surface
@@ -300,7 +301,7 @@ public:
             Float sin_theta, cos_theta;
             std::tie(sin_theta, cos_theta) = dr::sincos(theta);
             Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = this->to_world() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -316,7 +317,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        const AffineTransform4f &to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         ss.uv = Point2f(1.f, si.uv.y());
@@ -370,10 +371,10 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
-        Point3f local_p = m_to_world.value().inverse() * ss.p;
+        Point3f local_p = this->to_world().inverse() * ss.p;
         // Arc-length ratio
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(m_to_world.value() *
+                 dr::rcp(dr::norm(this->to_world() *
                      Vector3f(local_p.y(), -local_p.x(), 0.f)));
 
         return ss;
@@ -393,9 +394,9 @@ public:
                                    dr::mask_t<FloatP> active) const {
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = to_world_scalar().inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = this->to_world().inverse();
 
         Ray3fP ray = to_object * ray_;
         FloatP t = -ray.o.z() / ray.d.z();
@@ -417,9 +418,9 @@ public:
 
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = to_world_scalar().inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = this->to_world().inverse();
 
         Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -440,7 +441,7 @@ public:
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
 
-        AffineTransform4f to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
@@ -496,13 +497,13 @@ public:
     }
 
     bool parameters_grad_enabled() const override {
-        return dr::grad_enabled(m_to_world.value());
+        return m_to_world->parameters_grad_enabled();
     }
 
 #if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
     void gpu_fill_data(void *out) const {
         shapedata::DiskData &d = *(shapedata::DiskData *) out;
-        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+        shapedata::fill_affine3x4(to_world_scalar().inverse().matrix,
                                   d.to_object);
     }
 
