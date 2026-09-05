@@ -68,6 +68,16 @@ struct Transform {
     Transform(const Matrix &matrix, const Matrix &inverse_transpose)
         : matrix(matrix), inverse_transpose(inverse_transpose) { }
 
+    /// Initialize an affine transformation from scale, quaternion rotation, and translation
+    template <typename Vector3, typename Quaternion4, bool A = Affine, size_t N = Size,
+              dr::enable_if_t<A && N == 4> = 0>
+    Transform(const Vector3 &s, const Quaternion4 &q, const Vector3 &t) {
+        using Matrix3 = dr::Matrix<Float, 3>;
+        Matrix3 s_mat = dr::diag(s);
+        matrix = dr::transform_compose<Matrix>(s_mat, q, t);
+        inverse_transpose = dr::transpose(dr::transform_compose_inverse<Matrix>(s_mat, q, t));
+    }
+
     /// Copy constructor with type conversion
     template <typename OtherPoint, bool OtherAffine>
     Transform(const Transform<OtherPoint, OtherAffine> &other)
