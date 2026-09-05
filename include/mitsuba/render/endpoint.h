@@ -5,6 +5,7 @@
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/core/animated_transform.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -312,20 +313,30 @@ public:
     virtual Spectrum eval(const SurfaceInteraction3f &si, Mask active = true) const;
 
 
-    /// Return the local space to world space transformation
-    AffineTransform4f world_transform() const {
-        return m_to_world.value();
+    /// Return the local space to world space transformation at time \c time
+    AffineTransform4f world_transform(Float time = 0.f) const {
+        return m_to_world->eval(time);
     }
 
     /**
      * \brief Return the local space to world space transformation as a
-     * scalar transform
+     * scalar transform at time \c time
      *
      * This mirrors `world_transform()` without touching the device: reading
      * the JIT representation back would wait for all queued work.
      */
-    const ScalarAffineTransform4f &world_transform_scalar() const {
-        return m_to_world.scalar();
+    ScalarAffineTransform4f world_transform_scalar(ScalarFloat time = 0.f) const {
+        return m_to_world->eval_scalar(time);
+    }
+
+    /// Return the underlying animated transformation
+    const AnimatedTransform<Float, Spectrum>* animated_world_transform() const {
+        return m_to_world.get();
+    }
+
+    /// Return the underlying animated transformation
+    AnimatedTransform<Float, Spectrum>* animated_world_transform() {
+        return m_to_world.get();
     }
 
     /**
@@ -385,8 +396,6 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
-    void parameters_changed(const std::vector<std::string> &keys = {}) override;
-
     MI_DECLARE_CLASS(Endpoint)
 
 protected:
@@ -394,7 +403,7 @@ protected:
     Endpoint(const Properties &props, ObjectType type);
 
 protected:
-    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    ref<AnimatedTransform<Float, Spectrum>> m_to_world;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;

@@ -4098,6 +4098,8 @@ static const char *__doc_mitsuba_Endpoint_traverse_cb = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_traverse_cb_fields = R"doc()doc";
 
+static const char *__doc_mitsuba_Endpoint_animated_world_transform = R"doc(Return the underlying animated transformation)doc";
+
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local space to world space transformation)doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform_scalar =

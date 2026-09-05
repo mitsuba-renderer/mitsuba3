@@ -238,6 +238,22 @@ def test15_spatial_bounds(variant_scalar_rgb):
     assert dr.allclose(spatial_bounds.max, [11, 1, 1])
 
 
+def test16_parameters_changed(variants_vec_backends_once):
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
+    })
+    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
+    params = mi.traverse(sensor)
+    # translation.x of the second keyframe
+    translation = mi.TensorXf(params['to_world.translation'])
+    translation[1, 0] = 2.5
+    params['to_world.translation'] = translation
+    params.update()
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [2.5, 0, 0])
+    assert dr.allclose(at.eval(mi.Float(1.0)).translation(), [2.5, 0, 0])
+
+
 def test17_change_frame_number(variants_vec_backends_once):
     # Initialize with 1 keyframe
     at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1.0, 0.0, 0.0]))
@@ -383,6 +399,36 @@ def test25_duplicate_keyframe_times(variant_scalar_rgb):
             (1.0, mi.ScalarAffineTransform4f.translate([0, 0, 0])),
             (1.0, mi.ScalarAffineTransform4f.translate([1, 0, 0])),
         ])
+
+
+def test26_static_data_edit(variants_vec_backends_once):
+    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
+    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
+
+    params = mi.traverse(sensor)
+    translation = mi.TensorXf(params['to_world.translation'])
+    translation[0, 0] = 5.0  # translation.x of the only keyframe
+    params['to_world.translation'] = translation
+    params.update()
+
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [5, 0, 0])
+    assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [5, 0, 0])
+
+
+def test27_static_transform_edit(variants_vec_backends_once):
+    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
+    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
+
+    params = mi.traverse(sensor)
+    params['to_world'] = mi.AffineTransform4f().translate([0, 7, 0])
+    params.update()
+
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 7, 0])
+    assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [0, 7, 0])
+    # get_translation_bounds() reads the host-side keyframe list, which must
+    # have followed the write to 'transform'.
+    bbox = at.get_translation_bounds()
+    assert dr.allclose(bbox.min, [0, 7, 0]) and dr.allclose(bbox.max, [0, 7, 0])
 
 
 def test28_grad_enabled(variants_all_ad_rgb):

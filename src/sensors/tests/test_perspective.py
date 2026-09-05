@@ -181,3 +181,88 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_animated_transform(variant_scalar_rgb):
+    t = mi.AnimatedTransform4f({
+        0.0: mi.Transform4f().translate([0, 0, 0]),
+        1.0: mi.Transform4f().translate([0, 0, 1])
+    })
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'to_world': t,
+    })
+
+    ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
+
+    # world_transform() defaults to time = 0
+    assert dr.allclose(sensor.world_transform().translation(), [0, 0, 0])
+    # world_transform(time) evaluates at time
+    assert dr.allclose(sensor.world_transform(0.5).translation(), [0, 0, 0.5])
+    assert dr.allclose(sensor.world_transform_scalar(0.5).translation(), [0, 0, 0.5])
+    # animated_world_transform() returns the AnimatedTransform object
+    awt = sensor.animated_world_transform()
+    assert isinstance(awt, mi.AnimatedTransform4f)
+    assert awt.is_animated()
+
+
+def test08_camera_shear_rejection(variant_scalar_rgb):
+    """Sensors must reject scale factors and shear in to_world."""
+    from mitsuba import ScalarTransform4f as T
+
+    # Non-uniform scale in static transform
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': T().scale([1.0, 2.0, 1.0])
+        })
+
+    # Scale in animated transform
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().scale([1, 1, 1]),
+                1.0: T().scale([1, 2, 1])
+            })
+        })
+
+    # Sheared static transform is rejected by perspective sensor
+    with pytest.raises(RuntimeError, match="Shear in the camera-to-world transformation is not allowed!"):
+        sheared = T([[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': sheared
+        })
+
+    # Sheared animated transform is rejected by perspective sensor
+    with pytest.raises(RuntimeError, match="Shear in the camera-to-world transformation is not allowed!"):
+        sheared = T([[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
+        mi.load_dict({
+            'type': 'perspective',
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().translate([0, 0, 0]),
+                1.0: sheared
+            })
+        })
+
+
+def test09_sensor_to_world_transform_parameter_update(variant_scalar_rgb):
+    """Updating sensor.to_world should take effect and reject illegal scale."""
+    from mitsuba import ScalarTransform4f as T
+
+    sensor = mi.load_dict({'type': 'perspective'})
+    params = mi.traverse(sensor)
+    assert 'to_world' in params
+
+    # Update to valid translation
+    params['to_world'] = T().translate([0, 0, 5])
+    params.update()
+    ray, _ = sensor.sample_ray(0.0, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray.o, mi.Point3f(0, 0, 5), atol=0.01)
+
+    # Update to invalid scaled transform via dotted key must be rejected
+    params['to_world'] = T().scale([2, 1, 1])
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
+        params.update()
