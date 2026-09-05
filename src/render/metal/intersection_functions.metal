@@ -79,11 +79,42 @@ static inline uint data_offset(device const uint *lookup,
     return lookup[lookup[inst_id] + geo_id];
 }
 
+#define DEFINE_INTERSECTION_WRAPPERS(name, DataType, buf_idx, param_name) \
+[[intersection(bounding_box, instancing)]] \
+BoundingBoxIntersection name( \
+    float3 origin                       [[origin]], \
+    float3 direction                    [[direction]], \
+    float  min_distance                 [[min_distance]], \
+    float  max_distance                 [[max_distance]], \
+    uint   prim_id                      [[primitive_id]], \
+    uint   inst_id                      [[instance_id]], \
+    uint   geo_id                       [[geometry_id]], \
+    device const DataType *param_name   [[buffer(buf_idx)]], \
+    device const uint *lookup           [[buffer(MI_LOOKUP_BUFFER)]]) \
+{ \
+    return impl_##name(origin, direction, min_distance, max_distance, \
+                       prim_id, inst_id, geo_id, param_name, lookup); \
+} \
+[[intersection(bounding_box, instancing, instance_motion)]] \
+BoundingBoxIntersection name##_motion( \
+    float3 origin                       [[origin]], \
+    float3 direction                    [[direction]], \
+    float  min_distance                 [[min_distance]], \
+    float  max_distance                 [[max_distance]], \
+    uint   prim_id                      [[primitive_id]], \
+    uint   inst_id                      [[instance_id]], \
+    uint   geo_id                       [[geometry_id]], \
+    device const DataType *param_name   [[buffer(buf_idx)]], \
+    device const uint *lookup           [[buffer(MI_LOOKUP_BUFFER)]]) \
+{ \
+    return impl_##name(origin, direction, min_distance, max_distance, \
+                       prim_id, inst_id, geo_id, param_name, lookup); \
+}
+
 // ---------------------------------------------------------------------------
 //  Sphere
 // ---------------------------------------------------------------------------
-[[intersection(bounding_box, instancing)]]
-BoundingBoxIntersection intersection_sphere(
+static inline BoundingBoxIntersection impl_intersection_sphere(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
@@ -133,12 +164,13 @@ BoundingBoxIntersection intersection_sphere(
     return r;
 }
 
+DEFINE_INTERSECTION_WRAPPERS(intersection_sphere, SphereData, 0, spheres)
+
 // ---------------------------------------------------------------------------
 //  Disk (object-space: z=0 plane, unit radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
-BoundingBoxIntersection intersection_disk(
+static inline BoundingBoxIntersection impl_intersection_disk(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
@@ -166,12 +198,13 @@ BoundingBoxIntersection intersection_disk(
     return r;
 }
 
+DEFINE_INTERSECTION_WRAPPERS(intersection_disk, DiskData, 1, disks)
+
 // ---------------------------------------------------------------------------
 //  Cylinder (object-space: z-axis, [0, length], radius)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
-BoundingBoxIntersection intersection_cylinder(
+static inline BoundingBoxIntersection impl_intersection_cylinder(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
@@ -218,12 +251,13 @@ BoundingBoxIntersection intersection_cylinder(
     return r;
 }
 
+DEFINE_INTERSECTION_WRAPPERS(intersection_cylinder, CylinderData, 2, cyls)
+
 // ---------------------------------------------------------------------------
 //  Ellipsoids (one ellipsoid per primitive, object space is unit sphere)
 // ---------------------------------------------------------------------------
 
-[[intersection(bounding_box, instancing)]]
-BoundingBoxIntersection intersection_ellipsoids(
+static inline BoundingBoxIntersection impl_intersection_ellipsoids(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
@@ -283,6 +317,8 @@ BoundingBoxIntersection intersection_ellipsoids(
     return r;
 }
 
+DEFINE_INTERSECTION_WRAPPERS(intersection_ellipsoids, EllipsoidData, 3, ellis)
+
 // ---------------------------------------------------------------------------
 //  SDF grid (one AABB per filled voxel)
 // ---------------------------------------------------------------------------
@@ -321,8 +357,7 @@ static inline bool sdf_intersect_aabb(float3 ro, float3 rd,
     return t_max >= max(t_min, 0.0f);
 }
 
-[[intersection(bounding_box, instancing)]]
-BoundingBoxIntersection intersection_sdfgrid(
+static inline BoundingBoxIntersection impl_intersection_sdfgrid(
     float3 origin                       [[origin]],
     float3 direction                    [[direction]],
     float  min_distance                 [[min_distance]],
@@ -504,3 +539,5 @@ BoundingBoxIntersection intersection_sdfgrid(
     }
     return r;
 }
+
+DEFINE_INTERSECTION_WRAPPERS(intersection_sdfgrid, uchar, 4, buf)

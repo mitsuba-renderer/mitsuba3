@@ -496,7 +496,7 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
 
 
 @pytest.mark.parametrize("num_keyframes", [2, 3, 5])
-def test09_animated_instance(variants_cpu_rgb, num_keyframes):
+def test09_animated_instance(variants_all_rgb, num_keyframes):
     from mitsuba import ScalarTransform4f as T
 
     keyframes = {}
@@ -539,7 +539,7 @@ def test09_animated_instance(variants_cpu_rgb, num_keyframes):
     assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
 
 
-def test10_animated_instance_rotation_scaling(variants_cpu_rgb):
+def test10_animated_instance_rotation_scaling(variants_all_rgb):
     from mitsuba import ScalarTransform4f as T
 
     scene = mi.load_dict({
@@ -617,7 +617,7 @@ def test11_non_uniform_animation_error(variants_vec_backends_once):
         })
 
 
-def test12_animated_instance_shear(variants_cpu_rgb):
+def test12_animated_instance_shear(variants_all_rgb):
     sheared = mi.ScalarAffineTransform4f([[1, 1, 0, 0],
                                          [0, 1, 0, 0],
                                          [0, 0, 1, 0],
@@ -655,7 +655,7 @@ def test12_animated_instance_shear(variants_cpu_rgb):
     assert dr.allclose(si_1.p, [1.5, 0.8, 0], atol=1e-5)
 
 
-def test13_animated_instances_with_differing_time_ranges(variants_cpu_rgb):
+def test13_animated_instances_with_differing_time_ranges(variants_all_rgb):
     from mitsuba import ScalarTransform4f as T
 
     def instance(keyframes):
