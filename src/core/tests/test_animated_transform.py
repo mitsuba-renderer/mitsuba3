@@ -181,6 +181,38 @@ def test10_properties(variant_scalar_rgb):
     assert props.type("to_world") == mi.Properties.Type.Object
 
 
+def test11_xml_loading(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1">
+                    <translate x="1" y="2" z="3"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>"""
+
+    scene = mi.load_string(xml)
+    at = scene.sensors()[0].animated_world_transform()
+    assert at.is_animated()
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
+    assert dr.allclose(at.eval_scalar(1.0).translation(), [1, 2, 3])
+    assert dr.allclose(at.eval_scalar(0.5).translation(), [0.5, 1, 1.5])
+
+    # An <animation> may also sit directly under <scene>, in which case it is
+    # instantiated as a plain child object.
+    standalone = mi.load_string("""<scene version="3.0.0">
+        <animation name="test_anim">
+            <transform time="0"><translate x="0" y="0" z="0"/></transform>
+            <transform time="1"><translate x="1" y="2" z="3"/></transform>
+        </animation>
+    </scene>""")
+    assert standalone is not None
+
+
 def test12_translation_bounds(variant_scalar_rgb):
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.translate([1, -2, 3]),
@@ -456,6 +488,33 @@ def test29_spatial_bounds_hits_keyframes(variant_scalar_rgb):
     bbox = mi.ScalarBoundingBox3f([0, 0, 0], [1, 1, 1])
     bounds = at.get_spatial_bounds(bbox)
     assert bounds.max[1] >= 100.0
+
+
+def test30_xml_roundtrip(variant_scalar_rgb):
+    xml = """<scene version="3.0.0">
+        <sensor type="perspective">
+            <animation name="to_world">
+                <transform time="0">
+                    <translate x="0" y="0" z="0"/>
+                </transform>
+                <transform time="1.5">
+                    <translate x="1" y="2" z="3"/>
+                </transform>
+            </animation>
+        </sensor>
+    </scene>"""
+
+    state = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), xml)
+    written = mi.parser.write_string(state)
+    assert "<animation" in written
+
+    # Re-parsing the generated document must yield the same animation.
+    state2 = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), written)
+    scene = mi.parser.instantiate(mi.parser.ParserConfig(mi.variant()), state2)
+    at = scene.sensors()[0].animated_world_transform()
+    assert at.is_animated()
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
+    assert dr.allclose(at.eval_scalar(1.5).translation(), [1, 2, 3])
 
 
 def test31_negative_times(variant_scalar_rgb):
