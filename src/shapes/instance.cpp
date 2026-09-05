@@ -82,6 +82,7 @@ public:
 
         m_shape_type = ShapeType::Instance;
 
+        m_to_world->ensure_uniform_keyframes();
         // 'instance' does not call Shape::initialize(), which is where the
         // other shapes request this
         m_to_world->make_transform_opaque();
@@ -94,6 +95,7 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
+            m_to_world->ensure_uniform_keyframes();
             mark_dirty();
         }
         Base::parameters_changed(keys);
@@ -106,10 +108,8 @@ public:
         if (!bbox.valid())
             return bbox;
 
-        ScalarBoundingBox3f result;
-        for (int i = 0; i < 8; ++i)
-            result.expand(to_world_scalar() * bbox.corner(i));
-        return result;
+        // Union of the instance bounds across all keyframes
+        return m_to_world->get_spatial_bounds(bbox);
     }
 
     ScalarSize primitive_count() const override { return 1; }
@@ -172,6 +172,28 @@ public:
         g.kind = ShapeIR::Kind::Instance;
         g.type = m_shape_type;
         g.ctx = this;
+
+        // For animated instances, emit one decomposed keyframe per to_world
+        // keyframe. Backends that support motion blur consume these; the
+        // packed to_world below remains the t=0 fallback.
+        if (m_to_world->is_animated()) {
+            for (const auto &[time, kf] : m_to_world->keyframes()) {
+                KeyframeIR kf_ir;
+                kf_ir.time = (float) time;
+                kf_ir.scale[0] = (float) kf.S.x();
+                kf_ir.scale[1] = (float) kf.S.y();
+                kf_ir.scale[2] = (float) kf.S.z();
+                kf_ir.quat[0] = (float) kf.Q.w();
+                kf_ir.quat[1] = (float) kf.Q.x();
+                kf_ir.quat[2] = (float) kf.Q.y();
+                kf_ir.quat[3] = (float) kf.Q.z();
+                kf_ir.trans[0] = (float) kf.T.x();
+                kf_ir.trans[1] = (float) kf.T.y();
+                kf_ir.trans[2] = (float) kf.T.z();
+                g.keyframes.push_back(kf_ir);
+            }
+        }
+
         // Column-major 3x4 affine (to_world[col*3 + row]). Each backend repacks
         // into its instance-descriptor convention.
         const auto &M = to_world_scalar().matrix;

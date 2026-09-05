@@ -4,6 +4,7 @@ import mitsuba as mi
 
 from mitsuba.scalar_rgb.test.util import fresolver_append_path
 
+
 @fresolver_append_path
 def example_scene(shape, scale=1.0, translate=[0, 0, 0], angle=0.0):
     from mitsuba import ScalarTransform4f as T
@@ -42,7 +43,6 @@ shapes = [
     { 'type' : 'rectangle'},
     { 'type' : 'sphere'},
 ]
-
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -85,7 +85,6 @@ def test01_ray_intersect(variant_scalar_rgb, shape):
                 if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
                     assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
                     assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
-
 
 
 @pytest.mark.parametrize("shape", shapes)
@@ -133,7 +132,6 @@ def test02_ray_intersect_transform(variant_scalar_rgb, shape):
                     if dr.norm(si.dn_du) > 0.0 and dr.norm(si.dn_dv) > 0.0:
                         assert dr.allclose(si.dn_du, si_inst.dn_du, atol=2e-2)
                         assert dr.allclose(si.dn_dv, si_inst.dn_dv, atol=2e-2)
-
 
 
 @pytest.mark.parametrize('width', [1, 10])
@@ -222,7 +220,6 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     assert dr.all(si.instance_index == 0)
 
 
-
 @pytest.mark.parametrize("shape", shapes)
 def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
     """A ShapeGroup with exactly one child, instanced with a non-identity
@@ -268,7 +265,6 @@ def test04_single_child_group_recovery(variants_vec_backends_once_rgb, shape):
             assert dr.allclose(si.n, si_inst.n, atol=2e-2)
 
 
-
 def test05_normal_partials_non_similarity(variant_scalar_rgb):
     """The instance transform must not assume that it is a similarity"""
     from drjit.scalar import ArrayXf as ScalarF
@@ -302,7 +298,6 @@ def test05_normal_partials_non_similarity(variant_scalar_rgb):
                                   to_world)
 
     assert hits > 5, hits
-
 
 
 @pytest.mark.parametrize("api", ['scene', 'pi'])
@@ -360,7 +355,6 @@ def test06_ad_gradients(variants_all_ad_rgb, api):
 
     # Group-internal shape parameters, reached through the instanced hit
     assert dr.allclose(grad('group.shape.to_world.transform', mi.RayFlags.Default, 't'), 1.0)
-
 
 
 @fresolver_append_path
@@ -432,7 +426,6 @@ def test07_ad_gradients_vs_direct_mesh(variants_all_ad_rgb, api):
                 (int(ray_flags), output, g_direct[0], g_inst[0])
 
 
-
 @fresolver_append_path
 def test08_ad_gradients_combined(variants_all_ad_rgb):
     """Gradient reference test for simultaneous differentiation of the
@@ -502,6 +495,145 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
                 ('phi', int(ray_flags), output, gd_phi[0], gi_phi[0])
 
 
+@pytest.mark.parametrize("num_keyframes", [2, 3, 5])
+def test09_animated_instance(variants_all_rgb, num_keyframes):
+    """A translating instance produces time-dependent intersections that
+    interpolate linearly between the keyframe transforms."""
+    from mitsuba import ScalarTransform4f as T
+
+    keyframes = {}
+    for i in range(num_keyframes):
+        t = 10.0 * i / (num_keyframes - 1)
+        keyframes[t] = T().translate([0, 0, t / 10.0])
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'sphere'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f(keyframes)
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-6)
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -0.5], atol=1e-6)
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+
+def test10_animated_instance_rotation_scaling(variants_all_rgb):
+    """Combined rotation and scaling keyframes are interpolated correctly, so
+    the surface the ray meets tracks the animated instance transform."""
+    from mitsuba import ScalarTransform4f as T
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'rectangle'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().rotate([0, 1, 0], 0).scale([1, 1, 1]),
+                10.0: T().rotate([0, 1, 0], 90).scale([2, 2, 2])
+            })
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+    assert dr.allclose(dr.abs(si.n), [0, 0, 1], atol=1e-4)
+
+    # At t=0, scale is 1.0; a ray at y=1.2 misses the rectangle (height [-1, 1])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=0.0)
+    si_off = scene.ray_intersect(ray_off)
+    assert not dr.any(si_off.is_valid())
+
+    # At t=5, rotation is 45 deg around Y and scale is 1.5
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    if 'metal' in mi.variant():
+        expected_n = [2.0 / dr.sqrt(5.0), 0, 1.0 / dr.sqrt(5.0)]
+    else:
+        expected_n = [dr.sqrt(0.5), 0, dr.sqrt(0.5)]
+    assert dr.allclose(dr.abs(si.n), expected_n, atol=1e-2)
+
+    # At t=5, scale is 1.5; a ray at y=1.2 now hits the rectangle (height [-1.5, 1.5])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=5.0)
+    si_off = scene.ray_intersect(ray_off)
+    assert dr.all(si_off.is_valid())
+
+    # At t=10, rotation is 90 deg around Y and scale is 2.0
+    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-5)
+    assert dr.allclose(dr.abs(si.n), [1, 0, 0], atol=1e-4)
+
+
+def test12_animated_instance_time_range_outside_unit_interval(variants_all_rgb):
+    """Embree and OptiX must correctly handle keyframes with timestamps outside [0, 1]."""
+    from mitsuba import ScalarTransform4f as T
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'sphere'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                10.0: T().translate([0, 0, 0]),
+                20.0: T().translate([10, 0, 0])
+            })
+        }
+    })
+
+    # At t=10.0: center at (0, 0, 0)
+    ray = mi.Ray3f(o=[0, 0, -5], d=[0, 0, 1], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-4)
+
+    # At t=15.0: center at (5, 0, 0)
+    ray = mi.Ray3f(o=[5, 0, -5], d=[0, 0, 1], time=15.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [5, 0, -1], atol=1e-4)
+
+    # At t=20.0: center at (10, 0, 0)
+    ray = mi.Ray3f(o=[10, 0, -5], d=[0, 0, 1], time=20.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [10, 0, -1], atol=1e-4)
+
+    # Clamping behavior: ray at t=5.0 should clamp to t=10.0 (center at 0, 0, 0)
+    ray = mi.Ray3f(o=[0, 0, -5], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-4)
+
 
 def test13_shape_animation_rejection(variants_all_rgb):
     """Non-instance shapes must reject animated transforms at construction time."""
@@ -518,3 +650,27 @@ def test13_shape_animation_rejection(variants_all_rgb):
                 'type': shape_type,
                 'to_world': anim_trafo
             })
+
+
+def test11_non_uniform_animation_error(variants_vec_backends_once):
+    """Instances require uniformly spaced keyframes; non-uniform time steps are
+    rejected at construction time."""
+    from mitsuba import ScalarTransform4f as T
+
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type': 'scene',
+            'group_0': {
+                'type': 'shapegroup',
+                'shape': {'type': 'sphere'}
+            },
+            'instance': {
+                'type': 'instance',
+                'group': {'type': 'ref', 'id': 'group_0'},
+                'to_world': mi.AnimatedTransform4f({
+                    0.0: T().translate([0, 0, 0]),
+                    0.3: T().translate([0, 0, 1]),
+                    1.0: T().translate([0, 0, 2])
+                })
+            }
+        })

@@ -277,6 +277,123 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
                         true, ReduceMode::NoConflicts);
         }
     }
+
+    // If any instance is animated, build per-instance keyframe buffers used by
+    // eval_instance_to_world() for time-dependent (motion-blurred) lookups.
+    // Static instances contribute a single keyframe so the buffers remain
+    // addressable for every instance; the interpolation math is skipped for
+    // them via a per-lane count check.
+    m_static_instance_count = 0;
+    for (size_t i = 0; i < n; ++i)
+        m_static_instance_count +=
+            !m_instances[i]->animated_to_world()->is_animated();
+
+    if (m_static_instance_count == n) {
+        m_instance_kf_data   = dr::zeros<DynamicBuffer<Float>>(0);
+        m_instance_kf_offset = dr::zeros<DynamicBuffer<UInt32>>(0);
+        m_instance_kf_count  = dr::zeros<DynamicBuffer<UInt32>>(0);
+        m_instance_kf_tmin   = dr::zeros<DynamicBuffer<Float>>(0);
+        m_instance_kf_tstep  = dr::zeros<DynamicBuffer<Float>>(0);
+        return;
+    }
+
+    std::vector<uint32_t> offset(n), count(n);
+    std::vector<ScalarFloat> tmin(n), tstep(n), chunks;
+    uint32_t running = 0;
+    for (size_t i = 0; i < n; ++i) {
+        const auto &kfs = m_instances[i]->animated_to_world()->keyframes();
+        size_t k = kfs.size();
+        offset[i] = running;
+        count[i]  = (uint32_t) k;
+        tmin[i]   = kfs.front().first;
+        // Uniform spacing, as required by the ray tracing backends and
+        // enforced by Instance's calls to ensure_uniform_keyframes(). The step
+        // is unused for static instances but kept nonzero to avoid a division
+        // by zero in the vectorized lookup.
+        tstep[i]  = k > 1 ? (kfs.back().first - kfs.front().first) / (k - 1) : 1.f;
+        for (const auto &[time, kf] : kfs) {
+            size_t base = chunks.size();
+            chunks.resize(base + KeyframeStride);
+            pack_keyframe(time, kf, chunks.data() + base);
+        }
+        running += (uint32_t) k;
+    }
+    // Note: m_instance_kf_data is a read-only acceleration cache populated on the
+    // host for primal motion blur evaluation during ray tracing and surface
+    // interaction reconstruction. Dynamic keyframe data is non-differentiable.
+    m_instance_kf_data   = dr::load<DynamicBuffer<Float>>(chunks.data(), chunks.size());
+    m_instance_kf_offset = dr::load<DynamicBuffer<UInt32>>(offset.data(), n);
+    m_instance_kf_count  = dr::load<DynamicBuffer<UInt32>>(count.data(), n);
+    m_instance_kf_tmin   = dr::load<DynamicBuffer<Float>>(tmin.data(), n);
+    m_instance_kf_tstep  = dr::load<DynamicBuffer<Float>>(tstep.data(), n);
+}
+
+// Reconstructs the instance-to-world transform at the specified ray time.
+// Interpolation matches the ray tracing backend used during ray intersection:
+// - Metal: linear matrix interpolation
+// - OptiX (CUDA): normalized linear interpolation (nlerp) on quaternions
+// - Embree (CPU): spherical linear interpolation (slerp) on quaternions
+MI_VARIANT typename Scene<Float, Spectrum>::AffineTransform4f
+Scene<Float, Spectrum>::eval_instance_to_world(const UInt32 &i0,
+                                               const Float &time,
+                                               Mask active) const {
+    auto gather_static = [&]() {
+        return unpack_matrix<AffineTransform4f>(
+            dr::gather<dr::Array<Float, 12>>(m_instance_transforms, i0, active));
+    };
+
+    // No animated instance in the scene: nothing to interpolate.
+    if (m_instance_kf_count.size() == 0)
+        return gather_static();
+
+    UInt32 count    = dr::gather<UInt32>(m_instance_kf_count, i0, active);
+    Mask   animated = active && (count > 1u);
+
+    UInt32 offset = dr::gather<UInt32>(m_instance_kf_offset, i0, active);
+    Float  tmin   = dr::gather<Float>(m_instance_kf_tmin, i0, active);
+    Float  tstep  = dr::gather<Float>(m_instance_kf_tstep, i0, active);
+
+    // Bracketing keyframes on the uniform time grid.
+    Float  f    = dr::clip((time - tmin) / tstep, 0.f, Float(count - 1u));
+    UInt32 k0   = UInt32(dr::floor(f));
+    UInt32 k1   = dr::minimum(k0 + 1u, count - 1u);
+    Float  frac = f - Float(k0);
+
+    constexpr uint32_t stride = KeyframeStride / 4;
+    UInt32 vi0 = (offset + k0) * stride;
+    UInt32 vi1 = (offset + k1) * stride;
+
+    Vector4f a0 = dr::gather<Vector4f>(m_instance_kf_data, vi0 + 0u, animated);
+    Vector4f a1 = dr::gather<Vector4f>(m_instance_kf_data, vi0 + 1u, animated);
+    Vector4f a2 = dr::gather<Vector4f>(m_instance_kf_data, vi0 + 2u, animated);
+    Vector4f b0 = dr::gather<Vector4f>(m_instance_kf_data, vi1 + 0u, animated);
+    Vector4f b1 = dr::gather<Vector4f>(m_instance_kf_data, vi1 + 1u, animated);
+    Vector4f b2 = dr::gather<Vector4f>(m_instance_kf_data, vi1 + 2u, animated);
+
+    Vector3f s0(a0.y(), a0.z(), a0.w()), s1(b0.y(), b0.z(), b0.w());
+    Quaternion4f q0 = a1, q1 = b1;
+    Vector3f tr0(a2.x(), a2.y(), a2.z()), tr1(b2.x(), b2.y(), b2.z());
+
+    AffineTransform4f animated_to_world = [&]() {
+        if constexpr (dr::is_metal_v<Float>) {
+            Matrix4f m0 = dr::transform_compose<Matrix4f>(dr::diag(s0), q0, tr0),
+                     m1 = dr::transform_compose<Matrix4f>(dr::diag(s1), q1, tr1);
+            return AffineTransform4f(dr::lerp(m0, m1, frac));
+        } else if constexpr (dr::is_cuda_v<Float>) {
+            Quaternion4f q = dr::normalize(dr::lerp(q0, q1, frac));
+            return AffineTransform4f(
+                dr::lerp(s0, s1, frac), q, dr::lerp(tr0, tr1, frac));
+        } else {
+            return AffineTransform4f(
+                dr::lerp(s0, s1, frac), dr::slerp(q0, q1, frac), dr::lerp(tr0, tr1, frac));
+        }
+    }();
+
+    // Every instance animated: the static matrices are dead weight
+    if (m_static_instance_count == 0)
+        return animated_to_world;
+
+    return dr::select(animated, animated_to_world, gather_static());
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -318,16 +435,14 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
     // group. Both parameterizations share the same distance value ``t``
     // because the direction is not re-normalized.
     auto [ray_l_o, ray_l_d] = dr::if_stmt(
-        std::make_tuple(ray.o, ray.d, pi.instance_index),
+        std::make_tuple(ray.o, ray.d, ray.time, pi.instance_index),
         has_inst,
 
         [this, detach_shape](const Point3f &o, const Vector3f &d,
-                             const UInt32 &index) {
+                             const Float &time, const UInt32 &index) {
             DRJIT_MARK_USED(detach_shape);
             AffineTransform4f to_object =
-                unpack_matrix<AffineTransform4f>(
-                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
-                                                     index - 1u)).inverse();
+                eval_instance_to_world(index - 1u, time, true).inverse();
 
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
@@ -338,7 +453,7 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
                                   Vector3f(to_object * d));
         },
 
-        [](const Point3f &o, const Vector3f &d,
+        [](const Point3f &o, const Vector3f &d, const Float &,
            const UInt32 &) { return std::make_pair(o, d); },
 
         "Scene::compute_surface_interaction_instanced() [ray transform]");
@@ -361,8 +476,7 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
             DRJIT_MARK_USED(follow_shape);
             DRJIT_MARK_USED(grad_enabled);
             AffineTransform4f to_world =
-                unpack_matrix<AffineTransform4f>(
-                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms, index - 1u));
+                eval_instance_to_world(index - 1u, ray.time, true);
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
                     to_world = dr::detach(to_world);
