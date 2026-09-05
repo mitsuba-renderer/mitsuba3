@@ -104,6 +104,7 @@ INTEGRATOR_ORDERING = [
     '../src/python/python/ad/integrators/direct_projective.py',
     '../src/python/python/ad/integrators/prb_projective.py',
     '../src/python/python/ad/integrators/prbvolpath.py',
+    '../src/python/python/ad/integrators/prbvolpath_sm.py',
     '../src/python/python/ad/integrators/volprim_rf_basic.py',
 ]
 

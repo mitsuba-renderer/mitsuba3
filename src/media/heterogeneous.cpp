@@ -23,7 +23,17 @@ Heterogeneous medium (:monosp:`heterogeneous`)
 
  * - albedo
    - |float|, |spectrum| or |volume|
-   - Single-scattering albedo of the medium (Default: 0.75).
+   - Single-scattering albedo of the medium (Default: 0.75). Mutually
+     exclusive with :monosp:`sigma_s`.
+   - |exposed|, |differentiable|
+
+ * - sigma_s
+   - |float|, |spectrum| or |volume|
+   - Scattering coefficient, for scenes that store one instead of an albedo;
+     the two are related by :math:`\sigma_s = \sigma_t\,\alpha` and are
+     mutually exclusive. Whichever is given is the differentiable parameter,
+     and the same :monosp:`scale` applies. See the note below before
+     optimizing this one.
    - |exposed|, |differentiable|
 
  * - sigma_t
@@ -46,6 +56,19 @@ Heterogeneous medium (:monosp:`heterogeneous`)
      render time. This can reduce render time up to 50% when rendering objects
      with subsurface scattering.
 
+ * - majorant_resolution_factor
+   - |int|
+   - Delta tracking bounds the extinction by a *majorant*. Rather than one
+     global bound, this medium builds a coarse grid of per-cell bounds -- a
+     majorant supergrid -- by max-pooling :monosp:`sigma_t` with this factor
+     along each axis, and traverses it with a DDA. Empty and thin regions are
+     then crossed in far fewer null collisions. Set to 0 for a single global
+     majorant. (Default: 8)
+
+ * - majorant_factor
+   - |float|
+   - Safety factor applied on top of the per-cell maxima. (Default: 1.2)
+
  * - (Nested plugin)
    - |phase|
    - A nested phase function that describes the directional scattering properties of
@@ -66,7 +89,17 @@ the scale parameter can be used to correct the units. For instance, when the sce
 meters and the coefficients are in inverse millimeters, set scale to 1000.
 
 Both the albedo and the extinction coefficient can either be constant or textured,
-and both parameters are allowed to be spectrally varying.
+and both parameters are allowed to be spectrally varying. A scene that already
+holds a scattering coefficient may give :monosp:`sigma_s` in place of the
+albedo; the two are mutually exclusive.
+
+.. note::
+
+    Both render identically, but prefer the albedo when optimizing. With an
+    independent :monosp:`sigma_s`, the derivative involves the ratio
+    :math:`\sigma_s / \sigma_t` and becomes unstable as the extinction goes
+    to zero. Optimizing :math:`\alpha = \sigma_s / \sigma_t` instead
+    decouples that parameter from :math:`\sigma_t` and avoids the problem.
 
 .. tabs::
     .. code-tab:: xml
@@ -149,35 +182,62 @@ template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
+                    m_phase_function, has_majorant_grid, majorant_grid_eval,
+                    update_majorant_grid)
     MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
-        m_albedo = props.get_volume<Volume>("albedo", 0.75f);
         m_sigmat = props.get_volume<Volume>("sigma_t", 1.0f);
+
+        /* Either the albedo or sigma_s, related by sigma_s = sigma_t * albedo.
+           Whichever is given is the differentiable leaf. */
+        bool has_albedo = props.has_property("albedo"),
+             has_sigmas = props.has_property("sigma_s");
+        if (has_albedo && has_sigmas)
+            Throw("heterogeneous: 'albedo' and 'sigma_s' are two "
+                  "parameterizations of the same quantity and are mutually "
+                  "exclusive -- provide one or the other.");
+        if ((has_albedo || has_sigmas) && !props.has_property("sigma_t"))
+            Log(Warn, "heterogeneous: '%s' was given without a 'sigma_t' "
+                      "volume, so the conversion between the two "
+                      "parameterizations uses the default extinction of 1.",
+                has_sigmas ? "sigma_s" : "albedo");
+        if (has_sigmas)
+            m_sigmas = props.get_volume<Volume>("sigma_s");
+        else
+            m_albedo = props.get_volume<Volume>("albedo", 0.75f);
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        update_majorant_grid(m_sigmat.get(), m_scale);
     }
 
     void traverse(TraversalCallback *cb) override {
         cb->put("scale",   m_scale,  ParamFlags::NonDifferentiable);
-        cb->put("albedo",  m_albedo, ParamFlags::Differentiable);
+        if (m_sigmas)
+            cb->put("sigma_s", m_sigmas, ParamFlags::Differentiable);
+        else
+            cb->put("albedo",  m_albedo, ParamFlags::Differentiable);
         cb->put("sigma_t", m_sigmat, ParamFlags::Differentiable);
         Base::traverse(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        update_majorant_grid(m_sigmat.get(), m_scale);
     }
 
     UnpolarizedSpectrum
-    get_majorant(const MediumInteraction3f & /* mi */,
+    get_majorant(const MediumInteraction3f &mi,
                  Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        if (has_majorant_grid())
+            return UnpolarizedSpectrum(majorant_grid_eval(mi.p, active)) &
+                   active;
+        DRJIT_MARK_USED(mi);
         return m_max_density;
     }
 
@@ -190,9 +250,27 @@ public:
         if (has_flag(m_phase_function->flags(), PhaseFunctionFlags::Microflake))
             sigmat *= m_phase_function->projected_area(mi, active);
 
-        auto sigmas = sigmat * m_albedo->eval(mi, active);
-        auto sigman = m_max_density - sigmat;
+        UnpolarizedSpectrum sigmas =
+            m_sigmas ? UnpolarizedSpectrum(m_scale * m_sigmas->eval(mi, active))
+                     : UnpolarizedSpectrum(sigmat * m_albedo->eval(mi, active));
+        UnpolarizedSpectrum majorant =
+            has_majorant_grid()
+                ? UnpolarizedSpectrum(majorant_grid_eval(mi.p, active))
+                : UnpolarizedSpectrum(m_max_density);
+        auto sigman = dr::maximum(majorant - sigmat, 0.f);
         return { sigmas, sigman, sigmat };
+    }
+
+    UnpolarizedSpectrum
+    get_albedo(const MediumInteraction3f &mi, Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
+        if (m_albedo)
+            return m_albedo->eval(mi, active) & active;
+        /* The ratio; the scale cancels. Undefined where nothing absorbs, so
+           report zero there as the base implementation does. */
+        UnpolarizedSpectrum sigmat = m_sigmat->eval(mi, active),
+                            sigmas = m_sigmas->eval(mi, active);
+        return dr::select(sigmat > 0.f, sigmas / sigmat, 0.f) & active;
     }
 
     std::tuple<Mask, Float, Float>
@@ -203,7 +281,8 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo  = " << string::indent(m_albedo) << std::endl
+            << (m_sigmas ? "  sigma_s = " : "  albedo  = ")
+            << string::indent(m_sigmas ? m_sigmas : m_albedo) << std::endl
             << "  sigma_t = " << string::indent(m_sigmat) << std::endl
             << "  scale   = " << string::indent(m_scale) << std::endl
             << "]";
@@ -212,11 +291,11 @@ public:
 
     MI_DECLARE_CLASS(HeterogeneousMedium)
 private:
-    ref<Volume> m_sigmat, m_albedo;
+    ref<Volume> m_sigmat, m_albedo, m_sigmas;
     ScalarFloat m_scale;
     Float m_max_density;
 
-    MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_max_density)
+    MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_sigmas, m_max_density)
 };
 
 MI_EXPORT_PLUGIN(HeterogeneousMedium)

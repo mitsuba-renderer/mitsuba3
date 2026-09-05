@@ -9,6 +9,7 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
         'prb_basic',
         'prb',
         'prbvolpath',
+        'prbvolpath_sm',
         'direct_projective',
         'prb_projective',
         'volprim_rf_basic'

@@ -432,6 +432,79 @@ public:
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
     };
 
+    DynamicBuffer<Float> local_majorants(uint32_t resolution_factor,
+                                         ScalarVector3u &res_out)
+                                         const override {
+        using FloatStorage  = DynamicBuffer<Float>;
+        using UInt32Storage = DynamicBuffer<UInt32>;
+        using Int32Storage  = DynamicBuffer<Int32>;
+
+        if (resolution_factor == 0)
+            resolution_factor = 1;
+
+        if (m_texture.wrap_mode() != dr::WrapMode::Clamp) {
+            Log(Warn, "local_majorants(): only the \"clamp\" wrap mode is "
+                      "supported; falling back to a global majorant.");
+            return Base::local_majorants(resolution_factor, res_out);
+        }
+
+        const size_t *shape = m_texture.shape();
+        uint32_t nz = (uint32_t) shape[0], ny = (uint32_t) shape[1],
+                 nx = (uint32_t) shape[2], ch = (uint32_t) shape[3];
+        uint32_t f  = resolution_factor;
+        auto cdiv   = [](uint32_t a, uint32_t b) { return (a + b - 1) / b; };
+        uint32_t sx = cdiv(nx, f), sy = cdiv(ny, f), sz = cdiv(nz, f);
+
+        // Majorants only shape the sampling density; never differentiate them
+        FloatStorage data = dr::detach(m_texture.tensor().array());
+
+        // (0) Reduce over channels
+        FloatStorage cmax;
+        if (ch == 1) {
+            cmax = data;
+        } else {
+            UInt32Storage i = dr::arange<UInt32Storage>(nx * ny * nz) * ch;
+            cmax = dr::gather<FloatStorage>(data, i);
+            for (uint32_t c = 1; c < ch; ++c)
+                cmax = dr::maximum(cmax,
+                                   dr::gather<FloatStorage>(data, i + c));
+        }
+
+        /* Separable max-pooling with a one-texel dilation: the value stored
+           for a cell must bound the *trilinearly interpolated* field anywhere
+           inside the cell, whose support extends one texel beyond the cell's
+           own texel window. Pooling window per axis: [c*f - 1, (c+1)*f]. */
+        auto pool_axis = [f](const FloatStorage &src, uint32_t n_in,
+                             uint32_t n_out, uint32_t inner,
+                             uint32_t outer) -> FloatStorage {
+            // src is indexed as (outer, n_in, inner); pooled axis -> n_out
+            UInt32Storage i =
+                dr::arange<UInt32Storage>(outer * n_out * inner);
+            UInt32Storage in_i  = i % inner;
+            UInt32Storage o     = (i / inner) % n_out;
+            UInt32Storage out_i = i / (inner * n_out);
+            FloatStorage acc;
+            for (int32_t k = -1; k <= (int32_t) f; ++k) {
+                Int32Storage a_signed =
+                    dr::clip(Int32Storage(o * f) + k, 0, (int32_t) n_in - 1);
+                UInt32Storage idx =
+                    (out_i * n_in + UInt32Storage(a_signed)) * inner + in_i;
+                FloatStorage v = dr::gather<FloatStorage>(src, idx);
+                acc = (k == -1) ? v : dr::maximum(acc, v);
+            }
+            return acc;
+        };
+
+        // Layout (z, y, x): pool x (inner=1), then y, then z
+        FloatStorage px = pool_axis(cmax, nx, sx, 1u,      nz * ny);
+        FloatStorage py = pool_axis(px,   ny, sy, sx,      nz);
+        FloatStorage pz = pool_axis(py,   nz, sz, sy * sx, 1u);
+
+        dr::eval(pz);
+        res_out = ScalarVector3u(sx, sy, sz);
+        return pz;
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "GridVolume[" << std::endl
