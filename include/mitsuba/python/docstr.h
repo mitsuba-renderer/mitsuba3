@@ -638,6 +638,131 @@ Args:
 
 static const char *__doc_mitsuba_AdjointIntegrator_traverse_cb = R"doc()doc";
 
+static const char *__doc_mitsuba_AnimatedTransform = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform = R"doc(Create a transformation with a single identity keyframe)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_2 = R"doc(Initialize from a constant transformation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_AnimatedTransform_3 = R"doc(Initialize from a vector of time values and keyframes)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe = R"doc(Helper struct to store individual, decomposed key frames.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_H = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_Q = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_S = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_T = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_Keyframe_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_add_keyframe = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_build_views =
+R"doc(Point the ``times``/``scale``/``shear``/``rotation``/``translation`` views at the
+current contents of ``m_data``)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_ensure_uniform_keyframes =
+R"doc(Checks if all keyframes are uniformly spaced in time. Raises an
+exception if this is not the case.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval =
+R"doc(Evaluate the transformation at a specific time
+
+This method performs a vectorized interpolation between keyframes,
+reading from the packed device buffer. Times outside of
+``get_time_bounds()`` are clamped to the first/last keyframe.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_eval_scalar =
+R"doc(Scalar evaluation of the transformation
+
+This version is for use on the host (e.g., during AABB construction) and
+reads the host-side keyframe list rather than the device buffer.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_spatial_bounds =
+R"doc(Evaluates the spatial bounds of the animated transform over the given
+bounding box. This is used to compute the AABB of animated objects.
+Note: This is an approximation computed by sampling the transformation
+at regular intervals. It may not be perfectly conservative for highly
+non-linear motion.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_time_bounds = R"doc(Returns the time bounds of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_get_translation_bounds =
+R"doc(Returns the bounding box of the translation component of the animated
+transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_scale = R"doc(Checks if any keyframe has a scale component different from 1.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_has_shear = R"doc(Checks if any keyframe has a non-zero shear component.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_initialize = R"doc(One-time initialization call that is used by constructors.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_is_animated = R"doc(Check if the transformation is animated)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_keyframe_count = R"doc(Returns the number of key frames.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_keyframes = R"doc(Returns the host-side keyframes of the animated transform.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_data = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_keyframes = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_rotation = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_scale = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_shear = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_times = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_transform = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_m_translation = R"doc(Writable views into ``m_data``, see the class documentation)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_make_transform_opaque =
+R"doc(Promote the single-keyframe matrix to an opaque JIT variable. This is
+used to prevent baking of static transforms into JIT kernels.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_operator_eq = R"doc(Equality comparison operator)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_operator_ne = R"doc(Inequality comparison operator)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_pack_data = R"doc(Repack ``m_data`` from the host-side ``m_keyframes``)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_pack_views =
+R"doc(Rebuild ``m_data`` from the (user-written) views, validating that they
+agree on the number of keyframes)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_parameters_grad_enabled =
+R"doc(Checks if JIT AD gradients are enabled on the parameter that is actually
+evaluated: the static transform when there is a single keyframe, and the
+packed keyframe buffer otherwise.)doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_traverse = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_traverse_cb = R"doc()doc";
+
+static const char *__doc_mitsuba_AnimatedTransform_unpack_data = R"doc(Rebuild the host-side ``m_keyframes`` from ``m_data``)doc";
+
 static const char *__doc_mitsuba_Any =
 R"doc(Type-erased storage for arbitrary objects
 
@@ -12115,9 +12240,9 @@ static const char *__doc_mitsuba_Transform_Transform = R"doc(Initialize the tran
 
 static const char *__doc_mitsuba_Transform_Transform_2 = R"doc(Initialize the transformation from the given matrix and its inverse)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Copy constructor with type conversion)doc";
+static const char *__doc_mitsuba_Transform_Transform_3 = R"doc(Initialize an affine transformation from scale, shear, quaternion rotation, and translation)doc";
 
-static const char *__doc_mitsuba_Transform_Transform_4 = R"doc()doc";
+static const char *__doc_mitsuba_Transform_Transform_4 = R"doc(Copy constructor with type conversion)doc";
 
 static const char *__doc_mitsuba_Transform_Transform_5 = R"doc()doc";
 
@@ -13942,6 +14067,10 @@ static const char *__doc_mitsuba_optix_initialize = R"doc()doc";
 
 static const char *__doc_mitsuba_orthographic_projection = R"doc(Helper function to create a orthographic projection transformation matrix)doc";
 
+static const char *__doc_mitsuba_pack_keyframe =
+R"doc(Packs a decomposed keyframe into ``out``, which must have room for
+``KeyframeStride`` floats.)doc";
+
 static const char *__doc_mitsuba_pair_eq = R"doc()doc";
 
 static const char *__doc_mitsuba_pair_eq_operator_call = R"doc()doc";
@@ -13949,6 +14078,8 @@ static const char *__doc_mitsuba_pair_eq_operator_call = R"doc()doc";
 static const char *__doc_mitsuba_pair_hasher = R"doc()doc";
 
 static const char *__doc_mitsuba_pair_hasher_operator_call = R"doc()doc";
+
+static const char *__doc_mitsuba_parse_animated_transform = R"doc(Helper function to parse an AnimatedTransform from Properties.)doc";
 
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse the field of view field of a camera)doc";
 
