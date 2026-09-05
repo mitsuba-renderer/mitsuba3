@@ -10435,6 +10435,10 @@ static const char *__doc_mitsuba_Shape_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Shape_animated_to_world =
+R"doc(Return the underlying (possibly animated) object-to-world
+transformation)doc";
+
 static const char *__doc_mitsuba_Shape_add_texture_attribute =
 R"doc(Add a texture attribute with the given ``name``.
 

@@ -196,22 +196,22 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[-0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, 0.5]' in instance_str
+    assert 'T=[-0.5, 0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, 0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)

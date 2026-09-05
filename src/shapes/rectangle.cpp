@@ -89,7 +89,7 @@ public:
                    m_packed_faces, m_packed_vertices, m_vertex_count,
                    m_face_count, m_position_count, m_normal_count, m_layout,
                    m_built, transform, pack, needs_tangents, drop_views,
-                   get_children_string)
+                   get_children_string, to_world, to_world_scalar)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -110,7 +110,7 @@ public:
     void initialize() override {
         // The unit rectangle is symmetric in z, so mirroring that axis turns
         // the surface around without moving it
-        AffineTransform4f to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
         if (m_flipped)
             to_world = to_world *
                 AffineTransform4f::scale(Vector3f(1.f, 1.f, -1.f));
@@ -163,9 +163,10 @@ public:
         PositionSample3f ps = dr::zeros<PositionSample3f>();
         Point3f local(dr::fmadd(sample.x(), 2.f, -1.f),
                       dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
-        ps.p     = m_to_world.value() * local;
+        AffineTransform4f to_world = this->to_world();  
+        ps.p     = to_world * local;
         ps.n     = m_frame.n;
-        ps.p_err = m_to_world.value().position_error(local, ps.n);
+        ps.p_err = to_world.position_error(local, ps.n);
         ps.pdf   = m_inv_surface_area;
         ps.uv    = sample;
         ps.time  = time;
@@ -185,7 +186,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarAffineTransform4f to_world = m_to_world.scalar();
+        ScalarAffineTransform4f to_world = to_world_scalar();
 
         bbox.expand(to_world * ScalarPoint3f(-1.f, -1.f, 0.f));
         bbox.expand(to_world * ScalarPoint3f(-1.f,  1.f, 0.f));
@@ -207,7 +208,6 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
-            m_to_world = m_to_world.value().update();
             initialize();
         }
         Base::parameters_changed(keys);
@@ -217,10 +217,12 @@ public:
         SurfaceInteraction3f si{};
         Point3f local(dr::fmadd(uv.x(), 2.f, - 1.f),
                       dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
-        si.p = m_to_world.value() * local;
+
+        AffineTransform4f to_world = this->to_world();
+        si.p = to_world * local;
         si.sh_frame  = m_frame;
         si.n         = m_frame.n;
-        si.p_err     = m_to_world.value().position_error(local, si.n);
+        si.p_err     = to_world.position_error(local, si.n);
         si.dp_du     = m_frame.s;
         si.dp_dv     = m_frame.t;
         si.uv        = uv;
@@ -239,7 +241,7 @@ public:
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_frame) ||
-               dr::grad_enabled(m_to_world.value());
+               m_to_world->parameters_grad_enabled();
     }
 
     // =============================================================
@@ -257,7 +259,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const AffineTransform4f &to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
 
         /// Sample a point on one of the edges
         Mask range = false;
@@ -362,7 +364,7 @@ public:
 
             Point3f local(dr::fmadd(uv.x(), 2.f, -1.f),
                           dr::fmadd(uv.y(), 2.f, -1.f), 0.f);
-            Point3f p_diff = m_to_world.value() * local;
+            Point3f p_diff = this->to_world() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -377,7 +379,7 @@ public:
             return dr::zeros<SilhouetteSample3f>();
 
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-        const AffineTransform4f &to_world = m_to_world.value();
+        AffineTransform4f to_world = this->to_world();
 
         // Project to nearest edge
         Mask top_right_triangle = si.uv.y() > 1 - si.uv.x();
@@ -466,8 +468,8 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss = primitive_silhouette_projection(viewpoint, si, flags, sample_reuse,
                                              active);
-        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4 +
-                         m_to_world.value().matrix(1, 1) * 4);
+        AffineTransform4f to_world = this->to_world();
+        ss.pdf = dr::rcp(to_world.matrix(0, 0) * 4 + to_world.matrix(1, 1) * 4);
 
         return ss;
     }
@@ -490,9 +492,9 @@ public:
 
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = to_world_scalar().inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = this->to_world().inverse();
 
         Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -543,9 +545,9 @@ public:
 
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
+            to_object = to_world_scalar().inverse();
         else
-            to_object = m_to_world.value().inverse();
+            to_object = this->to_world().inverse();
 
         Ray3fP ray     = to_object * ray_;
         FloatP t       = -ray.o.z() / ray.d.z();
