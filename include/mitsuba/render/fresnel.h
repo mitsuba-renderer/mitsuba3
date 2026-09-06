@@ -59,11 +59,11 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta,
     Float r_sc = dr::select(index_matched, Float(0.f), Float(1.f));
 
     // Amplitudes of reflected waves
-    Float a_s = dr::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
-                dr::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
-
-    Float a_p = dr::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
-                dr::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
+    Float d_s = dr::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs),
+          d_p = dr::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs),
+          inv = dr::rcp(d_s * d_p),
+          a_s = dr::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) * d_p * inv,
+          a_p = dr::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) * d_s * inv;
 
     Float r = 0.5f * (dr::square(a_s) + dr::square(a_p));
 
