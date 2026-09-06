@@ -228,7 +228,7 @@ public:
         update_eta();
         initialize_lobes();
 
-        dr::make_opaque(m_eta, m_inv_eta);
+        dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
     }
@@ -245,6 +245,9 @@ public:
             dr::masked(m_eta, m_eta == 1.f) = 1.001f;
         }
         m_inv_eta = dr::rcp(m_eta);
+
+        // Schlick reflectance at normal incidence, symmetric in eta -> 1/eta
+        m_r0 = schlick_R0_eta(m_eta);
     }
 
     void initialize_lobes() {
@@ -329,7 +332,7 @@ public:
         update_eta();
         initialize_lobes();
 
-        dr::make_opaque(m_eta, m_inv_eta);
+        dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
     }
@@ -459,8 +462,8 @@ private:
         /// Roughness of the main specular lobe
         Float alpha_x, alpha_y;
 
-        /// Roughness of the clearcoat lobe
-        Float clearcoat_alpha;
+        /// Microfacet distribution of the clearcoat lobe
+        GTR1 cc_distr;
     };
 
     /// Discrete probabilities of the four sampling techniques
@@ -496,7 +499,8 @@ private:
             calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
 
         // Clearcoat roughness is mapped between 0.1 and 0.001
-        p.clearcoat_alpha = dr::lerp(0.1f, 0.001f, p.clearcoat_gloss);
+        if (m_has_clearcoat)
+            p.cc_distr = GTR1(dr::lerp(0.1f, 0.001f, p.clearcoat_gloss));
 
         return p;
     }
@@ -574,22 +578,27 @@ private:
                                           p.alpha_y);
         Float D    = spec_distr.eval(wh),
               G1_i = spec_distr.smith_g1(si.wi, wh),
-              G1_o = spec_distr.smith_g1(wo, wh),
-              G    = G1_i * G1_o;
+              G1_o = spec_distr.smith_g1(wo, wh);
 
-        // Density of the half vector under visible normal sampling
-        Float pdf_wh = D * G1_i * dr::abs(dot_wi_h) / dr::abs(cos_theta_i);
+        Float rcp_abs_cos_theta_i = dr::rcp(dr::abs(cos_theta_i));
 
-        // Jacobian of the half vector mapping
-        Float dwh_dwo;
+        // Jacobian of the half vector mapping times |wi . wh|. The reflection
+        // case reduces to 1/4, which avoids a cancellation between the two
+        // dot products at grazing angles.
+        Float jacobian;
         if (m_has_spec_trans) {
-            dwh_dwo = dr::abs(dr::select(
-                reflect, dr::rcp(4.0f * dot_wo_h),
-                dr::square(eta_path) * dot_wo_h /
-                    dr::square(dot_wi_h + eta_path * dot_wo_h)));
+            jacobian = dr::select(
+                reflect, 0.25f,
+                dr::abs(dot_wi_h * dot_wo_h) * dr::square(eta_path) /
+                    dr::square(dr::fmadd(eta_path, dot_wo_h, dot_wi_h)));
         } else {
-            dwh_dwo = dr::abs(dr::rcp(4.0f * dot_wo_h));
+            jacobian = 0.25f;
         }
+
+        // Density of wo under visible normal sampling, and the lobe value
+        // times the cosine factor without the Fresnel term
+        Float pdf_spec    = D * G1_i * rcp_abs_cos_theta_i * jacobian,
+              weight_spec = G1_o * pdf_spec;
 
         LobeProbs prob = lobe_probs(p, F_dielectric, front_side);
 
@@ -600,14 +609,13 @@ private:
         Mask spec_reflect_active = active && reflect;
         if (dr::any_or<true>(spec_reflect_active)) {
             UnpolarizedSpectrum F = principled_fresnel(
-                F_dielectric, dot_wi_h, dr::abs(cos_theta_t), eta_it,
+                F_dielectric, dot_wi_h, dr::abs(cos_theta_t), eta_it, m_r0,
                 p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
                 p.bsdf, m_has_metallic, m_has_spec_tint);
 
-            dr::masked(value, spec_reflect_active) +=
-                F * D * G / (4.0f * dr::abs(cos_theta_i));
+            dr::masked(value, spec_reflect_active) += F * weight_spec;
             dr::masked(pdf, spec_reflect_active) +=
-                prob.spec_reflect * pdf_wh * dwh_dwo;
+                prob.spec_reflect * pdf_spec;
         }
 
         // Main specular transmission
@@ -625,13 +633,10 @@ private:
                                   : Float(1.0f);
 
                 dr::masked(value, spec_trans_active) +=
-                    dr::sqrt(p.base_color) * p.bsdf *
-                    dr::abs((scale * (1.0f - F_dielectric) * D * G *
-                             dr::square(eta_path) * dot_wi_h * dot_wo_h) /
-                            (cos_theta_i *
-                             dr::square(dot_wi_h + eta_path * dot_wo_h)));
+                    dr::sqrt(p.base_color) *
+                    (p.bsdf * scale * (1.0f - F_dielectric) * weight_spec);
                 dr::masked(pdf, spec_trans_active) +=
-                    prob.spec_trans * pdf_wh * dwh_dwo;
+                    prob.spec_trans * pdf_spec;
             }
         }
 
@@ -641,18 +646,19 @@ private:
             Mask clearcoat_active = active && reflect && front_side;
 
             if (dr::any_or<true>(clearcoat_active)) {
-                GTR1 cc_distr(p.clearcoat_alpha);
                 MicrofacetDistribution cc_g_distr(MicrofacetType::GGX, 0.25f);
 
-                Float Fcc = dr::lerp(schlick_weight(dot_wi_h), 1.0f, 0.04f),
-                      Dcc = cc_distr.eval(wh),
+                Float Fcc = dr::lerp(0.04f, 1.0f, schlick_weight(dot_wi_h)),
+                      Dcc = p.cc_distr.eval(wh),
                       Gcc = cc_g_distr.G(si.wi, wo, wh);
 
+                // Includes the 1/4 energy scale of the clearcoat lobe
                 dr::masked(value, clearcoat_active) +=
-                    (0.25f * p.clearcoat) * Fcc * Dcc * Gcc /
-                    (4.0f * dr::abs(cos_theta_i));
+                    p.clearcoat * Fcc * Dcc * Gcc *
+                    (0.0625f * rcp_abs_cos_theta_i);
                 dr::masked(pdf, clearcoat_active) +=
-                    prob.clearcoat * Frame3f::cos_theta(wh) * Dcc * dwh_dwo;
+                    prob.clearcoat * Frame3f::cos_theta(wh) * Dcc /
+                    (4.0f * dr::abs(dot_wo_h));
             }
         }
 
@@ -764,8 +770,7 @@ private:
 
         // Clearcoat
         if (m_has_clearcoat && dr::any_or<true>(sample_clearcoat)) {
-            GTR1 cc_distr(p.clearcoat_alpha);
-            Normal3f m_cc = cc_distr.sample(sample2);
+            Normal3f m_cc = p.cc_distr.sample(sample2);
             Vector3f wo   = reflect(si.wi, m_cc);
             dr::masked(bs.wo, sample_clearcoat) = wo;
             dr::masked(bs.sampled_component, sample_clearcoat) =
@@ -808,7 +813,7 @@ private:
     ref<Texture> m_clearcoat;
     ref<Texture> m_clearcoat_gloss;
     ref<Texture> m_metallic;
-    Float m_eta, m_inv_eta;
+    Float m_eta, m_inv_eta, m_r0;
     Float m_specular;
     bool m_eta_specular;
 
@@ -834,7 +839,7 @@ private:
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                    m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
-                   m_inv_eta, m_specular)
+                   m_inv_eta, m_r0, m_specular)
 };
 
 MI_EXPORT_PLUGIN(Principled)

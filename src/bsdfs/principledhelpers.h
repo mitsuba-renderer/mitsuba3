@@ -28,14 +28,20 @@ public:
      * Args:
      *     m_alpha: The roughness of the surface.
      */
-    GTR1Isotropic(Float alpha) : m_alpha(alpha){};
+    GTR1Isotropic() = default;
+
+    GTR1Isotropic(Float alpha) {
+        Float alpha2 = dr::square(alpha);
+        m_alpha2_m1  = alpha2 - 1.f;
+        m_log_alpha2 = dr::log(alpha2);
+        m_norm       = m_alpha2_m1 / (dr::Pi<Float> * m_log_alpha2);
+    }
 
     Float eval(const Vector3f &m) const {
-        Float cos_theta  = Frame3f::cos_theta(m),
-        cos_theta2 = dr::square(cos_theta), alpha2 = dr::square(m_alpha);
+        Float cos_theta = Frame3f::cos_theta(m);
 
-        Float result = (alpha2 - 1.f) / (dr::Pi<Float> * dr::log(alpha2) *
-                (1.f + (alpha2 - 1.f) * cos_theta2));
+        Float result =
+            m_norm / dr::fmadd(m_alpha2_m1, dr::square(cos_theta), 1.f);
 
         return dr::select(result * cos_theta > 1e-20f, result, 0.f);
     }
@@ -46,19 +52,21 @@ public:
 
     Normal3f sample(const Point2f &sample) const {
         auto [sin_phi, cos_phi] = dr::sincos((2.f * dr::Pi<Float>) *sample.x());
-        Float alpha2            = dr::square(m_alpha);
 
+        // cos^2(theta) = (1 - alpha2^(1 - u)) / (1 - alpha2)
         Float cos_theta2 =
-                (1.f - dr::pow(alpha2, 1.f - sample.y())) / (1.f - alpha2);
+            (dr::exp(dr::fnmadd(sample.y(), m_log_alpha2, m_log_alpha2)) - 1.f) /
+            m_alpha2_m1;
 
-        Float sin_theta = dr::sqrt(dr::maximum(0.f, 1.f - cos_theta2)),
-        cos_theta = dr::sqrt(dr::maximum(0.f, cos_theta2));
+        Float sin_theta = dr::safe_sqrt(1.f - cos_theta2),
+              cos_theta = dr::safe_sqrt(cos_theta2);
 
         return Normal3f(cos_phi * sin_theta, sin_phi * sin_theta, cos_theta);
     }
 
 private:
-    Float m_alpha;
+    /// alpha^2 - 1, log(alpha^2), and the normalization constant
+    Float m_alpha2_m1, m_log_alpha2, m_norm;
 };
 
 /**
@@ -158,6 +166,8 @@ Float schlick_R0_eta(Float eta){
  *
  *     eta_it: Relative index of refraction along the direction of travel.
  *
+ *     r0: Schlick reflectance of the dielectric at normal incidence.
+ *
  *     metallic: Metallic weight.
  *
  *     spec_tint: Specular tint weight.
@@ -177,12 +187,14 @@ Float schlick_R0_eta(Float eta){
 template<typename Float,typename T>
 T principled_fresnel(const Float &F_dielectric, const Float &cos_theta_i,
                      const Float &cos_theta_t, const Float &eta_it,
-                     const Float &metallic, const Float &spec_tint,
-                     const T &base_color, const T &c_tint,
-                     const dr::mask_t<Float> &front_side,
+                     const Float &r0, const Float &metallic,
+                     const Float &spec_tint, const T &base_color,
+                     const T &c_tint, const dr::mask_t<Float> &front_side,
                      const Float &bsdf, bool has_metallic,
                      bool has_spec_tint) {
-    T F_front = (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric;
+    Float one_minus_metallic = 1.0f - metallic;
+    Float F_front = one_minus_metallic * (1.0f - spec_tint) * F_dielectric;
+    T result = F_front;
 
     if (has_metallic || has_spec_tint) {
         // The Schlick weight uses the transmitted angle when entering a
@@ -194,21 +206,23 @@ T principled_fresnel(const Float &F_dielectric, const Float &cos_theta_i,
         T R0(0.0f);
 
         if (has_metallic) {
-            weight += metallic;
-            R0 += metallic * base_color;
+            weight = metallic;
+            R0 = metallic * base_color;
         }
 
         if (has_spec_tint) {
-            Float t = (1.0f - metallic) * spec_tint;
+            Float t = one_minus_metallic * spec_tint;
             weight += t;
-            R0 += t * c_tint * schlick_R0_eta(eta_it);
+            R0 = dr::fmadd(c_tint, t * r0, R0);
         }
 
-        F_front += dr::lerp(R0, weight, w);
+        // Schlick term with the lobe weights folded in. It blends from R0 at
+        // normal incidence to the full weight at grazing angles.
+        result = F_front + dr::lerp(R0, weight, w);
     }
 
     // The back side has no tint or metallic response
-    return dr::select(front_side, F_front, bsdf * F_dielectric);
+    return dr::select(front_side, result, bsdf * F_dielectric);
 }
 
 /**
