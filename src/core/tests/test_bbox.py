@@ -113,7 +113,7 @@ def test04_ray_intersect(variant_scalar_rgb):
         assert hit and dr.allclose(mint, 0.0) and dr.allclose(maxt, 2.0)
 
         hit, mint, maxt = bbox.ray_intersect(mi.Ray3f([1, 1, 1], dir))
-        assert hit and dr.allclose(mint, -2.0) and dr.allclose(maxt, 0.0)  
+        assert hit and dr.allclose(mint, -2.0) and dr.allclose(maxt, 0.0)
 
 def test05_surface_area_vec(variant_scalar_rgb):
     def kernel(min, max, p):
@@ -150,3 +150,57 @@ def test07_traverse(variants_vec_rgb):
     target = mi.BoundingBox3f(mi.Vector3f(0), mi.Vector3f(5))
     assert dr.allclose(res.min, target.min)
     assert dr.allclose(res.max, target.max)
+
+def test08_bbox1f(variant_scalar_rgb):
+    from mitsuba import BoundingBox1f as BBox
+
+    assert not BBox().valid()
+
+    bbox1 = BBox(1.5)
+    assert bbox1.valid() and bbox1.collapsed()
+    assert bbox1.center() == 1.5 and bbox1.extents() == 0
+
+    bbox2 = BBox(-1, 3)
+    assert bbox2.valid() and not bbox2.collapsed()
+    assert bbox2.min == -1 and bbox2.max == 3
+    assert bbox2.center() == 1 and bbox2.extents() == 4
+    assert bbox2.volume() == 4
+    assert bbox2.contains(0) and not bbox2.contains(4)
+    assert bbox2.overlaps(BBox(2, 5)) and not bbox2.overlaps(BBox(4, 5))
+    assert bbox2.distance(5) == 2
+
+    bbox2.expand(5)
+    assert bbox2 == BBox(-1, 5)
+    assert BBox.merge(bbox1, BBox(-1, 3)) == BBox(-1, 3)
+
+    bbox2.reset()
+    assert not bbox2.valid()
+
+
+def test09_bbox2f(variant_scalar_rgb):
+    from mitsuba import BoundingBox2f as BBox
+
+    assert not BBox().valid()
+
+    bbox1 = BBox([1, 2])
+    assert bbox1.valid() and bbox1.collapsed()
+    assert dr.all(bbox1.center() == [1, 2]) and bbox1.volume() == 0
+
+    bbox2 = BBox([1, 2], [3, 6])
+    assert bbox2.valid() and not bbox2.collapsed()
+    assert dr.all(bbox2.center() == [2, 4])
+    assert dr.all(bbox2.extents() == [2, 4])
+    assert bbox2.volume() == 8 and bbox2.surface_area() == 12
+    assert bbox2.major_axis() == 1 and bbox2.minor_axis() == 0
+    assert dr.all(bbox2.corner(0) == [1, 2])
+    assert dr.all(bbox2.corner(3) == [3, 6])
+    assert bbox2.contains([2, 4]) and not bbox2.contains([0, 4])
+    assert bbox2.overlaps(BBox([2, 2], [4, 4]))
+    assert bbox2.distance([5, 4]) == 2
+
+    bbox2.expand([5, 0])
+    assert bbox2 == BBox([1, 0], [5, 6])
+    assert BBox.merge(bbox1, BBox([0, 0])) == BBox([0, 0], [1, 2])
+
+    bbox2.reset()
+    assert not bbox2.valid()
