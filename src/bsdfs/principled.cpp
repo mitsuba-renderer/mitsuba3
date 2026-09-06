@@ -220,21 +220,30 @@ public:
         } else if (props.has_property("eta")) {
             m_eta_specular = true;
             m_eta = props.get<float>("eta");
-            // m_eta = 1 is not plausible for transmission
-            dr::masked(m_eta, m_has_spec_trans && m_eta == 1) = 1.001f;
         } else {
             m_eta_specular = false;
             m_specular = props.get<float>("specular", 0.5f);
-            // zero specular is not plausible for transmission
-            dr::masked(m_specular, m_has_spec_trans && m_specular == 0.f) = 1e-3f;
-            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
         }
 
+        update_eta();
         initialize_lobes();
 
         dr::make_opaque(m_eta);
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
+    }
+
+    // Refraction through an interface with eta == 1 is degenerate (the half
+    // vector of wi and the refracted direction vanishes), so nudge eta away
+    // from 1 whenever the transmission lobe is enabled.
+    void update_eta() {
+        if (!m_eta_specular) {
+            if (m_has_spec_trans)
+                dr::masked(m_specular, m_specular == 0.f) = 1e-3f;
+            m_eta = 2.f * dr::rcp(1.f - dr::sqrt(0.08f * m_specular)) - 1.f;
+        } else if (m_has_spec_trans) {
+            dr::masked(m_eta, m_eta == 1.f) = 1.001f;
+        }
     }
 
     void initialize_lobes() {
@@ -313,18 +322,7 @@ public:
         if (string::contains(keys, "flatness"))
             m_has_flatness = true;
 
-        if (!m_eta_specular && string::contains(keys, "specular")) {
-            // Specular=0 is corresponding to eta=1 which is not plausible
-            // for transmission.
-            dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
-            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
-        }
-
-        if (m_eta_specular && string::contains(keys, "eta")) {
-            // Eta = 1 is not plausible for transmission.
-            dr::masked(m_eta, m_eta == 1.0f) = 1.001f;
-        }
-
+        update_eta();
         initialize_lobes();
 
         dr::make_opaque(m_eta);
