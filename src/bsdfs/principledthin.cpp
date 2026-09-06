@@ -466,8 +466,10 @@ private:
         if (m_has_spec_trans) {
             Float F_dielectric = std::get<0>(fresnel(dot_wi_h, p.eta));
 
-            // Jacobian of the half vector mapping of the mirrored direction
-            Float dwh_dwo = dr::abs(dr::rcp(4.0f * dr::dot(wo_r, wh)));
+            // The mirrored direction shares its dot product with the half
+            // vector with wi, so the Jacobian of the half vector mapping
+            // cancels against that factor of the visible normal density
+            Float rcp_4cos = 0.25f * dr::rcp(cos_theta_i);
 
             // Specular reflection
             Mask spec_reflect_active = active && reflect;
@@ -479,13 +481,15 @@ private:
                     thin_fresnel(F_dielectric, p.spec_tint, p.c_tint,
                                  dot_wi_h, p.eta, m_has_spec_tint);
 
-                Float D = distr.eval(wh),
-                      G = distr.G(wi, wo_t, wh);
+                // Density of wo under visible normal sampling, and the lobe
+                // value times the cosine factor without the Fresnel term
+                Float pdf_spec    = distr.eval(wh) * distr.smith_g1(wi, wh) * rcp_4cos,
+                      weight_spec = distr.smith_g1(wo_r, wh) * pdf_spec;
 
                 dr::masked(value, spec_reflect_active) +=
-                    p.spec_trans * F_thin * D * G / (4.0f * cos_theta_i);
+                    p.spec_trans * F_thin * weight_spec;
                 dr::masked(pdf, spec_reflect_active) +=
-                    p.prob_spec_reflect * distr.pdf(wi, wh) * dwh_dwo;
+                    p.prob_spec_reflect * pdf_spec;
             }
 
             // Specular transmission. No microfacet transmits into directions
@@ -495,14 +499,14 @@ private:
                 MicrofacetDistribution distr(MicrofacetType::GGX,
                                              p.alpha_x_trans, p.alpha_y_trans);
 
-                Float D = distr.eval(wh),
-                      G = distr.G(wi, wo_t, wh);
+                Float pdf_spec    = distr.eval(wh) * distr.smith_g1(wi, wh) * rcp_4cos,
+                      weight_spec = distr.smith_g1(wo_r, wh) * pdf_spec;
 
                 dr::masked(value, spec_trans_active) +=
-                    p.spec_trans * p.base_color * (1.0f - F_dielectric) * D *
-                    G / (4.0f * cos_theta_i);
+                    p.base_color *
+                    (p.spec_trans * (1.0f - F_dielectric) * weight_spec);
                 dr::masked(pdf, spec_trans_active) +=
-                    p.prob_spec_trans * distr.pdf(wi, wh) * dwh_dwo;
+                    p.prob_spec_trans * pdf_spec;
             }
         }
 
