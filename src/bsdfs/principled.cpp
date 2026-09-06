@@ -499,6 +499,13 @@ public:
               sheen = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
         UnpolarizedSpectrum base_color = m_base_color->eval(si, active);
 
+        // Hue of the base color, used by the specular and sheen tints
+        UnpolarizedSpectrum c_tint(1.0f);
+        if (m_has_spec_tint || m_has_sheen_tint) {
+            Float lum = mitsuba::luminance(base_color, si.wavelengths);
+            c_tint = dr::select(lum > 0.0f, base_color / lum, 1.0f);
+        }
+
         // Weights for BRDF and BSDF major lobes.
         Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
         bsdf = (1.0f - metallic) * spec_trans;
@@ -562,17 +569,14 @@ public:
 
         // Main specular reflection evaluation
         if (dr::any_or<true>(spec_reflect_active)) {
-            // No need to calculate luminance if there is no color tint.
-            Float lum = m_has_spec_tint
-                    ? mitsuba::luminance(base_color, si.wavelengths)
-                    : 1.0f;
             Float spec_tint =
                     m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
 
             // Fresnel term
             UnpolarizedSpectrum F_principled = principled_fresnel(
-                    F_spec_dielectric, metallic, spec_tint, base_color, lum,
-                    dr::dot(si.wi, wh), front_side, bsdf,m_eta,m_has_metallic,
+                    F_spec_dielectric, dr::dot(si.wi, wh),
+                    dr::abs(cos_theta_t), eta_it, metallic, spec_tint,
+                    base_color, c_tint, front_side, bsdf, m_has_metallic,
                     m_has_spec_tint);
 
             // Add the specular reflection component
@@ -671,13 +675,6 @@ public:
             // Tint the sheen evaluation towards the base color.
             if (m_has_sheen_tint) {
                 Float sheen_tint = m_sheen_tint->eval_1(si, active);
-
-                // Luminance evaluation
-                Float lum = mitsuba::luminance(base_color, si.wavelengths);
-
-                // Normalize color with luminance and tint the result.
-                UnpolarizedSpectrum c_tint =
-                        dr::select(lum > 0.0f, base_color / lum, 1.0f);
                 UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
 
                 // Add sheen evaluation with tint.
