@@ -193,7 +193,7 @@ public:
         m_inv_eta = dr::rcp(m_eta);
         m_eta_2   = dr::square(m_eta);
         dr::make_opaque(m_eta, m_inv_eta, m_eta_2, m_eumelanin, m_pheomelanin,
-                        m_sigma_a);
+                        m_sigma_a, m_scale);
 
         m_components.push_back(BSDFFlags::Glossy | BSDFFlags::Anisotropic |
                                BSDFFlags::NonSymmetric | BSDFFlags::FrontSide);
@@ -227,7 +227,7 @@ public:
         m_inv_eta = dr::rcp(m_eta);
         m_eta_2   = dr::square(m_eta);
         dr::make_opaque(m_eta, m_inv_eta, m_eta_2, m_eumelanin, m_pheomelanin,
-                        m_sigma_a);
+                        m_sigma_a, m_scale);
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -793,7 +793,7 @@ private:
     Float m_eumelanin, m_pheomelanin;
 
     ref<Texture> m_sigma_a; /// Absorption if pigmentation is not used;
-    ScalarFloat m_scale;
+    Float m_scale;
 
     Float m_v[P_MAX + 1]; /// Longitudinal variance due to roughness
     Float m_s; /// Azimuthal roughness scaling factor
@@ -801,7 +801,7 @@ private:
 
     MI_TRAVERSE_CB(Base, m_longitudinal_roughness, m_azimuthal_roughness,
                    m_alpha, m_eta, m_inv_eta, m_eta_2, m_eumelanin,
-                   m_pheomelanin, m_sigma_a,
+                   m_pheomelanin, m_sigma_a, m_scale,
                    m_v[0], m_v[1], m_v[2], m_v[3], m_s, m_sin_2k_alpha[0],
                    m_sin_2k_alpha[1], m_sin_2k_alpha[2], m_cos_2k_alpha[0],
                    m_cos_2k_alpha[1], m_cos_2k_alpha[2])
