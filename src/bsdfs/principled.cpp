@@ -90,21 +90,6 @@ The Principled BSDF (:monosp:`principled`)
      gets glossier as the parameter increases. (Default:0.0)
    - |exposed|, |differentiable|, |discontinuous|
 
- * - diffuse_reflectance_sampling_rate
-   - |float|
-   - The rate of the cosine hemisphere reflection in sampling. (Default:1.0)
-   - |exposed|
-
- * - main_specular_sampling_rate
-   - |float|
-   - The rate of the main specular lobe in sampling. (Default:1.0)
-   - |exposed|
-
- * - clearcoat_sampling_rate
-   - |float|
-   - The rate of the secondary specular reflection in sampling. (Default:0.0)
-   - |exposed|
-
 The principled BSDF is a complex BSDF with numerous reflective and transmissive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
@@ -176,8 +161,7 @@ material:
         'clearcoat_gloss': 0.3,
         'spec_trans': 0.4
 
-All of the parameters except sampling rates and `eta` should take values
-between 0.0 and 1.0.
+All of the parameters except `eta` should take values between 0.0 and 1.0.
  */
 template <typename Float, typename Spectrum>
 class Principled final : public BSDF<Float, Spectrum> {
@@ -208,9 +192,11 @@ public:
         m_has_clearcoat = get_flag("clearcoat", props);
         m_clearcoat = props.get_texture<Texture>("clearcoat", 0.0f);
         m_clearcoat_gloss = props.get_texture<Texture>("clearcoat_gloss", 0.0f);
-        m_spec_srate = props.get("main_specular_sampling_rate", 1.0f);
-        m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
-        m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 1.0f);
+
+        // These legacy parameters are no longer used
+        props.mark_queried("main_specular_sampling_rate");
+        props.mark_queried("clearcoat_sampling_rate");
+        props.mark_queried("diffuse_reflectance_sampling_rate");
 
         // Eta and specular has one to one correspondence, both of them can
         // not be specified.
@@ -291,10 +277,6 @@ public:
         cb->put("clearcoat",       m_clearcoat,       ParamFlags::Differentiable);
         cb->put("clearcoat_gloss", m_clearcoat_gloss, ParamFlags::Differentiable);
         cb->put("metallic",        m_metallic,        ParamFlags::Differentiable);
-
-        cb->put("main_specular_sampling_rate",       m_spec_srate,      ParamFlags::NonDifferentiable);
-        cb->put("clearcoat_sampling_rate",           m_clearcoat_srate, ParamFlags::NonDifferentiable);
-        cb->put("diffuse_reflectance_sampling_rate", m_diff_refl_srate, ParamFlags::NonDifferentiable);
 
         if (m_eta_specular) //Only one of them traversed! (based on xml file)
             cb->put("eta",      m_eta,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -464,6 +446,14 @@ private:
 
         /// Microfacet distribution of the clearcoat lobe
         GTR1 cc_distr;
+
+        /// Weight of the transmission lobe, bsdf times the square root of
+        /// the mean base color
+        Float trans_weight;
+
+        /// Sampling budgets of the front-side lobes for light arriving from
+        /// si.wi, based on the energy that each lobe reflects
+        Float w_spec, w_clearcoat, w_diffuse;
     };
 
     /// Discrete probabilities of the four sampling techniques
@@ -486,15 +476,21 @@ private:
         p.flatness        = m_has_flatness ? m_flatness->eval_1(si, active) : 0.0f;
         p.base_color      = m_base_color->eval(si, active);
 
+        Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
+
         p.c_tint = 1.0f;
-        if (m_has_spec_tint || m_has_sheen_tint) {
-            Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
+        if (m_has_spec_tint || m_has_sheen_tint)
             p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
-        }
 
         Float one_minus_metallic = 1.0f - p.metallic;
         p.bsdf = one_minus_metallic * p.spec_trans;
         p.brdf = one_minus_metallic - p.bsdf;
+
+        // The lobe selection weighs spectra by their channel mean. Unlike
+        // the luminance, it does not depend on the sampled wavelengths in
+        // spectral variants, which keeps the weights of all lobes comparable.
+        Float albedo = dr::mean(p.base_color);
+        p.trans_weight = m_has_spec_trans ? p.bsdf * dr::sqrt(albedo) : 0.0f;
 
         std::tie(p.alpha_x, p.alpha_y) =
             calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
@@ -503,43 +499,65 @@ private:
         if (m_has_clearcoat)
             p.cc_distr = GTR1(dr::lerp(0.1f, 0.001f, p.clearcoat_gloss));
 
+        // Lobe selection budgets. The specular lobes use the Fresnel term at
+        // the macrosurface normal as an estimate of their reflected energy.
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
+            fresnel(cos_theta_i, m_eta, m_inv_eta);
+
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, cos_theta_i, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, Mask(true),
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        p.w_spec = dr::fmadd(p.trans_weight, 1.0f - F_dielectric, dr::mean(F));
+
+        p.w_clearcoat = m_has_clearcoat
+            ? 0.25f * p.clearcoat *
+                  dr::lerp(0.04f, 1.0f, schlick_weight(cos_theta_i))
+            : 0.0f;
+
+        // The sheen lobe shares the diffuse sampling technique
+        p.w_diffuse = p.brdf * albedo;
+        if (m_has_sheen)
+            p.w_diffuse = dr::fmadd(p.sheen * one_minus_metallic,
+                                    sheen_albedo(cos_theta_i), p.w_diffuse);
+
         return p;
     }
 
     /**
-     * Lobe selection probabilities given the dielectric Fresnel term at the
-     * microfacet normal of the main specular lobe.
+     * Lobe selection probabilities. The main specular lobes share the budget
+     * p.w_spec, split according to the reflected energy ``E_reflect`` and
+     * the transmitted energy derived from ``F_dielectric``, both evaluated at
+     * the microfacet normal. Inside the material, only these two lobes are
+     * sampled.
      *
-     * Inside the material, only reflection and transmission through the main
-     * specular lobe are sampled. On the front side, the reflection and
-     * transmission probabilities sum to a value that does not depend on the
-     * Fresnel term. This matters because the pdf reconstructs the microfacet
-     * normal from wo, which differs from the sampled normal for diffuse and
-     * clearcoat samples.
+     * The sum of the two probabilities does not depend on the microfacet
+     * normal. This matters because the pdf reconstructs the normal from wo,
+     * which differs from the sampled normal for diffuse and clearcoat samples.
      */
-    LobeProbs lobe_probs(const Params &p, Float F_dielectric,
+    LobeProbs lobe_probs(const Params &p, Float E_reflect, Float F_dielectric,
                          Mask front_side) const {
         LobeProbs r;
 
-        // Fraction of the main lobe budget that goes to transmission
-        Float one_minus_F = 1.0f - F_dielectric,
-              t           = m_spec_srate * p.bsdf * one_minus_F;
+        Float budget = dr::select(front_side, p.w_spec, 1.0f);
 
-        r.spec_reflect = dr::select(front_side, m_spec_srate - t, F_dielectric);
+        // Fraction of the budget that goes to transmission
+        Float tau = 0.0f;
+        if (m_has_spec_trans) {
+            Float E_trans = p.trans_weight * (1.0f - F_dielectric),
+                  E_total = E_reflect + E_trans;
+            tau = dr::select(E_total > 0.0f, E_trans / E_total, 0.0f);
+        }
 
-        r.spec_trans = m_has_spec_trans
-            ? dr::select(front_side, t, one_minus_F)
-            : 0.0f;
+        r.spec_trans   = budget * tau;
+        r.spec_reflect = budget - r.spec_trans;
+        r.clearcoat    = dr::select(front_side, p.w_clearcoat, 0.0f);
+        r.diffuse      = dr::select(front_side, p.w_diffuse, 0.0f);
 
-        // The clearcoat lobe carries 1/4 of the main specular energy
-        r.clearcoat = m_has_clearcoat
-            ? dr::select(front_side, 0.25f * p.clearcoat * m_clearcoat_srate, 0.0f)
-            : 0.0f;
-
-        r.diffuse = dr::select(front_side, p.brdf * m_diff_refl_srate, 0.0f);
-
-        Float rcp_total =
-            dr::rcp(r.spec_reflect + r.spec_trans + r.clearcoat + r.diffuse);
+        Float total = r.spec_reflect + r.spec_trans + r.clearcoat + r.diffuse,
+              rcp_total = dr::select(total > 0.0f, dr::rcp(total), 0.0f);
 
         r.spec_reflect *= rcp_total;
         r.spec_trans   *= rcp_total;
@@ -603,7 +621,13 @@ private:
         Float pdf_spec    = D * G1_i * rcp_abs_cos_theta_i * jacobian,
               weight_spec = G1_o * pdf_spec;
 
-        LobeProbs prob = lobe_probs(p, F_dielectric, front_side);
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, dot_wi_h, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        LobeProbs prob = lobe_probs(p, dr::mean(F),
+                                    F_dielectric, front_side);
 
         UnpolarizedSpectrum value(0.0f);
         Float pdf(0.0f);
@@ -611,11 +635,6 @@ private:
         // Main specular reflection
         Mask spec_reflect_active = active && reflect;
         if (dr::any_or<true>(spec_reflect_active)) {
-            UnpolarizedSpectrum F = principled_fresnel(
-                F_dielectric, dot_wi_h, dr::abs(cos_theta_t), eta_it, m_r0,
-                p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
-                p.bsdf, m_has_metallic, m_has_spec_tint);
-
             dr::masked(value, spec_reflect_active) += F * weight_spec;
             dr::masked(pdf, spec_reflect_active) +=
                 prob.spec_reflect * pdf_spec;
@@ -728,10 +747,17 @@ private:
         Normal3f m_spec = std::get<0>(
             spec_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2));
 
+        Float dot_wi_m = dr::dot(si.wi, m_spec);
         auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dr::dot(si.wi, m_spec), m_eta, m_inv_eta);
+            fresnel(dot_wi_m, m_eta, m_inv_eta);
 
-        LobeProbs prob = lobe_probs(p, F_dielectric, front_side);
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, dot_wi_m, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        LobeProbs prob = lobe_probs(p, dr::mean(F),
+                                    F_dielectric, front_side);
 
         // Select a lobe
         Float cdf = prob.diffuse;
@@ -823,11 +849,6 @@ private:
     Float m_eta, m_inv_eta, m_r0;
     Float m_specular;
     bool m_eta_specular;
-
-    /// Sampling rates
-    ScalarFloat m_diff_refl_srate;
-    ScalarFloat m_spec_srate;
-    ScalarFloat m_clearcoat_srate;
 
     /// Component indices of the optional and main specular lobes
     uint32_t m_clearcoat_index = 0, m_spec_trans_index = 0,

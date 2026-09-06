@@ -75,26 +75,6 @@ The Thin Principled BSDF (:monosp:`principledthin`)
      transmission) (Default:0.0)
    - |exposed|, |differentiable|
 
- * - diffuse_reflectance_sampling_rate
-   - |float|
-   - The rate of the cosine hemisphere reflection in sampling. (Default: 1.0)
-   - |exposed|
-
- * - specular_reflectance_sampling_rate
-   - |float|
-   - The rate of the main specular reflection in sampling. (Default: 1.0)
-   - |exposed|
-
- * - specular_transmittance_sampling_rate
-   - |float|
-   - The rate of the main specular transmission in sampling. (Default: 1.0)
-   - |exposed|
-
- * - diffuse_transmittance_sampling_rate
-   - |float|
-   - The rate of the cosine hemisphere transmission in sampling. (Default: 1.0)
-   - |exposed|
-
 The thin principled BSDF is a complex BSDF which is designed by approximating
 some features of thin, translucent materials. The implementation is based on
 the papers *Physically Based Shading at Disney* :cite:`Disney2012` and
@@ -149,9 +129,8 @@ The following XML snippet describes a material definition for
         'diff_trans': 0.3,
         'eta': 1.33
 
-All of the parameters, except sampling rates, `diff_trans` and
-`eta`, should take values between 0.0 and 1.0. The range of
-`diff_trans` is 0.0 to 2.0.
+All of the parameters, except `diff_trans` and `eta`, should take values
+between 0.0 and 1.0. The range of `diff_trans` is 0.0 to 2.0.
  */
 template <typename Float, typename Spectrum>
 class PrincipledThin final : public BSDF<Float, Spectrum> {
@@ -178,14 +157,12 @@ public:
         m_eta_thin = props.get_unbounded_texture<Texture>("eta", 1.5f);
         m_has_diff_trans = get_flag("diff_trans", props);
         m_diff_trans = props.get_texture<Texture>("diff_trans", 0.0f);
-        m_spec_refl_srate =
-                props.get("specular_reflectance_sampling_rate", 1.0f);
-        m_spec_trans_srate =
-                props.get("specular_transmittance_sampling_rate", 1.0f);
-        m_diff_trans_srate =
-                props.get("diffuse_transmittance_sampling_rate", 1.0f);
-        m_diff_refl_srate =
-                props.get("diffuse_reflectance_sampling_rate", 1.0f);
+
+        // These legacy parameters are no longer used
+        props.mark_queried("specular_reflectance_sampling_rate");
+        props.mark_queried("specular_transmittance_sampling_rate");
+        props.mark_queried("diffuse_transmittance_sampling_rate");
+        props.mark_queried("diffuse_reflectance_sampling_rate");
 
         initialize_lobes();
     }
@@ -225,10 +202,6 @@ public:
         cb->put("eta",                                   m_eta_thin,         ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("roughness",                             m_roughness,        ParamFlags::Differentiable | ParamFlags::Discontinuous);
         cb->put("diff_trans",                            m_diff_trans,       ParamFlags::Differentiable);
-        cb->put("specular_reflectance_sampling_rate",    m_spec_refl_srate,  ParamFlags::NonDifferentiable);
-        cb->put("diffuse_reflectance_sampling_rate",     m_diff_refl_srate,  ParamFlags::NonDifferentiable);
-        cb->put("diffuse_transmittance_sampling_rate",   m_diff_trans_srate, ParamFlags::NonDifferentiable);
-        cb->put("specular_transmittance_sampling_rate",  m_spec_trans_srate, ParamFlags::NonDifferentiable);
         cb->put("base_color",                            m_base_color,       ParamFlags::Differentiable);
         cb->put("anisotropic",                           m_anisotropic,      ParamFlags::Differentiable);
         cb->put("spec_tint",                             m_spec_tint,        ParamFlags::Differentiable);
@@ -398,11 +371,11 @@ private:
         // The diff_trans parameter ranges from 0 to 2 and is mapped to 0 to 1
         p.diff_trans = m_has_diff_trans ? m_diff_trans->eval_1(si, active) / 2.0f : 0.0f;
 
+        Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
+
         p.c_tint = 1.0f;
-        if (m_has_spec_tint || m_has_sheen_tint) {
-            Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
+        if (m_has_spec_tint || m_has_sheen_tint)
             p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
-        }
 
         std::tie(p.alpha_x, p.alpha_y) =
             calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
@@ -415,18 +388,41 @@ private:
                 p.anisotropic, roughness_scaled, m_has_anisotropic);
         }
 
-        // Lobe selection probabilities
-        Float diffuse = 1.0f - p.spec_trans;
-        p.prob_spec_reflect =
-            m_has_spec_trans ? p.spec_trans * m_spec_refl_srate / 2.0f : 0.0f;
-        p.prob_spec_trans =
-            m_has_spec_trans ? p.spec_trans * m_spec_trans_srate / 2.0f : 0.0f;
-        p.prob_diff_reflect = m_diff_refl_srate * diffuse * (1.0f - p.diff_trans);
-        p.prob_diff_trans =
-            m_has_diff_trans ? m_diff_trans_srate * diffuse * p.diff_trans : 0.0f;
+        // Lobe selection probabilities, based on the energy that each lobe is
+        // expected to reflect or transmit for the incident direction. The
+        // specular lobes use the Fresnel term at the macrosurface normal.
+        // Spectra are weighed by their channel mean, which unlike the
+        // luminance does not depend on the sampled wavelengths in spectral
+        // variants.
+        Float cos_theta_i = dr::abs(Frame3f::cos_theta(si.wi)),
+              albedo      = dr::mean(p.base_color);
 
-        Float rcp_total = dr::rcp(p.prob_spec_reflect + p.prob_spec_trans +
-                                  p.prob_diff_reflect + p.prob_diff_trans);
+        p.prob_spec_reflect = 0.0f;
+        p.prob_spec_trans   = 0.0f;
+        if (m_has_spec_trans) {
+            Float F_dielectric = std::get<0>(fresnel(cos_theta_i, p.eta));
+
+            UnpolarizedSpectrum F_thin =
+                thin_fresnel(F_dielectric, p.spec_tint, p.c_tint, cos_theta_i,
+                             p.eta, m_has_spec_tint);
+
+            p.prob_spec_reflect = p.spec_trans * dr::mean(F_thin);
+            p.prob_spec_trans = p.spec_trans * (1.0f - F_dielectric) * albedo;
+        }
+
+        // The sheen lobe shares the diffuse reflection sampling technique
+        Float diffuse = (1.0f - p.spec_trans) * (1.0f - p.diff_trans),
+              reflect = m_has_sheen
+                  ? dr::fmadd(p.sheen, sheen_albedo(cos_theta_i), albedo)
+                  : albedo;
+        p.prob_diff_reflect = diffuse * reflect;
+        p.prob_diff_trans = m_has_diff_trans
+            ? (1.0f - p.spec_trans) * p.diff_trans * albedo
+            : 0.0f;
+
+        Float total = p.prob_spec_reflect + p.prob_spec_trans +
+                      p.prob_diff_reflect + p.prob_diff_trans,
+              rcp_total = dr::select(total > 0.0f, dr::rcp(total), 0.0f);
         p.prob_spec_reflect *= rcp_total;
         p.prob_spec_trans   *= rcp_total;
         p.prob_diff_reflect *= rcp_total;
@@ -667,12 +663,6 @@ private:
     ref<Texture> m_spec_tint;
     ref<Texture> m_diff_trans;
     ref<Texture> m_eta_thin;
-
-    /// Sampling rates
-    ScalarFloat m_spec_refl_srate;
-    ScalarFloat m_spec_trans_srate;
-    ScalarFloat m_diff_trans_srate;
-    ScalarFloat m_diff_refl_srate;
 
     /** Whether the lobes are active or not.*/
     bool m_has_sheen;
