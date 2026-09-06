@@ -278,7 +278,7 @@ public:
         active &= bs.pdf != 0.f;
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dr::dot(si.wi, m), m_eta);
+            fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta);
 
         // Select the lobe to be sampled
         UnpolarizedSpectrum weight;
@@ -395,7 +395,7 @@ public:
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta));
+        Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -492,7 +492,7 @@ public:
         Float prob = sample_distr.pdf(dr::mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
         if (likely(has_transmission && has_reflection)) {
-            Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta));
             prob *= dr::select(reflect, F, 1.f - F);
         }
 
@@ -551,7 +551,7 @@ public:
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dot_wi_m, m_eta));
+        Float F = std::get<0>(fresnel(dot_wi_m, m_eta, m_inv_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
