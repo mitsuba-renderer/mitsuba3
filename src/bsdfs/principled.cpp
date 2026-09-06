@@ -257,6 +257,7 @@ public:
 
         // Clearcoat lobe
         if (m_has_clearcoat) {
+            m_clearcoat_index = (uint32_t) m_components.size();
             m_components.push_back(BSDFFlags::GlossyReflection |
                                    BSDFFlags::FrontSide);
         }
@@ -267,6 +268,7 @@ public:
                          BSDFFlags::BackSide | BSDFFlags::NonSymmetric;
             if (m_has_anisotropic)
                 f = f | BSDFFlags::Anisotropic;
+            m_spec_trans_index = (uint32_t) m_components.size();
             m_components.push_back(f);
         }
 
@@ -275,6 +277,7 @@ public:
                      BSDFFlags::BackSide;
         if (m_has_anisotropic)
             f = f | BSDFFlags::Anisotropic;
+        m_spec_reflect_index = (uint32_t) m_components.size();
         m_components.push_back(f);
 
         for (auto c : m_components)
@@ -734,7 +737,8 @@ private:
         if (dr::any_or<true>(sample_spec_reflect)) {
             Vector3f wo = reflect(si.wi, m_spec);
             dr::masked(bs.wo, sample_spec_reflect) = wo;
-            dr::masked(bs.sampled_component, sample_spec_reflect) = 3;
+            dr::masked(bs.sampled_component, sample_spec_reflect) =
+                m_spec_reflect_index;
             dr::masked(bs.sampled_type, sample_spec_reflect) =
                 +BSDFFlags::GlossyReflection;
 
@@ -747,7 +751,8 @@ private:
         if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
             Vector3f wo = refract(si.wi, m_spec, cos_theta_t, eta_ti);
             dr::masked(bs.wo, sample_spec_trans) = wo;
-            dr::masked(bs.sampled_component, sample_spec_trans) = 2;
+            dr::masked(bs.sampled_component, sample_spec_trans) =
+                m_spec_trans_index;
             dr::masked(bs.sampled_type, sample_spec_trans) =
                 +BSDFFlags::GlossyTransmission;
             dr::masked(bs.eta, sample_spec_trans) = eta_it;
@@ -763,7 +768,8 @@ private:
             Normal3f m_cc = cc_distr.sample(sample2);
             Vector3f wo   = reflect(si.wi, m_cc);
             dr::masked(bs.wo, sample_clearcoat) = wo;
-            dr::masked(bs.sampled_component, sample_clearcoat) = 1;
+            dr::masked(bs.sampled_component, sample_clearcoat) =
+                m_clearcoat_index;
             dr::masked(bs.sampled_type, sample_clearcoat) =
                 +BSDFFlags::GlossyReflection;
 
@@ -810,6 +816,10 @@ private:
     ScalarFloat m_diff_refl_srate;
     ScalarFloat m_spec_srate;
     ScalarFloat m_clearcoat_srate;
+
+    /// Component indices of the optional and main specular lobes
+    uint32_t m_clearcoat_index = 0, m_spec_trans_index = 0,
+             m_spec_reflect_index = 0;
 
     /// Whether the lobes are active or not.
     bool m_has_clearcoat;
