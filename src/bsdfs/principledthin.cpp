@@ -165,6 +165,51 @@ public:
         props.mark_queried("diffuse_reflectance_sampling_rate");
 
         initialize_lobes();
+        update_distributions();
+    }
+
+    /// Distribution of the specular reflection lobe
+    MicrofacetDistribution spec_reflect_distribution(Float roughness,
+                                                     Float anisotropic) const {
+        auto [alpha_x, alpha_y] =
+            calc_dist_params(anisotropic, roughness, m_has_anisotropic);
+        return MicrofacetDistribution(MicrofacetType::GGX, alpha_x, alpha_y);
+    }
+
+    /// Distribution of the specular transmission lobe, which scales the
+    /// roughness by the index of refraction (Burley 2015, Figure 15)
+    MicrofacetDistribution spec_trans_distribution(Float roughness,
+                                                   Float anisotropic,
+                                                   Float eta) const {
+        Float roughness_scaled = dr::fmsub(0.65f, eta, 0.35f) * roughness;
+        return spec_reflect_distribution(roughness_scaled, anisotropic);
+    }
+
+    // Uniform roughness parameters yield a single distribution for the whole
+    // surface. Precomputing it keeps the derived constants out of the
+    // rendering kernels. Both specular lobes require spec_trans.
+    void update_distributions() {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+
+        m_uniform_roughness = m_has_spec_trans &&
+                              !m_roughness->is_spatially_varying() &&
+                              !m_anisotropic->is_spatially_varying();
+        m_uniform_trans_roughness =
+            m_uniform_roughness && !m_eta_thin->is_spatially_varying();
+
+        if (m_uniform_roughness) {
+            Float roughness   = m_roughness->eval_1(si, true),
+                  anisotropic = m_anisotropic->eval_1(si, true);
+
+            m_spec_reflect_distr = spec_reflect_distribution(roughness, anisotropic);
+            dr::make_opaque(m_spec_reflect_distr);
+
+            if (m_uniform_trans_roughness) {
+                m_spec_trans_distr = spec_trans_distribution(
+                    roughness, anisotropic, m_eta_thin->eval_1(si, true));
+                dr::make_opaque(m_spec_trans_distr);
+            }
+        }
     }
 
     void initialize_lobes() {
@@ -231,6 +276,7 @@ public:
             m_has_spec_tint = true;
 
         initialize_lobes();
+        update_distributions();
     }
 
     std::pair<BSDFSample3f, Spectrum>
@@ -347,8 +393,9 @@ private:
         /// Base color normalized by its luminance
         UnpolarizedSpectrum c_tint;
 
-        /// Roughness of the specular reflection and transmission lobes
-        Float alpha_x, alpha_y, alpha_x_trans, alpha_y_trans;
+        /// Microfacet distributions of the specular reflection and
+        /// transmission lobes
+        MicrofacetDistribution spec_reflect_distr, spec_trans_distr;
 
         /// Discrete probabilities of the four sampling techniques
         Float prob_spec_reflect, prob_spec_trans, prob_diff_reflect,
@@ -377,15 +424,16 @@ private:
         if (m_has_spec_tint || m_has_sheen_tint)
             p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
 
-        std::tie(p.alpha_x, p.alpha_y) =
-            calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
-
         if (m_has_spec_trans) {
-            // The transmission lobe scales the roughness by the index of
-            // refraction (Burley 2015, Figure 15)
-            Float roughness_scaled = dr::fmsub(0.65f, p.eta, 0.35f) * p.roughness;
-            std::tie(p.alpha_x_trans, p.alpha_y_trans) = calc_dist_params(
-                p.anisotropic, roughness_scaled, m_has_anisotropic);
+            p.spec_reflect_distr =
+                m_uniform_roughness
+                    ? m_spec_reflect_distr
+                    : spec_reflect_distribution(p.roughness, p.anisotropic);
+
+            p.spec_trans_distr =
+                m_uniform_trans_roughness
+                    ? m_spec_trans_distr
+                    : spec_trans_distribution(p.roughness, p.anisotropic, p.eta);
         }
 
         // Lobe selection probabilities, based on the energy that each lobe is
@@ -470,8 +518,7 @@ private:
             // Specular reflection
             Mask spec_reflect_active = active && reflect;
             if (dr::any_or<true>(spec_reflect_active)) {
-                MicrofacetDistribution distr(MicrofacetType::GGX, p.alpha_x,
-                                             p.alpha_y);
+                const MicrofacetDistribution &distr = p.spec_reflect_distr;
 
                 UnpolarizedSpectrum F_thin =
                     thin_fresnel(F_dielectric, p.spec_tint, p.c_tint,
@@ -492,8 +539,7 @@ private:
             // that face the half vector from the incident side.
             Mask spec_trans_active = active && refract && dot_wo_h < 0.0f;
             if (dr::any_or<true>(spec_trans_active)) {
-                MicrofacetDistribution distr(MicrofacetType::GGX,
-                                             p.alpha_x_trans, p.alpha_y_trans);
+                const MicrofacetDistribution &distr = p.spec_trans_distr;
 
                 Float pdf_spec    = distr.eval(wh) * distr.smith_g1(wi, wh) * rcp_4cos,
                       weight_spec = distr.smith_g1(wo_r, wh) * pdf_spec;
@@ -590,9 +636,7 @@ private:
 
         // Specular reflection
         if (m_has_spec_trans && dr::any_or<true>(sample_spec_reflect)) {
-            MicrofacetDistribution distr(MicrofacetType::GGX, p.alpha_x,
-                                         p.alpha_y);
-            Normal3f m  = std::get<0>(distr.sample(wi, sample2));
+            Normal3f m  = std::get<0>(p.spec_reflect_distr.sample(wi, sample2));
             Vector3f wo = reflect(wi, m);
 
             dr::masked(bs.wo, sample_spec_reflect) = wo;
@@ -608,9 +652,7 @@ private:
         // the direction reflects at the microfacet and then flips to the
         // other side.
         if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
-            MicrofacetDistribution distr(MicrofacetType::GGX, p.alpha_x_trans,
-                                         p.alpha_y_trans);
-            Normal3f m  = std::get<0>(distr.sample(wi, sample2));
+            Normal3f m  = std::get<0>(p.spec_trans_distr.sample(wi, sample2));
             Vector3f wo = reflect(wi, m);
             wo.z() = -wo.z();
 
@@ -664,6 +706,12 @@ private:
     ref<Texture> m_diff_trans;
     ref<Texture> m_eta_thin;
 
+    /// Precomputed distributions, valid when the roughness parameters are
+    /// spatially uniform
+    MicrofacetDistribution m_spec_reflect_distr, m_spec_trans_distr;
+    bool m_uniform_roughness = false;
+    bool m_uniform_trans_roughness = false;
+
     /** Whether the lobes are active or not.*/
     bool m_has_sheen;
     bool m_has_diff_trans;
@@ -675,7 +723,8 @@ private:
 
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
-                   m_diff_trans, m_eta_thin)
+                   m_diff_trans, m_eta_thin, m_spec_reflect_distr,
+                   m_spec_trans_distr)
 };
 
 MI_EXPORT_PLUGIN(PrincipledThin)

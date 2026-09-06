@@ -64,9 +64,11 @@ public:
         return Normal3f(cos_phi * sin_theta, sin_phi * sin_theta, cos_theta);
     }
 
+    DRJIT_TRAVERSE(GTR1Isotropic, m_alpha2_m1, m_log_alpha2, m_norm)
+
 private:
     /// alpha^2 - 1, log(alpha^2), and the normalization constant
-    Float m_alpha2_m1, m_log_alpha2, m_norm;
+    Float m_alpha2_m1 = 0.f, m_log_alpha2 = 0.f, m_norm = 0.f;
 };
 
 /**

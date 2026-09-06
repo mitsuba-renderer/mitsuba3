@@ -213,6 +213,7 @@ public:
 
         update_eta();
         initialize_lobes();
+        update_distributions();
 
         dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
@@ -234,6 +235,41 @@ public:
 
         // Schlick reflectance at normal incidence, symmetric in eta -> 1/eta
         m_r0 = schlick_R0_eta(m_eta);
+    }
+
+    /// Distribution of the main specular lobe
+    MicrofacetDistribution spec_distribution(Float roughness,
+                                             Float anisotropic) const {
+        auto [alpha_x, alpha_y] =
+            calc_dist_params(anisotropic, roughness, m_has_anisotropic);
+        return MicrofacetDistribution(MicrofacetType::GGX, alpha_x, alpha_y);
+    }
+
+    /// Distribution of the clearcoat lobe, whose roughness ranges from 0.1 to 0.001
+    static GTR1 clearcoat_distribution(Float gloss) {
+        return GTR1(dr::lerp(0.1f, 0.001f, gloss));
+    }
+
+    // Uniform roughness parameters yield a single distribution for the whole
+    // surface. Precomputing it keeps the derived constants out of the
+    // rendering kernels.
+    void update_distributions() {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+
+        m_uniform_roughness = !m_roughness->is_spatially_varying() &&
+                              !m_anisotropic->is_spatially_varying();
+        if (m_uniform_roughness) {
+            m_spec_distr = spec_distribution(m_roughness->eval_1(si, true),
+                                             m_anisotropic->eval_1(si, true));
+            dr::make_opaque(m_spec_distr);
+        }
+
+        m_uniform_gloss =
+            m_has_clearcoat && !m_clearcoat_gloss->is_spatially_varying();
+        if (m_uniform_gloss) {
+            m_cc_distr = clearcoat_distribution(m_clearcoat_gloss->eval_1(si, true));
+            dr::make_opaque(m_cc_distr);
+        }
     }
 
     void initialize_lobes() {
@@ -313,6 +349,7 @@ public:
 
         update_eta();
         initialize_lobes();
+        update_distributions();
 
         dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
@@ -441,10 +478,8 @@ private:
         /// Weights of the BRDF and BSDF major lobes
         Float brdf, bsdf;
 
-        /// Roughness of the main specular lobe
-        Float alpha_x, alpha_y;
-
-        /// Microfacet distribution of the clearcoat lobe
+        /// Microfacet distributions of the main specular and clearcoat lobes
+        MicrofacetDistribution spec_distr;
         GTR1 cc_distr;
 
         /// Weight of the transmission lobe, bsdf times the square root of
@@ -492,12 +527,14 @@ private:
         Float albedo = dr::mean(p.base_color);
         p.trans_weight = m_has_spec_trans ? p.bsdf * dr::sqrt(albedo) : 0.0f;
 
-        std::tie(p.alpha_x, p.alpha_y) =
-            calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
+        p.spec_distr = m_uniform_roughness
+                           ? m_spec_distr
+                           : spec_distribution(p.roughness, p.anisotropic);
 
-        // Clearcoat roughness is mapped between 0.1 and 0.001
         if (m_has_clearcoat)
-            p.cc_distr = GTR1(dr::lerp(0.1f, 0.001f, p.clearcoat_gloss));
+            p.cc_distr = m_uniform_gloss
+                             ? m_cc_distr
+                             : clearcoat_distribution(p.clearcoat_gloss);
 
         // Lobe selection budgets. The specular lobes use the Fresnel term at
         // the macrosurface normal as an estimate of their reflected energy.
@@ -595,8 +632,7 @@ private:
             fresnel(dot_wi_h, m_eta, m_inv_eta);
 
         // Main specular lobe
-        MicrofacetDistribution spec_distr(MicrofacetType::GGX, p.alpha_x,
-                                          p.alpha_y);
+        const MicrofacetDistribution &spec_distr = p.spec_distr;
         Float D    = spec_distr.eval(wh),
               G1_i = spec_distr.smith_g1(si.wi, wh),
               G1_o = spec_distr.smith_g1(wo, wh);
@@ -742,8 +778,7 @@ private:
         active &= front_side || p.bsdf > 0.0f;
 
         // Sample a visible normal of the main specular lobe
-        MicrofacetDistribution spec_distr(MicrofacetType::GGX, p.alpha_x,
-                                          p.alpha_y);
+        const MicrofacetDistribution &spec_distr = p.spec_distr;
         Normal3f m_spec = std::get<0>(
             spec_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2));
 
@@ -850,6 +885,13 @@ private:
     Float m_specular;
     bool m_eta_specular;
 
+    /// Precomputed distributions, valid when the roughness parameters are
+    /// spatially uniform
+    MicrofacetDistribution m_spec_distr;
+    GTR1 m_cc_distr;
+    bool m_uniform_roughness = false;
+    bool m_uniform_gloss = false;
+
     /// Component indices of the optional and main specular lobes
     uint32_t m_clearcoat_index = 0, m_spec_trans_index = 0,
              m_spec_reflect_index = 0;
@@ -867,7 +909,7 @@ private:
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                    m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
-                   m_inv_eta, m_r0, m_specular)
+                   m_inv_eta, m_r0, m_specular, m_spec_distr, m_cc_distr)
 };
 
 MI_EXPORT_PLUGIN(Principled)

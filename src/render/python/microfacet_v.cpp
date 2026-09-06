@@ -11,7 +11,7 @@
 MI_PY_EXPORT(MicrofacetDistribution) {
     MI_PY_IMPORT_TYPES(MicrofacetDistribution)
 
-    nb::class_<MicrofacetDistribution, drjit::TraversableBase>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
+    auto cls = nb::class_<MicrofacetDistribution>(m, "MicrofacetDistribution", D(MicrofacetDistribution))
         .def("__init__", [](MicrofacetDistribution* alloc, MicrofacetType t, ScalarFloat alpha, bool sv) {
             new (alloc) MicrofacetDistribution(t, alpha, sv);
         }, "type"_a, "alpha"_a, "sample_visible"_a = true)
@@ -43,7 +43,15 @@ MI_PY_EXPORT(MicrofacetDistribution) {
             D(MicrofacetDistribution, G))
         .def("sample_visible_11", &MicrofacetDistribution::sample_visible_11,
             "cos_theta_i"_a, "sample"_a, D(MicrofacetDistribution, sample_visible_11))
+        .def_rw("m_alpha_u", &MicrofacetDistribution::m_alpha_u)
+        .def_rw("m_alpha_v", &MicrofacetDistribution::m_alpha_v)
+        .def_rw("m_inv_alpha_u", &MicrofacetDistribution::m_inv_alpha_u)
+        .def_rw("m_inv_alpha_v", &MicrofacetDistribution::m_inv_alpha_v)
+        .def_rw("m_norm", &MicrofacetDistribution::m_norm)
         .def_repr(MicrofacetDistribution);
+
+    MI_PY_DRJIT_STRUCT(cls, MicrofacetDistribution, m_alpha_u, m_alpha_v,
+                       m_inv_alpha_u, m_inv_alpha_v, m_norm)
 
     m.def("eval_reflectance",
         [](MicrofacetType type, float alpha_u, float alpha_v,
