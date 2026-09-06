@@ -190,11 +190,14 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_inv_eta_2 = 1.f / (m_eta * m_eta);
+        m_inv_eta   = dr::rcp(m_eta);
+        m_inv_eta_2 = dr::square(m_inv_eta);
 
         // Numerically approximate the diffuse Fresnel reflectance
-        m_fdr_int = fresnel_diffuse_reflectance(1.f / m_eta);
+        m_fdr_int = fresnel_diffuse_reflectance(m_inv_eta);
         m_fdr_ext = fresnel_diffuse_reflectance(m_eta);
+
+        dr::make_opaque(m_eta, m_inv_eta, m_inv_eta_2, m_fdr_int, m_fdr_ext);
     }
 
     UnpolarizedSpectrum eval_specular_reflectance(const SurfaceInteraction3f &si,
@@ -237,7 +240,7 @@ public:
                             spec = eval_specular_reflectance(si, active);
 
         // Determine which component should be sampled
-        Float f_i           = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
+        Float f_i           = std::get<0>(fresnel(cos_theta_i, m_eta, m_inv_eta)),
               weight        = specular_sampling_weight(diff, spec),
               prob_specular = f_i * weight,
               prob_diffuse  = (1.f - f_i) * (1.f - weight);
@@ -270,9 +273,9 @@ public:
             dr::masked(bs.sampled_component, sample_diffuse) = 1;
             dr::masked(bs.sampled_type, sample_diffuse) = +BSDFFlags::DiffuseReflection;
 
-            Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), Float(m_eta)));
+            Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), m_eta, m_inv_eta));
             UnpolarizedSpectrum value = diff;
-            value /= 1.f - (m_nonlinear ? (value * m_fdr_int) : m_fdr_int);
+            value /= 1.f - (m_nonlinear ? (value * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
             value *= m_inv_eta_2 * (1.f - f_i) * (1.f - f_o) / prob_diffuse;
             result[sample_diffuse] = value;
         }
@@ -294,11 +297,11 @@ public:
         if (unlikely(!has_diffuse || dr::none_or<false>(active)))
             return 0.f;
 
-        Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
-              f_o = std::get<0>(fresnel(cos_theta_o, Float(m_eta)));
+        Float f_i = std::get<0>(fresnel(cos_theta_i, m_eta, m_inv_eta)),
+              f_o = std::get<0>(fresnel(cos_theta_o, m_eta, m_inv_eta));
 
         UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
-        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
+        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
 
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
                 m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
@@ -321,7 +324,7 @@ public:
         Float prob_diffuse = 1.f;
 
         if (ctx.is_enabled(BSDFFlags::DeltaReflection, 0)) {
-            Float f_i           = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
+            Float f_i           = std::get<0>(fresnel(cos_theta_i, m_eta, m_inv_eta)),
                   weight        = specular_sampling_weight(
                       m_diffuse_reflectance->eval(si, active),
                       eval_specular_reflectance(si, active)),
@@ -351,8 +354,8 @@ public:
         if (unlikely(!has_diffuse || dr::none_or<false>(active)))
             return { 0.f, 0.f };
 
-        Float f_i = std::get<0>(fresnel(cos_theta_i, Float(m_eta))),
-              f_o = std::get<0>(fresnel(cos_theta_o, Float(m_eta)));
+        Float f_i = std::get<0>(fresnel(cos_theta_i, m_eta, m_inv_eta)),
+              f_o = std::get<0>(fresnel(cos_theta_o, m_eta, m_inv_eta));
 
         UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
 
@@ -365,7 +368,7 @@ public:
             prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
         }
 
-        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : m_fdr_int);
+        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
 
         Float hemi_pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
@@ -399,13 +402,12 @@ public:
 private:
     ref<Texture> m_diffuse_reflectance;
     ref<Texture> m_specular_reflectance;
-    ScalarFloat m_eta;
-    ScalarFloat m_inv_eta_2;
-    ScalarFloat m_fdr_int;
-    ScalarFloat m_fdr_ext;
+    Float m_eta, m_inv_eta, m_inv_eta_2;
+    Float m_fdr_int, m_fdr_ext;
     bool m_nonlinear;
 
-    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance)
+    MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
+                   m_inv_eta, m_inv_eta_2, m_fdr_int, m_fdr_ext)
 };
 
 MI_EXPORT_PLUGIN(SmoothPlastic)

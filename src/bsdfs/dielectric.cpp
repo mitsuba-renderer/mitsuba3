@@ -232,6 +232,13 @@ public:
                                BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
 
         m_flags = m_components[0] | m_components[1];
+
+        parameters_changed();
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        m_inv_eta = dr::rcp(m_eta);
+        dr::make_opaque(m_eta, m_inv_eta);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -255,7 +262,7 @@ public:
         // Evaluate the Fresnel equations for unpolarized illumination
         Float cos_theta_i = Frame3f::cos_theta(si.wi);
 
-        auto [r_i, cos_theta_t, eta_it, eta_ti] = fresnel(cos_theta_i, Float(m_eta));
+        auto [r_i, cos_theta_t, eta_it, eta_ti] = fresnel(cos_theta_i, m_eta, m_inv_eta);
         Float t_i = 1.f - r_i;
 
         // Lobe selection
@@ -393,11 +400,12 @@ public:
 
     MI_DECLARE_CLASS(SmoothDielectric)
 private:
-    ScalarFloat m_eta;
+    Float m_eta, m_inv_eta;
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
 
-    MI_TRAVERSE_CB(Base, m_eta, m_specular_reflectance,m_specular_transmittance)
+    MI_TRAVERSE_CB(Base, m_eta, m_inv_eta, m_specular_reflectance,
+                   m_specular_transmittance)
 };
 
 MI_EXPORT_PLUGIN(SmoothDielectric)
