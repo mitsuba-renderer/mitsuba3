@@ -639,7 +639,8 @@ public:
 
             // Adding the clearcoat component.
             dr::masked(value, clearcoat_active) +=
-                    (clearcoat * 0.25f) * Fcc * Dcc * G_cc * dr::abs(cos_theta_o);
+                    (clearcoat * 0.25f) * Fcc * Dcc * G_cc /
+                    (4.0f * dr::abs(cos_theta_i));
         }
 
         // Evaluation of diffuse, retro reflection, fake subsurface and
