@@ -48,3 +48,11 @@ def test06_ray_intersect_vec(variant_scalar_rgb):
 
     from mitsuba.test.util import check_vectorization
     check_vectorization(kernel, arg_dims = [3, 3, 1])
+
+
+def test07_bounding_sphere(variant_scalar_rgb):
+    # Ensures returning a bounding sphere by value works.
+    bbox = mi.BoundingBox3f([-1, -1, -1], [1, 1, 1])
+    bsphere = bbox.bounding_sphere()
+    assert dr.all(bsphere.center == [0, 0, 0])
+    assert dr.allclose(bsphere.radius, dr.sqrt(3))
