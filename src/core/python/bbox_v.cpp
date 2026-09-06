@@ -86,12 +86,32 @@ template <typename BBox, typename Ray> auto bind_bbox(nb::module_ &m, const char
     }
 }
 
+// Add a `ray_intersect` overload to an existing bounding box binding.
+// This is used to allow intersecting a JIT array of rays against a scalar
+// bounding box.
+template <typename BBox, typename Ray> void bind_bbox_ray(const char *name) {
+    nb::handle h = nb::type<BBox>();
+    if (!h)
+        Throw("bind_bbox_ray(): '%s' has not been registered yet!", name);
+    nb::borrow<nb::class_<BBox>>(h).def(
+        "ray_intersect",
+        [](const BBox &self, const Ray &ray) { return self.ray_intersect(ray); },
+        D(BoundingBox, ray_intersect), "ray"_a);
+}
+
 MI_PY_EXPORT(BoundingBox) {
     MI_PY_IMPORT_TYPES()
+    using ScalarRay3f = Ray<ScalarPoint3f, scalar_spectrum_t<Spectrum>>;
 
-    bind_bbox<BoundingBox2f, Ray3f>(m, "BoundingBox2f");
+    bind_bbox<BoundingBox1f, void>(m, "BoundingBox1f");
+    bind_bbox<BoundingBox2f, void>(m, "BoundingBox2f");
     bind_bbox<BoundingBox3f, Ray3f>(m, "BoundingBox3f");
 
-    bind_bbox<ScalarBoundingBox2f, Ray3f>(m, "ScalarBoundingBox2f");
-    bind_bbox<ScalarBoundingBox3f, Ray3f>(m, "ScalarBoundingBox3f");
+    bind_bbox<ScalarBoundingBox1f, void>(m, "ScalarBoundingBox1f");
+    bind_bbox<ScalarBoundingBox2f, void>(m, "ScalarBoundingBox2f");
+    bind_bbox<ScalarBoundingBox3f, ScalarRay3f>(m, "ScalarBoundingBox3f");
+
+    // Also accept this variant's (possibly vectorized) ray type for ray_intersect
+    if constexpr (!std::is_same_v<Ray3f, ScalarRay3f>)
+        bind_bbox_ray<ScalarBoundingBox3f, Ray3f>("ScalarBoundingBox3f");
 }
