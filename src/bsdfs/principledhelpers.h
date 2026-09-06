@@ -114,11 +114,11 @@ Float schlick_weight(Float cos_i) {
  *     Schlick approximation result.
  */
 template <typename T,typename Float>
-T calc_schlick(T R0, Float cos_theta_i,Float eta){
+T calc_schlick(T R0, Float cos_theta_i,Float eta) {
     dr::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
-    Float rcp_eta     = dr::rcp(eta),
-    eta_it      = dr::select(outside_mask, eta, rcp_eta),
-    eta_ti      = dr::select(outside_mask, rcp_eta, eta);
+    Float rcp_eta = dr::rcp(eta),
+    eta_it = dr::select(outside_mask, eta, rcp_eta),
+    eta_ti = dr::select(outside_mask, rcp_eta, eta);
 
     Float cos_theta_t_sqr = dr::fnmadd(
             dr::fnmadd(cos_theta_i, cos_theta_i, 1.0f), dr::square(eta_ti), 1.0f);
@@ -145,14 +145,18 @@ Float schlick_R0_eta(Float eta){
 }
 
 /**
- * Modified fresnel function for the principled material. It blends
- * metallic and dielectric responses (not true metallic). spec_tint portion
- * of the dielectric response is tinted towards base_color. Schlick
- * approximation is used for spec_tint and metallic parts whereas dielectric
- * part is calculated with the true fresnel dielectric implementation.
+ * Fresnel term of the principled material. It blends the dielectric
+ * response with Schlick-based metallic and tinted reflections.
  *
  * Args:
  *     F_dielectric: True dielectric response.
+ *
+ *     cos_theta_i: Cosine between the incident direction and the
+ *         microfacet normal.
+ *
+ *     cos_theta_t: Absolute cosine of the transmitted direction.
+ *
+ *     eta_it: Relative index of refraction along the direction of travel.
  *
  *     metallic: Metallic weight.
  *
@@ -160,9 +164,7 @@ Float schlick_R0_eta(Float eta){
  *
  *     base_color: Base color of the material.
  *
- *     lum: Luminance of the base color.
- *
- *     cos_theta_i: Incident angle of the ray based on microfacet normal.
+ *     c_tint: Base color normalized by its luminance.
  *
  *     front_side: Mask for front side of the macro surface.
  *
@@ -173,78 +175,72 @@ Float schlick_R0_eta(Float eta){
  *     combined.
  */
 template<typename Float,typename T>
-T principled_fresnel(const Float &F_dielectric, const Float &metallic,
-                     const Float &spec_tint,
-                     const T &base_color,
-                     const Float &lum, const Float &cos_theta_i,
+T principled_fresnel(const Float &F_dielectric, const Float &cos_theta_i,
+                     const Float &cos_theta_t, const Float &eta_it,
+                     const Float &metallic, const Float &spec_tint,
+                     const T &base_color, const T &c_tint,
                      const dr::mask_t<Float> &front_side,
-                     const Float &bsdf, const Float &eta,
-                     bool has_metallic, bool has_spec_tint) {
-    // Outside mask based on micro surface
-    dr::mask_t<Float> outside_mask = cos_theta_i >= 0.0f;
-    Float rcp_eta = dr::rcp(eta);
-    Float eta_it  = dr::select(outside_mask, eta, rcp_eta);
-    T F_schlick(0.0f);
+                     const Float &bsdf, bool has_metallic,
+                     bool has_spec_tint) {
+    T F_front = (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric;
 
-    // Metallic component based on Schlick.
-    if (has_metallic) {
-        F_schlick += metallic * calc_schlick<T>(
-                base_color, cos_theta_i,eta);
+    if (has_metallic || has_spec_tint) {
+        // The Schlick weight uses the transmitted angle when entering a
+        // less dense medium
+        Float w = dr::select(eta_it > 1.0f,
+                             schlick_weight(dr::abs(cos_theta_i)),
+                             schlick_weight(cos_theta_t));
+        Float weight(0.0f);
+        T R0(0.0f);
+
+        if (has_metallic) {
+            weight += metallic;
+            R0 += metallic * base_color;
+        }
+
+        if (has_spec_tint) {
+            Float t = (1.0f - metallic) * spec_tint;
+            weight += t;
+            R0 += t * c_tint * schlick_R0_eta(eta_it);
+        }
+
+        F_front += dr::lerp(R0, weight, w);
     }
 
-    // Tinted dielectric component based on Schlick.
-    if (has_spec_tint) {
-        T c_tint       =
-                dr::select(lum > 0.0f, base_color / lum, 1.0f);
-        T F0_spec_tint =
-                c_tint * schlick_R0_eta(eta_it);
-        F_schlick +=
-                (1.0f - metallic) * spec_tint *
-                calc_schlick<T>(F0_spec_tint, cos_theta_i,eta);
-    }
-
-    // Front side fresnel.
-    T F_front =
-            (1.0f - metallic) * (1.0f - spec_tint) * F_dielectric + F_schlick;
-    // For back side there is no tint or metallic, just true dielectric
-    // fresnel.
+    // The back side has no tint or metallic response
     return dr::select(front_side, F_front, bsdf * F_dielectric);
 }
 
 /**
-* Modified Fresnel function for thin film approximation. It
-* calculates the tinted Fresnel factor with Schlick Approximation.
-*
-* Args:
-*     F_dielectric: True dielectric response.
-*
-*     spec_tint: Specular tint weight.
-*
-*     base_color: Base color of the material.
-*
-*     lum: Luminance of the base color.
-*
-*     cos_theta_i: Incident angle of the ray based on microfacet normal.
-*
-*     eta_t: Relative index of Refraction of the thin Film
-*
-* Returns:
-*     Fresnel term of the thin BSDF with normal and tinted response
-*     combined.
-*/
+ * Fresnel term of the thin principled material. It blends the dielectric
+ * response with a tinted Schlick approximation.
+ *
+ * Args:
+ *     F_dielectric: True dielectric response.
+ *
+ *     spec_tint: Specular tint weight.
+ *
+ *     c_tint: Base color normalized by its luminance.
+ *
+ *     cos_theta_i: Incident angle of the ray based on microfacet normal.
+ *
+ *     eta_t: Relative index of Refraction of the thin Film
+ *
+ * Returns:
+ *     Fresnel term of the thin BSDF with normal and tinted response
+ *     combined.
+ */
 template<typename Float,typename T>
 T thin_fresnel(const Float &F_dielectric, const Float &spec_tint,
-             const T &base_color, const Float &lum,
-             const Float &cos_theta_i, const Float &eta_t,
-             bool has_spec_tint) {
+               const T &c_tint, const Float &cos_theta_i,
+               const Float &eta_t, bool has_spec_tint) {
     T F_schlick(0.0f);
     // Tinted dielectric component based on Schlick.
     if (has_spec_tint) {
-        T c_tint       = dr::select(lum > 0.0f, base_color / lum, 1.0f);
         T F0_spec_tint = c_tint * schlick_R0_eta(eta_t);
-        F_schlick = calc_schlick<T>(F0_spec_tint, cos_theta_i,eta_t);
+        F_schlick = calc_schlick<T>(F0_spec_tint, cos_theta_i, eta_t);
     }
-    return dr::lerp(F_dielectric,F_schlick,spec_tint);
+    return dr::lerp(F_dielectric, F_schlick, spec_tint);
 }
 
 /**

@@ -434,6 +434,13 @@ public:
                                 m_has_diff_trans ? m_diff_trans->eval_1(si, active) / 2.0f : 0.0f;
         UnpolarizedSpectrum base_color = m_base_color->eval(si, active);
 
+        // Hue of the base color, used by the specular and sheen tints
+        UnpolarizedSpectrum c_tint(1.0f);
+        if (m_has_spec_tint || m_has_sheen_tint) {
+            Float lum = mitsuba::luminance(base_color, si.wavelengths);
+            c_tint = dr::select(lum > 0.0f, base_color / lum, 1.0f);
+        }
+
         // Changing the signs in a way that we are always at the front side.
         // Thin BSDF is symmetric!
         Vector3f wi       = dr::mulsign(si.wi, cos_theta_i);
@@ -475,15 +482,12 @@ public:
                 MicrofacetDistribution spec_reflect_distr(MicrofacetType::GGX,
                                                           ax, ay);
 
-                // No need to calculate luminance if there is no color tint.
-                Float lum = m_has_spec_tint
-                        ? mitsuba::luminance(base_color, si.wavelengths)
-                        : 1.0f;
                 Float spec_tint =
                         m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
 
-                UnpolarizedSpectrum F_thin = thin_fresnel(F_dielectric,spec_tint,base_color,
-                                           lum,dr::dot(wi,wh),eta_t,m_has_spec_tint);
+                UnpolarizedSpectrum F_thin =
+                        thin_fresnel(F_dielectric, spec_tint, c_tint,
+                                     dr::dot(wi, wh), eta_t, m_has_spec_tint);
 
                 // Evaluate the microfacet normal distribution
                 Float D = spec_reflect_distr.eval(wh);
@@ -559,16 +563,9 @@ public:
 
                 Float Fd = schlick_weight(dr::abs(cos_theta_d));
 
-                if (m_has_sheen_tint) { // Tints the sheen evaluation to the
-                    // base_color.
+                // Tint the sheen evaluation towards the base color
+                if (m_has_sheen_tint) {
                     Float sheen_tint = m_sheen_tint->eval_1(si, active);
-
-                    // Calculation of luminance of base_color.
-                    Float lum = mitsuba::luminance(base_color, si.wavelengths);
-
-                    // Normalize color with luminance and apply tint.
-                    UnpolarizedSpectrum c_tint =
-                            dr::select(lum > 0.0f, base_color / lum, 1.0f);
                     UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
 
                     // Adding the sheen component with tint.
