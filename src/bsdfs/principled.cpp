@@ -625,9 +625,9 @@ public:
         if (m_has_clearcoat && dr::any_or<true>(clearcoat_active)) {
             Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
 
-            // Clearcoat lobe uses the schlick approximation for Fresnel
-            // term.
-            Float Fcc = calc_schlick<Float>(0.04f, dr::dot(si.wi, wh),m_eta);
+            // The clearcoat is a fixed IOR 1.5 coating (F0 = 0.04) that is
+            // only evaluated from the front.
+            Float Fcc = dr::lerp(schlick_weight(dr::dot(si.wi, wh)), 1.f, 0.04f);
 
             // Clearcoat lobe uses GTR1 distribution. Roughness is mapped
             // between 0.1 and 0.001.
