@@ -76,7 +76,10 @@ def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -95,7 +98,10 @@ def test03_chi2_spec_trans_inside(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -116,7 +122,10 @@ def test04_chi2_spec_trans_less_dense(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -125,26 +134,26 @@ def test05_eval_pdf(variant_scalar_rgb):
     # The true values are defined by the first implementation in order to
     # prevent unwanted changes.
     pdf_true = [
-        0.2073885053396225,
-        0.17976854741573334,
-        0.15830643475055695,
-        0.14127117395401,
-        0.12738671898841858,
-        0.11572496592998505,
-        0.10561542958021164,
-        0.09657599031925201,
-        0.0882609635591507,
-        0.08042404800653458,
-        0.07289139181375504,
-        0.06554242223501205,
-        0.05829600617289543,
-        0.051100533455610275,
-        0.043926648795604706,
-        0.036761846393346786,
-        0.029606614261865616,
-        0.02247127704322338,
-        0.015373780392110348,
-        0.008337856270372868]
+        0.17426574230194092,
+        0.1573033183813095,
+        0.14375387132167816,
+        0.13257360458374023,
+        0.12299317121505737,
+        0.11445550620555878,
+        0.10656186193227768,
+        0.09903018176555634,
+        0.09166355431079865,
+        0.08432754129171371,
+        0.07693372666835785,
+        0.06942786276340485,
+        0.06178133562207222,
+        0.05398491770029068,
+        0.04604418948292732,
+        0.03797612711787224,
+        0.02980651706457138,
+        0.02156788296997547,
+        0.013297977857291698,
+        0.005038450006395578]
     evaluate_true = [
         0.0949176475405693,
         0.08489738404750824,

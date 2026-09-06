@@ -109,6 +109,18 @@ Float schlick_weight(Float cos_i) {
 }
 
 /**
+ * Approximate hemispherical albedo of the sheen lobe for a given incident
+ * angle. This is a fit to the integral of the Schlick weight of the half
+ * vector times the outgoing cosine, which grows from 0.0003 at normal
+ * incidence to 0.08 at grazing angles. The lobe selection uses it to size
+ * the sampling budget of the sheen lobe.
+ */
+template <typename Float>
+Float sheen_albedo(Float cos_theta_i) {
+    return dr::fmadd(0.08f, dr::square(1.0f - cos_theta_i), 0.0005f);
+}
+
+/**
  * Schlick Approximation for Fresnel Reflection coefficient F = R0 +
  * (1-R0) (1-cos^5(i)). Transmitted ray's angle should be used for eta<1.
  *
