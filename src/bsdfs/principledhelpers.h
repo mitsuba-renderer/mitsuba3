@@ -62,62 +62,6 @@ private:
 };
 
 /**
- * Separable shadowing-masking for GGX. Mitsuba does not have a GGX1
- * support in microfacet so it is added in principled material plugin.
- *
- * Args:
- *     wi: Incident Direction.
- *
- *     wo: Outgoing direction.
- *
- *     wh: Halfway vector.
- *
- *     alpha: Roughness of the clearcoat lobe.
- *
- * Returns:
- *     Shadowing-Masking term for GGX. Used in clearcoat lobe.
- */
-template<typename Float>
-Float clearcoat_G(const Vector<Float,3> &wi, const Vector<Float,3> &wo,
-                  const Vector<Float,3> &wh, const Float &alpha) {
-    return smith_ggx1(wi, wh, alpha) * smith_ggx1(wo, wh, alpha);
-}
-
-/**
- * Calculates Smith ggx shadowing-masking function. Used in
- * separable masking-shadowing term calculation.
- *
- * Args:
- *     v: Direction for the calculation of the function.
- *
- *     wh: Halfway vector.
- *
- *     alpha: Roughness of the clearcoat lobe.
- *
- * Returns:
- *     Smith ggx1 shadowing-masking function.
- */
-template<typename Float>
-Float smith_ggx1(const Vector<Float,3> &v, const Vector<Float,3> &wh,
-                 const Float &alpha) {
-    using Frame3f     = Frame<Float>;
-    Float alpha_2     = dr::square(alpha),
-    cos_theta   = dr::abs(Frame3f::cos_theta(v)),
-    cos_theta_2 = dr::square(cos_theta),
-    tan_theta_2 = (1.0f - cos_theta_2) / cos_theta_2;
-
-    Float result =
-            2.0f * dr::rcp(1.0f + dr::sqrt(1.0f + alpha_2 * tan_theta_2));
-
-    // Perpendicular incidence -- no shadowing/masking
-    dr::masked(result, v.z() == 1.f) = 1.f;
-    // Ensure consistent orientation (can't see the back
-    // of the microfacet from the front and vice versa)
-    dr::masked(result, dr::dot(v, wh) * Frame3f::cos_theta(v) <= 0.f) = 0.f;
-    return result;
-}
-
-/**
  * Get the flag which determines whether the corresponding
  * feature is going to be implemented or not.
  *
@@ -198,38 +142,6 @@ T calc_schlick(T R0, Float cos_theta_i,Float eta){
 template <typename Float>
 Float schlick_R0_eta(Float eta){
     return dr::square((eta - 1.0f) / (eta + 1.0f));
-}
-
-/**
- * Computes a mask for macro-micro surface incompatibilities.
- *
- * Args:
- *     m: Micro surface normal.
- *
- *     wi: Incident direction.
- *
- *     wo: Outgoing direction.
- *
- *     cos_theta_i: Incident angle
- *
- *     reflection: Flag for determining reflection or refraction case.
- *
- * Returns:
- *     Macro-micro surface compatibility mask.
- */
-template <typename Float>
-dr::mask_t<Float> mac_mic_compatibility(const Vector<Float,3> &m,
-                                        const Vector<Float,3> &wi,
-                                        const Vector<Float,3> &wo,
-                                        const Float &cos_theta_i,
-                                        bool reflection) {
-    if (reflection) {
-        return (dr::dot(wi, dr::mulsign(m, cos_theta_i)) > 0.0f) &&
-        (dr::dot(wo, dr::mulsign(m, cos_theta_i)) > 0.0f);
-    } else {
-        return (dr::dot(wi, dr::mulsign(m, cos_theta_i)) > 0.0f) &&
-        (dr::dot(wo, dr::mulsign_neg(m, cos_theta_i)) > 0.0f);
-    }
 }
 
 /**

@@ -347,14 +347,9 @@ public:
             dr::masked(bs.sampled_type, sample_spec_reflect) =
                     +BSDFFlags::GlossyReflection;
 
-            // Filter the cases where macro and micro SURFACES do not agree
-            // on the same side and the ray is not reflected.
+            // Discard reflections into the wrong hemisphere
             Mask reflect = Frame3f::cos_theta(wo) > 0.0f;
-            active &=
-                    (!sample_spec_reflect ||
-                    (mac_mic_compatibility(Vector3f(m_spec_reflect),
-                                           wi, wo, wi.z(), true) &&
-                    reflect));
+            active &= !sample_spec_reflect || reflect;
         }
         // Specular transmission lobe
         if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
@@ -381,13 +376,11 @@ public:
             dr::masked(bs.sampled_type, sample_spec_trans) =
                     +BSDFFlags::GlossyTransmission;
 
-            // Filter the cases where macro and micro SURFACES do not agree
-            // on the same side and the ray is not refracted.
-            Mask transmission = Frame3f::cos_theta(wo) < 0.0f;
-            active &=
-                    (!sample_spec_trans ||
-                    (mac_mic_compatibility(Vector3f(m_spec_trans), wi, wo, wi.z(), false) &&
-                    transmission));
+            // Discard transmissions into the wrong hemisphere and directions
+            // that face the microfacet, for which the lobe has no density
+            Mask transmission = Frame3f::cos_theta(wo) < 0.0f &&
+                                dr::dot(wo, m_spec_trans) < 0.0f;
+            active &= !sample_spec_trans || transmission;
         }
         // Cosine hemisphere reflection for  reflection lobes (diffuse,
         //  retro reflection)
@@ -456,14 +449,12 @@ public:
         wo_r.z()      = dr::abs(wo_r.z());
         Vector3f wh   = dr::normalize(wi + wo_r);
 
-        // Masks for controlling the micro-macro surface incompatibilities
-        // and correct sides.
+        // Masks for evaluating the lobes. The shadowing-masking term handles
+        // directions that face away from the microfacet.
         Mask spec_reflect_active =
-                active && (spec_trans > 0.0f) && reflect &&
-                mac_mic_compatibility(wh, wi, wo_t, wi.z(), true);
+                active && (spec_trans > 0.0f) && reflect;
         Mask spec_trans_active =
-                active && refract && (spec_trans > 0.0f) &&
-                mac_mic_compatibility(wh, wi, wo_t, wi.z(), false);
+                active && refract && (spec_trans > 0.0f);
         Mask diffuse_reflect_active =
                 active && reflect && (spec_trans < 1.0f) && (diff_trans < 1.0f);
         Mask diffuse_trans_active =
@@ -665,11 +656,9 @@ public:
             wo_r.z()      = dr::abs(wo_r.z());
             Vector3f wh   = dr::normalize(wi + wo_r);
 
-            // Macro-micro surface compatibility masks
-            Mask mfacet_reflect_macmic =
-                    mac_mic_compatibility(wh, wi, wo_t, wi.z(), true) && reflect;
-            Mask mfacet_trans_macmic =
-                    mac_mic_compatibility(wh, wi, wo_t, wi.z(), false) && refract;
+            // No microfacet transmits into directions that face the half
+            // vector from the incident side
+            Mask mfacet_trans = refract && dr::dot(wo_t, wh) < 0.0f;
 
             // d(wh) / d(wo) calculation. Inverted wo is used (wo_r) !
             Float dot_wor_wh  = dr::dot(wo_r, wh);
@@ -687,11 +676,11 @@ public:
                                      m_has_anisotropic);
             MicrofacetDistribution spec_trans_distr(MicrofacetType::GGX,
                                                     ax_scaled, ay_scaled);
-            // Adding specular lobes' pdfs
-            dr::masked(pdf, mfacet_reflect_macmic) +=
+            // Add specular lobes' pdfs
+            dr::masked(pdf, reflect) +=
                     prob_spec_reflect * spec_reflect_distr.pdf(wi, wh) *
                     dwh_dwo_abs;
-            dr::masked(pdf, mfacet_trans_macmic) +=
+            dr::masked(pdf, mfacet_trans) +=
                     prob_spec_trans * spec_trans_distr.pdf(wi, wh) * dwh_dwo_abs;
         }
         // Adding cosine hemisphere reflection pdf
