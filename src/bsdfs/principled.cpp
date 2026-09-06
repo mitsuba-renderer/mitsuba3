@@ -641,8 +641,11 @@ public:
                     (4.0f * dr::abs(cos_theta_i));
         }
 
-        // Evaluation of diffuse, retro reflection, fake subsurface and
-        // sheen.
+        // Angle between the half vector and the outgoing direction, used by
+        // the retro reflection and sheen terms.
+        Float cos_theta_d = dr::dot(wh, wo);
+
+        // Evaluation of diffuse, retro reflection and fake subsurface.
         if (dr::any_or<true>(diffuse_active)) {
             Float Fo = schlick_weight(dr::abs(cos_theta_o)),
             Fi = schlick_weight(dr::abs(cos_theta_i));
@@ -650,8 +653,7 @@ public:
             // Diffuse
             Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
 
-            Float cos_theta_d = dr::dot(wh, wo);
-            Float Rr          = 2.0f * roughness * dr::square(cos_theta_d);
+            Float Rr = 2.0f * roughness * dr::square(cos_theta_d);
 
             // Retro reflection
             Float f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
@@ -680,31 +682,32 @@ public:
                         brdf * dr::abs(cos_theta_o) * base_color *
                         dr::InvPi<Float> * (f_diff + f_retro);
             }
-            // Sheen evaluation
-            if (m_has_sheen && dr::any_or<true>(sheen_active)) {
-                Float Fd = schlick_weight(dr::abs(cos_theta_d));
+        }
 
-                // Tint the sheen evaluation towards the base color.
-                if (m_has_sheen_tint) {
-                    Float sheen_tint = m_sheen_tint->eval_1(si, active);
+        // Sheen evaluation
+        if (m_has_sheen && dr::any_or<true>(sheen_active)) {
+            Float Fd = schlick_weight(dr::abs(cos_theta_d));
 
-                    // Luminance evaluation
-                    Float lum = mitsuba::luminance(base_color, si.wavelengths);
+            // Tint the sheen evaluation towards the base color.
+            if (m_has_sheen_tint) {
+                Float sheen_tint = m_sheen_tint->eval_1(si, active);
 
-                    // Normalize color with luminance and tint the result.
-                    UnpolarizedSpectrum c_tint =
-                            dr::select(lum > 0.0f, base_color / lum, 1.0f);
-                    UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
+                // Luminance evaluation
+                Float lum = mitsuba::luminance(base_color, si.wavelengths);
 
-                    // Adding sheen evaluation with tint.
-                    dr::masked(value, sheen_active) +=
-                            sheen * (1.0f - metallic) * Fd * c_sheen *
-                            dr::abs(cos_theta_o);
-                } else {
-                    // Adding sheen evaluation without tint.
-                    dr::masked(value, sheen_active) +=
-                            sheen * (1.0f - metallic) * Fd * dr::abs(cos_theta_o);
-                }
+                // Normalize color with luminance and tint the result.
+                UnpolarizedSpectrum c_tint =
+                        dr::select(lum > 0.0f, base_color / lum, 1.0f);
+                UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
+
+                // Adding sheen evaluation with tint.
+                dr::masked(value, sheen_active) +=
+                        sheen * (1.0f - metallic) * Fd * c_sheen *
+                        dr::abs(cos_theta_o);
+            } else {
+                // Adding sheen evaluation without tint.
+                dr::masked(value, sheen_active) +=
+                        sheen * (1.0f - metallic) * Fd * dr::abs(cos_theta_o);
             }
         }
         return depolarizer<Spectrum>(value) & active;
