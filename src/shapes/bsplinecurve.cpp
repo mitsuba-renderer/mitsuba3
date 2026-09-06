@@ -478,11 +478,11 @@ public:
                           dr::normalize(dc_dv));
             ss.n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
-            // ss.n must point outwards from the curve
-            Vector3f inward_dir = -n;
-            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
-            inward_dir = dc_dv * dr::select(local_uv.y() == 0.f, 1.f, -1.f);
-            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
+            // `ss.n` points from the surface (foreground) to the background:
+            // flip it if it points along the surface tangent into the tube
+            Vector3f into_tube = (dc_dv + dr_dv * (rad_vec / radius)) *
+                                 dr::select(local_uv.y() == 0.f, 1.f, -1.f);
+            dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
 
             ss.pdf = dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
             ss.pdf *= warp::square_to_uniform_hemisphere_pdf(ss.d);
@@ -679,11 +679,11 @@ public:
                 (dr_dv * radius) * dc_dv);
             Mask success = dr::dot(n, ss.d) < 0;
 
-            // Orient `ss.n` outwards (consistent with `sample_silhouette`)
-            Vector3f inward_dir = -n;
-            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
-            inward_dir = dc_dv * dr::select(local_v == 0.f, 1.f, -1.f);
-            dr::masked(ss.n, dr::dot(inward_dir, ss.n) > 0.f) *= -1.f;
+            // `ss.n` points from the surface (foreground) to the background:
+            // flip it if it points along the surface tangent into the tube
+            Vector3f into_tube = (dc_dv + dr_dv * (rad_vec / radius)) *
+                                 dr::select(local_v == 0.f, 1.f, -1.f);
+            dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
 
             ss.discontinuity_type =
                 dr::select(success,
@@ -875,10 +875,11 @@ public:
         Mask perimeter = active & (sample1 == +DiscontinuityFlags::PerimeterType);
         dr::masked(ss, perimeter) =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, perimeter);
+        // Radius at the tip: the projection snaps `ss.uv.x()` to exactly 0 or 1
         Float radius;
         std::tie(std::ignore, std::ignore, std::ignore, std::ignore, radius,
                  std::ignore, std::ignore) =
-            cubic_interpolation(local_uv.y(), ss.prim_index, active);
+            cubic_interpolation(ss.uv.x(), ss.prim_index, active);
         dr::masked(ss.pdf, perimeter) =
             dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
 
