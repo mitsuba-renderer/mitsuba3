@@ -170,6 +170,7 @@ public:
     void scale_alpha(Float value) {
         m_alpha_u *= value;
         m_alpha_v *= value;
+        update_derived();
     }
 
     /**
@@ -179,23 +180,21 @@ public:
      *     m: The microfacet normal
      */
     Float eval(const Vector3f &m) const {
-        Float alpha_uv = m_alpha_u * m_alpha_v,
-              cos_theta         = Frame3f::cos_theta(m),
-              cos_theta_2       = dr::square(cos_theta),
+        Float cos_theta   = Frame3f::cos_theta(m),
+              cos_theta_2 = dr::square(cos_theta),
+              x           = m.x() * m_inv_alpha_u,
+              y           = m.y() * m_inv_alpha_v,
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
             // Beckmann distribution function for Gaussian random surfaces
-            result = dr::exp(-(dr::square(m.x() / m_alpha_u) +
-                               dr::square(m.y() / m_alpha_v)) /
-                             cos_theta_2) /
-                     (dr::Pi<Float> * alpha_uv * dr::square(cos_theta_2));
+            Float inv_cos_theta_2 = dr::rcp(cos_theta_2);
+            result = dr::exp(-dr::fmadd(x, x, dr::square(y)) * inv_cos_theta_2) *
+                     (m_norm * dr::square(inv_cos_theta_2));
         } else {
             // GGX / Trowbridge-Reitz distribution function
-            result =
-                dr::rcp(dr::Pi<Float> * alpha_uv *
-                        dr::square(dr::square(m.x() / m_alpha_u) +
-                                dr::square(m.y() / m_alpha_v) + dr::square(m.z())));
+            result = m_norm * dr::rcp(dr::square(
+                dr::fmadd(x, x, dr::fmadd(y, y, cos_theta_2))));
         }
 
         // Prevent potential numerical issues in other stages of the model
@@ -247,7 +246,7 @@ public:
 
                 alpha_2 = m_alpha_u * m_alpha_u;
             } else {
-                Float ratio  = m_alpha_v / m_alpha_u,
+                Float ratio  = m_alpha_v * m_inv_alpha_u,
                       tmp    = ratio * dr::tan((2.f * dr::Pi<Float>) * sample.y());
 
                 cos_phi = dr::rsqrt(dr::fmadd(tmp, tmp, 1.f));
@@ -255,29 +254,38 @@ public:
 
                 sin_phi = cos_phi * tmp;
 
-                alpha_2 = dr::rcp(dr::square(cos_phi / m_alpha_u) +
-                                  dr::square(sin_phi / m_alpha_v));
+                Float x = cos_phi * m_inv_alpha_u,
+                      y = sin_phi * m_inv_alpha_v;
+
+                alpha_2 = dr::rcp(dr::fmadd(x, x, dr::square(y)));
             }
 
             // Sample elevation component
+            Float s = 1.f - sample.x();
             if (m_type == MicrofacetType::Beckmann) {
-                // Beckmann distribution function for Gaussian random surfaces
-                cos_theta = dr::rsqrt(dr::fnmadd(alpha_2, dr::log(1.f - sample.x()), 1.f));
+                // Beckmann distribution function for Gaussian random surfaces.
+                // The upper bound on the reciprocal squared cosine keeps the
+                // density finite when 's' reaches zero.
+                Float inv_cos_theta_2 =
+                    dr::minimum(dr::fnmadd(alpha_2, dr::log(s), 1.f), 1e13f);
+
+                cos_theta = dr::rsqrt(inv_cos_theta_2);
                 cos_theta_2 = dr::square(cos_theta);
 
-                // Compute probability density of the sampled position
-                Float cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = (1.f - sample.x()) / (dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
+                // Compute probability density of the sampled position, where
+                // the reciprocal cubed cosine equals 'inv_cos_theta_2^(3/2)'
+                pdf = s * m_norm * dr::square(inv_cos_theta_2) * cos_theta;
             } else {
-                // GGX / Trowbridge-Reitz distribution function
-                Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
-                cos_theta = dr::rsqrt(1.f + tan_theta_m_2);
-                cos_theta_2 = dr::square(cos_theta);
+                // GGX / Trowbridge-Reitz distribution function. The tangent of
+                // the sampled elevation satisfies 'tan_theta_2 = alpha_2 * x/s',
+                // hence the squared cosine below.
+                Float t = dr::fmadd(alpha_2, sample.x(), s);
+
+                cos_theta_2 = s / t;
+                cos_theta = dr::sqrt(cos_theta_2);
 
                 // Compute probability density of the sampled position
-                Float temp = 1.f + tan_theta_m_2 / alpha_2,
-                      cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::square(temp));
+                pdf = m_norm * dr::square(t) * cos_theta;
             }
 
             Float sin_theta = dr::sqrt(1.f - cos_theta_2);
@@ -420,6 +428,14 @@ protected:
     void configure() {
         m_alpha_u = dr::maximum(m_alpha_u, 1e-4f);
         m_alpha_v = dr::maximum(m_alpha_v, 1e-4f);
+        update_derived();
+    }
+
+    /// Recompute the quantities that depend on the roughness values
+    void update_derived() {
+        m_inv_alpha_u = dr::rcp(m_alpha_u);
+        m_inv_alpha_v = dr::rcp(m_alpha_v);
+        m_norm = dr::InvPi<Float> * m_inv_alpha_u * m_inv_alpha_v;
     }
 
     /// Compute the squared 1D roughness along direction ``v``
@@ -436,9 +452,13 @@ protected:
 protected:
     MicrofacetType m_type;
     Float m_alpha_u, m_alpha_v;
+    Float m_inv_alpha_u, m_inv_alpha_v;
+    /// Normalization constant 1 / (pi * alpha_u * alpha_v)
+    Float m_norm;
     bool  m_sample_visible;
 
-    MI_TRAVERSE_CB(drjit::TraversableBase, m_alpha_u, m_alpha_v)
+    MI_TRAVERSE_CB(drjit::TraversableBase, m_alpha_u, m_alpha_v,
+                   m_inv_alpha_u, m_inv_alpha_v, m_norm)
 };
 
 template <typename Float, typename Spectrum>
