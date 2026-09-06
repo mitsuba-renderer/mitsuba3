@@ -241,6 +241,9 @@ public:
                 dr::mean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
         dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_internal_reflectance);
+
+        m_distr = MicrofacetDistribution(m_type, m_alpha, m_sample_visible);
+        dr::make_opaque(m_distr);
     }
 
     UnpolarizedSpectrum eval_specular_reflectance(const SurfaceInteraction3f &si,
@@ -301,7 +304,7 @@ public:
         bs.eta = 1.f;
 
         if (dr::any_or<true>(sample_specular)) {
-            MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+            const MicrofacetDistribution &distr = m_distr;
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
             dr::masked(bs.wo, sample_specular) = reflect(si.wi, m);
@@ -339,7 +342,7 @@ public:
 
         UnpolarizedSpectrum value(0.f);
         if (has_specular) {
-            MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+            const MicrofacetDistribution &distr = m_distr;
 
             // Calculate the reflection half-vector
             Vector3f H = dr::normalize(wo + si.wi);
@@ -421,7 +424,7 @@ public:
 
         Vector3f H = dr::normalize(wo + si.wi);
 
-        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+        const MicrofacetDistribution &distr = m_distr;
         Float result = 0.f;
         if (m_sample_visible)
             result = distr.eval(H) * distr.smith_g1(si.wi, H) /
@@ -472,7 +475,7 @@ public:
         // Calculate the reflection half-vector
         Vector3f H = dr::normalize(wo + si.wi);
 
-        MicrofacetDistribution distr(m_type, m_alpha, m_sample_visible);
+        const MicrofacetDistribution &distr = m_distr;
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
@@ -548,10 +551,11 @@ private:
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
     Float m_internal_reflectance;
+    MicrofacetDistribution m_distr;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
                    m_inv_eta_2, m_alpha, m_external_transmittance,
-                   m_internal_reflectance)
+                   m_internal_reflectance, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RoughPlastic)

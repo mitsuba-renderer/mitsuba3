@@ -57,9 +57,12 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  * and GGX models, respectively.
  */
 template <typename Float, typename Spectrum>
-class MicrofacetDistribution : public drjit::TraversableBase {
+class MicrofacetDistribution {
 public:
     MI_IMPORT_TYPES()
+
+    /// Create an uninitialized distribution, to be assigned later
+    MicrofacetDistribution() = default;
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -70,8 +73,8 @@ public:
      *     alpha: The surface roughness
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha, bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
-          m_sample_visible(sample_visible) {
+        : m_type(type), m_isotropic(true), m_sample_visible(sample_visible),
+          m_alpha_u(alpha), m_alpha_v(alpha) {
         configure();
     }
 
@@ -87,8 +90,9 @@ public:
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v),
-          m_sample_visible(sample_visible) {
+        : m_type(type), m_isotropic(same_alpha(alpha_u, alpha_v)),
+          m_sample_visible(sample_visible), m_alpha_u(alpha_u),
+          m_alpha_v(alpha_v) {
         configure();
     }
 
@@ -135,6 +139,7 @@ public:
                 "Please use the corresponding smooth reflectance model to get zero roughness.");
 
         m_sample_visible = props.get<bool>("sample_visible", sample_visible);
+        m_isotropic = same_alpha(m_alpha_u, m_alpha_v);
 
         configure();
     }
@@ -156,15 +161,10 @@ public:
     bool sample_visible() const { return m_sample_visible; }
 
     /// Is this an isotropic microfacet distribution?
-    bool is_isotropic() const {
-        if constexpr (dr::is_jit_v<Float>)
-            return m_alpha_u.index() == m_alpha_v.index();
-        else
-            return dr::all(m_alpha_u == m_alpha_v);
-    }
+    bool is_isotropic() const { return m_isotropic; }
 
     /// Is this an anisotropic microfacet distribution?
-    bool is_anisotropic() const { return dr::all(m_alpha_u != m_alpha_v); }
+    bool is_anisotropic() const { return !m_isotropic; }
 
     /// Scale the roughness values by some constant
     void scale_alpha(Float value) {
@@ -438,6 +438,15 @@ protected:
         m_norm = dr::InvPi<Float> * m_inv_alpha_u * m_inv_alpha_v;
     }
 
+    /// Do both roughness values denote the same quantity? Two separately
+    /// differentiable parameters can share a primal, hence the combined index.
+    static bool same_alpha(const Float &alpha_u, const Float &alpha_v) {
+        if constexpr (dr::is_jit_v<Float>)
+            return alpha_u.index_combined() == alpha_v.index_combined();
+        else
+            return dr::all(alpha_u == alpha_v);
+    }
+
     /// Compute the squared 1D roughness along direction ``v``
     Float project_roughness_2(const Vector3f &v) const {
         if (is_isotropic())
@@ -450,14 +459,17 @@ protected:
     }
 
 protected:
-    MicrofacetType m_type;
-    Float m_alpha_u, m_alpha_v;
-    Float m_inv_alpha_u, m_inv_alpha_v;
-    /// Normalization constant 1 / (pi * alpha_u * alpha_v)
-    Float m_norm;
-    bool  m_sample_visible;
+    MicrofacetType m_type = MicrofacetType::Beckmann;
+    bool  m_isotropic = true;
+    bool  m_sample_visible = true;
 
-    MI_TRAVERSE_CB(drjit::TraversableBase, m_alpha_u, m_alpha_v,
+public:
+    /// Roughness values and derived constants, exposed for traversal
+    Float m_alpha_u = 0.f, m_alpha_v = 0.f;
+    Float m_inv_alpha_u = 0.f, m_inv_alpha_v = 0.f;
+    Float m_norm = 0.f;
+
+    DRJIT_TRAVERSE(MicrofacetDistribution, m_alpha_u, m_alpha_v,
                    m_inv_alpha_u, m_inv_alpha_v, m_norm)
 };
 
