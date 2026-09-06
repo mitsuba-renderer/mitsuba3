@@ -401,7 +401,7 @@ private:
         p.c_tint = 1.0f;
         if (m_has_spec_tint || m_has_sheen_tint) {
             Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
-            p.c_tint = dr::select(lum > 0.0f, p.base_color / lum, 1.0f);
+            p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
         }
 
         std::tie(p.alpha_x, p.alpha_y) =
@@ -410,7 +410,7 @@ private:
         if (m_has_spec_trans) {
             // The transmission lobe scales the roughness by the index of
             // refraction (Burley 2015, Figure 15)
-            Float roughness_scaled = (0.65f * p.eta - 0.35f) * p.roughness;
+            Float roughness_scaled = dr::fmsub(0.65f, p.eta, 0.35f) * p.roughness;
             std::tie(p.alpha_x_trans, p.alpha_y_trans) = calc_dist_params(
                 p.anisotropic, roughness_scaled, m_has_anisotropic);
         }
@@ -516,33 +516,35 @@ private:
             Float Fo = schlick_weight(cos_theta_o),
                   Fi = schlick_weight(cos_theta_i);
 
-            Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
+            Float f_diff = dr::fnmadd(0.5f, Fi, 1.0f) * dr::fnmadd(0.5f, Fo, 1.0f);
 
             // Retro reflection
             Float Rr      = 2.0f * p.roughness * dr::square(dot_wo_h),
-                  f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f)),
+                  f_retro = Rr * dr::fmadd(Fo * Fi, Rr - 1.0f, Fo + Fi),
                   f       = f_diff + f_retro;
 
             if (m_has_flatness) {
                 // Fake subsurface scattering based on Hanrahan-Krueger
-                Float Fss90 = Rr / 2.f,
-                      Fss   = dr::lerp(1.f, Fss90, Fo) * dr::lerp(1.f, Fss90, Fi),
-                      f_ss  = 1.25f * (Fss * (1.f / (cos_theta_o + cos_theta_i) - 0.5f) + 0.5f);
+                Float Fss90 = 0.5f * Rr,
+                      Fss   = dr::lerp(1.0f, Fss90, Fo) * dr::lerp(1.0f, Fss90, Fi),
+                      f_ss  = 1.25f * dr::fmadd(Fss, dr::rcp(cos_theta_o + cos_theta_i) - 0.5f, 0.5f);
 
                 f = dr::lerp(f, f_ss, p.flatness);
             }
 
-            Float weight = (1.0f - p.spec_trans) * (1.0f - p.diff_trans);
-            UnpolarizedSpectrum diffuse =
-                weight * cos_theta_o * p.base_color * dr::InvPi<Float> * f;
+            // Scalar factors first, then a single spectral multiplication
+            Float weight = (1.0f - p.spec_trans) * (1.0f - p.diff_trans) * cos_theta_o,
+                  s_diff = weight * dr::InvPi<Float> * f;
+            UnpolarizedSpectrum diffuse = p.base_color * s_diff;
 
             if (m_has_sheen) {
-                Float Fd = schlick_weight(dot_wo_h);
-                UnpolarizedSpectrum c_sheen =
-                    m_has_sheen_tint ? dr::lerp(1.0f, p.c_tint, p.sheen_tint)
-                                     : UnpolarizedSpectrum(1.0f);
+                Float s_sheen = p.sheen * schlick_weight(dot_wo_h) * weight;
 
-                diffuse += p.sheen * weight * Fd * c_sheen * cos_theta_o;
+                if (m_has_sheen_tint)
+                    diffuse = dr::fmadd(dr::lerp(1.0f, p.c_tint, p.sheen_tint),
+                                        s_sheen, diffuse);
+                else
+                    diffuse += s_sheen;
             }
 
             dr::masked(value, diffuse_reflect_active) += diffuse;
@@ -555,8 +557,8 @@ private:
             Mask diffuse_trans_active = active && refract;
             if (dr::any_or<true>(diffuse_trans_active)) {
                 dr::masked(value, diffuse_trans_active) +=
-                    (1.0f - p.spec_trans) * p.diff_trans * p.base_color *
-                    dr::InvPi<Float> * (-cos_theta_o);
+                    p.base_color * ((1.0f - p.spec_trans) * p.diff_trans *
+                                    dr::InvPi<Float> * (-cos_theta_o));
                 dr::masked(pdf, diffuse_trans_active) +=
                     p.prob_diff_trans * dr::InvPi<Float> * (-cos_theta_o);
             }

@@ -489,11 +489,12 @@ private:
         p.c_tint = 1.0f;
         if (m_has_spec_tint || m_has_sheen_tint) {
             Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
-            p.c_tint = dr::select(lum > 0.0f, p.base_color / lum, 1.0f);
+            p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
         }
 
-        p.brdf = (1.0f - p.metallic) * (1.0f - p.spec_trans);
-        p.bsdf = (1.0f - p.metallic) * p.spec_trans;
+        Float one_minus_metallic = 1.0f - p.metallic;
+        p.bsdf = one_minus_metallic * p.spec_trans;
+        p.brdf = one_minus_metallic - p.bsdf;
 
         std::tie(p.alpha_x, p.alpha_y) =
             calc_dist_params(p.anisotropic, p.roughness, m_has_anisotropic);
@@ -520,13 +521,14 @@ private:
                          Mask front_side) const {
         LobeProbs r;
 
-        r.spec_reflect = dr::select(
-            front_side, m_spec_srate * (1.0f - p.bsdf * (1.0f - F_dielectric)),
-            F_dielectric);
+        // Fraction of the main lobe budget that goes to transmission
+        Float one_minus_F = 1.0f - F_dielectric,
+              t           = m_spec_srate * p.bsdf * one_minus_F;
+
+        r.spec_reflect = dr::select(front_side, m_spec_srate - t, F_dielectric);
 
         r.spec_trans = m_has_spec_trans
-            ? dr::select(front_side, m_spec_srate * p.bsdf * (1.0f - F_dielectric),
-                         1.0f - F_dielectric)
+            ? dr::select(front_side, t, one_minus_F)
             : 0.0f;
 
         // The clearcoat lobe carries 1/4 of the main specular energy
@@ -551,12 +553,13 @@ private:
     std::pair<UnpolarizedSpectrum, Float>
     eval_pdf_impl(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Params &p, const Vector3f &wo, Mask active) const {
-        Float cos_theta_i = Frame3f::cos_theta(si.wi),
-              cos_theta_o = Frame3f::cos_theta(wo);
+        Float cos_theta_i  = Frame3f::cos_theta(si.wi),
+              cos_theta_o  = Frame3f::cos_theta(wo),
+              cos_theta_io = cos_theta_i * cos_theta_o;
 
         Mask front_side = cos_theta_i > 0.0f,
-             reflect    = cos_theta_i * cos_theta_o > 0.0f,
-             refract    = cos_theta_i * cos_theta_o < 0.0f;
+             reflect    = cos_theta_io > 0.0f,
+             refract    = cos_theta_io < 0.0f;
 
         // Relative index of refraction along the light path
         Float eta_path     = dr::select(front_side, m_eta, m_inv_eta),
@@ -564,7 +567,7 @@ private:
 
         // Half vector, oriented towards the exterior of the object
         Vector3f wh = dr::normalize(
-            si.wi + wo * dr::select(reflect, Float(1.0f), eta_path));
+            dr::fmadd(wo, dr::select(reflect, Float(1.0f), eta_path), si.wi));
         wh = dr::mulsign(wh, Frame3f::cos_theta(wh));
 
         Float dot_wi_h = dr::dot(si.wi, wh),
@@ -669,34 +672,38 @@ private:
             Float Fo = schlick_weight(cos_theta_o),
                   Fi = schlick_weight(cos_theta_i);
 
-            Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
+            Float f_diff = dr::fnmadd(0.5f, Fi, 1.0f) * dr::fnmadd(0.5f, Fo, 1.0f);
 
             // Retro reflection
             Float Rr      = 2.0f * p.roughness * dr::square(dot_wo_h),
-                  f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f)),
+                  f_retro = Rr * dr::fmadd(Fo * Fi, Rr - 1.0f, Fo + Fi),
                   f       = f_diff + f_retro;
 
             if (m_has_flatness) {
                 // Fake subsurface scattering based on Hanrahan-Krueger
                 Float Fss90 = 0.5f * Rr,
                       Fss   = dr::lerp(1.0f, Fss90, Fo) * dr::lerp(1.0f, Fss90, Fi),
-                      f_ss  = 1.25f * (Fss * (dr::rcp(cos_theta_o + cos_theta_i) - 0.5f) + 0.5f);
+                      f_ss  = 1.25f * dr::fmadd(Fss, dr::rcp(cos_theta_o + cos_theta_i) - 0.5f, 0.5f);
 
                 f = dr::lerp(f, f_ss, p.flatness);
             }
 
-            UnpolarizedSpectrum diffuse = p.brdf * p.base_color * (dr::InvPi<Float> * f);
+            // Scalar factors first, then a single spectral multiplication
+            Float s_diff = p.brdf * dr::InvPi<Float> * f * cos_theta_o;
+            UnpolarizedSpectrum diffuse = p.base_color * s_diff;
 
             if (m_has_sheen) {
-                Float Fd = schlick_weight(dot_wo_h);
-                UnpolarizedSpectrum c_sheen =
-                    m_has_sheen_tint ? dr::lerp(1.0f, p.c_tint, p.sheen_tint)
-                                     : UnpolarizedSpectrum(1.0f);
+                Float s_sheen = p.sheen * (1.0f - p.metallic) *
+                                schlick_weight(dot_wo_h) * cos_theta_o;
 
-                diffuse += p.sheen * (1.0f - p.metallic) * Fd * c_sheen;
+                if (m_has_sheen_tint)
+                    diffuse = dr::fmadd(dr::lerp(1.0f, p.c_tint, p.sheen_tint),
+                                        s_sheen, diffuse);
+                else
+                    diffuse += s_sheen;
             }
 
-            dr::masked(value, diffuse_active) += diffuse * cos_theta_o;
+            dr::masked(value, diffuse_active) += diffuse;
             dr::masked(pdf, diffuse_active) +=
                 prob.diffuse * dr::InvPi<Float> * cos_theta_o;
         }
