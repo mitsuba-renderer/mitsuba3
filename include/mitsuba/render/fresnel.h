@@ -17,6 +17,9 @@ NAMESPACE_BEGIN(mitsuba)
  *         means that the surface normal is pointing into the region of lower
  *         density.
  *
+ *     inv_eta: Reciprocal of ``eta``. Callers that store this value can pass
+ *         it to avoid a division per evaluation.
+ *
  * Returns:
  *     A tuple ``(F, cos_theta_t, eta_it, eta_ti)`` where
  *
@@ -34,12 +37,12 @@ NAMESPACE_BEGIN(mitsuba)
  *       refracted direction.
  */
 template <typename Float>
-std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta,
+                                               Float inv_eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    Float rcp_eta = dr::rcp(eta),
-          eta_it = dr::select(outside_mask, eta, rcp_eta),
-          eta_ti = dr::select(outside_mask, rcp_eta, eta);
+    Float eta_it = dr::select(outside_mask, eta, inv_eta),
+          eta_ti = dr::select(outside_mask, inv_eta, eta);
 
     // Using Snell's law, calculate the squared sine of the
     // angle between the surface normal and the transmitted ray
@@ -70,6 +73,11 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float cos_theta_t = dr::mulsign_neg(cos_theta_t_abs, cos_theta_i);
 
     return { r, cos_theta_t, eta_it, eta_ti };
+}
+
+template <typename Float>
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
+    return fresnel(cos_theta_i, eta, dr::rcp(eta));
 }
 
 /**

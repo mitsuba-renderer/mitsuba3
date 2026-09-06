@@ -574,7 +574,7 @@ private:
               dot_wo_h = dr::dot(wo, wh);
 
         auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dot_wi_h, m_eta);
+            fresnel(dot_wi_h, m_eta, m_inv_eta);
 
         // Main specular lobe
         MicrofacetDistribution spec_distr(MicrofacetType::GGX, p.alpha_x,
@@ -729,7 +729,7 @@ private:
             spec_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2));
 
         auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dr::dot(si.wi, m_spec), m_eta);
+            fresnel(dr::dot(si.wi, m_spec), m_eta, m_inv_eta);
 
         LobeProbs prob = lobe_probs(p, F_dielectric, front_side);
 

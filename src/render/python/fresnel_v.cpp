@@ -8,7 +8,7 @@
 MI_PY_EXPORT(fresnel) {
     MI_PY_IMPORT_TYPES()
     m.def("fresnel",
-         &fresnel<Float>,
+         static_cast<std::tuple<Float, Float, Float, Float> (*)(Float, Float)>(&fresnel<Float>),
          "cos_theta_i"_a, "eta"_a, D(fresnel))
     .def("fresnel_conductor",
          &fresnel_conductor<Float>,
