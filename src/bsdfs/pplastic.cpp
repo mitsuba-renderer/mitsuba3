@@ -212,6 +212,21 @@ public:
         parameters_changed();
     }
 
+    /// Microfacet distribution matching the roughness at the surface position
+    MicrofacetDistribution distribution(const SurfaceInteraction3f &si,
+                                        Mask active) const {
+        if (m_uniform_alpha)
+            return m_distr;
+
+        Float alpha_u = m_alpha_u->eval_1(si, active);
+        if (m_alpha_u == m_alpha_v)
+            return MicrofacetDistribution(m_type, alpha_u, m_sample_visible);
+
+        return MicrofacetDistribution(m_type, alpha_u,
+                                      m_alpha_v->eval_1(si, active),
+                                      m_sample_visible);
+    }
+
     void traverse(TraversalCallback *cb) override {
         cb->put("diffuse_reflectance", m_diffuse_reflectance, ParamFlags::Differentiable);
         cb->put("eta",                 m_eta,                 ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -229,6 +244,16 @@ public:
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         dr::make_opaque(m_eta, m_alpha_u, m_alpha_v);
+
+        // Uniform roughness yields a single distribution for the whole
+        // surface. Precomputing it keeps the reciprocals and normalization
+        // constant out of the rendering kernels.
+        m_uniform_alpha = false;
+        if (!m_alpha_u->is_spatially_varying() && !m_alpha_v->is_spatially_varying()) {
+            m_distr = distribution(dr::zeros<SurfaceInteraction3f>(), true);
+            dr::make_opaque(m_distr);
+            m_uniform_alpha = true;
+        }
     }
 
     /**
@@ -271,10 +296,7 @@ public:
         bs.eta = 1.f;
 
         if (dr::any_or<true>(sample_specular)) {
-            MicrofacetDistribution distr(m_type,
-                                         m_alpha_u->eval_1(si, active),
-                                         m_alpha_v->eval_1(si, active),
-                                         m_sample_visible);
+            MicrofacetDistribution distr = distribution(si, active);
             Normal3f m = std::get<0>(distr.sample(si.wi, sample2));
 
             dr::masked(bs.wo, sample_specular) = reflect(si.wi, m);
@@ -320,10 +342,7 @@ public:
                      wi_hat = ctx.mode == TransportMode::Radiance ? si.wi : wo;
 
             if (has_specular) {
-                MicrofacetDistribution distr(m_type,
-                                             m_alpha_u->eval_1(si, active),
-                                             m_alpha_v->eval_1(si, active),
-                                             m_sample_visible);
+                MicrofacetDistribution distr = distribution(si, active);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
@@ -406,10 +425,7 @@ public:
             }
         } else {
             if (has_specular) {
-                MicrofacetDistribution distr(m_type,
-                                             m_alpha_u->eval_1(si, active),
-                                             m_alpha_v->eval_1(si, active),
-                                             m_sample_visible);
+                MicrofacetDistribution distr = distribution(si, active);
                 Vector3f H = dr::normalize(wo + si.wi);
                 Float D = distr.eval(H);
 
@@ -461,10 +477,7 @@ public:
 
         // Specular component
         Vector3f H = dr::normalize(wo + si.wi);
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         Float p_specular;
         if (m_sample_visible)
@@ -505,6 +518,9 @@ private:
     MicrofacetType m_type;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
+    /// Precomputed distribution, valid when both roughness textures are uniform
+    MicrofacetDistribution m_distr;
+    bool m_uniform_alpha = false;
     /// Roughness values
     ref<Texture> m_alpha_u, m_alpha_v;
 
@@ -512,7 +528,7 @@ private:
     ref<Texture> m_eta;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
-                   m_alpha_u, m_alpha_v, m_eta)
+                   m_alpha_u, m_alpha_v, m_eta, m_distr)
 };
 
 MI_EXPORT_PLUGIN(PolarizedPlastic)

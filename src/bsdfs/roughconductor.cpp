@@ -207,6 +207,35 @@ public:
 
         m_components.clear();
         m_components.push_back(m_flags);
+
+        parameters_changed();
+    }
+
+    void parameters_changed(const std::vector<std::string> & /* keys */ = {}) override {
+        // Uniform roughness yields a single distribution for the whole
+        // surface. Precomputing it keeps the reciprocals and normalization
+        // constant out of the rendering kernels.
+        m_uniform_alpha = false;
+        if (!m_alpha_u->is_spatially_varying() && !m_alpha_v->is_spatially_varying()) {
+            m_distr = distribution(dr::zeros<SurfaceInteraction3f>(), true);
+            dr::make_opaque(m_distr);
+            m_uniform_alpha = true;
+        }
+    }
+
+    /// Microfacet distribution matching the roughness at the surface position
+    MicrofacetDistribution distribution(const SurfaceInteraction3f &si,
+                                        Mask active) const {
+        if (m_uniform_alpha)
+            return m_distr;
+
+        Float alpha_u = m_alpha_u->eval_1(si, active);
+        if (m_alpha_u == m_alpha_v)
+            return MicrofacetDistribution(m_type, alpha_u, m_sample_visible);
+
+        return MicrofacetDistribution(m_type, alpha_u,
+                                      m_alpha_v->eval_1(si, active),
+                                      m_sample_visible);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -240,10 +269,7 @@ public:
 
         // Construct a microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Sample M, the microfacet normal
         Normal3f m;
@@ -329,10 +355,7 @@ public:
 
         // Construct a microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
@@ -411,10 +434,7 @@ public:
 
         // Construct a microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         Float result;
         if (likely(m_sample_visible))
@@ -450,10 +470,7 @@ public:
 
         // Construct a microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(H);
@@ -540,6 +557,9 @@ private:
     ref<Texture> m_alpha_u, m_alpha_v;
     /// Importance sample the distribution of visible normals?
     bool m_sample_visible;
+    /// Precomputed distribution, valid when both roughness textures are uniform
+    MicrofacetDistribution m_distr;
+    bool m_uniform_alpha = false;
     /// Relative refractive index (real component)
     ref<Texture> m_eta;
     /// Relative refractive index (imaginary component).
@@ -548,7 +568,7 @@ private:
     ref<Texture> m_specular_reflectance;
 
     MI_TRAVERSE_CB(Base, m_alpha_u, m_alpha_v, m_eta, m_k,
-                   m_specular_reflectance)
+                   m_specular_reflectance, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RoughConductor)
