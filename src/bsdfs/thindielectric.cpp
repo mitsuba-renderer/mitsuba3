@@ -125,6 +125,8 @@ public:
                                BSDFFlags::BackSide);
         m_components.push_back(BSDFFlags::Null | BSDFFlags::FrontSide | BSDFFlags::BackSide);
         m_flags = m_components[0] | m_components[1];
+
+        parameters_changed();
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -136,7 +138,8 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_eta);
+        m_inv_eta = dr::rcp(m_eta);
+        dr::make_opaque(m_eta, m_inv_eta);
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -149,7 +152,7 @@ public:
         bool has_reflection   = ctx.is_enabled(BSDFFlags::DeltaReflection, 0),
              has_transmission = ctx.is_enabled(BSDFFlags::Null, 1);
 
-        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta));
+        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta, m_inv_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -203,7 +206,7 @@ public:
     Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
                                     Mask active) const override {
 
-        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta));
+        Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta, m_inv_eta));
 
         // Account for internal reflections: r' = r + trt + tr^3t + ..
         r *= 2.f / (1.f + r);
@@ -230,11 +233,11 @@ public:
 
     MI_DECLARE_CLASS(ThinDielectric)
 private:
-    Float m_eta;
+    Float m_eta, m_inv_eta;
     ref<Texture> m_specular_transmittance;
     ref<Texture> m_specular_reflectance;
 
-    MI_TRAVERSE_CB(Base, m_eta, m_specular_reflectance,
+    MI_TRAVERSE_CB(Base, m_eta, m_inv_eta, m_specular_reflectance,
                    m_specular_transmittance)
 };
 

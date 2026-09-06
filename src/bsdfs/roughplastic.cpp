@@ -215,8 +215,8 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        // Compute inverse of eta squared
-        m_inv_eta_2 = 1.f / (m_eta * m_eta);
+        m_inv_eta   = dr::rcp(m_eta);
+        m_inv_eta_2 = dr::square(m_inv_eta);
 
         // Precompute rough reflectance (vectorized)
         if (keys.empty() || string::contains(keys, "alpha") || string::contains(keys, "eta")) {
@@ -240,7 +240,8 @@ public:
             m_internal_reflectance =
                 dr::mean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
         }
-        dr::make_opaque(m_eta, m_inv_eta_2, m_alpha, m_internal_reflectance);
+        dr::make_opaque(m_eta, m_inv_eta, m_inv_eta_2, m_alpha,
+                        m_internal_reflectance);
 
         m_distr = MicrofacetDistribution(m_type, m_alpha, m_sample_visible);
         dr::make_opaque(m_distr);
@@ -351,7 +352,7 @@ public:
             Float D = distr.eval(H);
 
             // Fresnel term
-            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), Float(m_eta)));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), m_eta, m_inv_eta));
 
             // Smith's shadow-masking function
             Float G = distr.G(si.wi, wo, H);
@@ -495,7 +496,7 @@ public:
         UnpolarizedSpectrum value(0.f);
         if (has_specular) {
             // Fresnel term
-            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), Float(m_eta)));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, H), m_eta, m_inv_eta));
 
             // Smith's shadow-masking function
             Float G = distr.smith_g1(wo, H) * smith_g1_wi;
@@ -545,7 +546,7 @@ private:
     ref<Texture> m_specular_reflectance;
     MicrofacetType m_type;
     Float m_eta;
-    Float m_inv_eta_2;
+    Float m_inv_eta, m_inv_eta_2;
     Float m_alpha;
     bool m_nonlinear;
     bool m_sample_visible;
@@ -554,7 +555,7 @@ private:
     MicrofacetDistribution m_distr;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
-                   m_inv_eta_2, m_alpha, m_external_transmittance,
+                   m_inv_eta, m_inv_eta_2, m_alpha, m_external_transmittance,
                    m_internal_reflectance, m_distr)
 };
 
