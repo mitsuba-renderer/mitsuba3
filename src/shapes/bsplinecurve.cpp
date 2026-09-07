@@ -444,9 +444,9 @@ public:
 
             // map UV parameterization to point on surface
             Point3f c;
-            Vector3f dc_dv, dc_dvv;
+            Vector3f dc_dv;
             Float radius, dr_dv;
-            std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv,
+            std::tie(c, dc_dv, std::ignore, std::ignore, radius, dr_dv,
                      std::ignore) =
                 cubic_interpolation(local_uv.y(), ss.prim_index, active);
             Vector3f dc_dv_normalized = dr::normalize(dc_dv);
@@ -459,11 +459,6 @@ public:
 
             /// Sample a tangential direction at the point
             Vector3f rad_vec = ss.p - c;
-            Float correction = dr::dot(rad_vec, dc_dvv);  // curvature correction
-            Normal3f n = dr::normalize(
-                (dr::squared_norm(dc_dv) - correction) * rad_vec -
-                (dr_dv * radius) * dc_dv
-            );
 
             // Because of backface culling, we only consider the set of
             // tangential direcitons in the hemisphere which is pointing In
@@ -861,7 +856,7 @@ public:
         Bool use_first = sample2 < 0.5f;
 
         // Avoid numerical issues on `v` by having too close to 0 or 1
-        Point2f local_uv =  dr::select(
+        Point2f local_uv = dr::select(
             use_first,
             Point2f(sample2 * 2.f, 0.1f),
             Point2f(sample2 * 2.f - 1.f, 0.9f)
@@ -1139,10 +1134,10 @@ private:
                 c1 = dr::gather<Point4f>(m_control_points, idx + 1, active),
                 c2 = dr::gather<Point4f>(m_control_points, idx + 2, active),
                 c3 = dr::gather<Point4f>(m_control_points, idx + 3, active);
-        Point3f p0 = Point3f(c0.x(), c0.y(), c0.z()),
-                p1 = Point3f(c1.x(), c1.y(), c1.z()),
-                p2 = Point3f(c2.x(), c2.y(), c2.z()),
-                p3 = Point3f(c3.x(), c3.y(), c3.z());
+        Point3f p0 = dr::head<3>(c0),
+                p1 = dr::head<3>(c1),
+                p2 = dr::head<3>(c2),
+                p3 = dr::head<3>(c3);
         Float r0 = c0.w(),
               r1 = c1.w(),
               r2 = c2.w(),
