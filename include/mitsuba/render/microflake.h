@@ -84,9 +84,11 @@ Normal<Float, 3> sggx_sample(const Frame<Float> &sh_frame,
                    s[XZ], s[YZ], s[ZZ]);
     Matrix3f s2 = m * s_mat * dr::transpose(m);
     Float inv_sqrt_s_ii = dr::safe_rsqrt(s2(i, i));
-    Float tmp = dr::safe_sqrt(s2(j, j) * s2(i, i) - s2(j, i) * s2(j, i));
-    Vector3f m_k(dr::safe_sqrt(dr::abs(dr::det(s2))) / tmp, 0.f, 0.f);
-    Vector3f m_j(-inv_sqrt_s_ii * (s2(k, i) * s2(j, i) - s2(k, j) * s2(i, i)) / tmp,
+    Float tmp_2   = s2(j, j) * s2(i, i) - s2(j, i) * s2(j, i),
+          inv_tmp = dr::safe_rsqrt(tmp_2),
+          tmp     = tmp_2 * inv_tmp;
+    Vector3f m_k(dr::safe_sqrt(dr::abs(dr::det(s2))) * inv_tmp, 0.f, 0.f);
+    Vector3f m_j(-inv_sqrt_s_ii * (s2(k, i) * s2(j, i) - s2(k, j) * s2(i, i)) * inv_tmp,
                  inv_sqrt_s_ii * tmp, 0.f);
     Vector3f m_i = inv_sqrt_s_ii * Vector3f(s2(k, i), s2(j, i), s2(i, i));
     Vector3f uvw = warp::square_to_cosine_hemisphere(sample);

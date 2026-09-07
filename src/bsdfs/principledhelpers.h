@@ -292,8 +292,9 @@ std::pair<Float, Float> calc_dist_params(Float anisotropic,
         Float a = dr::maximum(0.001f, roughness_2);
         return { a, a };
     }
-    Float aspect = dr::safe_sqrt(dr::fnmadd(0.9f, anisotropic, 1.0f));
-    return { dr::maximum(0.001f, roughness_2 / aspect),
-             dr::maximum(0.001f, roughness_2 * aspect) };
+    Float aspect_2   = dr::fnmadd(0.9f, anisotropic, 1.0f),
+          inv_aspect = dr::safe_rsqrt(aspect_2);
+    return { dr::maximum(0.001f, roughness_2 * inv_aspect),
+             dr::maximum(0.001f, roughness_2 * aspect_2 * inv_aspect) };
 }
 NAMESPACE_END(mitsuba)
