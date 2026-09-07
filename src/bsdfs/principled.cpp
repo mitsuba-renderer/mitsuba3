@@ -220,16 +220,12 @@ public:
         } else if (props.has_property("eta")) {
             m_eta_specular = true;
             m_eta = props.get<float>("eta");
-            // m_eta = 1 is not plausible for transmission
-            dr::masked(m_eta, m_has_spec_trans && m_eta == 1) = 1.001f;
         } else {
             m_eta_specular = false;
             m_specular = props.get<float>("specular", 0.5f);
-            // zero specular is not plausible for transmission
-            dr::masked(m_specular, m_has_spec_trans && m_specular == 0.f) = 1e-3f;
-            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
         }
 
+        update_eta();
         initialize_lobes();
 
         dr::make_opaque(m_eta);
@@ -237,7 +233,23 @@ public:
             dr::make_opaque(m_specular);
     }
 
+    // Refraction through an interface with eta == 1 is degenerate (the half
+    // vector of wi and the refracted direction vanishes), so nudge eta away
+    // from 1 whenever the transmission lobe is enabled.
+    void update_eta() {
+        if (!m_eta_specular) {
+            if (m_has_spec_trans)
+                dr::masked(m_specular, m_specular == 0.f) = 1e-3f;
+            m_eta = 2.f * dr::rcp(1.f - dr::sqrt(0.08f * m_specular)) - 1.f;
+        } else if (m_has_spec_trans) {
+            dr::masked(m_eta, m_eta == 1.f) = 1.001f;
+        }
+    }
+
     void initialize_lobes() {
+        m_components.clear();
+        m_flags = +BSDFFlags::Empty;
+
         // Diffuse reflection lobe
         m_components.push_back(BSDFFlags::DiffuseReflection |
                                BSDFFlags::FrontSide);
@@ -310,18 +322,7 @@ public:
         if (string::contains(keys, "flatness"))
             m_has_flatness = true;
 
-        if (!m_eta_specular && string::contains(keys, "specular")) {
-            // Specular=0 is corresponding to eta=1 which is not plausible
-            // for transmission.
-            dr::masked(m_specular, m_specular == 0.0f) = 1e-3f;
-            m_eta = 2.0f * dr::rcp(1.0f - dr::sqrt(0.08f * m_specular)) - 1.0f;
-        }
-
-        if (m_eta_specular && string::contains(keys, "eta")) {
-            // Eta = 1 is not plausible for transmission.
-            dr::masked(m_eta, m_eta == 1.0f) = 1.001f;
-        }
-
+        update_eta();
         initialize_lobes();
 
         dr::make_opaque(m_eta);
@@ -622,9 +623,9 @@ public:
         if (m_has_clearcoat && dr::any_or<true>(clearcoat_active)) {
             Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
 
-            // Clearcoat lobe uses the schlick approximation for Fresnel
-            // term.
-            Float Fcc = calc_schlick<Float>(0.04f, dr::dot(si.wi, wh),m_eta);
+            // The clearcoat is a fixed IOR 1.5 coating (F0 = 0.04) that is
+            // only evaluated from the front.
+            Float Fcc = dr::lerp(schlick_weight(dr::dot(si.wi, wh)), 1.f, 0.04f);
 
             // Clearcoat lobe uses GTR1 distribution. Roughness is mapped
             // between 0.1 and 0.001.
@@ -636,11 +637,15 @@ public:
 
             // Adding the clearcoat component.
             dr::masked(value, clearcoat_active) +=
-                    (clearcoat * 0.25f) * Fcc * Dcc * G_cc * dr::abs(cos_theta_o);
+                    (clearcoat * 0.25f) * Fcc * Dcc * G_cc /
+                    (4.0f * dr::abs(cos_theta_i));
         }
 
-        // Evaluation of diffuse, retro reflection, fake subsurface and
-        // sheen.
+        // Angle between the half vector and the outgoing direction, used by
+        // the retro reflection and sheen terms.
+        Float cos_theta_d = dr::dot(wh, wo);
+
+        // Evaluation of diffuse, retro reflection and fake subsurface.
         if (dr::any_or<true>(diffuse_active)) {
             Float Fo = schlick_weight(dr::abs(cos_theta_o)),
             Fi = schlick_weight(dr::abs(cos_theta_i));
@@ -648,8 +653,7 @@ public:
             // Diffuse
             Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
 
-            Float cos_theta_d = dr::dot(wh, wo);
-            Float Rr          = 2.0f * roughness * dr::square(cos_theta_d);
+            Float Rr = 2.0f * roughness * dr::square(cos_theta_d);
 
             // Retro reflection
             Float f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
@@ -678,31 +682,32 @@ public:
                         brdf * dr::abs(cos_theta_o) * base_color *
                         dr::InvPi<Float> * (f_diff + f_retro);
             }
-            // Sheen evaluation
-            if (m_has_sheen && dr::any_or<true>(sheen_active)) {
-                Float Fd = schlick_weight(dr::abs(cos_theta_d));
+        }
 
-                // Tint the sheen evaluation towards the base color.
-                if (m_has_sheen_tint) {
-                    Float sheen_tint = m_sheen_tint->eval_1(si, active);
+        // Sheen evaluation
+        if (m_has_sheen && dr::any_or<true>(sheen_active)) {
+            Float Fd = schlick_weight(dr::abs(cos_theta_d));
 
-                    // Luminance evaluation
-                    Float lum = mitsuba::luminance(base_color, si.wavelengths);
+            // Tint the sheen evaluation towards the base color.
+            if (m_has_sheen_tint) {
+                Float sheen_tint = m_sheen_tint->eval_1(si, active);
 
-                    // Normalize color with luminance and tint the result.
-                    UnpolarizedSpectrum c_tint =
-                            dr::select(lum > 0.0f, base_color / lum, 1.0f);
-                    UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
+                // Luminance evaluation
+                Float lum = mitsuba::luminance(base_color, si.wavelengths);
 
-                    // Adding sheen evaluation with tint.
-                    dr::masked(value, sheen_active) +=
-                            sheen * (1.0f - metallic) * Fd * c_sheen *
-                            dr::abs(cos_theta_o);
-                } else {
-                    // Adding sheen evaluation without tint.
-                    dr::masked(value, sheen_active) +=
-                            sheen * (1.0f - metallic) * Fd * dr::abs(cos_theta_o);
-                }
+                // Normalize color with luminance and tint the result.
+                UnpolarizedSpectrum c_tint =
+                        dr::select(lum > 0.0f, base_color / lum, 1.0f);
+                UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
+
+                // Adding sheen evaluation with tint.
+                dr::masked(value, sheen_active) +=
+                        sheen * (1.0f - metallic) * Fd * c_sheen *
+                        dr::abs(cos_theta_o);
+            } else {
+                // Adding sheen evaluation without tint.
+                dr::masked(value, sheen_active) +=
+                        sheen * (1.0f - metallic) * Fd * dr::abs(cos_theta_o);
             }
         }
         return depolarizer<Spectrum>(value) & active;

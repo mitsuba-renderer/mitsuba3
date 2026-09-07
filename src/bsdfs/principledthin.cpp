@@ -191,6 +191,9 @@ public:
     }
 
     void initialize_lobes() {
+        m_components.clear();
+        m_flags = +BSDFFlags::Empty;
+
         // Diffuse reflection lobe
         m_components.push_back(BSDFFlags::DiffuseReflection |
                                BSDFFlags::FrontSide | BSDFFlags::BackSide);
