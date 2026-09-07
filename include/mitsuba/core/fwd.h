@@ -65,6 +65,7 @@ template <typename Point, typename Spectrum>    struct RayDifferential;
 template <typename Point>                       struct BoundingBox;
 template <typename Point>                       struct BoundingSphere;
 template <typename Vector>                      struct Frame;
+template <typename Float>                       struct SphericalRectangle;
 template <typename Float>                       struct DiscreteDistribution;
 template <typename Float>                       struct ContinuousDistribution;
 
@@ -166,7 +167,8 @@ template <typename Float_> struct CoreAliases {
     using BoundingSphere3f = BoundingSphere<Point3f>;
     using BoundingSphere4f = BoundingSphere<Point4f>;
 
-    using Frame3f     = Frame<Float>;
+    using Frame3f              = Frame<Float>;
+    using SphericalRectangle3f = SphericalRectangle<Float>;
 
     using AffineTransform3f = AffineTransform<Point3f>;
     using AffineTransform4f = AffineTransform<Point4f>;
@@ -272,6 +274,7 @@ template <typename Float_> struct CoreAliases {
     using prefix ## BoundingSphere3f     = typename prefix ## CoreAliases::BoundingSphere3f;       \
     using prefix ## BoundingSphere4f     = typename prefix ## CoreAliases::BoundingSphere4f;       \
     using prefix ## Frame3f              = typename prefix ## CoreAliases::Frame3f;                \
+    using prefix ## SphericalRectangle3f = typename prefix ## CoreAliases::SphericalRectangle3f;   \
     using prefix ## Transform3f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3f;\
     using prefix ## Transform4f [[deprecated]] = typename prefix ## CoreAliases::AffineTransform4f;\
     using prefix ## Transform3d [[deprecated]] = typename prefix ## CoreAliases::AffineTransform3d;\

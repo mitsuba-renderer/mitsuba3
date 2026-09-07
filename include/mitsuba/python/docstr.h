@@ -3573,6 +3573,8 @@ static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is pl
 
 static const char *__doc_mitsuba_EmitterFlags_Invisible = R"doc(The emitter is hidden from directly visible (camera) rays)doc";
 
+static const char *__doc_mitsuba_EmitterFlags_Portal = R"doc(Light portal (see ``Scene::portals()``), does not emit anything itself)doc";
+
 static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emission depends on the UV coordinates)doc";
 
 static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
@@ -3589,6 +3591,8 @@ merged in here (rather than stored in ``m_flags``) because plugin
 constructors assign ``m_flags`` after the base class has run.)doc";
 
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
+
+static const char *__doc_mitsuba_Emitter_is_portal = R"doc(Is this a light portal? (see ``Scene::portals()``))doc";
 
 static const char *__doc_mitsuba_Emitter_m_dirty = R"doc(True if the emitter's parameters have changed)doc";
 
@@ -9095,6 +9099,28 @@ three key abstractions implemented on top of these groups, specifically:
 
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_PortalData =
+R"doc(Packed light portal records
+
+Environment emitters gather from this buffer so that their kernels do
+not depend on the number of portals. Each record holds 12 entries: the
+rectangle's center, its two orthogonal half-edge vectors, and its unit
+normal, which points into the region that receives light.)doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_count = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_fields_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_labels = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_name = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_records = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_PortalData_weight = R"doc(Probability of sampling the portals rather than the emitter's own strategy)doc";
+
 static const char *__doc_mitsuba_Scene_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_4 = R"doc()doc";
@@ -9802,6 +9828,8 @@ Args:
 
 Returns:
     Silhouette sample record.)doc";
+
+static const char *__doc_mitsuba_Scene_portals = R"doc(Return the list of light portals)doc";
 
 static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensors)doc";
 
@@ -10938,6 +10966,50 @@ static const char *__doc_mitsuba_Spectrum_Spectrum_3 = R"doc()doc";
 static const char *__doc_mitsuba_Spectrum_operator_assign = R"doc()doc";
 
 static const char *__doc_mitsuba_Spectrum_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SphericalRectangle =
+R"doc(Spherical rectangle
+
+This class represents the projection of a planar rectangle onto the
+unit sphere centered at a reference point ``p``. It samples directions
+towards the rectangle uniformly in solid angle using the area-preserving
+parametrization by Ureña, Fajardo and King (EGSR 2013).
+
+The constructor builds a frame with ``p`` at its origin so that the
+rectangle lies in the plane :math:`z = z_0 \le 0` and covers ``rect``.)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_SphericalRectangle =
+R"doc(Prepare a rectangle with the given center and orthogonal half-edge
+vectors ``dx`` and ``dy`` as seen from the reference point ``p``.)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_b0 = R"doc(Parametrization constants used by ``sample()``)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_b1 = R"doc(Parametrization constants used by ``sample()``)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_contains = R"doc(Check whether a ray from the reference point in direction ``d`` crosses the rectangle)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_degenerate =
+R"doc(Set when the solid angle is too small or the rectangle is seen at a
+grazing angle, in which case the parametrization is numerically
+unreliable and ``pdf()`` returns zero.)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_frame = R"doc()doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_k = R"doc(Parametrization constants used by ``sample()``)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_pdf = R"doc(Solid angle density of ``sample()``, zero for directions that miss the rectangle)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_rect = R"doc()doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_sample = R"doc(Sample a direction towards the rectangle uniformly with respect to solid angle)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_solid_angle = R"doc(Solid angle subtended by the rectangle)doc";
+
+static const char *__doc_mitsuba_SphericalRectangle_z0 = R"doc()doc";
 
 static const char *__doc_mitsuba_Spiral =
 R"doc(Generates a spiral of blocks to be rendered.

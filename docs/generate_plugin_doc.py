@@ -55,6 +55,7 @@ EMITTER_ORDERING = [
     'point',
     'constant',
     'envmap',
+    'portal',
     'sunsky',
     'spot',
     'projector'

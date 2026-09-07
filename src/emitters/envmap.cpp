@@ -11,6 +11,7 @@
 #include <drjit/texture.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/core/fstream.h>
+#include "portal.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -86,6 +87,10 @@ OpenEXR or RGBE file formats.
 High quality free light probes are available on
 `Bernhard Vogl's <http://dativ.at/lightprobes/>`_ website or
 `Polyhaven <https://polyhaven.com/hdris>`_.
+
+When the scene contains light portals (see the :ref:`portal <emitter-portal>`
+plugin), this emitter samples directions through them with the probability
+given by the scene's :monosp:`portal_weight` parameter.
 
 .. tabs::
     .. code-tab:: xml
@@ -277,6 +282,7 @@ public:
         }
 
         dr::make_opaque(m_bsphere.center, m_bsphere.radius);
+        m_portals.set_scene(scene);
     }
 
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
@@ -338,29 +344,36 @@ public:
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        auto [uv, pdf] = m_warp.sample(sample, nullptr, active);
+        auto choice = m_portals.choose(it.p, sample);
+        auto [uv, pdf] = m_warp.sample(choice.sample, nullptr, active);
         uv.x() += half_texel();
-        active &= pdf > 0.f;
 
         Float inv_sin_theta;
         Vector3f d = uv_to_direction(uv, inv_sin_theta);
+        pdf *= inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>)));
+        d = m_to_world.value() * d;
+
+        if (!m_portals.empty()) {
+            Vector3f d_portal = m_portals.sample(it.p, choice),
+                     d_local  = m_to_world.value().inverse() * d_portal;
+            dr::masked(d, choice.use_portal)   = d_portal;
+            dr::masked(uv, choice.use_portal)  = direction_to_uv(d_local);
+            dr::masked(pdf, choice.use_portal) = eval_pdf(d_local);
+            pdf = m_portals.pdf(it.p, d, pdf);
+        }
+
+        active &= pdf > 0.f;
 
         // Needed when the reference point is on the sensor, which is not part of the bbox
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
-
-        d = m_to_world.value() * d;
 
         DirectionSample3f ds;
         ds.p       = it.p + d * dist;
         ds.n       = -d;
         ds.uv      = uv;
         ds.time    = it.time;
-        ds.pdf     = dr::select(
-            active,
-            pdf * inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>))),
-            0.f
-        );
+        ds.pdf     = dr::select(active, pdf, 0.f);
         ds.delta   = false;
         ds.emitter = this;
         ds.d       = d;
@@ -373,20 +386,12 @@ public:
         return { ds, weight & active };
     }
 
-    Float pdf_direction(const Interaction3f & /*it*/, const DirectionSample3f &ds,
+    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f d = m_to_world.value().inverse() * ds.d;
-
-        Point2f uv = direction_to_uv(d);
-        uv.x() -= half_texel();
-        uv -= dr::floor(uv);
-
-        Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
-            dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
-
-        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>)));
+        Float pdf = eval_pdf(m_to_world.value().inverse() * ds.d);
+        return m_portals.empty() ? pdf : m_portals.pdf(it.p, ds.d, pdf);
     }
 
     Spectrum eval_direction(const Interaction3f &it,
@@ -456,6 +461,18 @@ protected:
     Point2f direction_to_uv(const Vector3f &d) const {
         return Point2f(dr::atan2(d.x(), -d.z()) * dr::InvTwoPi<Float>,
                        dr::safe_acos(d.y()) * dr::InvPi<Float>);
+    }
+
+    /// Solid angle pdf of the importance map for a local-frame direction
+    Float eval_pdf(const Vector3f &d) const {
+        Point2f uv = direction_to_uv(d);
+        uv.x() -= half_texel();
+        uv -= dr::floor(uv);
+
+        Float inv_sin_theta = dr::safe_rsqrt(dr::maximum(
+            dr::square(d.x()) + dr::square(d.z()), dr::square(dr::Epsilon<Float>)));
+
+        return m_warp.eval(uv) * inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>)));
     }
 
     /// Copy the real edge columns into the halo columns of a host-resident
@@ -608,8 +625,9 @@ protected:
     ref<Texture> m_d65;
     Float m_scale;
     bool m_mis_compensation;
+    PortalSampler<Float, Spectrum> m_portals;
 
-    MI_TRAVERSE_CB(Base, m_bsphere, m_texture, m_warp, m_d65, m_scale)
+    MI_TRAVERSE_CB(Base, m_bsphere, m_texture, m_warp, m_d65, m_scale, m_portals)
 };
 
 MI_EXPORT_PLUGIN(EnvironmentMapEmitter)

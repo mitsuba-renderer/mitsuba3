@@ -42,6 +42,9 @@ enum class EmitterFlags : uint32_t {
     /// The emitter is hidden from directly visible (camera) rays
     Invisible            = 0x00020,
 
+    /// Light portal (see ``Scene::portals()``), does not emit anything itself
+    Portal               = 0x00040,
+
     // =============================================================
     //                  Compound lobe attributes
     // =============================================================
@@ -63,6 +66,9 @@ public:
         return has_flag(m_flags, EmitterFlags::Infinite) &&
                !has_flag(m_flags, EmitterFlags::Delta);
     }
+
+    /// Is this a light portal? (see ``Scene::portals()``)
+    bool is_portal() const { return has_flag(m_flags, EmitterFlags::Portal); }
 
     /// The emitter's sampling weight.
     ScalarFloat sampling_weight() const { return m_sampling_weight; }

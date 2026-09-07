@@ -122,6 +122,11 @@ Enabling the robust intersection mode fixes that in most cases. Note that Embree
 cannot guarantee that all intersections are reported for rays that exactly hit a
 vertex, which is a known limitation.
 
+**Light portals:** Scenes with :ref:`portal <emitter-portal>` emitters let the
+:ref:`constant <emitter-constant>` and :ref:`envmap <emitter-envmap>` emitters
+sample directions through the portals. The :monosp:`portal_weight` parameter
+sets the probability of this strategy relative to the emitter's own one.
+
 **Thread reordering:** Ray intersection methods on the scene can take a
 `reorder` argument to specifiy whether or not threads should be shuffled into
 coherent groups after the intersection (shader execution reordering). Both this
@@ -142,6 +147,10 @@ has no effect in scalar or LLVM variants.
    - Whether or not to reorder threads into coherent groups after a ray
      intersection if requested (Default: |true|).
    - |exposed|
+ * - portal_weight
+   - :paramtype:`float`
+   - Probability of sampling directions through the scene's light portals
+     rather than with the environment emitter's own strategy (Default: 0.5).
 
 When creating a scene, the scene-wide attributes can be specified as follows:
 
