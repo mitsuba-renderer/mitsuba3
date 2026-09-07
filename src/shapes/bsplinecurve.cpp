@@ -262,22 +262,17 @@ public:
         m_control_point_count = (ScalarSize) vertices.size();
 
         std::unique_ptr<ScalarIndex[]> indices = std::make_unique<ScalarIndex[]>(segment_count);
-        std::unique_ptr<ScalarIndex[]> curves_1st_prim_idx =
-            std::make_unique<ScalarIndex[]>(curve_1st_idx.size() + 1);
         size_t segment_index = 0;
         for (size_t i = 0; i < curve_1st_idx.size(); ++i) {
             size_t next_curve_idx = i + 1 < curve_1st_idx.size() ? curve_1st_idx[i + 1] : vertices.size();
             size_t curve_segment_count = next_curve_idx - curve_1st_idx[i] - 3;
-            curves_1st_prim_idx[i] = (ScalarIndex) segment_index;
             for (size_t j = 0; j < curve_segment_count; ++j)
                 indices[segment_index++] = (ScalarIndex) (curve_1st_idx[i] + j);
         }
-        curves_1st_prim_idx[curve_1st_idx.size()] = (ScalarIndex) segment_index;
 
         m_indices = dr::load<UInt32Storage>(indices.get(), segment_count);
-        m_curves_prim_idx = dr::load<UInt32Storage>(curves_1st_prim_idx.get(),
-                                                    curve_1st_idx.size() + 1);
         m_segment_count = dr::opaque<Float>((ScalarFloat) segment_count);
+        recompute_curve_table();
 
         std::unique_ptr<InputFloat[]> positions =
             std::make_unique<InputFloat[]>(m_control_point_count * 3);
@@ -342,10 +337,13 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        if (keys.empty() || string::contains(keys, "control_points")) {
+        bool topology = keys.empty() || string::contains(keys, "segment_indices");
+        if (topology || string::contains(keys, "control_points")) {
             recompute_bbox();
             mark_dirty();
         }
+        if (topology)
+            recompute_curve_table();
         m_segment_count = dr::opaque<Float>((ScalarFloat) dr::width(m_indices));
         Base::parameters_changed();
     }
@@ -1105,6 +1103,23 @@ private:
         }
 
         *start_ = start;
+    }
+
+    /// Rebuild the per-curve table of first segment indices from the segment
+    /// indices: a new curve starts wherever the control point index does not
+    /// continue the previous segment's
+    void recompute_curve_table() {
+        const UInt32Storage &indices = dr::migrate(m_indices, JitBackend::None);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
+        const ScalarIndex *idx = indices.data();
+        size_t n = dr::width(indices);
+        std::vector<ScalarIndex> firsts;
+        for (size_t i = 0; i < n; ++i)
+            if (i == 0 || idx[i] != idx[i - 1] + 1)
+                firsts.push_back((ScalarIndex) i);
+        firsts.push_back((ScalarIndex) n);
+        m_curves_prim_idx = dr::load<UInt32Storage>(firsts.data(), firsts.size());
     }
 
     void recompute_bbox() {
