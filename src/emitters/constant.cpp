@@ -6,6 +6,7 @@
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
+#include "portal.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -34,6 +35,10 @@ This plugin implements a constant environment emitter, which surrounds
 the scene and radiates diffuse illumination towards it. This is often
 a good default light source when the goal is to visualize some loaded
 geometry that uses basic (e.g. diffuse) materials.
+
+When the scene contains light portals (see the :ref:`portal <emitter-portal>`
+plugin), this emitter samples directions through them with the probability
+given by the scene's :monosp:`portal_weight` parameter.
 
 .. tabs::
     .. code-tab:: xml
@@ -93,6 +98,7 @@ public:
         m_surface_area = 4.f * dr::Pi<ScalarFloat> * dr::square(m_bsphere.radius);
 
         dr::make_opaque(m_bsphere.center, m_bsphere.radius, m_surface_area);
+        m_portals.set_scene(scene);
     }
 
 
@@ -130,7 +136,14 @@ public:
                                                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = warp::square_to_uniform_sphere(sample);
+        auto choice = m_portals.choose(it.p, sample);
+        Vector3f d = warp::square_to_uniform_sphere(choice.sample);
+        Float pdf = warp::square_to_uniform_sphere_pdf(d);
+
+        if (!m_portals.empty()) {
+            dr::masked(d, choice.use_portal) = m_portals.sample(it.p, choice);
+            pdf = m_portals.pdf(it.p, d, pdf);
+        }
 
         // Automatically enlarge the bounding sphere when it does not contain the reference point
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center)),
@@ -139,9 +152,9 @@ public:
         DirectionSample3f ds;
         ds.p       = dr::fmadd(d, dist, it.p);
         ds.n       = -d;
-        ds.uv      = sample;
+        ds.uv      = choice.sample;
         ds.time    = it.time;
-        ds.pdf     = warp::square_to_uniform_sphere_pdf(d);
+        ds.pdf     = pdf;
         ds.delta   = false;
         ds.emitter = this;
         ds.d       = d;
@@ -156,11 +169,12 @@ public:
         };
     }
 
-    Float pdf_direction(const Interaction3f &, const DirectionSample3f &ds,
+    Float pdf_direction(const Interaction3f &it, const DirectionSample3f &ds,
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        return warp::square_to_uniform_sphere_pdf(ds.d);
+        Float pdf = warp::square_to_uniform_sphere_pdf(ds.d);
+        return m_portals.empty() ? pdf : m_portals.pdf(it.p, ds.d, pdf);
     }
 
     Spectrum eval_direction(const Interaction3f &it, const DirectionSample3f &,
@@ -199,7 +213,8 @@ public:
         std::ostringstream oss;
         oss << "ConstantBackgroundEmitter[" << std::endl
             << "  radiance = " << string::indent(m_radiance) << "," << std::endl
-            << "  bsphere = " << string::indent(m_bsphere) << std::endl
+            << "  bsphere = " << string::indent(m_bsphere) << "," << std::endl
+            << "  portals = " << m_portals.data.count.scalar() << std::endl
             << "]";
         return oss.str();
     }
@@ -208,11 +223,12 @@ public:
 protected:
     ref<Texture> m_radiance;
     BoundingSphere3f m_bsphere;
+    PortalSampler<Float, Spectrum> m_portals;
 
     /// Surface area of the bounding sphere
     Float m_surface_area;
 
-    MI_TRAVERSE_CB(Base, m_radiance, m_bsphere, m_surface_area)
+    MI_TRAVERSE_CB(Base, m_radiance, m_bsphere, m_surface_area, m_portals)
 };
 
 MI_EXPORT_PLUGIN(ConstantBackgroundEmitter)

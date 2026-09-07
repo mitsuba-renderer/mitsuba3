@@ -159,6 +159,7 @@ MI_PY_EXPORT(Emitter) {
     auto emitter = MI_PY_TRAMPOLINE_CLASS(PyEmitter, Emitter, Endpoint)
         .def(nb::init<const Properties&>(), "props"_a)
         .def_method(Emitter, is_environment)
+        .def_method(Emitter, is_portal)
         .def_method(Emitter, sampling_weight)
         .def_method(Emitter, visible)
         .def_method(Emitter, visibility_mask)

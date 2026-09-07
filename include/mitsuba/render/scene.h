@@ -754,6 +754,29 @@ public:
     /// Return the list of shapes that can have their silhouette sampled
     const std::vector<ref<Shape>> &silhouette_shapes() const { return m_silhouette_shapes; }
 
+    /// Return the list of light portals
+    const std::vector<ref<Emitter>> &portals() const { return m_portals; }
+
+    /**
+     * Packed light portal records
+     *
+     * Environment emitters gather from this buffer so that their kernels do
+     * not depend on the number of portals. Each record holds 12 entries: the
+     * rectangle's center, its two orthogonal half-edge vectors, and its unit
+     * normal, which points into the region that receives light.
+     */
+    struct PortalData {
+        DynamicBuffer<Float> records;
+        field<UInt32> count = 0u;
+        /// Probability of sampling the portals rather than the emitter's own strategy
+        ScalarFloat weight = .5f;
+
+        DRJIT_TRAVERSE(PortalData, records, count)
+    };
+
+    /// Return the light portal records
+    const PortalData &portal_data() const { return m_portal_data; }
+
     /// Return the scene's `Integrator`
     Integrator* integrator() { return m_integrator; }
     /// Return the scene's `Integrator`
@@ -813,6 +836,9 @@ protected:
     /// Repack the per-instance transform records (see below)
     void update_instance_transforms();
 
+    /// Build the light portal records from ``m_portals``
+    void update_portal_data();
+
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
     /// Updates the discrete distribution used to select an emitter
@@ -833,6 +859,10 @@ protected:
     std::vector<ref<Shape>> m_shapes;
     DynamicBuffer<ShapePtr> m_shapes_dr;
     std::vector<ref<ShapeGroup>> m_shapegroups;
+
+    /// Light portals, excluded from ``m_emitters`` and never sampled directly
+    std::vector<ref<Emitter>> m_portals;
+    PortalData m_portal_data;
 
     std::vector<ref<Sensor>> m_sensors;
     DynamicBuffer<SensorPtr> m_sensors_dr;
@@ -877,7 +907,8 @@ protected:
     friend SceneAccel<Float, Spectrum>;
 
     MI_DECLARE_TRAVERSE_CB(m_accel, m_emitters, m_emitters_dr, m_shapes,
-                           m_shapes_dr, m_shapegroups, m_sensors, m_sensors_dr,
+                           m_shapes_dr, m_shapegroups, m_portals,
+                           m_portal_data, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
                            m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
                            m_silhouette_shapes_dr, m_silhouette_distr,
