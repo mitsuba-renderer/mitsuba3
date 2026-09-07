@@ -337,8 +337,11 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
-        bool topology = keys.empty() || string::contains(keys, "segment_indices");
-        if (topology || string::contains(keys, "control_points")) {
+        bool topology = keys.empty() || string::contains(keys, "segment_indices"),
+             geometry = keys.empty() || string::contains(keys, "control_points");
+        if (geometry)
+            m_control_point_count = (ScalarSize) (dr::width(m_control_points) / 4);
+        if (topology || geometry) {
             recompute_bbox();
             mark_dirty();
         }
