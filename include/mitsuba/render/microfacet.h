@@ -375,10 +375,9 @@ public:
             // and techniques like Kelemen-style MLT. The following code
             // performs a numerical inversion with better behavior
 
-            Float tan_theta_i =
-                dr::safe_sqrt(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
-                cos_theta_i;
-            Float cot_theta_i = dr::rcp(tan_theta_i);
+            Float cot_theta_i = cos_theta_i * dr::safe_rsqrt(
+                dr::fnmadd(cos_theta_i, cos_theta_i, 1.f));
+            Float tan_theta_i = dr::rcp(cot_theta_i);
 
             // Search interval -- everything is parameterized
             // in the erf() domain

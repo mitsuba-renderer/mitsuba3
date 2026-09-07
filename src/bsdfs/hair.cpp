@@ -295,8 +295,7 @@ public:
         Float cos_theta_o = dr::safe_sqrt(1.f - dr::square(sin_theta_o));
 
         // Transmission angle in azimuthal plane
-        Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
-        Float sin_gamma_t = h / eta_p;
+        Float sin_gamma_t = h * inv_azimuthal_ior(sin_theta_i, cos_theta_i);
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Sample azimuthal scattering
@@ -360,18 +359,16 @@ public:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i * m_inv_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
+        Float inv_cos_theta_t = dr::safe_rsqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
-        Float eta_p =
-            dr::safe_sqrt(m_eta_2 - dr::square(sin_theta_i)) / cos_theta_i;
-        Float sin_gamma_t = h / eta_p;
+        Float sin_gamma_t = h * inv_azimuthal_ior(sin_theta_i, cos_theta_i);
         Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
         UnpolarizedSpectrum sigma_a = absorption(si, active);
-        Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
+        Float transmitted_length = 2 * cos_gamma_t * inv_cos_theta_t;
         UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p =
             attenuation(cos_theta_i, m_eta, h, transmittance);
@@ -417,10 +414,7 @@ public:
         Float phi_o = azimuthal_angle(wo);
 
         // Transmission angle in azimuthal plane
-        Float eta_p =
-            dr::safe_sqrt(m_eta_2 - dr::square(sin_theta_i)) /
-            cos_theta_i;
-        Float sin_gamma_t = h / eta_p;
+        Float sin_gamma_t = h * inv_azimuthal_ior(sin_theta_i, cos_theta_i);
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation PDF
@@ -469,19 +463,16 @@ public:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i * m_inv_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
+        Float inv_cos_theta_t = dr::safe_rsqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
-        Float eta_p =
-            dr::safe_sqrt(m_eta_2 - dr::square(sin_theta_i)) /
-            cos_theta_i;
-        Float sin_gamma_t = h / eta_p;
+        Float sin_gamma_t = h * inv_azimuthal_ior(sin_theta_i, cos_theta_i);
         Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
         Float gamma_t = dr::safe_asin(sin_gamma_t);
 
         // Attenuation coefficients
         UnpolarizedSpectrum sigma_a = absorption(si, active);
-        Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
+        Float transmitted_length = 2 * cos_gamma_t * inv_cos_theta_t;
         UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p =
             attenuation(cos_theta_i, m_eta, h, transmittance);
@@ -601,10 +592,10 @@ private:
         return dr::select(w.x() < 0, gamma, -gamma);
     }
 
-    /// Modified index of refraction, considers projection in the normal plane
-    MI_INLINE Float azimuthal_ior(Float sin_theta_i, Float cos_theta_i) const {
-        return dr::safe_sqrt(m_eta_2 - dr::square(sin_theta_i)) /
-               cos_theta_i;
+    /// Reciprocal of the modified index of refraction, which accounts for
+    /// the projection into the normal plane
+    MI_INLINE Float inv_azimuthal_ior(Float sin_theta_i, Float cos_theta_i) const {
+        return cos_theta_i * dr::safe_rsqrt(m_eta_2 - dr::square(sin_theta_i));
     }
 
     /// Return modified direction to account for angle of scales on hair surface
@@ -674,16 +665,15 @@ private:
 
         // Transmission angle in longitudinal plane
         Float sin_theta_t = sin_theta_i * m_inv_eta;
-        Float cos_theta_t = dr::safe_sqrt(1.f - dr::square(sin_theta_t));
+        Float inv_cos_theta_t = dr::safe_rsqrt(1.f - dr::square(sin_theta_t));
 
         // Transmission angle in azimuthal plane
-        Float eta_p = azimuthal_ior(sin_theta_i, cos_theta_i);
-        Float sin_gamma_t = h / eta_p;
+        Float sin_gamma_t = h * inv_azimuthal_ior(sin_theta_i, cos_theta_i);
         Float cos_gamma_t = dr::safe_sqrt(1.f - dr::square(sin_gamma_t));
 
         // Attenuation coefficients
         UnpolarizedSpectrum sigma_a = absorption(si, active);
-        Float transmitted_length = 2 * cos_gamma_t / cos_theta_t;
+        Float transmitted_length = 2 * cos_gamma_t * inv_cos_theta_t;
         UnpolarizedSpectrum transmittance = dr::exp(-sigma_a * transmitted_length);
         AttenuationCoeffs a_p = attenuation(cos_theta_i, m_eta, h, transmittance);
 
