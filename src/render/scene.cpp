@@ -99,6 +99,11 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
         for (Emitter *emitter : m_emitters)
             emitter->set_visible(false);
 
+    // Release transient buffers created while loading the shapes
+    if constexpr (dr::is_jit_v<Float>)
+        if (!jit_flag(JitFlag::FreezingScope))
+            jit_flush_malloc_cache();
+
     m_accel.init(this, props);
     clear_shapes_dirty();
     update_instance_transforms();
@@ -151,6 +156,11 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     update_silhouette_sampling_distribution();
 
     m_shapes_grad_enabled = false;
+
+    // Release the scratch space of the acceleration structure build
+    if constexpr (dr::is_jit_v<Float>)
+        if (!jit_flag(JitFlag::FreezingScope))
+            jit_flush_malloc_cache();
 }
 
 MI_VARIANT
