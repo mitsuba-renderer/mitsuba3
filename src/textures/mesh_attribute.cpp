@@ -91,6 +91,8 @@ public:
 
     const std::string& name() const { return m_name; }
 
+    bool is_spatially_varying() const override { return true; }
+
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         return si.shape->eval_attribute(m_name, si, active) * m_scale;
