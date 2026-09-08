@@ -1851,14 +1851,6 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, const ParserSta
         objects = std::move(scratch[0].objects);
     }
 
-#if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
-    // Flush the allocation cache to release the many transient buffers created
-    // by scene loading.
-    if (!string::starts_with(config.variant, "scalar_") &&
-        !jit_flag(JitFlag::FreezingScope))
-        jit_flush_malloc_cache();
-#endif
-
     return objects;
 }
 

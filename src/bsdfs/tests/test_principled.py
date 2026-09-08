@@ -76,7 +76,10 @@ def test02_chi2_spec_trans_outside(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -95,7 +98,10 @@ def test03_chi2_spec_trans_inside(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -116,7 +122,10 @@ def test04_chi2_spec_trans_less_dense(variants_vec_backends_once_rgb):
         domain=mi.chi2.SphericalDomain(),
         sample_func=sample_func,
         pdf_func=pdf_func,
-        sample_dim=3
+        sample_dim=3,
+        # The pdf has a sharp edge where the transmission lobe ends.
+        # The default integration resolution underestimates its mass.
+        ires=16
     )
     assert chi2.run()
 
@@ -125,47 +134,47 @@ def test05_eval_pdf(variant_scalar_rgb):
     # The true values are defined by the first implementation in order to
     # prevent unwanted changes.
     pdf_true = [
-        0.17007458209991455,
-        0.15398569405078888,
-        0.14061447978019714,
-        0.12924496829509735,
-        0.1193309798836708,
-        0.1104581207036972,
-        0.10231398791074753,
-        0.09466464817523956,
-        0.08733665198087692,
-        0.08020336925983429,
-        0.07317451387643814,
-        0.06618815660476685,
-        0.0592045858502388,
-        0.052201706916093826,
-        0.045171335339546204,
-        0.03811638057231903,
-        0.031048627570271492,
-        0.02398696169257164,
-        0.016955917701125145,
-        0.009984553791582584]
+        0.17426574230194092,
+        0.1573033183813095,
+        0.14375387132167816,
+        0.13257360458374023,
+        0.12299317121505737,
+        0.11445550620555878,
+        0.10656186193227768,
+        0.09903018176555634,
+        0.09166355431079865,
+        0.08432754129171371,
+        0.07693372666835785,
+        0.06942786276340485,
+        0.06178133562207222,
+        0.05398491770029068,
+        0.04604418948292732,
+        0.03797612711787224,
+        0.02980651706457138,
+        0.02156788296997547,
+        0.013297977857291698,
+        0.005038450006395578]
     evaluate_true = [
-        0.06745785474777222,
-        0.06373678892850876,
-        0.06044566631317139,
-        0.0574488490819931,
-        0.0546383410692215,
-        0.05192873254418373,
-        0.04925282299518585,
-        0.046557944267988205,
-        0.04380323365330696,
-        0.04095740243792534,
-        0.037996821105480194,
-        0.034902848303318024,
-        0.031657446175813675,
-        0.028236225247383118,
-        0.02459871955215931,
-        0.02067791298031807,
-        0.016373587772250175,
-        0.011557860299944878,
-        0.006108088884502649,
-        4.728061397366843e-18]
+        0.0949176475405693,
+        0.08489738404750824,
+        0.07704004645347595,
+        0.07072483748197556,
+        0.06548994779586792,
+        0.06099625676870346,
+        0.05699571594595909,
+        0.053306687623262405,
+        0.049795448780059814,
+        0.046362731605768204,
+        0.042933426797389984,
+        0.0394478514790535,
+        0.035852666944265366,
+        0.0320902056992054,
+        0.028085866943001747,
+        0.02373545989394188,
+        0.01889786310493946,
+        0.013403636403381824,
+        0.0071020969189703465,
+        5.483147842861893e-18]
 
     bsdf = mi.load_string("""<bsdf version='2.0.0' type='principled'>
                       <float name="metallic" value="0.3"/>
@@ -183,7 +192,7 @@ def test05_eval_pdf(variant_scalar_rgb):
     si = mi.SurfaceInteraction3f()
     si.p = [0, 0, 0]
     si.n = [0, 0, 1]
-    si.wi = [1, 0, 1]
+    si.wi = dr.normalize(mi.Vector3f(1, 0, 1))
     si.sh_frame = mi.Frame3f(si.n)
 
     ctx = mi.BSDFContext()

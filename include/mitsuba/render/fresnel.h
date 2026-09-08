@@ -17,6 +17,9 @@ NAMESPACE_BEGIN(mitsuba)
  *         means that the surface normal is pointing into the region of lower
  *         density.
  *
+ *     inv_eta: Reciprocal of ``eta``. Callers that store this value can pass
+ *         it to avoid a division per evaluation.
+ *
  * Returns:
  *     A tuple ``(F, cos_theta_t, eta_it, eta_ti)`` where
  *
@@ -34,12 +37,12 @@ NAMESPACE_BEGIN(mitsuba)
  *       refracted direction.
  */
 template <typename Float>
-std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta,
+                                               Float inv_eta) {
     auto outside_mask = cos_theta_i >= 0.f;
 
-    Float rcp_eta = dr::rcp(eta),
-          eta_it = dr::select(outside_mask, eta, rcp_eta),
-          eta_ti = dr::select(outside_mask, rcp_eta, eta);
+    Float eta_it = dr::select(outside_mask, eta, inv_eta),
+          eta_ti = dr::select(outside_mask, inv_eta, eta);
 
     // Using Snell's law, calculate the squared sine of the
     // angle between the surface normal and the transmitted ray
@@ -56,11 +59,11 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float r_sc = dr::select(index_matched, Float(0.f), Float(1.f));
 
     // Amplitudes of reflected waves
-    Float a_s = dr::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) /
-                dr::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs);
-
-    Float a_p = dr::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) /
-                dr::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs);
+    Float d_s = dr::fmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs),
+          d_p = dr::fmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs),
+          inv = dr::rcp(d_s * d_p),
+          a_s = dr::fnmadd(eta_it, cos_theta_t_abs, cos_theta_i_abs) * d_p * inv,
+          a_p = dr::fnmadd(eta_it, cos_theta_i_abs, cos_theta_t_abs) * d_s * inv;
 
     Float r = 0.5f * (dr::square(a_s) + dr::square(a_p));
 
@@ -70,6 +73,11 @@ std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
     Float cos_theta_t = dr::mulsign_neg(cos_theta_t_abs, cos_theta_i);
 
     return { r, cos_theta_t, eta_it, eta_ti };
+}
+
+template <typename Float>
+std::tuple<Float, Float, Float, Float> fresnel(Float cos_theta_i, Float eta) {
+    return fresnel(cos_theta_i, eta, dr::rcp(eta));
 }
 
 /**

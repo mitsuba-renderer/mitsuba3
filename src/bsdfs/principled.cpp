@@ -90,21 +90,6 @@ The Principled BSDF (:monosp:`principled`)
      gets glossier as the parameter increases. (Default:0.0)
    - |exposed|, |differentiable|, |discontinuous|
 
- * - diffuse_reflectance_sampling_rate
-   - |float|
-   - The rate of the cosine hemisphere reflection in sampling. (Default:1.0)
-   - |exposed|
-
- * - main_specular_sampling_rate
-   - |float|
-   - The rate of the main specular lobe in sampling. (Default:1.0)
-   - |exposed|
-
- * - clearcoat_sampling_rate
-   - |float|
-   - The rate of the secondary specular reflection in sampling. (Default:0.0)
-   - |exposed|
-
 The principled BSDF is a complex BSDF with numerous reflective and transmissive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
@@ -176,8 +161,7 @@ material:
         'clearcoat_gloss': 0.3,
         'spec_trans': 0.4
 
-All of the parameters except sampling rates and `eta` should take values
-between 0.0 and 1.0.
+All of the parameters except `eta` should take values between 0.0 and 1.0.
  */
 template <typename Float, typename Spectrum>
 class Principled final : public BSDF<Float, Spectrum> {
@@ -208,9 +192,11 @@ public:
         m_has_clearcoat = get_flag("clearcoat", props);
         m_clearcoat = props.get_texture<Texture>("clearcoat", 0.0f);
         m_clearcoat_gloss = props.get_texture<Texture>("clearcoat_gloss", 0.0f);
-        m_spec_srate = props.get("main_specular_sampling_rate", 1.0f);
-        m_clearcoat_srate = props.get("clearcoat_sampling_rate", 1.0f);
-        m_diff_refl_srate = props.get("diffuse_reflectance_sampling_rate", 1.0f);
+
+        // These legacy parameters are no longer used
+        props.mark_queried("main_specular_sampling_rate");
+        props.mark_queried("clearcoat_sampling_rate");
+        props.mark_queried("diffuse_reflectance_sampling_rate");
 
         // Eta and specular has one to one correspondence, both of them can
         // not be specified.
@@ -227,8 +213,9 @@ public:
 
         update_eta();
         initialize_lobes();
+        update_distributions();
 
-        dr::make_opaque(m_eta);
+        dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
     }
@@ -244,6 +231,45 @@ public:
         } else if (m_has_spec_trans) {
             dr::masked(m_eta, m_eta == 1.f) = 1.001f;
         }
+        m_inv_eta = dr::rcp(m_eta);
+
+        // Schlick reflectance at normal incidence, symmetric in eta -> 1/eta
+        m_r0 = schlick_R0_eta(m_eta);
+    }
+
+    /// Distribution of the main specular lobe
+    MicrofacetDistribution spec_distribution(Float roughness,
+                                             Float anisotropic) const {
+        auto [alpha_x, alpha_y] =
+            calc_dist_params(anisotropic, roughness, m_has_anisotropic);
+        return MicrofacetDistribution(MicrofacetType::GGX, alpha_x, alpha_y);
+    }
+
+    /// Distribution of the clearcoat lobe, whose roughness ranges from 0.1 to 0.001
+    static GTR1 clearcoat_distribution(Float gloss) {
+        return GTR1(dr::lerp(0.1f, 0.001f, gloss));
+    }
+
+    // Uniform roughness parameters yield a single distribution for the whole
+    // surface. Precomputing it keeps the derived constants out of the
+    // rendering kernels.
+    void update_distributions() {
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+
+        m_uniform_roughness = !m_roughness->is_spatially_varying() &&
+                              !m_anisotropic->is_spatially_varying();
+        if (m_uniform_roughness) {
+            m_spec_distr = spec_distribution(m_roughness->eval_1(si, true),
+                                             m_anisotropic->eval_1(si, true));
+            dr::make_opaque(m_spec_distr);
+        }
+
+        m_uniform_gloss =
+            m_has_clearcoat && !m_clearcoat_gloss->is_spatially_varying();
+        if (m_uniform_gloss) {
+            m_cc_distr = clearcoat_distribution(m_clearcoat_gloss->eval_1(si, true));
+            dr::make_opaque(m_cc_distr);
+        }
     }
 
     void initialize_lobes() {
@@ -256,6 +282,7 @@ public:
 
         // Clearcoat lobe
         if (m_has_clearcoat) {
+            m_clearcoat_index = (uint32_t) m_components.size();
             m_components.push_back(BSDFFlags::GlossyReflection |
                                    BSDFFlags::FrontSide);
         }
@@ -266,6 +293,7 @@ public:
                          BSDFFlags::BackSide | BSDFFlags::NonSymmetric;
             if (m_has_anisotropic)
                 f = f | BSDFFlags::Anisotropic;
+            m_spec_trans_index = (uint32_t) m_components.size();
             m_components.push_back(f);
         }
 
@@ -274,6 +302,7 @@ public:
                      BSDFFlags::BackSide;
         if (m_has_anisotropic)
             f = f | BSDFFlags::Anisotropic;
+        m_spec_reflect_index = (uint32_t) m_components.size();
         m_components.push_back(f);
 
         for (auto c : m_components)
@@ -284,10 +313,6 @@ public:
         cb->put("clearcoat",       m_clearcoat,       ParamFlags::Differentiable);
         cb->put("clearcoat_gloss", m_clearcoat_gloss, ParamFlags::Differentiable);
         cb->put("metallic",        m_metallic,        ParamFlags::Differentiable);
-
-        cb->put("main_specular_sampling_rate",       m_spec_srate,      ParamFlags::NonDifferentiable);
-        cb->put("clearcoat_sampling_rate",           m_clearcoat_srate, ParamFlags::NonDifferentiable);
-        cb->put("diffuse_reflectance_sampling_rate", m_diff_refl_srate, ParamFlags::NonDifferentiable);
 
         if (m_eta_specular) //Only one of them traversed! (based on xml file)
             cb->put("eta",      m_eta,      ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -324,8 +349,9 @@ public:
 
         update_eta();
         initialize_lobes();
+        update_distributions();
 
-        dr::make_opaque(m_eta);
+        dr::make_opaque(m_eta, m_inv_eta, m_r0);
         if (!m_eta_specular)
             dr::make_opaque(m_specular);
     }
@@ -335,510 +361,81 @@ public:
            Float sample1, const Point2f &sample2, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFSample, active);
 
-        Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        BSDFSample3f bs   = dr::zeros<BSDFSample3f>();
-
-        // Ignoring perfectly grazing incoming rays
-        active &= cos_theta_i != 0.0f;
+        // Ignore perfectly grazing configurations
+        active &= Frame3f::cos_theta(si.wi) != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
-            return { bs, 0.0f };
+            return { dr::zeros<BSDFSample3f>(), 0.0f };
 
-        // Store the weights.
-        Float anisotropic = m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f,
-        roughness = m_roughness->eval_1(si, active),
-        spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f,
-        metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
-        clearcoat = m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f;
-
-        // Weights of BSDF and BRDF major lobes
-        Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
-        bsdf = m_has_spec_trans ? (1.0f - metallic) * spec_trans : 0.0f;
-
-        // Mask for incident side. (wi.z<0)
-        Mask front_side = cos_theta_i > 0.0f;
-
-        // Defining main specular reflection distribution
-        auto [ax, ay] = calc_dist_params(anisotropic, roughness,m_has_anisotropic);
-        MicrofacetDistribution spec_distr(MicrofacetType::GGX, ax, ay);
-        Normal3f m_spec = std::get<0>(
-                spec_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2));
-
-        // Fresnel coefficient for the main specular.
-        auto [F_spec_dielectric, cos_theta_t, eta_it, eta_ti] =
-                fresnel(dr::dot(si.wi, m_spec), m_eta);
-
-        // If BSDF major lobe is turned off, we do not sample the inside
-        // case.
-        active &= (front_side || (bsdf > 0.0f));
-
-        // Probability definitions
-        // Inside  the material, just microfacet Reflection and
-        // microfacet Transmission is sampled.
-        Float prob_spec_reflect = dr::select(
-                front_side,
-                m_spec_srate * (1.0f - bsdf * (1.0f - F_spec_dielectric)),
-                F_spec_dielectric);
-        Float prob_spec_trans =
-                m_has_spec_trans
-                ? dr::select(front_side,
-                             m_spec_srate * bsdf * (1.0f - F_spec_dielectric),
-                             (1.0f - F_spec_dielectric))
-                             : 0.0f;
-        // Clearcoat has 1/4 of the main specular reflection energy.
-        Float prob_clearcoat =
-                m_has_clearcoat
-                ? dr::select(front_side, 0.25f * clearcoat * m_clearcoat_srate,
-                             0.0f)
-                             : 0.0f;
-        Float prob_diffuse = dr::select(front_side, brdf * m_diff_refl_srate, 0.0f);
-
-        // Normalizing the probabilities.
-        Float rcp_tot_prob = dr::rcp(prob_spec_reflect + prob_spec_trans +
-                prob_clearcoat + prob_diffuse);
-        prob_spec_trans *= rcp_tot_prob;
-        prob_clearcoat *= rcp_tot_prob;
-        prob_diffuse *= rcp_tot_prob;
-
-        // Sampling mask definitions
-        Float curr_prob(0.0f);
-        Mask sample_diffuse = active && (sample1 < prob_diffuse);
-        curr_prob += prob_diffuse;
-        Mask sample_clearcoat = m_has_clearcoat && active &&
-                (sample1 >= curr_prob) &&
-                (sample1 < curr_prob + prob_clearcoat);
-        curr_prob += prob_clearcoat;
-        Mask sample_spec_trans = m_has_spec_trans && active &&
-                (sample1 >= curr_prob) &&
-                (sample1 < curr_prob + prob_spec_trans);
-        curr_prob += prob_spec_trans;
-        Mask sample_spec_reflect = active && (sample1 >= curr_prob);
-
-        // Eta will be changed in transmission.
-        bs.eta = 1.0f;
-
-        // Main specular reflection sampling
-        if (dr::any_or<true>(sample_spec_reflect)) {
-            Vector3f wo                            = reflect(si.wi, m_spec);
-            dr::masked(bs.wo, sample_spec_reflect) = wo;
-            dr::masked(bs.sampled_component, sample_spec_reflect) = 3;
-            dr::masked(bs.sampled_type, sample_spec_reflect) =
-                    +BSDFFlags::GlossyReflection;
-
-            // Filter the cases where macro and micro surfaces do not agree
-            // on the same side and reflection is not successful
-            Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
-            active &=
-                    (!sample_spec_reflect ||
-                    (mac_mic_compatibility(Vector3f(m_spec),
-                                           si.wi, wo, cos_theta_i, true) &&
-                    reflect));
-        }
-        // The main specular transmission sampling
-        if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
-            Vector3f wo = refract(si.wi, m_spec, cos_theta_t, eta_ti);
-            dr::masked(bs.wo, sample_spec_trans)                = wo;
-            dr::masked(bs.sampled_component, sample_spec_trans) = 2;
-            dr::masked(bs.sampled_type, sample_spec_trans) =
-                    +BSDFFlags::GlossyTransmission;
-            dr::masked(bs.eta, sample_spec_trans) = eta_it;
-
-            // Filter the cases where macro and micro surfaces do not agree
-            // on the same side and refraction is successful.
-            Mask refract = cos_theta_i * Frame3f::cos_theta(wo) < 0.0f;
-            active &= (!sample_spec_trans ||
-                    (mac_mic_compatibility(Vector3f(m_spec),
-                                           si.wi, wo, cos_theta_i,
-                                           false) &&
-                                           refract));
-        }
-        // The secondary specular reflection sampling (clearcoat)
-        if (m_has_clearcoat && dr::any_or<true>(sample_clearcoat)) {
-            Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
-
-            // Clearcoat roughness is mapped between 0.1 and 0.001.
-            GTR1 cc_dist(dr::lerp(0.1f, 0.001f, clearcoat_gloss));
-            Normal3f m_cc                = cc_dist.sample(sample2);
-            Vector3f wo                         = reflect(si.wi, m_cc);
-            dr::masked(bs.wo, sample_clearcoat) = wo;
-            dr::masked(bs.sampled_component, sample_clearcoat) = 1;
-            dr::masked(bs.sampled_type, sample_clearcoat) =
-                    +BSDFFlags::GlossyReflection;
-
-            // Filter the cases where macro and microfacets do not agree on
-            // the same side and reflection is not successful.
-            Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
-            active &= (!sample_clearcoat ||
-                    (mac_mic_compatibility(Vector3f(m_cc),
-                                           si.wi, wo,
-                                           cos_theta_i, true) &&
-                                           reflect));
-        }
-        // Cosine hemisphere reflection sampling
-        if (dr::any_or<true>(sample_diffuse)) {
-            Vector3f wo = warp::square_to_cosine_hemisphere(sample2);
-            dr::masked(bs.wo, sample_diffuse)                = wo;
-            dr::masked(bs.sampled_component, sample_diffuse) = 0;
-            dr::masked(bs.sampled_type, sample_diffuse) =
-                    +BSDFFlags::DiffuseReflection;
-            Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
-            active &= (!sample_diffuse || reflect);
-        }
-
-        bs.pdf = pdf(ctx, si, bs.wo, active);
-        active &= bs.pdf > 0.0f;
-        Spectrum result = eval(ctx, si, bs.wo, active);
-        return { bs, result / bs.pdf & active };
+        return sample_impl(ctx, si, eval_params(si, active), sample1, sample2,
+                           active);
     }
 
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        // Ignore perfectly grazing configurations
-        active &= cos_theta_i != 0.0f;
+        active &= Frame3f::cos_theta(si.wi) != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
             return 0.0f;
 
-        // Store the weights.
-        Float anisotropic = m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f,
-              roughness = m_roughness->eval_1(si, active),
-              flatness = m_has_flatness ? m_flatness->eval_1(si, active) : 0.0f,
-              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f,
-              metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
-              clearcoat = m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f,
-              sheen = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
-        UnpolarizedSpectrum base_color = m_base_color->eval(si, active);
+        auto [value, pdf] =
+            eval_pdf_impl(ctx, si, eval_params(si, active), wo, active);
 
-        // Weights for BRDF and BSDF major lobes.
-        Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
-        bsdf = (1.0f - metallic) * spec_trans;
-
-        Float cos_theta_o = Frame3f::cos_theta(wo);
-
-        // Reflection and refraction masks.
-        Mask reflect = cos_theta_i * cos_theta_o > 0.0f;
-        Mask refract = cos_theta_i * cos_theta_o < 0.0f;
-
-        // Masks for the side of the incident ray (wi.z<0)
-        Mask front_side = cos_theta_i > 0.0f;
-        Float inv_eta   = dr::rcp(m_eta);
-
-        // Eta value w.r.t. ray instead of the object.
-        Float eta_path     = dr::select(front_side, m_eta, inv_eta);
-        Float inv_eta_path = dr::select(front_side, inv_eta, m_eta);
-
-        // Main specular reflection and transmission lobe
-        auto [ax, ay] = calc_dist_params(anisotropic, roughness,m_has_anisotropic);
-        MicrofacetDistribution spec_dist(MicrofacetType::GGX, ax, ay);
-
-        // Halfway vector
-        Vector3f wh =
-                dr::normalize(si.wi + wo * dr::select(reflect, 1.0f, eta_path));
-
-        // Make sure that the halfway vector points outwards the object
-        wh = dr::mulsign(wh, Frame3f::cos_theta(wh));
-
-        // Dielectric Fresnel
-        auto [F_spec_dielectric, cos_theta_t, eta_it, eta_ti] =
-                fresnel(dr::dot(si.wi, wh), m_eta);
-
-        Mask reflection_compatibilty =
-                mac_mic_compatibility(wh, si.wi, wo, cos_theta_i, true);
-        Mask refraction_compatibilty =
-                mac_mic_compatibility(wh, si.wi, wo, cos_theta_i, false);
-        // Masks for evaluating the lobes.
-        // Specular reflection mask
-        Mask spec_reflect_active = active && reflect &&
-                reflection_compatibilty &&
-                (F_spec_dielectric > 0.0f);
-
-        // Clearcoat mask
-        Mask clearcoat_active = m_has_clearcoat && active &&
-                (clearcoat > 0.0f) && reflect &&
-                reflection_compatibilty && front_side;
-
-        // Specular transmission mask
-        Mask spec_trans_active = m_has_spec_trans && active && (bsdf > 0.0f) &&
-                refract && refraction_compatibilty &&
-                (F_spec_dielectric < 1.0f);
-
-        // Diffuse, retro and fake subsurface mask
-        Mask diffuse_active = active && (brdf > 0.0f) && reflect && front_side;
-
-        // Sheen mask
-        Mask sheen_active = m_has_sheen && active && (sheen > 0.0f) &&
-                reflect && (1.0f - metallic > 0.0f) && front_side;
-
-        // Evaluate the microfacet normal distribution
-        Float D = spec_dist.eval(wh);
-
-        // Smith's shadowing-masking function
-        Float G = spec_dist.G(si.wi, wo, wh);
-
-        // Initialize the final BSDF value.
-        UnpolarizedSpectrum value(0.0f);
-
-        // Main specular reflection evaluation
-        if (dr::any_or<true>(spec_reflect_active)) {
-            // No need to calculate luminance if there is no color tint.
-            Float lum = m_has_spec_tint
-                    ? mitsuba::luminance(base_color, si.wavelengths)
-                    : 1.0f;
-            Float spec_tint =
-                    m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
-
-            // Fresnel term
-            UnpolarizedSpectrum F_principled = principled_fresnel(
-                    F_spec_dielectric, metallic, spec_tint, base_color, lum,
-                    dr::dot(si.wi, wh), front_side, bsdf,m_eta,m_has_metallic,
-                    m_has_spec_tint);
-
-            // Adding the specular reflection component
-            dr::masked(value, spec_reflect_active) +=
-                    F_principled * D * G / (4.0f * dr::abs(cos_theta_i));
-        }
-
-        // Main specular transmission evaluation
-        if (m_has_spec_trans && dr::any_or<true>(spec_trans_active)) {
-
-            // Account for the solid angle compression when tracing
-            // radiance. This is necessary for bidirectional methods.
-            Float scale = (ctx.mode == TransportMode::Radiance)
-                    ? dr::square(inv_eta_path)
-                    : Float(1.0f);
-
-            // Adding the specular transmission component
-            dr::masked(value, spec_trans_active) +=
-                    dr::sqrt(base_color) * bsdf *
-                    dr::abs((scale * (1.0f - F_spec_dielectric) * D * G * eta_path *
-                    eta_path * dr::dot(si.wi, wh) * dr::dot(wo, wh)) /
-                    (cos_theta_i * dr::square(dr::dot(si.wi, wh) +
-                    eta_path * dr::dot(wo, wh))));
-        }
-
-        // Secondary isotropic specular reflection.
-        if (m_has_clearcoat && dr::any_or<true>(clearcoat_active)) {
-            Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
-
-            // The clearcoat is a fixed IOR 1.5 coating (F0 = 0.04) that is
-            // only evaluated from the front.
-            Float Fcc = dr::lerp(schlick_weight(dr::dot(si.wi, wh)), 1.f, 0.04f);
-
-            // Clearcoat lobe uses GTR1 distribution. Roughness is mapped
-            // between 0.1 and 0.001.
-            GTR1 mfacet_dist(dr::lerp(0.1f, 0.001f, clearcoat_gloss));
-            Float Dcc = mfacet_dist.eval(wh);
-
-            // Shadowing shadowing-masking term
-            Float G_cc = clearcoat_G(si.wi, wo, wh, Float(0.25f));
-
-            // Adding the clearcoat component.
-            dr::masked(value, clearcoat_active) +=
-                    (clearcoat * 0.25f) * Fcc * Dcc * G_cc /
-                    (4.0f * dr::abs(cos_theta_i));
-        }
-
-        // Angle between the half vector and the outgoing direction, used by
-        // the retro reflection and sheen terms.
-        Float cos_theta_d = dr::dot(wh, wo);
-
-        // Evaluation of diffuse, retro reflection and fake subsurface.
-        if (dr::any_or<true>(diffuse_active)) {
-            Float Fo = schlick_weight(dr::abs(cos_theta_o)),
-            Fi = schlick_weight(dr::abs(cos_theta_i));
-
-            // Diffuse
-            Float f_diff = (1.0f - 0.5f * Fi) * (1.0f - 0.5f * Fo);
-
-            Float Rr = 2.0f * roughness * dr::square(cos_theta_d);
-
-            // Retro reflection
-            Float f_retro = Rr * (Fo + Fi + Fo * Fi * (Rr - 1.0f));
-
-            if (m_has_flatness) {
-                // Fake subsurface implementation based on Hanrahan Krueger
-                // Fss90 used to "flatten" retro reflection based on
-                // roughness.
-                Float Fss90 = Rr / 2.0f;
-                Float Fss =
-                        dr::lerp(1.0f, Fss90, Fo) * dr::lerp(1.0f, Fss90, Fi);
-
-                Float f_ss = 1.25f * (Fss * (1.0f / (dr::abs(cos_theta_o) +
-                        dr::abs(cos_theta_i)) -
-                                0.5f) +
-                                        0.5f);
-
-                // Adding diffuse, retro and fake subsurface evaluation.
-                dr::masked(value, diffuse_active) +=
-                        brdf * dr::abs(cos_theta_o) * base_color *
-                        dr::InvPi<Float> *
-                        (dr::lerp(f_diff + f_retro, f_ss, flatness));
-            } else {
-                // Adding diffuse, retro evaluation. (no fake ss.)
-                dr::masked(value, diffuse_active) +=
-                        brdf * dr::abs(cos_theta_o) * base_color *
-                        dr::InvPi<Float> * (f_diff + f_retro);
-            }
-        }
-
-        // Sheen evaluation
-        if (m_has_sheen && dr::any_or<true>(sheen_active)) {
-            Float Fd = schlick_weight(dr::abs(cos_theta_d));
-
-            // Tint the sheen evaluation towards the base color.
-            if (m_has_sheen_tint) {
-                Float sheen_tint = m_sheen_tint->eval_1(si, active);
-
-                // Luminance evaluation
-                Float lum = mitsuba::luminance(base_color, si.wavelengths);
-
-                // Normalize color with luminance and tint the result.
-                UnpolarizedSpectrum c_tint =
-                        dr::select(lum > 0.0f, base_color / lum, 1.0f);
-                UnpolarizedSpectrum c_sheen = dr::lerp(1.0f, c_tint, sheen_tint);
-
-                // Adding sheen evaluation with tint.
-                dr::masked(value, sheen_active) +=
-                        sheen * (1.0f - metallic) * Fd * c_sheen *
-                        dr::abs(cos_theta_o);
-            } else {
-                // Adding sheen evaluation without tint.
-                dr::masked(value, sheen_active) +=
-                        sheen * (1.0f - metallic) * Fd * dr::abs(cos_theta_o);
-            }
-        }
         return depolarizer<Spectrum>(value) & active;
     }
 
-    Float pdf(const BSDFContext &, const SurfaceInteraction3f &si,
+    Float pdf(const BSDFContext &ctx, const SurfaceInteraction3f &si,
               const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
-        Float cos_theta_i = Frame3f::cos_theta(si.wi);
-        // Ignore perfectly grazing configurations.
-        active &= cos_theta_i != 0.0f;
+        active &= Frame3f::cos_theta(si.wi) != 0.0f;
 
         if (unlikely(dr::none_or<false>(active)))
             return 0.0f;
 
-        // Store the weights.
-        Float anisotropic =
-                m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f,
-                roughness = m_roughness->eval_1(si, active),
-                spec_trans =
-                        m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f;
-        Float metallic = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f,
-        clearcoat =
-                m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f;
+        auto [value, pdf] =
+            eval_pdf_impl(ctx, si, eval_params(si, active), wo, active);
 
-        // BRDF and BSDF major lobe weights
-        Float brdf = (1.0f - metallic) * (1.0f - spec_trans),
-        bsdf = (1.0f - metallic) * spec_trans;
-
-        // Masks if incident direction is inside (wi.z<0)
-        Mask front_side = cos_theta_i > 0.0f;
-
-        // Eta w.r.t. light path.
-        Float eta_path    = dr::select(front_side, m_eta, dr::rcp(m_eta));
-        Float cos_theta_o = Frame3f::cos_theta(wo);
-
-        Mask reflect = cos_theta_i * cos_theta_o > 0.0f;
-        Mask refract = cos_theta_i * cos_theta_o < 0.0f;
-
-        // Halfway vector calculation
-        Vector3f wh = dr::normalize(
-                si.wi + wo * dr::select(reflect, Float(1.0f), eta_path));
-
-        // Make sure that the halfway vector points outwards the object
-        wh = dr::mulsign(wh, Frame3f::cos_theta(wh));
-
-        // Main specular distribution for reflection and transmission.
-        auto [ax, ay] = calc_dist_params(anisotropic, roughness,m_has_anisotropic);
-        MicrofacetDistribution spec_distr(MicrofacetType::GGX, ax, ay);
-
-        // Dielectric Fresnel calculation
-        auto [F_spec_dielectric, cos_theta_t, eta_it, eta_ti] =
-                fresnel(dr::dot(si.wi, wh), m_eta);
-
-        // Defining the probabilities
-        Float prob_spec_reflect = dr::select(
-                front_side,
-                m_spec_srate * (1.0f - bsdf * (1.0f - F_spec_dielectric)),
-                F_spec_dielectric);
-        Float prob_spec_trans =
-                m_has_spec_trans
-                ? dr::select(front_side,
-                             m_spec_srate * bsdf * (1.0f - F_spec_dielectric),
-                             (1.0f - F_spec_dielectric))
-                             : 0.0f;
-        Float prob_clearcoat =
-                m_has_clearcoat
-                ? dr::select(front_side, 0.25f * clearcoat * m_clearcoat_srate,
-                             0.0f)
-                             : 0.0f;
-        Float prob_diffuse =
-                dr::select(front_side, brdf * m_diff_refl_srate, 0.f);
-
-        // Normalizing the probabilities.
-        Float rcp_tot_prob = dr::rcp(prob_spec_reflect + prob_spec_trans +
-                prob_clearcoat + prob_diffuse);
-        prob_spec_reflect *= rcp_tot_prob;
-        prob_spec_trans *= rcp_tot_prob;
-        prob_clearcoat *= rcp_tot_prob;
-        prob_diffuse *= rcp_tot_prob;
-
-        // Calculation of dwh/dwo term. Different for reflection and
-        // transmission.
-        Float dwh_dwo_abs;
-        if (m_has_spec_trans) {
-            Float dot_wi_h = dr::dot(si.wi, wh);
-            Float dot_wo_h = dr::dot(wo, wh);
-            dwh_dwo_abs    = dr::abs(
-                    dr::select(reflect, dr::rcp(4.0f * dot_wo_h),
-                               (dr::square(eta_path) * dot_wo_h) /
-                               dr::square(dot_wi_h + eta_path * dot_wo_h)));
-        } else {
-            dwh_dwo_abs = dr::abs(dr::rcp(4.0f * dr::dot(wo, wh)));
-        }
-
-        // Initializing the final pdf value.
-        Float pdf(0.0f);
-
-        // Macro-micro surface compatibility mask for reflection.
-        Mask mfacet_reflect_macmic =
-                mac_mic_compatibility(wh, si.wi, wo, cos_theta_i, true) && reflect;
-
-        // Adding main specular reflection pdf
-        dr::masked(pdf, mfacet_reflect_macmic) +=
-                prob_spec_reflect *
-                spec_distr.pdf(dr::mulsign(si.wi, cos_theta_i), wh) * dwh_dwo_abs;
-        // Adding cosine hemisphere reflection pdf
-        dr::masked(pdf, reflect) +=
-                prob_diffuse * warp::square_to_cosine_hemisphere_pdf(wo);
-        // Main specular transmission
-        if (m_has_spec_trans) {
-            // Macro-micro surface mask for transmission.
-            Mask mfacet_trans_macmic =
-                    mac_mic_compatibility(wh, si.wi, wo, cos_theta_i, false) &&
-                    refract;
-
-            // Adding main specular transmission pdf
-            dr::masked(pdf, mfacet_trans_macmic) +=
-                    prob_spec_trans *
-                    spec_distr.pdf(dr::mulsign(si.wi, cos_theta_i), wh) *
-                    dwh_dwo_abs;
-        }
-        // Adding the secondary specular reflection pdf.(clearcoat)
-        if (m_has_clearcoat) {
-            Float clearcoat_gloss = m_clearcoat_gloss->eval_1(si, active);
-            GTR1 cc_dist(dr::lerp(0.1f, 0.001f, clearcoat_gloss));
-            dr::masked(pdf, mfacet_reflect_macmic) +=
-                    prob_clearcoat * cc_dist.pdf(wh) * dwh_dwo_abs;
-        }
         return pdf;
+    }
+
+    std::pair<Spectrum, Float> eval_pdf(const BSDFContext &ctx,
+                                        const SurfaceInteraction3f &si,
+                                        const Vector3f &wo,
+                                        Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        active &= Frame3f::cos_theta(si.wi) != 0.0f;
+
+        if (unlikely(dr::none_or<false>(active)))
+            return { 0.0f, 0.0f };
+
+        auto [value, pdf] =
+            eval_pdf_impl(ctx, si, eval_params(si, active), wo, active);
+
+        return { depolarizer<Spectrum>(value) & active, pdf };
+    }
+
+    std::tuple<Spectrum, Float, BSDFSample3f, Spectrum>
+    eval_pdf_sample(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                    const Vector3f &wo, Float sample1, const Point2f &sample2,
+                    Mask active) const override {
+        MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
+
+        active &= Frame3f::cos_theta(si.wi) != 0.0f;
+
+        if (unlikely(dr::none_or<false>(active)))
+            return { 0.0f, 0.0f, dr::zeros<BSDFSample3f>(), 0.0f };
+
+        // The material parameters are shared by both queries
+        Params p = eval_params(si, active);
+
+        auto [value, pdf] = eval_pdf_impl(ctx, si, p, wo, active);
+        auto [bs, weight] = sample_impl(ctx, si, p, sample1, sample2, active);
+
+        return { depolarizer<Spectrum>(value) & active, pdf, bs, weight };
     }
 
     Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
@@ -869,6 +466,409 @@ public:
     }
     MI_DECLARE_CLASS(Principled)
 private:
+    /// Material parameters at a surface position, fetched once per query
+    struct Params {
+        Float roughness, anisotropic, metallic, spec_trans, clearcoat,
+              clearcoat_gloss, sheen, sheen_tint, spec_tint, flatness;
+        UnpolarizedSpectrum base_color;
+
+        /// Base color normalized by its luminance
+        UnpolarizedSpectrum c_tint;
+
+        /// Weights of the BRDF and BSDF major lobes
+        Float brdf, bsdf;
+
+        /// Microfacet distributions of the main specular and clearcoat lobes
+        MicrofacetDistribution spec_distr;
+        GTR1 cc_distr;
+
+        /// Weight of the transmission lobe, bsdf times the square root of
+        /// the mean base color
+        Float trans_weight;
+
+        /// Sampling budgets of the front-side lobes for light arriving from
+        /// si.wi, based on the energy that each lobe reflects
+        Float w_spec, w_clearcoat, w_diffuse;
+    };
+
+    /// Discrete probabilities of the four sampling techniques
+    struct LobeProbs {
+        Float spec_reflect, spec_trans, clearcoat, diffuse;
+    };
+
+    Params eval_params(const SurfaceInteraction3f &si, Mask active) const {
+        Params p;
+
+        p.roughness       = m_roughness->eval_1(si, active);
+        p.anisotropic     = m_has_anisotropic ? m_anisotropic->eval_1(si, active) : 0.0f;
+        p.metallic        = m_has_metallic ? m_metallic->eval_1(si, active) : 0.0f;
+        p.spec_trans      = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.0f;
+        p.clearcoat       = m_has_clearcoat ? m_clearcoat->eval_1(si, active) : 0.0f;
+        p.clearcoat_gloss = m_has_clearcoat ? m_clearcoat_gloss->eval_1(si, active) : 0.0f;
+        p.sheen           = m_has_sheen ? m_sheen->eval_1(si, active) : 0.0f;
+        p.sheen_tint      = m_has_sheen_tint ? m_sheen_tint->eval_1(si, active) : 0.0f;
+        p.spec_tint       = m_has_spec_tint ? m_spec_tint->eval_1(si, active) : 0.0f;
+        p.flatness        = m_has_flatness ? m_flatness->eval_1(si, active) : 0.0f;
+        p.base_color      = m_base_color->eval(si, active);
+
+        Float lum = mitsuba::luminance(p.base_color, si.wavelengths);
+
+        p.c_tint = 1.0f;
+        if (m_has_spec_tint || m_has_sheen_tint)
+            p.c_tint = dr::select(lum > 0.0f, p.base_color * dr::rcp(lum), 1.0f);
+
+        Float one_minus_metallic = 1.0f - p.metallic;
+        p.bsdf = one_minus_metallic * p.spec_trans;
+        p.brdf = one_minus_metallic - p.bsdf;
+
+        // The lobe selection weighs spectra by their channel mean. Unlike
+        // the luminance, it does not depend on the sampled wavelengths in
+        // spectral variants, which keeps the weights of all lobes comparable.
+        Float albedo = dr::mean(p.base_color);
+        p.trans_weight = m_has_spec_trans ? p.bsdf * dr::sqrt(albedo) : 0.0f;
+
+        p.spec_distr = m_uniform_roughness
+                           ? m_spec_distr
+                           : spec_distribution(p.roughness, p.anisotropic);
+
+        if (m_has_clearcoat)
+            p.cc_distr = m_uniform_gloss
+                             ? m_cc_distr
+                             : clearcoat_distribution(p.clearcoat_gloss);
+
+        // Lobe selection budgets. The specular lobes use the Fresnel term at
+        // the macrosurface normal as an estimate of their reflected energy.
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
+            fresnel(cos_theta_i, m_eta, m_inv_eta);
+
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, cos_theta_i, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, Mask(true),
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        p.w_spec = dr::fmadd(p.trans_weight, 1.0f - F_dielectric, dr::mean(F));
+
+        p.w_clearcoat = m_has_clearcoat
+            ? 0.25f * p.clearcoat *
+                  dr::lerp(0.04f, 1.0f, schlick_weight(cos_theta_i))
+            : 0.0f;
+
+        // The sheen lobe shares the diffuse sampling technique
+        p.w_diffuse = p.brdf * albedo;
+        if (m_has_sheen)
+            p.w_diffuse = dr::fmadd(p.sheen * one_minus_metallic,
+                                    sheen_albedo(cos_theta_i), p.w_diffuse);
+
+        return p;
+    }
+
+    /**
+     * Lobe selection probabilities. The main specular lobes share the budget
+     * p.w_spec, split according to the reflected energy ``E_reflect`` and
+     * the transmitted energy derived from ``F_dielectric``, both evaluated at
+     * the microfacet normal. Inside the material, only these two lobes are
+     * sampled.
+     *
+     * The sum of the two probabilities does not depend on the microfacet
+     * normal. This matters because the pdf reconstructs the normal from wo,
+     * which differs from the sampled normal for diffuse and clearcoat samples.
+     */
+    LobeProbs lobe_probs(const Params &p, Float E_reflect, Float F_dielectric,
+                         Mask front_side) const {
+        LobeProbs r;
+
+        Float budget = dr::select(front_side, p.w_spec, 1.0f);
+
+        // Fraction of the budget that goes to transmission
+        Float tau = 0.0f;
+        if (m_has_spec_trans) {
+            Float E_trans = p.trans_weight * (1.0f - F_dielectric),
+                  E_total = E_reflect + E_trans;
+            tau = dr::select(E_total > 0.0f, E_trans / E_total, 0.0f);
+        }
+
+        r.spec_trans   = budget * tau;
+        r.spec_reflect = budget - r.spec_trans;
+        r.clearcoat    = dr::select(front_side, p.w_clearcoat, 0.0f);
+        r.diffuse      = dr::select(front_side, p.w_diffuse, 0.0f);
+
+        Float total = r.spec_reflect + r.spec_trans + r.clearcoat + r.diffuse,
+              rcp_total = dr::select(total > 0.0f, dr::rcp(total), 0.0f);
+
+        r.spec_reflect *= rcp_total;
+        r.spec_trans   *= rcp_total;
+        r.clearcoat    *= rcp_total;
+        r.diffuse      *= rcp_total;
+
+        return r;
+    }
+
+    /// Jointly evaluate the BSDF times the cosine factor and the sampling pdf
+    std::pair<UnpolarizedSpectrum, Float>
+    eval_pdf_impl(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                  const Params &p, const Vector3f &wo, Mask active) const {
+        Float cos_theta_i  = Frame3f::cos_theta(si.wi),
+              cos_theta_o  = Frame3f::cos_theta(wo),
+              cos_theta_io = cos_theta_i * cos_theta_o;
+
+        Mask front_side = cos_theta_i > 0.0f,
+             reflect    = cos_theta_io > 0.0f,
+             refract    = cos_theta_io < 0.0f;
+
+        // Relative index of refraction along the light path
+        Float eta_path     = dr::select(front_side, m_eta, m_inv_eta),
+              inv_eta_path = dr::select(front_side, m_inv_eta, m_eta);
+
+        // Half vector, oriented towards the exterior of the object
+        Vector3f wh = dr::normalize(
+            dr::fmadd(wo, dr::select(reflect, Float(1.0f), eta_path), si.wi));
+        wh = dr::mulsign(wh, Frame3f::cos_theta(wh));
+
+        Float dot_wi_h = dr::dot(si.wi, wh),
+              dot_wo_h = dr::dot(wo, wh);
+
+        auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
+            fresnel(dot_wi_h, m_eta, m_inv_eta);
+
+        // Main specular lobe
+        const MicrofacetDistribution &spec_distr = p.spec_distr;
+        Float D    = spec_distr.eval(wh),
+              G1_i = spec_distr.smith_g1(si.wi, wh),
+              G1_o = spec_distr.smith_g1(wo, wh);
+
+        Float rcp_abs_cos_theta_i = dr::rcp(dr::abs(cos_theta_i));
+
+        // Jacobian of the half vector mapping times |wi . wh|. The reflection
+        // case reduces to 1/4, which avoids a cancellation between the two
+        // dot products at grazing angles.
+        Float jacobian;
+        if (m_has_spec_trans) {
+            jacobian = dr::select(
+                reflect, 0.25f,
+                dr::abs(dot_wi_h * dot_wo_h) * dr::square(eta_path) /
+                    dr::square(dr::fmadd(eta_path, dot_wo_h, dot_wi_h)));
+        } else {
+            jacobian = 0.25f;
+        }
+
+        // Density of wo under visible normal sampling, and the lobe value
+        // times the cosine factor without the Fresnel term
+        Float pdf_spec    = D * G1_i * rcp_abs_cos_theta_i * jacobian,
+              weight_spec = G1_o * pdf_spec;
+
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, dot_wi_h, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        LobeProbs prob = lobe_probs(p, dr::mean(F),
+                                    F_dielectric, front_side);
+
+        UnpolarizedSpectrum value(0.0f);
+        Float pdf(0.0f);
+
+        // Main specular reflection
+        Mask spec_reflect_active = active && reflect;
+        if (dr::any_or<true>(spec_reflect_active)) {
+            dr::masked(value, spec_reflect_active) += F * weight_spec;
+            dr::masked(pdf, spec_reflect_active) +=
+                prob.spec_reflect * pdf_spec;
+        }
+
+        // Main specular transmission
+        if (m_has_spec_trans) {
+            // No microfacet refracts into directions that face the half
+            // vector from the incident side
+            Mask spec_trans_active =
+                active && refract && dot_wo_h * cos_theta_o > 0.0f;
+
+            if (dr::any_or<true>(spec_trans_active)) {
+                // Account for the solid angle compression when tracing
+                // radiance. This is necessary for bidirectional methods.
+                Float scale = (ctx.mode == TransportMode::Radiance)
+                                  ? dr::square(inv_eta_path)
+                                  : Float(1.0f);
+
+                dr::masked(value, spec_trans_active) +=
+                    dr::sqrt(p.base_color) *
+                    (p.bsdf * scale * (1.0f - F_dielectric) * weight_spec);
+                dr::masked(pdf, spec_trans_active) +=
+                    prob.spec_trans * pdf_spec;
+            }
+        }
+
+        // Clearcoat: a fixed IOR 1.5 coating (F0 = 0.04) with a GTR1
+        // distribution, only evaluated from the front
+        if (m_has_clearcoat) {
+            Mask clearcoat_active = active && reflect && front_side;
+
+            if (dr::any_or<true>(clearcoat_active)) {
+                MicrofacetDistribution cc_g_distr(MicrofacetType::GGX, 0.25f);
+
+                Float Fcc = dr::lerp(0.04f, 1.0f, schlick_weight(dot_wi_h)),
+                      Dcc = p.cc_distr.eval(wh),
+                      Gcc = cc_g_distr.G(si.wi, wo, wh);
+
+                // Includes the 1/4 energy scale of the clearcoat lobe
+                dr::masked(value, clearcoat_active) +=
+                    p.clearcoat * Fcc * Dcc * Gcc *
+                    (0.0625f * rcp_abs_cos_theta_i);
+                dr::masked(pdf, clearcoat_active) +=
+                    prob.clearcoat * Frame3f::cos_theta(wh) * Dcc /
+                    (4.0f * dr::abs(dot_wo_h));
+            }
+        }
+
+        // Diffuse, retro-reflection, fake subsurface, and sheen lobes. All
+        // of them are restricted to the front side.
+        Mask diffuse_active = active && reflect && front_side;
+        if (dr::any_or<true>(diffuse_active)) {
+            Float Fo = schlick_weight(cos_theta_o),
+                  Fi = schlick_weight(cos_theta_i);
+
+            Float f_diff = dr::fnmadd(0.5f, Fi, 1.0f) * dr::fnmadd(0.5f, Fo, 1.0f);
+
+            // Retro reflection
+            Float Rr      = 2.0f * p.roughness * dr::square(dot_wo_h),
+                  f_retro = Rr * dr::fmadd(Fo * Fi, Rr - 1.0f, Fo + Fi),
+                  f       = f_diff + f_retro;
+
+            if (m_has_flatness) {
+                // Fake subsurface scattering based on Hanrahan-Krueger
+                Float Fss90 = 0.5f * Rr,
+                      Fss   = dr::lerp(1.0f, Fss90, Fo) * dr::lerp(1.0f, Fss90, Fi),
+                      f_ss  = 1.25f * dr::fmadd(Fss, dr::rcp(cos_theta_o + cos_theta_i) - 0.5f, 0.5f);
+
+                f = dr::lerp(f, f_ss, p.flatness);
+            }
+
+            // Scalar factors first, then a single spectral multiplication
+            Float s_diff = p.brdf * dr::InvPi<Float> * f * cos_theta_o;
+            UnpolarizedSpectrum diffuse = p.base_color * s_diff;
+
+            if (m_has_sheen) {
+                Float s_sheen = p.sheen * (1.0f - p.metallic) *
+                                schlick_weight(dot_wo_h) * cos_theta_o;
+
+                if (m_has_sheen_tint)
+                    diffuse = dr::fmadd(dr::lerp(1.0f, p.c_tint, p.sheen_tint),
+                                        s_sheen, diffuse);
+                else
+                    diffuse += s_sheen;
+            }
+
+            dr::masked(value, diffuse_active) += diffuse;
+            dr::masked(pdf, diffuse_active) +=
+                prob.diffuse * dr::InvPi<Float> * cos_theta_o;
+        }
+
+        return { value, pdf };
+    }
+
+    std::pair<BSDFSample3f, Spectrum>
+    sample_impl(const BSDFContext &ctx, const SurfaceInteraction3f &si,
+                const Params &p, Float sample1, const Point2f &sample2,
+                Mask active) const {
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        Mask front_side   = cos_theta_i > 0.0f;
+        BSDFSample3f bs   = dr::zeros<BSDFSample3f>();
+
+        // Inside the material, only the transmissive lobe can be sampled
+        active &= front_side || p.bsdf > 0.0f;
+
+        // Sample a visible normal of the main specular lobe
+        const MicrofacetDistribution &spec_distr = p.spec_distr;
+        Normal3f m_spec = std::get<0>(
+            spec_distr.sample(dr::mulsign(si.wi, cos_theta_i), sample2));
+
+        Float dot_wi_m = dr::dot(si.wi, m_spec);
+        auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
+            fresnel(dot_wi_m, m_eta, m_inv_eta);
+
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, dot_wi_m, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        LobeProbs prob = lobe_probs(p, dr::mean(F),
+                                    F_dielectric, front_side);
+
+        // Select a lobe
+        Float cdf = prob.diffuse;
+        Mask sample_diffuse = active && sample1 < cdf;
+        Mask sample_clearcoat = m_has_clearcoat && active && sample1 >= cdf &&
+                                sample1 < cdf + prob.clearcoat;
+        cdf += prob.clearcoat;
+        Mask sample_spec_trans = m_has_spec_trans && active && sample1 >= cdf &&
+                                 sample1 < cdf + prob.spec_trans;
+        cdf += prob.spec_trans;
+        Mask sample_spec_reflect = active && sample1 >= cdf;
+
+        bs.eta = 1.0f;
+
+        // Main specular reflection
+        if (dr::any_or<true>(sample_spec_reflect)) {
+            Vector3f wo = reflect(si.wi, m_spec);
+            dr::masked(bs.wo, sample_spec_reflect) = wo;
+            dr::masked(bs.sampled_component, sample_spec_reflect) =
+                m_spec_reflect_index;
+            dr::masked(bs.sampled_type, sample_spec_reflect) =
+                +BSDFFlags::GlossyReflection;
+
+            // Discard reflections into the wrong hemisphere
+            Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
+            active &= !sample_spec_reflect || reflect;
+        }
+
+        // Main specular transmission
+        if (m_has_spec_trans && dr::any_or<true>(sample_spec_trans)) {
+            Vector3f wo = refract(si.wi, m_spec, cos_theta_t, eta_ti);
+            dr::masked(bs.wo, sample_spec_trans) = wo;
+            dr::masked(bs.sampled_component, sample_spec_trans) =
+                m_spec_trans_index;
+            dr::masked(bs.sampled_type, sample_spec_trans) =
+                +BSDFFlags::GlossyTransmission;
+            dr::masked(bs.eta, sample_spec_trans) = eta_it;
+
+            // Discard refractions into the wrong hemisphere
+            Mask refract = cos_theta_i * Frame3f::cos_theta(wo) < 0.0f;
+            active &= !sample_spec_trans || refract;
+        }
+
+        // Clearcoat
+        if (m_has_clearcoat && dr::any_or<true>(sample_clearcoat)) {
+            Normal3f m_cc = p.cc_distr.sample(sample2);
+            Vector3f wo   = reflect(si.wi, m_cc);
+            dr::masked(bs.wo, sample_clearcoat) = wo;
+            dr::masked(bs.sampled_component, sample_clearcoat) =
+                m_clearcoat_index;
+            dr::masked(bs.sampled_type, sample_clearcoat) =
+                +BSDFFlags::GlossyReflection;
+
+            // The clearcoat normal is not sampled relative to si.wi, so the
+            // microfacet may face away from it. Such samples and reflections
+            // into the wrong hemisphere are discarded.
+            Mask reflect = cos_theta_i * Frame3f::cos_theta(wo) > 0.0f;
+            active &= !sample_clearcoat ||
+                      (reflect && dr::dot(si.wi, m_cc) * cos_theta_i > 0.0f);
+        }
+
+        // Diffuse
+        if (dr::any_or<true>(sample_diffuse)) {
+            Vector3f wo = warp::square_to_cosine_hemisphere(sample2);
+            dr::masked(bs.wo, sample_diffuse) = wo;
+            dr::masked(bs.sampled_component, sample_diffuse) = 0;
+            dr::masked(bs.sampled_type, sample_diffuse) =
+                +BSDFFlags::DiffuseReflection;
+        }
+
+        auto [value, pdf] = eval_pdf_impl(ctx, si, p, bs.wo, active);
+        bs.pdf = pdf;
+        active &= pdf > 0.0f;
+
+        return { bs, depolarizer<Spectrum>(value / pdf) & active };
+    }
     /// Parameters
     ref<Texture> m_base_color;
     ref<Texture> m_roughness;
@@ -881,14 +881,20 @@ private:
     ref<Texture> m_clearcoat;
     ref<Texture> m_clearcoat_gloss;
     ref<Texture> m_metallic;
-    Float m_eta;
+    Float m_eta, m_inv_eta, m_r0;
     Float m_specular;
     bool m_eta_specular;
 
-    /// Sampling rates
-    ScalarFloat m_diff_refl_srate;
-    ScalarFloat m_spec_srate;
-    ScalarFloat m_clearcoat_srate;
+    /// Precomputed distributions, valid when the roughness parameters are
+    /// spatially uniform
+    MicrofacetDistribution m_spec_distr;
+    GTR1 m_cc_distr;
+    bool m_uniform_roughness = false;
+    bool m_uniform_gloss = false;
+
+    /// Component indices of the optional and main specular lobes
+    uint32_t m_clearcoat_index = 0, m_spec_trans_index = 0,
+             m_spec_reflect_index = 0;
 
     /// Whether the lobes are active or not.
     bool m_has_clearcoat;
@@ -903,7 +909,7 @@ private:
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                    m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
-                   m_specular)
+                   m_inv_eta, m_r0, m_specular, m_spec_distr, m_cc_distr)
 };
 
 MI_EXPORT_PLUGIN(Principled)

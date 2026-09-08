@@ -28,6 +28,9 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     m_thread_reordering = props.get<bool>("allow_thread_reordering", true);
     m_compact_accel = props.get<bool>("compact_accel", true);
     m_compact_accel_auto = !props.has_property("compact_accel");
+    m_portal_data.weight = props.get<ScalarFloat>("portal_weight", .5f);
+    if (m_portal_data.weight < 0.f || m_portal_data.weight > 1.f)
+        Throw("'portal_weight' must be in [0, 1]!");
 
     for (auto &prop : props.objects()) {
         ref<Object> v = prop.get<ref<Object>>();
@@ -59,6 +62,11 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
             if (mesh)
                 mesh->set_scene(this);
         } else if (emitter) {
+            if (emitter->is_portal()) {
+                m_portals.push_back(emitter);
+                continue;
+            }
+
             // Surface emitters will be added to the list when attached to a shape
             if (!has_flag(emitter->flags(), EmitterFlags::Surface))
                 m_emitters.push_back(emitter);
@@ -99,9 +107,15 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
         for (Emitter *emitter : m_emitters)
             emitter->set_visible(false);
 
+    // Release transient buffers created while loading the shapes
+    if constexpr (dr::is_jit_v<Float>)
+        if (!jit_flag(JitFlag::FreezingScope))
+            jit_flush_malloc_cache();
+
     m_accel.init(this, props);
     clear_shapes_dirty();
     update_instance_transforms();
+    update_portal_data();
 
     // Set up the UV parameterization mesh emitters if needed
     for (Shape *shape : m_shapes) {
@@ -151,6 +165,11 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     update_silhouette_sampling_distribution();
 
     m_shapes_grad_enabled = false;
+
+    // Release the scratch space of the acceleration structure build
+    if constexpr (dr::is_jit_v<Float>)
+        if (!jit_flag(JitFlag::FreezingScope))
+            jit_flush_malloc_cache();
 }
 
 MI_VARIANT
@@ -223,6 +242,7 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
     m_emitters.clear();
     m_shapes.clear();
     m_shapegroups.clear();
+    m_portals.clear();
     m_sensors.clear();
     m_children.clear();
     m_integrator = nullptr;
@@ -248,6 +268,28 @@ static AffineTransform4f unpack_matrix(const Rec &rec) {
         rec[1], rec[4], rec[7], rec[10],
         rec[2], rec[5], rec[8], rec[11],
         0.f,    0.f,    0.f,    1.f));
+}
+
+MI_VARIANT void Scene<Float, Spectrum>::update_portal_data() {
+    size_t n = m_portals.size();
+    std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[12 * n]);
+
+    for (size_t i = 0; i < n; ++i) {
+        const ScalarAffineTransform4f &t = m_portals[i]->world_transform_scalar();
+        ScalarVector3f rec[4] = {
+            t * ScalarPoint3f(0.f),
+            t * ScalarVector3f(1.f, 0.f, 0.f),
+            t * ScalarVector3f(0.f, 1.f, 0.f),
+            dr::normalize(t * ScalarNormal3f(0.f, 0.f, 1.f))
+        };
+        for (size_t j = 0; j < 4; ++j)
+            for (size_t k = 0; k < 3; ++k)
+                data[12 * i + 3 * j + k] = rec[j][k];
+    }
+
+    m_portal_data.records = dr::load<DynamicBuffer<Float>>(data.get(), 12 * n);
+    m_portal_data.count   = (uint32_t) n;
+    dr::make_opaque(m_portal_data.count);
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {

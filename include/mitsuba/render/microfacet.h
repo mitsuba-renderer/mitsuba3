@@ -57,9 +57,12 @@ MI_INLINE std::ostream &operator<<(std::ostream &os, MicrofacetType tp) {
  * and GGX models, respectively.
  */
 template <typename Float, typename Spectrum>
-class MicrofacetDistribution : public drjit::TraversableBase {
+class MicrofacetDistribution {
 public:
     MI_IMPORT_TYPES()
+
+    /// Create an uninitialized distribution, to be assigned later
+    MicrofacetDistribution() = default;
 
     /**
      * Create an isotropic microfacet distribution of the specified type
@@ -70,8 +73,8 @@ public:
      *     alpha: The surface roughness
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha, bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha), m_alpha_v(alpha),
-          m_sample_visible(sample_visible) {
+        : m_type(type), m_isotropic(true), m_sample_visible(sample_visible),
+          m_alpha_u(alpha), m_alpha_v(alpha) {
         configure();
     }
 
@@ -87,8 +90,9 @@ public:
      */
     MicrofacetDistribution(MicrofacetType type, Float alpha_u, Float alpha_v,
                            bool sample_visible = true)
-        : m_type(type), m_alpha_u(alpha_u), m_alpha_v(alpha_v),
-          m_sample_visible(sample_visible) {
+        : m_type(type), m_isotropic(same_alpha(alpha_u, alpha_v)),
+          m_sample_visible(sample_visible), m_alpha_u(alpha_u),
+          m_alpha_v(alpha_v) {
         configure();
     }
 
@@ -135,6 +139,7 @@ public:
                 "Please use the corresponding smooth reflectance model to get zero roughness.");
 
         m_sample_visible = props.get<bool>("sample_visible", sample_visible);
+        m_isotropic = same_alpha(m_alpha_u, m_alpha_v);
 
         configure();
     }
@@ -156,20 +161,16 @@ public:
     bool sample_visible() const { return m_sample_visible; }
 
     /// Is this an isotropic microfacet distribution?
-    bool is_isotropic() const {
-        if constexpr (dr::is_jit_v<Float>)
-            return m_alpha_u.index() == m_alpha_v.index();
-        else
-            return dr::all(m_alpha_u == m_alpha_v);
-    }
+    bool is_isotropic() const { return m_isotropic; }
 
     /// Is this an anisotropic microfacet distribution?
-    bool is_anisotropic() const { return dr::all(m_alpha_u != m_alpha_v); }
+    bool is_anisotropic() const { return !m_isotropic; }
 
     /// Scale the roughness values by some constant
     void scale_alpha(Float value) {
         m_alpha_u *= value;
         m_alpha_v *= value;
+        update_derived();
     }
 
     /**
@@ -179,23 +180,21 @@ public:
      *     m: The microfacet normal
      */
     Float eval(const Vector3f &m) const {
-        Float alpha_uv = m_alpha_u * m_alpha_v,
-              cos_theta         = Frame3f::cos_theta(m),
-              cos_theta_2       = dr::square(cos_theta),
+        Float cos_theta   = Frame3f::cos_theta(m),
+              cos_theta_2 = dr::square(cos_theta),
+              x           = m.x() * m_inv_alpha_u,
+              y           = m.y() * m_inv_alpha_v,
               result;
 
         if (m_type == MicrofacetType::Beckmann) {
             // Beckmann distribution function for Gaussian random surfaces
-            result = dr::exp(-(dr::square(m.x() / m_alpha_u) +
-                               dr::square(m.y() / m_alpha_v)) /
-                             cos_theta_2) /
-                     (dr::Pi<Float> * alpha_uv * dr::square(cos_theta_2));
+            Float inv_cos_theta_2 = dr::rcp(cos_theta_2);
+            result = dr::exp(-dr::fmadd(x, x, dr::square(y)) * inv_cos_theta_2) *
+                     (m_norm * dr::square(inv_cos_theta_2));
         } else {
             // GGX / Trowbridge-Reitz distribution function
-            result =
-                dr::rcp(dr::Pi<Float> * alpha_uv *
-                        dr::square(dr::square(m.x() / m_alpha_u) +
-                                dr::square(m.y() / m_alpha_v) + dr::square(m.z())));
+            result = m_norm * dr::rcp(dr::square(
+                dr::fmadd(x, x, dr::fmadd(y, y, cos_theta_2))));
         }
 
         // Prevent potential numerical issues in other stages of the model
@@ -247,7 +246,7 @@ public:
 
                 alpha_2 = m_alpha_u * m_alpha_u;
             } else {
-                Float ratio  = m_alpha_v / m_alpha_u,
+                Float ratio  = m_alpha_v * m_inv_alpha_u,
                       tmp    = ratio * dr::tan((2.f * dr::Pi<Float>) * sample.y());
 
                 cos_phi = dr::rsqrt(dr::fmadd(tmp, tmp, 1.f));
@@ -255,29 +254,38 @@ public:
 
                 sin_phi = cos_phi * tmp;
 
-                alpha_2 = dr::rcp(dr::square(cos_phi / m_alpha_u) +
-                                  dr::square(sin_phi / m_alpha_v));
+                Float x = cos_phi * m_inv_alpha_u,
+                      y = sin_phi * m_inv_alpha_v;
+
+                alpha_2 = dr::rcp(dr::fmadd(x, x, dr::square(y)));
             }
 
             // Sample elevation component
+            Float s = 1.f - sample.x();
             if (m_type == MicrofacetType::Beckmann) {
-                // Beckmann distribution function for Gaussian random surfaces
-                cos_theta = dr::rsqrt(dr::fnmadd(alpha_2, dr::log(1.f - sample.x()), 1.f));
+                // Beckmann distribution function for Gaussian random surfaces.
+                // The upper bound on the reciprocal squared cosine keeps the
+                // density finite when 's' reaches zero.
+                Float inv_cos_theta_2 =
+                    dr::minimum(dr::fnmadd(alpha_2, dr::log(s), 1.f), 1e13f);
+
+                cos_theta = dr::rsqrt(inv_cos_theta_2);
                 cos_theta_2 = dr::square(cos_theta);
 
-                // Compute probability density of the sampled position
-                Float cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = (1.f - sample.x()) / (dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3);
+                // Compute probability density of the sampled position, where
+                // the reciprocal cubed cosine equals 'inv_cos_theta_2^(3/2)'
+                pdf = s * m_norm * dr::square(inv_cos_theta_2) * cos_theta;
             } else {
-                // GGX / Trowbridge-Reitz distribution function
-                Float tan_theta_m_2 = alpha_2 * sample.x() / (1.f - sample.x());
-                cos_theta = dr::rsqrt(1.f + tan_theta_m_2);
-                cos_theta_2 = dr::square(cos_theta);
+                // GGX / Trowbridge-Reitz distribution function. The tangent of
+                // the sampled elevation satisfies 'tan_theta_2 = alpha_2 * x/s',
+                // hence the squared cosine below.
+                Float t = dr::fmadd(alpha_2, sample.x(), s);
+
+                cos_theta_2 = s / t;
+                cos_theta = dr::sqrt(cos_theta_2);
 
                 // Compute probability density of the sampled position
-                Float temp = 1.f + tan_theta_m_2 / alpha_2,
-                      cos_theta_3 = dr::maximum(cos_theta_2 * cos_theta, 1e-20f);
-                pdf = dr::rcp(dr::Pi<Float> * m_alpha_u * m_alpha_v * cos_theta_3 * dr::square(temp));
+                pdf = m_norm * dr::square(t) * cos_theta;
             }
 
             Float sin_theta = dr::sqrt(1.f - cos_theta_2);
@@ -367,10 +375,9 @@ public:
             // and techniques like Kelemen-style MLT. The following code
             // performs a numerical inversion with better behavior
 
-            Float tan_theta_i =
-                dr::safe_sqrt(dr::fnmadd(cos_theta_i, cos_theta_i, 1.f)) /
-                cos_theta_i;
-            Float cot_theta_i = dr::rcp(tan_theta_i);
+            Float cot_theta_i = cos_theta_i * dr::safe_rsqrt(
+                dr::fnmadd(cos_theta_i, cos_theta_i, 1.f));
+            Float tan_theta_i = dr::rcp(cot_theta_i);
 
             // Search interval -- everything is parameterized
             // in the erf() domain
@@ -420,6 +427,23 @@ protected:
     void configure() {
         m_alpha_u = dr::maximum(m_alpha_u, 1e-4f);
         m_alpha_v = dr::maximum(m_alpha_v, 1e-4f);
+        update_derived();
+    }
+
+    /// Recompute the quantities that depend on the roughness values
+    void update_derived() {
+        m_inv_alpha_u = dr::rcp(m_alpha_u);
+        m_inv_alpha_v = dr::rcp(m_alpha_v);
+        m_norm = dr::InvPi<Float> * m_inv_alpha_u * m_inv_alpha_v;
+    }
+
+    /// Do both roughness values denote the same quantity? Two separately
+    /// differentiable parameters can share a primal, hence the combined index.
+    static bool same_alpha(const Float &alpha_u, const Float &alpha_v) {
+        if constexpr (dr::is_jit_v<Float>)
+            return alpha_u.index_combined() == alpha_v.index_combined();
+        else
+            return dr::all(alpha_u == alpha_v);
     }
 
     /// Compute the squared 1D roughness along direction ``v``
@@ -434,11 +458,18 @@ protected:
     }
 
 protected:
-    MicrofacetType m_type;
-    Float m_alpha_u, m_alpha_v;
-    bool  m_sample_visible;
+    MicrofacetType m_type = MicrofacetType::Beckmann;
+    bool  m_isotropic = true;
+    bool  m_sample_visible = true;
 
-    MI_TRAVERSE_CB(drjit::TraversableBase, m_alpha_u, m_alpha_v)
+public:
+    /// Roughness values and derived constants, exposed for traversal
+    Float m_alpha_u = 0.f, m_alpha_v = 0.f;
+    Float m_inv_alpha_u = 0.f, m_inv_alpha_v = 0.f;
+    Float m_norm = 0.f;
+
+    DRJIT_TRAVERSE(MicrofacetDistribution, m_alpha_u, m_alpha_v,
+                   m_inv_alpha_u, m_inv_alpha_v, m_norm)
 };
 
 template <typename Float, typename Spectrum>

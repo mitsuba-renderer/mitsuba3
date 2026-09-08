@@ -2,6 +2,7 @@ set(CORE_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/drjit_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bbox_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/bsphere_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/srect_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_1d_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_2d_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/distr_1d_cond_v.cpp

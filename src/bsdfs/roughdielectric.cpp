@@ -220,6 +220,21 @@ public:
         parameters_changed();
     }
 
+    /// Microfacet distribution matching the roughness at the surface position
+    MicrofacetDistribution distribution(const SurfaceInteraction3f &si,
+                                        Mask active) const {
+        if (m_uniform_alpha)
+            return m_distr;
+
+        Float alpha_u = m_alpha_u->eval_1(si, active);
+        if (m_alpha_u == m_alpha_v)
+            return MicrofacetDistribution(m_type, alpha_u, m_sample_visible);
+
+        return MicrofacetDistribution(m_type, alpha_u,
+                                      m_alpha_v->eval_1(si, active),
+                                      m_sample_visible);
+    }
+
     void traverse(TraversalCallback *cb) override {
         cb->put("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
 
@@ -238,6 +253,16 @@ public:
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
         m_inv_eta = dr::rcp(m_eta);
         dr::make_opaque(m_eta, m_inv_eta);
+
+        // Uniform roughness yields a single distribution for the whole
+        // surface. Precomputing it keeps the reciprocals and normalization
+        // constant out of the rendering kernels.
+        m_uniform_alpha = false;
+        if (!m_alpha_u->is_spatially_varying() && !m_alpha_v->is_spatially_varying()) {
+            m_distr = distribution(dr::zeros<SurfaceInteraction3f>(), true);
+            dr::make_opaque(m_distr);
+            m_uniform_alpha = true;
+        }
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,
@@ -259,10 +284,7 @@ public:
         active &= cos_theta_i != 0.f;
 
         // Construct the microfacet distribution matching the roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Trick by Walter et al.: slightly scale the roughness values to
         // reduce importance sampling weights. Not needed for the
@@ -278,7 +300,7 @@ public:
         active &= bs.pdf != 0.f;
 
         auto [F, cos_theta_t, eta_it, eta_ti] =
-            fresnel(dr::dot(si.wi, m), m_eta);
+            fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta);
 
         // Select the lobe to be sampled
         UnpolarizedSpectrum weight;
@@ -386,16 +408,13 @@ public:
 
         // Construct the microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta));
+        Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -475,12 +494,7 @@ public:
 
         // Construct the microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution sample_distr(
-            m_type,
-            m_alpha_u->eval_1(si, active),
-            m_alpha_v->eval_1(si, active),
-            m_sample_visible
-        );
+        MicrofacetDistribution sample_distr = distribution(si, active);
 
         // Trick by Walter et al.: slightly scale the roughness values to
         // reduce importance sampling weights. Not needed for the
@@ -492,7 +506,7 @@ public:
         Float prob = sample_distr.pdf(dr::mulsign(si.wi, Frame3f::cos_theta(si.wi)), m);
 
         if (likely(has_transmission && has_reflection)) {
-            Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta));
+            Float F = std::get<0>(fresnel(dr::dot(si.wi, m), m_eta, m_inv_eta));
             prob *= dr::select(reflect, F, 1.f - F);
         }
 
@@ -542,16 +556,13 @@ public:
 
         // Construct the microfacet distribution matching the
         // roughness values at the current surface position.
-        MicrofacetDistribution distr(m_type,
-                                     m_alpha_u->eval_1(si, active),
-                                     m_alpha_v->eval_1(si, active),
-                                     m_sample_visible);
+        MicrofacetDistribution distr = distribution(si, active);
 
         // Evaluate the microfacet normal distribution
         Float D = distr.eval(m);
 
         // Fresnel factor
-        Float F = std::get<0>(fresnel(dot_wi_m, m_eta));
+        Float F = std::get<0>(fresnel(dot_wi_m, m_eta, m_inv_eta));
 
         // Smith's shadow-masking function
         Float G = distr.G(si.wi, wo, m);
@@ -640,9 +651,12 @@ private:
     ref<Texture> m_alpha_u, m_alpha_v;
     Float m_eta, m_inv_eta;
     bool m_sample_visible;
+    /// Precomputed distribution, valid when both roughness textures are uniform
+    MicrofacetDistribution m_distr;
+    bool m_uniform_alpha = false;
 
     MI_TRAVERSE_CB(Base, m_specular_reflectance, m_specular_transmittance,
-                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta)
+                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RoughDielectric)

@@ -46,6 +46,7 @@ static void register_typed_plugin(std::string_view name, nb::handle constructor,
 
 MI_PY_EXPORT(Scene) {
     MI_PY_IMPORT_TYPES(Scene, Integrator, SamplingIntegrator, MonteCarloIntegrator, Sensor)
+
     auto scene = MI_PY_CLASS(Scene, Object, nb::is_final())
         .def(nb::init<const Properties>())
         .def("ray_intersect_preliminary",
@@ -142,6 +143,7 @@ MI_PY_EXPORT(Scene) {
              },
              D(Scene, shapes))
         .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
+        .def("portals", &Scene::portals, D(Scene, portals))
         .def("silhouette_shapes",
              [](const Scene &scene) {
                  nb::list_builder result(scene.silhouette_shapes().size());
