@@ -444,9 +444,9 @@ public:
 
             // map UV parameterization to point on surface
             Point3f c;
-            Vector3f dc_dv;
+            Vector3f dc_dv, dc_dvv;
             Float radius, dr_dv;
-            std::tie(c, dc_dv, std::ignore, std::ignore, radius, dr_dv,
+            std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv,
                      std::ignore) =
                 cubic_interpolation(local_uv.y(), ss.prim_index, active);
             Vector3f dc_dv_normalized = dr::normalize(dc_dv);
@@ -455,16 +455,22 @@ public:
             std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
 
             auto [sin_u, cos_u] = dr::sincos(local_uv.x() * dr::TwoPi<Float>);
-            ss.p = c + cos_u * u_rad * radius + sin_u * u_rot * radius;
+            // Build `rad_vec` algebraically rather than as `ss.p - c`, so that
+            // `invert_silhouette_sample` reconstructs the exact same frame for
+            // curves that are far away from the origin
+            Vector3f rad_vec = radius * (cos_u * u_rad + sin_u * u_rot);
+            ss.p = c + rad_vec;
 
             /// Sample a tangential direction at the point
-            Vector3f rad_vec = ss.p - c;
-
-            // Because of backface culling, we only consider the set of
-            // tangential direcitons in the hemisphere which is pointing In
-            // the same direction as the surface normal
-            ss.d = warp::square_to_uniform_hemisphere(
+            // The boundary direction points towards the foreground surface.
+            // Backface culling restricts it to the inward-facing hemisphere.
+            Float correction = dr::dot(rad_vec, dc_dvv);
+            Normal3f surface_n = dr::normalize(
+                (dr::squared_norm(dc_dv) - correction) * rad_vec -
+                (dr_dv * radius) * dc_dv);
+            Vector3f local_d = warp::square_to_uniform_hemisphere(
                 Point2f(sample.y(), sample.z()));
+            ss.d = Frame3f(-surface_n).to_world(local_d);
 
             /// Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
@@ -476,12 +482,15 @@ public:
 
             // `ss.n` points from the surface (foreground) to the background:
             // flip it if it points along the surface tangent into the tube
-            Vector3f into_tube = (dc_dv + dr_dv * (rad_vec / radius)) *
+            // The radial frame also bends along the curve. Its component
+            // along the rim tangent does not affect this orientation test.
+            Vector3f into_tube = ((1.f - correction / dr::squared_norm(dc_dv)) *
+                                  dc_dv + dr_dv * (rad_vec / radius)) *
                                  dr::select(local_uv.y() == 0.f, 1.f, -1.f);
             dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
 
             ss.pdf = dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
-            ss.pdf *= warp::square_to_uniform_hemisphere_pdf(ss.d);
+            ss.pdf *= warp::square_to_uniform_hemisphere_pdf(local_d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             /// Sample a point on the shape surface
@@ -556,7 +565,20 @@ public:
         sample_perimeter.x() =
             (sample_perimeter.x() + curve_idx) / Float(curve_count);
 
-        Point2f sample_d = warp::uniform_hemisphere_to_square(ss.d);
+        // Reconstruct the same surface frame used by perimeter sampling.
+        Point3f c;
+        Vector3f dc_dv, dc_dvv;
+        Float radius, dr_dv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
+            cubic_interpolation(local_v, ss.prim_index, active);
+        auto [u_rot, u_rad] = local_frame(dr::normalize(dc_dv));
+        auto [sin_u, cos_u] = dr::sincos(ss.uv.y() * dr::TwoPi<Float>);
+        Vector3f rad_vec = radius * (cos_u * u_rad + sin_u * u_rot);
+        Normal3f surface_n = dr::normalize(
+            (dr::squared_norm(dc_dv) - dr::dot(rad_vec, dc_dvv)) * rad_vec -
+            (dr_dv * radius) * dc_dv);
+        Point2f sample_d = warp::uniform_hemisphere_to_square(
+            Frame3f(-surface_n).to_local(ss.d));
         sample_perimeter.y() = sample_d.x();
         sample_perimeter.z() = sample_d.y();
 
@@ -677,7 +699,10 @@ public:
 
             // `ss.n` points from the surface (foreground) to the background:
             // flip it if it points along the surface tangent into the tube
-            Vector3f into_tube = (dc_dv + dr_dv * (rad_vec / radius)) *
+            // The radial frame also bends along the curve. Its component
+            // along the rim tangent does not affect this orientation test.
+            Vector3f into_tube = ((1.f - correction / dr::squared_norm(dc_dv)) *
+                                  dc_dv + dr_dv * (rad_vec / radius)) *
                                  dr::select(local_v == 0.f, 1.f, -1.f);
             dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
 
@@ -822,7 +847,7 @@ public:
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
     precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
-        // Sample the perimeter (endcaps) and the smooth silhouette uniformly
+        // Sample the open endpoint rims and the smooth silhouette uniformly
         std::vector<uint32_t> type = {+DiscontinuityFlags::PerimeterType, +DiscontinuityFlags::InteriorType};
         std::vector<ScalarFloat> weight_arr = { 0.50f, 0.50f };
 
