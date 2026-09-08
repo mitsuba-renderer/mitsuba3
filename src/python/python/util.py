@@ -65,6 +65,7 @@ class SceneParameters(Mapping):
 
         try:
             if (_jit_id_hash(cur_value) == _jit_id_hash(value) and
+                dr.shape(cur_value) == dr.shape(value) and
                 dr.all(cur_value == value, axis=None)):
                 # Turn this into a no-op when the set value is identical to the new value
                 return
