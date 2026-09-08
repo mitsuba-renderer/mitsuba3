@@ -10,6 +10,7 @@ struct BSDFContext;
 struct ShapeIR;
 template <typename Float, typename Spectrum> class BSDF;
 template <typename Float, typename Spectrum> class DirectedEdge;
+template <typename Float, typename Spectrum> class DLSSDenoiser;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
@@ -126,6 +127,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MonteCarloIntegrator   = mitsuba::MonteCarloIntegrator<Float, Spectrum>;
     using AdjointIntegrator      = mitsuba::AdjointIntegrator<Float, Spectrum>;
     using BSDF                   = mitsuba::BSDF<Float, Spectrum>;
+    using DLSSDenoiser           = mitsuba::DLSSDenoiser<Float, Spectrum>;
     using OptixDenoiser          = mitsuba::OptixDenoiser<Float, Spectrum>;
     using Sensor                 = mitsuba::Sensor<Float, Spectrum>;
     using ProjectiveCamera       = mitsuba::ProjectiveCamera<Float, Spectrum>;
@@ -213,6 +215,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MonteCarloIntegrator   = typename RenderAliases::MonteCarloIntegrator;                   \
     using AdjointIntegrator      = typename RenderAliases::AdjointIntegrator;                      \
     using BSDF                   = typename RenderAliases::BSDF;                                   \
+    using DLSSDenoiser           = typename RenderAliases::DLSSDenoiser;                           \
     using OptixDenoiser          = typename RenderAliases::OptixDenoiser;                          \
     using Sensor                 = typename RenderAliases::Sensor;                                 \
     using ProjectiveCamera       = typename RenderAliases::ProjectiveCamera;                       \

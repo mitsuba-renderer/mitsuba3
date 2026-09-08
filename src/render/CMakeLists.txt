@@ -41,6 +41,7 @@ endif()
 if (MI_ENABLE_CUDA)
   set(LIBRENDER_EXTRA_SRC
     optixdenoiser.cpp ${INC_DIR}/optixdenoiser.h
+    dlssdenoiser.cpp ${INC_DIR}/dlssdenoiser.h
     optix/accel.cpp optix/accel.h
     ${LIBRENDER_EXTRA_SRC}
   )

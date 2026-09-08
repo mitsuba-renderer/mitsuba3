@@ -166,6 +166,22 @@ Mitsuba 3.10.0
     ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 
+- **NVIDIA DLSS Ray Reconstruction denoiser**. The new ``mi.DLSSDenoiser``
+  class exposes DLSS Ray Reconstruction (DLSS-D) as an alternative to
+  ``mi.OptixDenoiser``. In contrast to the latter, it is a real-time denoiser
+  that is driven with a sequence of jittered 1-sample-per-pixel frames plus
+  screen-space motion vectors, and it can upscale the result. It requires a
+  CUDA variant, an RTX GPU, NVIDIA driver 590 or newer, and a build configured
+  with ``-DMI_ENABLE_DLSS=ON -DDLSS_SDK_ROOT=<path to the DLSS SDK>``. Only the
+  SDK headers are needed at compile time. At runtime, the NGX entry points are
+  resolved from the display driver, which in turn loads the Ray Reconstruction
+  library that ships with the SDK (``nvngx_dlssd.dll``, or
+  ``libnvidia-ngx-dlssd.so`` on Linux). The build copies that library next to
+  Mitsuba's own binaries, and Mitsuba passes that directory to the driver as a
+  search path, so that no manual step is needed; the ``MI_DLSS_LIBRARY_PATH``
+  environment variable overrides the directory. This mirrors how Blender's
+  Cycles renderer integrates DLSS.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

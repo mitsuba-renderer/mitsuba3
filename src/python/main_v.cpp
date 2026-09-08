@@ -99,6 +99,7 @@ MI_PY_DECLARE(Medium);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
 MI_PY_DECLARE(MicroflakeDistribution);
+MI_PY_DECLARE(DLSSDenoiser);
 MI_PY_DECLARE(OptixDenoiser);
 MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
@@ -230,6 +231,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_SUBMODULE(mueller);
     MI_PY_IMPORT(MicrofacetDistribution);
     MI_PY_IMPORT(MicroflakeDistribution);
+    MI_PY_IMPORT(DLSSDenoiser);
     MI_PY_IMPORT(OptixDenoiser);
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);

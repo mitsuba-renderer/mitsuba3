@@ -89,7 +89,7 @@ RENDER_SECTIONS: dict[str, list[str]] = {
     'Emitters and sensors': ['Endpoint', r'Emitter\w*', r'Sensor\w*',
                              'ProjectiveCamera', r'\w+_projection'],
     'Films and image blocks': [r'Film\w*', 'ImageBlock', 'Spiral',
-                               'OptixDenoiser'],
+                               'OptixDenoiser', 'DLSSDenoiser'],
     'Integrators': ['render', r'\w*Integrator\w*', r'Sampler\w*'],
 }
 
