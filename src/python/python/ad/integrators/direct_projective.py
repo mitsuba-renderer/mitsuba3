@@ -161,7 +161,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         active_next = active & si.is_valid() & (self.max_depth > 1)
 
         # Get the BSDF
-        bsdf = si.bsdf(ray)
+        bsdf = si.bsdf()
 
         # ---------------------- Emitter sampling ----------------------
 

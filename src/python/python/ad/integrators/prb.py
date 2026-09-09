@@ -128,8 +128,8 @@ class PRBIntegrator(RBIntegrator):
                     wi_global = dr.normalize(si_prev.p - si_detached.p)
                     si.wi = dr.replace_grad(si.wi, si_detached.to_local(wi_global))
 
-            # Get the BSDF, potentially computes texture-space differentials
-            bsdf = si.bsdf(ray)
+            # Get the BSDF
+            bsdf = si.bsdf()
 
             # ---------------------- Direct emission ----------------------
 

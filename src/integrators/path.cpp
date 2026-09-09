@@ -89,7 +89,7 @@ public:
 
     std::pair<Spectrum, Bool> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray_,
+                                     const Ray3f &ray_,
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Bool active) const override {
@@ -100,7 +100,7 @@ public:
 
         // --------------------- Configure loop state ----------------------
 
-        Ray3f ray                     = Ray3f(ray_);
+        Ray3f ray                     = ray_;
         Spectrum throughput           = 1.f;
         Spectrum result               = 0.f;
         Float eta                     = 1.f;
@@ -208,7 +208,7 @@ public:
                 return; // early exit for scalar mode
             }
 
-            BSDFPtr bsdf = si.bsdf(ls.ray);
+            BSDFPtr bsdf = si.bsdf();
 
             // ---------------------- Emitter sampling ----------------------
 

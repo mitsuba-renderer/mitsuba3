@@ -242,7 +242,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
                 active_surface &= si.is_valid()
                 ctx = mi.BSDFContext()
-                bsdf = si.bsdf(ray)
+                bsdf = si.bsdf()
 
                 # ---------------------- Emitter sampling ----------------------
 
@@ -408,7 +408,7 @@ class PRBVolpathIntegrator(RBIntegrator):
             # Handle interactions with surfaces
             active_surface |= escaped_medium
             active_surface &= si.is_valid() & ~active_medium
-            bsdf = si.bsdf(ray)
+            bsdf = si.bsdf()
             bsdf_val = bsdf.eval_null_transmission(si, active_surface)
             tr_multiplier[active_surface] *= bsdf_val
 

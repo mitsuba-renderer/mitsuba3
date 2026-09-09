@@ -220,6 +220,15 @@ Mitsuba 3.9.1
     ``dp_dv`` was missing a factor of ``2*pi*r``, and ``eval_parameterization()``
     used a concentric instead of a polar map. (commit `e6d34f <https://github.com/mitsuba-renderer/mitsuba3/commit/e6d34f89d90f9363973e9a82c1fa626c1ede07ca>`__).
 
+- **Removed ray differentials**. The ``RayDifferential3f`` type,
+  ``Sensor.sample_ray_differential()``, the ``si.duv_dx`` and ``si.duv_dy``
+  fields along with ``si.compute_uv_partials()`` and ``si.has_uv_partials()``,
+  the ``BSDFFlags.NeedsDifferentials`` flag, and the ``duv_dx``/``duv_dy`` AOVs
+  are gone. No BSDF used the screen-space UV partials, and the extra rays
+  added cost to every sensor sample. ``SamplingIntegrator.sample()`` now
+  receives a plain ``Ray3f``, and ``si.bsdf()`` no longer takes a ray
+  argument.
+
 - Fixed a numerical issue in the :ref:`hair <bsdf-hair>` BSDF that could
   introduce NaNs. (commit `6e783e <https://github.com/mitsuba-renderer/mitsuba3/commit/6e783edb9729f16b15a3f01260ac3e39938fee79>`__).
 

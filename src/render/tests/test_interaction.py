@@ -30,8 +30,6 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.dp_dv = [21, 22, 23]
     si.dn_du = [18, 19, 20]
     si.dn_dv = [21, 22, 23]
-    si.duv_dx = [24, 25]
-    si.duv_dy = [26, 27]
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance_index = 0
@@ -55,63 +53,11 @@ def test02_intersection_construction(variant_scalar_rgb):
   dp_dv=[21, 22, 23],
   dn_du=[18, 19, 20],
   dn_dv=[21, 22, 23],
-  duv_dx=[24, 25],
-  duv_dy=[26, 27],
   wi=[31, 32, 33],
   prim_index=34,
   instance_index=0
 ]"""
 
-
-def test03_intersection_partials(variant_scalar_rgb):
-    # Test the texture partial computation with some random data
-
-    o = [0.44650541, 0.16336525, 0.74225088]
-    d = [0.2956123, 0.67325977, 0.67774232]
-    time = 0.5
-    w = []
-    r = mi.RayDifferential3f(o, d, time, w)
-    r.o_x = r.o + [0.1, 0, 0]
-    r.o_y = r.o + [0, 0.1, 0]
-    r.d_x = r.d
-    r.d_y = r.d
-    r.has_differentials = True
-
-    si = mi.SurfaceInteraction3f()
-    si.p = r(10)
-    si.dp_du = [0.5514372, 0.84608955, 0.41559092]
-    si.dp_dv = [0.14551054, 0.54917541, 0.39286475]
-    si.n = dr.cross(si.dp_du, si.dp_dv)
-    si.n /= dr.norm(si.n)
-    si.t = 0
-
-    si.compute_uv_partials(r)
-
-    # Positions reached via computed partials
-    px1 = si.dp_du * si.duv_dx[0] + si.dp_dv * si.duv_dx[1]
-    py1 = si.dp_du * si.duv_dy[0] + si.dp_dv * si.duv_dy[1]
-
-    # Manually
-    px2 = r.o_x + r.d_x * \
-        ((dr.dot(si.n, si.p) - dr.dot(si.n, r.o_x)) / dr.dot(si.n, r.d_x))
-    py2 = r.o_y + r.d_y * \
-        ((dr.dot(si.n, si.p) - dr.dot(si.n, r.o_y)) / dr.dot(si.n, r.d_y))
-    px2 -= si.p
-    py2 -= si.p
-
-    assert dr.allclose(px1, px2, atol=1e-6)
-    assert dr.allclose(py1, py2, atol=1e-6)
-
-    si.dp_du = [0, 0, 0]
-    si.compute_uv_partials(r)
-
-    assert dr.allclose(px1, px2, atol=1e-6)
-    assert dr.allclose(py1, py2, atol=1e-6)
-
-    si.compute_uv_partials(r)
-
-    assert dr.allclose(si.duv_dx, [0, 0])
-    assert dr.allclose(si.duv_dy, [0, 0])
 
 def test04_mueller_to_world_to_local(variant_scalar_mono_polarized):
     """

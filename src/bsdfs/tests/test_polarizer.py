@@ -209,7 +209,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)
@@ -311,7 +311,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         sampler.seed(0)
 
         # Sample ray from sensor
-        ray, _ = sensor.sample_ray_differential(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+        ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
         value, _, _ = integrator.sample(scene, sampler, ray)
@@ -365,7 +365,7 @@ def test06_tilted(variant_scalar_mono_polarized):
         })
 
         si_theta = scene_theta.ray_intersect(ray)
-        bsdf_theta = si_theta.bsdf(ray)
+        bsdf_theta = si_theta.bsdf()
         bs_theta, M_theta = bsdf_theta.sample(ctx, si_theta, 0.0, [0.0, 0.0])
         M_theta = si_theta.to_world_mueller(M_theta, -si_theta.wi, bs_theta.wo)
         wo_theta = si_theta.to_world(bs_theta.wo)
@@ -381,7 +381,7 @@ def test06_tilted(variant_scalar_mono_polarized):
         })
 
         si_rot = scene_rot.ray_intersect(ray)
-        bsdf_rot = si_rot.bsdf(ray)
+        bsdf_rot = si_rot.bsdf()
         bs_rot, M_rot = bsdf_rot.sample(ctx, si_rot, 0.0, [0.0, 0.0])
         M_rot = si_rot.to_world_mueller(M_rot, -si_rot.wi, bs_rot.wo)
         wo_rot = si_rot.to_world(bs_rot.wo)

@@ -47,8 +47,6 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, dp_dv,         D(SurfaceInteraction, dp_dv))
         .def_field(SurfaceInteraction3f, dn_du,         D(SurfaceInteraction, dn_du))
         .def_field(SurfaceInteraction3f, dn_dv,         D(SurfaceInteraction, dn_dv))
-        .def_field(SurfaceInteraction3f, duv_dx,        D(SurfaceInteraction, duv_dx))
-        .def_field(SurfaceInteraction3f, duv_dy,        D(SurfaceInteraction, duv_dy))
         .def_field(SurfaceInteraction3f, wi,            D(SurfaceInteraction, wi))
         .def_field(SurfaceInteraction3f, prim_index,    D(SurfaceInteraction, prim_index))
         .def_field(SurfaceInteraction3f, instance_index, D(SurfaceInteraction, instance_index))
@@ -79,22 +77,14 @@ MI_PY_EXPORT(SurfaceInteraction) {
             nb::overload_cast<const Float &>(&SurfaceInteraction3f::target_medium,
                                             nb::const_),
             "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
-        .def("bsdf",
-            nb::overload_cast<const RayDifferential3f &>(&SurfaceInteraction3f::bsdf),
-            "ray"_a, D(SurfaceInteraction, bsdf))
-        .def("bsdf", nb::overload_cast<>(&SurfaceInteraction3f::bsdf, nb::const_),
-            D(SurfaceInteraction, bsdf, 2))
-        .def("compute_uv_partials", &SurfaceInteraction3f::compute_uv_partials, "ray"_a,
-            D(SurfaceInteraction, compute_uv_partials))
-        .def("has_uv_partials", &SurfaceInteraction3f::has_uv_partials,
-            D(SurfaceInteraction, has_uv_partials))
+        .def("bsdf", &SurfaceInteraction3f::bsdf, D(SurfaceInteraction, bsdf))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
             D(SurfaceInteraction, has_n_partials))
         .def_repr(SurfaceInteraction3f);
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
                        shape, uv, sh_frame, frame_flipped, dp_du, dp_dv, dn_du,
-                       dn_dv, duv_dx, duv_dy, wi, prim_index, instance_index)
+                       dn_dv, wi, prim_index, instance_index)
 }
 
 MI_PY_EXPORT(MediumInteraction) {

@@ -25,44 +25,6 @@ public:
     // =============================================================
 
     /**
-     * Importance sample a ray differential proportional to the sensor's
-     * sensitivity profile.
-     *
-     * The sensor profile is a six-dimensional quantity that depends on time,
-     * wavelength, surface position, and direction. This function takes a given
-     * time value and five uniformly distributed samples on the interval [0, 1]
-     * and warps them so that the returned ray follows the profile. Any
-     * discrepancies between ideal and actual sampled profiles are absorbed into
-     * a spectral importance weight that is returned along with the ray.
-     *
-     * In contrast to `Endpoint.sample_ray()`, this function returns
-     * differentials with respect to the X and Y axis in screen space.
-     *
-     * Args:
-     *     time: The scene time associated with the ray_differential to be sampled
-     *
-     *     sample1: A uniformly distributed 1D value that is used to sample the spectral
-     *         dimension of the sensitivity profile.
-     *
-     *     sample2: This argument corresponds to the sample position in fractional pixel
-     *         coordinates relative to the crop window of the underlying film.
-     *
-     *     sample3: A uniformly distributed sample on the domain
-     *         :math:`[0,1]^2`. This argument determines the position on the
-     *         aperture of the sensor. It is ignored if
-     *         ``needs_sample_3() == false``.
-     *
-     * Returns:
-     *     The sampled ray differential and (potentially spectrally varying)
-     *     importance weights. The latter account for the difference between the
-     *     sensor profile and the actual used sampling density function.
-     */
-    virtual std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float sample1,
-                            const Point2f &sample2, const Point2f &sample3,
-                            Mask active = true) const;
-
-    /**
      * Importance sample a set of wavelengths proportional to the
      * sensitivity spectrum.
      *
@@ -328,7 +290,6 @@ NAMESPACE_END(mitsuba)
 
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Sensor)
     DRJIT_CALL_METHOD(sample_ray)
-    DRJIT_CALL_METHOD(sample_ray_differential)
     DRJIT_CALL_METHOD(sample_direction)
     DRJIT_CALL_METHOD(pdf_direction)
     DRJIT_CALL_METHOD(eval_direction)

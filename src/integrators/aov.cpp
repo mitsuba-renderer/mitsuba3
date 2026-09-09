@@ -71,7 +71,6 @@ Currently, the following AOVs types are available:
     - :monosp:`geo_normal`: Geometric normal.
     - :monosp:`sh_normal`: Shading normal.
     - :monosp:`dp_du`, :monosp:`dp_dv`: Position partials wrt. the UV parameterization.
-    - :monosp:`duv_dx`, :monosp:`duv_dy`: UV partials wrt. changes in screen-space.
     - :monosp:`prim_index`: Primitive index (e.g. triangle index in the mesh).
     - :monosp:`shape_index`: Shape index.
 
@@ -99,8 +98,6 @@ public:
         ShadingNormal,
         dPdU,
         dPdV,
-        dUVdx,
-        dUVdy,
         PrimIndex,
         ShapeIndex,
     };
@@ -151,14 +148,6 @@ public:
                 m_aov_names.push_back(item[0] + ".X");
                 m_aov_names.push_back(item[0] + ".Y");
                 m_aov_names.push_back(item[0] + ".Z");
-            } else if (item[1] == "duv_dx") {
-                m_aov_types.push_back(AOVType::dUVdx);
-                m_aov_names.push_back(item[0] + ".U");
-                m_aov_names.push_back(item[0] + ".V");
-            } else if (item[1] == "duv_dy") {
-                m_aov_types.push_back(AOVType::dUVdy);
-                m_aov_names.push_back(item[0] + ".U");
-                m_aov_names.push_back(item[0] + ".V");
             } else if (item[1] == "prim_index") {
                 m_aov_types.push_back(AOVType::PrimIndex);
                 m_aov_names.push_back(item[0] + ".I");
@@ -174,7 +163,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler * /*sampler*/,
-                                     const RayDifferential3f &ray,
+                                     const Ray3f &ray,
                                      const Medium * /*medium*/,
                                      Float *aovs,
                                      Mask active) const override {
@@ -208,7 +197,7 @@ public:
                         if (dr::any_or<true>(si.is_valid()))
                         {
                             Mask valid = active && si.is_valid();
-                            BSDFPtr m_bsdf = si.bsdf(ray);
+                            BSDFPtr m_bsdf = si.bsdf();
 
                             Spectrum spec =
                                 m_bsdf->eval_diffuse_reflectance(si, valid);
@@ -247,7 +236,7 @@ public:
                         if (dr::any_or<true>(si.is_valid()))
                         {
                             Mask valid = active && si.is_valid();
-                            BSDFPtr m_bsdf = si.bsdf(ray);
+                            BSDFPtr m_bsdf = si.bsdf();
                             sh_frame = m_bsdf->sh_frame(si, valid);
                         }
                         *aovs++ = sh_frame.n.x();
@@ -266,18 +255,6 @@ public:
                     *aovs++ = si.dp_dv.x();
                     *aovs++ = si.dp_dv.y();
                     *aovs++ = si.dp_dv.z();
-                    break;
-
-                case AOVType::dUVdx:
-                    si.compute_uv_partials(ray);
-                    *aovs++ = si.duv_dx.x();
-                    *aovs++ = si.duv_dx.y();
-                    break;
-
-                case AOVType::dUVdy:
-                    si.compute_uv_partials(ray);
-                    *aovs++ = si.duv_dy.x();
-                    *aovs++ = si.duv_dy.y();
                     break;
 
                 case AOVType::PrimIndex:

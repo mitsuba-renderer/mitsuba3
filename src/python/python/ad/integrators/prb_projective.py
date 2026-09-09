@@ -215,8 +215,8 @@ class PathProjectiveIntegrator(PSIntegrator):
             if dr.hint(ignore_ray, mode='scalar'):
                 si[use_si_shade] = si_shade
 
-            # Get the BSDF, potentially computes texture-space differentials
-            bsdf = si.bsdf(ray)
+            # Get the BSDF
+            bsdf = si.bsdf()
 
             # ---------------------- Direct emission ----------------------
 

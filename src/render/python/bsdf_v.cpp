@@ -171,10 +171,7 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
                 return bsdf->eval_attribute_3(name, si, active);
             },
             "name"_a, "si"_a, "active"_a = true, D(BSDF, eval_attribute_3))
-        .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags))
-        .def("needs_differentials",
-             [](Ptr bsdf) { return bsdf->needs_differentials(); },
-             D(BSDF, needs_differentials));
+        .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags));
 }
 
 MI_PY_EXPORT(BSDF) {

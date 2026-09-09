@@ -230,7 +230,6 @@ public:
         si.time        = 0.f;
         si.wavelengths = Wavelength(0.f);
         si.wi          = Vector3f(0);
-        si.duv_dx = si.duv_dy = 0;
         si.prim_index = 0;
 
         return si;

@@ -70,11 +70,11 @@ public:
                "of radius 0.5 or lower (e.g. default 'box' filter)");
     }
 
-    std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f & sample2,
-                            const Point2f & sample3,
-                            Mask active) const override {
+    std::pair<Ray3f, Spectrum>
+    sample_ray(Float time, Float wavelength_sample,
+               const Point2f & sample2,
+               const Point2f & sample3,
+               Mask active) const override {
 
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
@@ -94,7 +94,7 @@ public:
         Point3f o = ps.p + d * math::RayEpsilon<Float>;
 
         return {
-            RayDifferential3f(o, d, time, wavelengths),
+            Ray3f(o, d, time, wavelengths),
             depolarizer<Spectrum>(wav_weight) * dr::Pi<ScalarFloat>
         };
     }

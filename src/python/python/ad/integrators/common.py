@@ -234,7 +234,7 @@ class ADIntegrator(mi.CppADIntegrator):
         scene: mi.Scene,
         sensor: mi.Sensor,
         sampler: mi.Sampler,
-    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum, mi.Vector2f, mi.Float]:
+    ) -> Tuple[mi.Ray3f, mi.Spectrum, mi.Vector2f, mi.Float]:
         """
         Sample a 2D grid of primary rays for a given sensor
 
@@ -297,7 +297,7 @@ class ADIntegrator(mi.CppADIntegrator):
             wavelength_sample = sampler.next_1d()
 
         with dr.resume_grad():
-            ray, weight = sensor.sample_ray_differential(
+            ray, weight = sensor.sample_ray(
                 time=time,
                 sample1=wavelength_sample,
                 sample2=pos_adjusted,

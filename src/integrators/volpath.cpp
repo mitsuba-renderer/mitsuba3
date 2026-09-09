@@ -88,7 +88,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray_,
+                                     const Ray3f &ray_,
                                      const Medium *initial_medium,
                                      Float * /* aovs */,
                                      Mask active) const override {
@@ -96,7 +96,6 @@ public:
 
         Mask valid_ray = false;
 
-        // For now, don't use ray differentials
         Ray3f ray = ray_;
 
         // Tracks radiance scaling due to index of refraction changes
@@ -332,7 +331,7 @@ public:
             if (dr::any_or<true>(active_surface)) {
                 // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
-                BSDFPtr bsdf  = si.bsdf(ray);
+                BSDFPtr bsdf  = si.bsdf();
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
                 if (likely(dr::any_or<true>(active_e))) {
@@ -514,7 +513,7 @@ public:
 
             active_surface &= si.is_valid() && active && !active_medium;
             if (dr::any_or<true>(active_surface)) {
-                auto bsdf         = si.bsdf(ray);
+                auto bsdf         = si.bsdf();
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
                 bsdf_val = si.to_world_mueller(bsdf_val, si.wi, si.wi);
                 dr::masked(transmittance, active_surface) *= bsdf_val;

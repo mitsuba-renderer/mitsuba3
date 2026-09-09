@@ -376,15 +376,12 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
         Vector2f scale  = 1.f / Vector2f(lp.crop_size),
                  offset = -Vector2f(lp.crop_offset) * scale;
 
-        // Scale factor that will be applied to ray differentials
-        ScalarFloat diff_scale_factor = dr::rsqrt((ScalarFloat) spp);
-
         std::unique_ptr<Float[]> aovs(new Float[n_channels]);
 
         // Potentially render multiple passes
         for (size_t i = 0; i < n_passes; i++) {
             render_sample(scene, sensor, sampler, block, aovs.get(), pos,
-                          scale, offset, diff_scale_factor);
+                          scale, offset);
 
             if (n_passes > 1) {
                 sampler->advance(); // Will trigger a kernel launch of size 1
@@ -433,9 +430,6 @@ MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *s
         // Avoid overlaps in RNG seeding RNG when a seed is manually specified
         seed += block_id * pixel_count;
 
-        // Scale down ray differentials when tracing multiple rays per pixel
-        Float diff_scale_factor = dr::rsqrt((Float) sample_count);
-
         const Film *film = sensor->film();
         Vector2f scale  = 1.f / Vector2f(film->crop_size()),
                  offset = -Vector2f(film->crop_offset()) * scale;
@@ -453,7 +447,7 @@ MI_VARIANT void SamplingIntegrator<Float, Spectrum>::render_block(const Scene *s
             Point2f pos_f = Point2f(Point2i(pos) + block->offset());
             for (uint32_t j = 0; j < sample_count && !should_stop(); ++j) {
                 render_sample(scene, sensor, sampler, block, aovs, pos_f,
-                              scale, offset, diff_scale_factor);
+                              scale, offset);
                 sampler->advance();
             }
         }
@@ -480,7 +474,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &pos,
                                                    const Vector2f &scale,
                                                    const Vector2f &offset,
-                                                   ScalarFloat diff_scale_factor,
                                                    Mask active) const {
     const Film *film = sensor->film();
     const bool has_alpha = has_flag(film->flags(), FilmFlags::Alpha);
@@ -501,11 +494,8 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     if constexpr (is_spectral_v<Spectrum>)
         wavelength_sample = sampler->next_1d(active);
 
-    auto [ray, ray_weight] = sensor->sample_ray_differential(
+    auto [ray, ray_weight] = sensor->sample_ray(
         time, wavelength_sample, adjusted_pos, aperture_sample);
-
-    if (ray.has_differentials)
-        ray.scale_differential(diff_scale_factor);
 
     const Medium *medium = sensor->medium();
 
@@ -547,7 +537,7 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 MI_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
 SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
                                             Sampler * /* sampler */,
-                                            const RayDifferential3f & /* ray */,
+                                            const Ray3f & /* ray */,
                                             const Medium * /* medium */,
                                             Float * /* aovs */,
                                             Mask /* active */) const {

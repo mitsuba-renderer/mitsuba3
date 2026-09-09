@@ -86,8 +86,8 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
-    """Check the correctness of the sample_ray_differential() method"""
+def test03_sample_ray(variants_vec_spectral, origin, direction):
+    """Check the correctness of the sample_ray() method"""
     near_clip = 1.0
     camera = create_camera(origin, direction, near_clip=near_clip)
 
@@ -95,7 +95,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     wav_sample = [0.5, 0.33, 0.1]
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
 
-    ray, spec_weight = camera.sample_ray_differential(time, wav_sample, pos_sample, 0)
+    ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, 0)
 
     # Importance sample wavelength and weight
     wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
@@ -108,27 +108,10 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
-
-    # Check that the derivatives are orthogonal
-    assert dr.allclose(dr.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
-
     # Check that a [0.5, 0.5] position_sample generates a ray
     # that points in the camera direction
-    ray_center, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5], 0)
+    ray_center, _ = camera.sample_ray(0, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray_center.d, direction, atol=1e-7)
-
-    # Check correctness of the ray derivatives
-
-    # Deltas in screen space
-    dx = 1.0 / camera.film().crop_size().x
-    dy = 1.0 / camera.film().crop_size().y
-
-    # Sample the rays by offsetting the position_sample with the deltas
-    ray_dx, _ = camera.sample_ray_differential(0, 0, [0.5 + dx, 0.5], 0)
-    ray_dy, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5 + dy], 0)
-
-    assert dr.allclose(ray_dx.d, ray_center.d_x)
-    assert dr.allclose(ray_dy.d, ray_center.d_y)
 
 
 @pytest.mark.parametrize("origin", [[1.0, 0.0, 1.5]])

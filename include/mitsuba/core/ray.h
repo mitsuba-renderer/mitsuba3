@@ -75,46 +75,6 @@ template <typename Point_, typename Spectrum_> struct Ray {
     DRJIT_STRUCT(Ray, o, d, maxt, time, wavelengths)
 };
 
-/**
- * Ray differential -- enhances the basic ray class with
- * offset rays for two adjacent pixels on the view plane
- */
-template <typename Point_, typename Spectrum_>
-struct RayDifferential : Ray<Point_, Spectrum_> {
-    using Base = Ray<Point_, Spectrum_>;
-
-    MI_USING_TYPES(Float, ScalarFloat, Point, Vector, Wavelength)
-    MI_USING_MEMBERS(o, d, maxt, time, wavelengths)
-
-    Point o_x, o_y;
-    Vector d_x, d_y;
-    bool has_differentials = false;
-
-    /// Construct from a Ray instance
-    RayDifferential(const Base &ray)
-        : Base(ray), o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {}
-
-    /// Construct a new ray (o, d) at time ``time``
-    RayDifferential(const Point &o_, const Vector &d_, Float time_ = (ScalarFloat) 0.f,
-                    const Wavelength &wavelengths_ = Wavelength())
-        : o_x(0), o_y(0), d_x(0), d_y(0), has_differentials(false) {
-        o           = o_;
-        d           = d_;
-        time        = time_;
-        wavelengths = wavelengths_;
-    }
-
-    void scale_differential(Float amount) {
-        o_x = dr::fmadd(o_x - o, amount, o);
-        o_y = dr::fmadd(o_y - o, amount, o);
-        d_x = dr::fmadd(d_x - d, amount, d);
-        d_y = dr::fmadd(d_y - d, amount, d);
-    }
-
-    DRJIT_STRUCT(RayDifferential, o, d, maxt, time,
-                 wavelengths, o_x, o_y, d_x, d_y)
-};
-
 /// Return a string representation of the ray
 template <typename Point, typename Spectrum>
 std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {

@@ -175,12 +175,6 @@ public:
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
             m_x_fov, Float(m_near_clip), Float(m_far_clip)).inverse();
 
-        // Position differentials on the near plane
-        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
-               m_sample_to_camera * Point3f(0.f);
-        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
-             - m_sample_to_camera * Point3f(0.f);
-
         // Precompute some data for importance(). Please
         // look at that function for further details.
         Point3f pmin(m_sample_to_camera * Point3f(0.f, 0.f, 0.f)),
@@ -198,8 +192,8 @@ public:
             Vector2f(ScalarVector2f(m_film->size()) /
                      ScalarVector2f(m_film->crop_size()));
 
-        dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_x_fov,
-                        m_image_rect, m_normalization, m_principal_point_offset,
+        dr::make_opaque(m_sample_to_camera, m_x_fov, m_image_rect,
+                        m_normalization, m_principal_point_offset,
                         m_scaled_principal_point_offset);
     }
 
@@ -234,46 +228,6 @@ public:
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
         ray.maxt = far_t - near_t;
-
-        return { ray, wav_weight };
-    }
-
-    std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample, const Point2f &position_sample,
-                            const Point2f & /*aperture_sample*/, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
-                               wavelength_sample,
-                               active);
-        RayDifferential3f ray;
-        ray.time = time;
-        ray.wavelengths = wavelengths;
-
-        // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
-                                 position_sample.y() + m_scaled_principal_point_offset.y(),
-                                 0.f);
-
-        // Convert into a normalized ray direction; adjust the ray interval accordingly.
-        Vector3f d = dr::normalize(Vector3f(near_p));
-
-        ray.o = m_to_world.value().translation();
-        ray.d = m_to_world.value() * d;
-
-        Float inv_z = dr::rcp(d.z());
-        Float near_t = m_near_clip * inv_z,
-              far_t  = m_far_clip * inv_z;
-        ray.o += ray.d * near_t;
-        ray.maxt = far_t - near_t;
-
-        ray.o_x = ray.o_y = ray.o;
-
-        ray.d_x = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dx);
-        ray.d_y = m_to_world.value() * dr::normalize(Vector3f(near_p) + m_dy);
-        ray.has_differentials = true;
 
         return { ray, wav_weight };
     }
@@ -411,12 +365,11 @@ private:
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Float m_x_fov;
-    Vector3f m_dx, m_dy;
     Vector2f m_principal_point_offset, m_scaled_principal_point_offset;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect,
-                   m_normalization, m_x_fov, m_dx, m_dy,
-                   m_principal_point_offset, m_scaled_principal_point_offset)
+                   m_normalization, m_x_fov, m_principal_point_offset,
+                   m_scaled_principal_point_offset)
 };
 
 MI_EXPORT_PLUGIN(PerspectiveCamera)

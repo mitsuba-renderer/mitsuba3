@@ -158,36 +158,6 @@ public:
         return { ray, spec };
     }
 
-    std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f &position_sample,
-                            const Point2f &aperture_sample,
-                            Mask active) const override {
-
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        Float  idx_f = position_sample.x() * (ScalarFloat) m_sensors.size();
-        UInt32 idx_u = UInt32(idx_f);
-
-        UInt32 index = dr::minimum(idx_u, (uint32_t) (m_sensors.size() - 1));
-        SensorPtr sensor = dr::gather<SensorPtr>(m_sensors_dr, index, active);
-
-        Point2f position_sample_2(idx_f - Float(idx_u), position_sample.y());
-
-        auto [ray, spec] = sensor->sample_ray_differential(
-            time, wavelength_sample, position_sample_2, aperture_sample,
-            active);
-
-        // The `m_last_index` variable **needs** to be updated after the
-        // virtual function call above. In recorded JIT modes, the tracing will
-        // also cover this function and hence overwrite `m_last_index` as part
-        // of that process. To "undo" that undesired side_effect, we must
-        // update `m_last_index` after that virtual function call.
-        m_last_index = index;
-
-        return { ray, spec };
-    }
-
     std::pair<DirectionSample3f, Spectrum>
     sample_direction(const Interaction3f &it, const Point2f &sample, Mask active) const override {
         DirectionSample3f result_1 = dr::zeros<DirectionSample3f>();

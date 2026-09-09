@@ -267,9 +267,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Shading normal partials wrt. the UV parameterization
     Vector3f dn_du, dn_dv;
 
-    /// UV partials wrt. changes in screen-space
-    Vector2f duv_dx, duv_dy;
-
     /// Incident direction in the local shading frame
     Vector3f wi;
 
@@ -298,7 +295,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                 const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
-          duv_dx(0), duv_dy(0), wi(0), prim_index(0) {}
+          wi(0), prim_index(0) {}
 
     /**
      * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
@@ -313,8 +310,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dp_dv          = dr::zeros<Vector3f>(size);
         dn_du          = dr::zeros<Vector3f>(size);
         dn_dv          = dr::zeros<Vector3f>(size);
-        duv_dx         = dr::zeros<Vector2f>(size);
-        duv_dy         = dr::zeros<Vector2f>(size);
         wi             = dr::zeros<Vector3f>(size);
         prim_index     = dr::zeros<Index>(size);
         instance_index = dr::zeros<Index>(size);
@@ -373,54 +368,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                          shape->interior_medium());
     }
 
-    /**
-     * Returns the `BSDF` of the intersected shape.
-     *
-     * The parameter ``ray`` must match the one used to create the interaction
-     * record. This function computes texture coordinate partials if this is
-     * required by the BSDF (e.g. for texture filtering).
-     *
-     * Implementation in ``bsdf.h``
-     */
-    BSDFPtr bsdf(const RayDifferential3f &ray);
-
     /// Returns the `BSDF` of the intersected shape
     BSDFPtr bsdf() const { return shape->bsdf(); }
-
-    /// Computes texture coordinate partials
-    void compute_uv_partials(const RayDifferential3f &ray) {
-        if (!ray.has_differentials)
-            return;
-
-        // Compute interaction with the two offset rays
-        Float d   = dr::dot(n, p),
-              t_x = (d - dr::dot(n, ray.o_x)) / dr::dot(n, ray.d_x),
-              t_y = (d - dr::dot(n, ray.o_y)) / dr::dot(n, ray.d_y);
-
-        // Corresponding positions near the surface
-        Vector3f dp_dx = dr::fmadd(ray.d_x, t_x, ray.o_x) - p,
-                 dp_dy = dr::fmadd(ray.d_y, t_y, ray.o_y) - p;
-
-        // Solve a least squares problem to turn this into UV coordinates
-        Float a00 = dr::dot(dp_du, dp_du),
-              a01 = dr::dot(dp_du, dp_dv),
-              a11 = dr::dot(dp_dv, dp_dv),
-              inv_det = dr::rcp(dr::fmsub(a00, a11, a01*a01));
-
-        Float b0x = dr::dot(dp_du, dp_dx),
-              b1x = dr::dot(dp_dv, dp_dx),
-              b0y = dr::dot(dp_du, dp_dy),
-              b1y = dr::dot(dp_dv, dp_dy);
-
-        // Set the UV partials to zero if dpdu and/or dpdv == 0
-        inv_det = dr::select(dr::isfinite(inv_det), inv_det, 0.f);
-
-        duv_dx = Vector2f(dr::fmsub(a11, b0x, a01 * b1x),
-                          dr::fmsub(a00, b1x, a01 * b0x)) * inv_det;
-
-        duv_dy = Vector2f(dr::fmsub(a11, b0y, a01 * b1y),
-                          dr::fmsub(a00, b1y, a01 * b0y)) * inv_det;
-    }
 
     /**
      * Converts a Mueller matrix defined in a local frame to world space
@@ -508,13 +457,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         } else {
             return M_world;
         }
-    }
-
-    bool has_uv_partials() const {
-        if constexpr (dr::is_dynamic_v<Float>)
-            return dr::width(duv_dx) > 0 || dr::width(duv_dy) > 0;
-        else
-            return dr::any_nested((duv_dx != 0.f) || (duv_dy != 0.f));
     }
 
     bool has_n_partials() const {
@@ -621,8 +563,6 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
             wi = dr::select(active, to_local(-ray.d), -ray.d);
         }
-
-        duv_dx = duv_dy = dr::zeros<Point2f>();
     }
 
     /// Convenience operator for masking
@@ -634,8 +574,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
-                 sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, duv_dx,
-                 duv_dy, wi, prim_index, instance_index)
+                 sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, wi,
+                 prim_index, instance_index)
 };
 
 // -----------------------------------------------------------------------------
@@ -837,10 +777,6 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
         if (it.has_n_partials())
             os << "  dn_du = " << string::indent(it.dn_du, 11) << "," << std::endl
                << "  dn_dv = " << string::indent(it.dn_dv, 11) << "," << std::endl;
-
-        if (it.has_uv_partials())
-            os << "  duv_dx = " << string::indent(it.duv_dx, 11) << "," << std::endl
-               << "  duv_dy = " << string::indent(it.duv_dy, 11) << "," << std::endl;
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl

@@ -115,8 +115,8 @@ def test02_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, fo
 @pytest.mark.parametrize("direction", directions)
 @pytest.mark.parametrize("aperture_rad", [0.01, 0.1, 0.25])
 @pytest.mark.parametrize("focus_dist", [15, 25])
-def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
-    """Check the correctness of the sample_ray_differential() method"""
+def test03_sample_ray(variants_vec_spectral, origin, direction, aperture_rad, focus_dist):
+    """Check the correctness of the sample_ray() method"""
 
     near_clip = 1.0
     cam = create_camera(origin, direction, aperture=aperture_rad, focus_dist=focus_dist, near_clip=near_clip)
@@ -126,7 +126,7 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
     aperture_sample = [0.5, 0.5]
 
-    ray, spec_weight = cam.sample_ray_differential(
+    ray, spec_weight = cam.sample_ray(
         time, wav_sample, pos_sample, aperture_sample)
 
     # Importance sample wavelength and weight
@@ -140,33 +140,11 @@ def test03_sample_ray_diff(variants_vec_spectral, origin, direction, aperture_ra
     o = mi.Point3f(origin) + near_clip * inv_z * mi.Vector3f(ray.d)
     assert dr.allclose(ray.o, o, atol=1e-4)
 
-    # ----------------------------------------_
-    # Check that the derivatives are orthogonal
-
-    assert dr.allclose(dr.dot(ray.d_x - ray.d, ray.d_y - ray.d), 0, atol=1e-7)
-
     # Check that a [0.5, 0.5] position_sample and [0.5, 0.5] aperture_sample
     # generates a ray that points in the camera direction
 
-    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], [0.5, 0.5])
+    ray_center, _ = cam.sample_ray(0, 0, [0.5, 0.5], [0.5, 0.5])
     assert dr.allclose(ray_center.d, direction, atol=1e-7)
-
-    # ----------------------------------------
-    # Check correctness of the ray derivatives
-
-    aperture_sample = [[0.9, 0.4, 0.2], [0.6, 0.9, 0.7]]
-    ray_center, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5], aperture_sample)
-
-    # Deltas in screen space
-    dx = 1.0 / cam.film().crop_size().x
-    dy = 1.0 / cam.film().crop_size().y
-
-    # Sample the rays by offsetting the position_sample with the deltas (aperture centered)
-    ray_dx, _ = cam.sample_ray_differential(0, 0, [0.5 + dx, 0.5], aperture_sample)
-    ray_dy, _ = cam.sample_ray_differential(0, 0, [0.5, 0.5 + dy], aperture_sample)
-
-    assert dr.allclose(ray_dx.d, ray_center.d_x)
-    assert dr.allclose(ray_dy.d, ray_center.d_y)
 
     # --------------------------------------
     # Check correctness of aperture sampling

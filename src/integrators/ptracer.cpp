@@ -251,7 +251,7 @@ public:
             SurfaceInteraction3f si = scene->compute_surface_interaction(
                 ls.ray, ls.pi, +RayFlags::Default);
 
-            BSDFPtr bsdf = si.bsdf(ls.ray);
+            BSDFPtr bsdf = si.bsdf();
 
             // Connect to sensor and splat if successful. Sample a direction
             // from the sensor to the current surface point.

@@ -61,7 +61,6 @@ template <typename Point, bool Affine>          struct Transform;
 template <typename Point>                       using AffineTransform = Transform<Point, true>;
 template <typename Point>                       using ProjectiveTransform = Transform<Point, false>;
 template <typename Point, typename Spectrum>    struct Ray;
-template <typename Point, typename Spectrum>    struct RayDifferential;
 template <typename Point>                       struct BoundingBox;
 template <typename Point>                       struct BoundingSphere;
 template <typename Vector>                      struct Frame;

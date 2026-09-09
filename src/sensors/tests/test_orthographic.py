@@ -79,8 +79,8 @@ def test02_sample_ray(variants_vec_spectral, origin, direction):
 
 @pytest.mark.parametrize("origin", origins)
 @pytest.mark.parametrize("direction", directions)
-def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
-    # Check the correctness of the sample_ray_differential() method
+def test03_sample_ray(variants_vec_spectral, origin, direction):
+    # Check the correctness of the sample_ray() method
     camera = create_camera(origin, direction)
 
     near_clip = 1.0
@@ -88,7 +88,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     wav_sample = [0.5, 0.33, 0.1]
     pos_sample = [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]]
 
-    ray, spec_weight = camera.sample_ray_differential(time, wav_sample, pos_sample, 0)
+    ray, spec_weight = camera.sample_ray(time, wav_sample, pos_sample, 0)
 
     # Importance sample wavelength and weight
     wav, spec = mi.sample_rgb_spectrum(mi.sample_shifted(wav_sample))
@@ -100,25 +100,7 @@ def test03_sample_ray_differential(variants_vec_spectral, origin, direction):
     # Check that ray origins are on the plane defined by the sensor
     assert dr.allclose(dr.dot(ray.o, direction), dr.dot(origin + mi.Vector3f(direction) * near_clip, direction))
 
-    # Check that the derivatives are orthogonal
-
     # Check that a [0.5, 0.5] position_sample generates a ray
     # that points in the camera direction
-    ray_center, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5], 0)
-
-    assert dr.allclose(ray_center.d,   direction)
-    assert dr.allclose(ray_center.d_x, direction)
-    assert dr.allclose(ray_center.d_y, direction)
-
-    # Check correctness of the ray derivatives
-
-    # Deltas in screen space
-    dx = 1.0 / camera.film().crop_size().x
-    dy = 1.0 / camera.film().crop_size().y
-
-    # # Sample the rays by offsetting the position_sample with the deltas
-    ray_dx, _ = camera.sample_ray_differential(0, 0, [0.5 + dx, 0.5], 0)
-    ray_dy, _ = camera.sample_ray_differential(0, 0, [0.5, 0.5 + dy], 0)
-
-    assert dr.allclose(ray_dx.o, ray_center.o_x)
-    assert dr.allclose(ray_dy.o, ray_center.o_y)
+    ray_center, _ = camera.sample_ray(0, 0, [0.5, 0.5], 0)
+    assert dr.allclose(ray_center.d, direction)

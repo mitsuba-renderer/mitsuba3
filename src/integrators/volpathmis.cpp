@@ -119,7 +119,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray_,
+                                     const Ray3f &ray_,
                                      const Medium *initial_medium,
                                      Float * /* aovs */,
                                      Mask active) const override {
@@ -130,7 +130,6 @@ public:
 
         Mask valid_ray = false;
 
-        // For now, don't use ray differentials
         Ray3f ray = ray_;
 
         // Tracks radiance scaling due to index of refraction changes
@@ -391,7 +390,7 @@ public:
 
                 // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
-                BSDFPtr bsdf  = si.bsdf(ray);
+                BSDFPtr bsdf  = si.bsdf();
                 Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
                 if (likely(dr::any_or<true>(active_e))) {
                     auto [p_over_f_nee_end, p_over_f_end, emitted, ds] = sample_emitter(si, scene, sampler, medium, p_over_f, channel, active_e);
@@ -573,7 +572,7 @@ public:
 
             active_surface &= si.is_valid() && active && !active_medium;
             if (dr::any_or<true>(active_surface)) {
-                auto bsdf         = si.bsdf(ray);
+                auto bsdf         = si.bsdf();
                 Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
                 update_weights(p_over_f_nee, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_surface);
                 update_weights(p_over_f_uni, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_surface);

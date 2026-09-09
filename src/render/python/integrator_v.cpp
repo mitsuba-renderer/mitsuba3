@@ -99,7 +99,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray,
+                                     const Ray3f &ray,
                                      const Medium *medium,
                                      Float *aovs,
                                      Mask active) const override {
@@ -255,7 +255,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray,
+                                     const Ray3f &ray,
                                      const Medium * /* unused */,
                                      Float *aovs,
                                      Mask active) const override {
@@ -349,7 +349,7 @@ MI_PY_EXPORT(Integrator) {
         .def(
             "sample",
             [](const SamplingIntegrator *integrator, const Scene *scene,
-               Sampler *sampler, const RayDifferential3f &ray,
+               Sampler *sampler, const Ray3f &ray,
                const Medium *medium, Mask active) {
                 nb::gil_scoped_release release;
                 std::vector<Float> aovs(integrator->aov_names().size(), 0.f);

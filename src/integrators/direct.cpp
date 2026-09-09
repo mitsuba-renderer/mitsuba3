@@ -108,7 +108,7 @@ public:
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
                                      Sampler *sampler,
-                                     const RayDifferential3f &ray,
+                                     const Ray3f &ray,
                                      const Medium * /* medium */,
                                      Float * /* aovs */,
                                      Mask active) const override {
@@ -138,7 +138,7 @@ public:
         // ----------------------- Emitter sampling -----------------------
 
         BSDFContext ctx;
-        BSDFPtr bsdf = si.bsdf(ray);
+        BSDFPtr bsdf = si.bsdf();
         auto flags = bsdf->flags();
         Mask sample_emitter = active && has_flag(flags, BSDFFlags::Smooth);
 

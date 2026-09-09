@@ -363,7 +363,7 @@ public:
      *
      *     sampler: A source of (pseudo-/quasi-) random numbers
      *
-     *     ray: A ray, optionally with differentials
+     *     ray: The ray along which radiance should be sampled
      *
      *     medium: If the ray is inside a medium, this parameter holds a pointer to that
      *         medium
@@ -383,7 +383,7 @@ public:
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
-                                             const RayDifferential3f &ray,
+                                             const Ray3f &ray,
                                              const Medium *medium = nullptr,
                                              Float *aovs = nullptr,
                                              Mask active = true) const;
@@ -430,7 +430,6 @@ protected:
                        const Vector2f &pos,
                        const Vector2f &scale,
                        const Vector2f &offset,
-                       ScalarFloat diff_scale_factor,
                        Mask active = true) const;
 
 protected:

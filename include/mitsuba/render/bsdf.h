@@ -82,9 +82,6 @@ enum class BSDFFlags : uint32_t {
     /// Supports interactions on the back-facing side
     BackSide             = 0x10000,
 
-    /// Does the implementation require access to texture-space differentials
-    NeedsDifferentials   = 0x20000,
-
     /// The lobe lives in a shading frame that a normal map perturbs, so
     /// the frame's orientation around the normal is observable
     NormalMapped         = 0x40000,
@@ -545,11 +542,6 @@ public:
         return m_components[i];
     }
 
-    /// Does the implementation require access to texture-space differentials?
-    bool needs_differentials(Mask /*active*/ = true) const {
-        return has_flag(m_flags, BSDFFlags::NeedsDifferentials);
-    }
-
     /// Number of components this BSDF is comprised of.
     uint32_t component_count(Mask /*active*/ = true) const {
         return (uint32_t) m_components.size();
@@ -629,17 +621,6 @@ std::ostream &operator<<(std::ostream &os, const BSDFSample3<Float, Spectrum>& b
     return os;
 }
 
-template <typename Float, typename Spectrum>
-typename SurfaceInteraction<Float, Spectrum>::BSDFPtr SurfaceInteraction<Float, Spectrum>::bsdf(
-    const typename SurfaceInteraction<Float, Spectrum>::RayDifferential3f &ray) {
-    const BSDFPtr bsdf = shape->bsdf();
-
-    if (!has_uv_partials() && dr::any(bsdf->needs_differentials()))
-        compute_uv_partials(ray);
-
-    return bsdf;
-}
-
 // -----------------------------------------------------------------------
 
 MI_EXTERN_CLASS(BSDF)
@@ -663,7 +644,6 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(eval_attribute_3)
     DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
-    auto needs_differentials() const { return has_flag(flags(), mitsuba::BSDFFlags::NeedsDifferentials); }
 DRJIT_CALL_END()
 
 // -----------------------------------------------------------------------

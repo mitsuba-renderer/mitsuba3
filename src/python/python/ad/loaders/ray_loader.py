@@ -40,34 +40,34 @@ class FlatSensor(mi.Sensor):
         self.pixels_per_batch = pixels_per_batch
         self.pixel_idx = dr.zeros(mi.UInt32, pixels_per_batch)
 
-        def make_sample_ray_differential_target(sensor: mi.Sensor):
-            def sample_ray_differential(
+        def make_sample_ray_target(sensor: mi.Sensor):
+            def sample_ray(
                 time: mi.Float,
                 sample1: mi.Float,
                 sample2: mi.Point2f,
                 sample3: mi.Point2f,
                 active: mi.Bool = True,
-            ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
-                return sensor.sample_ray_differential(
+            ) -> Tuple[mi.Ray3f, mi.Spectrum]:
+                return sensor.sample_ray(
                     time, sample1, sample2, sample3, active
                 )
 
-            return sample_ray_differential
+            return sample_ray
 
         # Use dr.switch to limit symbolic tracing to the known child sensors.
-        self.sensor_sample_ray_differential = [
-            make_sample_ray_differential_target(sensor)
+        self.sensor_sample_ray = [
+            make_sample_ray_target(sensor)
             for sensor in sensors
         ]
 
-    def sample_ray_differential(
+    def sample_ray(
         self,
         time: mi.Float,
         sample1: mi.Float,
         sample2: mi.Point2f,
         sample3: mi.Point2f,
         active: mi.Bool = True,
-    ) -> Tuple[mi.RayDifferential3f, mi.Spectrum]:
+    ) -> Tuple[mi.Ray3f, mi.Spectrum]:
 
         spp = dr.width(sample2) // dr.width(self.pixel_idx)
 
@@ -96,28 +96,16 @@ class FlatSensor(mi.Sensor):
         # Dispatch the ray sampling to the corresponding sensors
         rays, weights = dr.switch(
             sensor_idx,
-            self.sensor_sample_ray_differential,
+            self.sensor_sample_ray,
             time,
             sample1,
             sample2_override,
             sample3,
             active,
-            label="RayDataLoader.sample_ray_differential",
+            label="RayDataLoader.sample_ray",
         )
 
         return rays, weights
-
-    def sample_ray(
-        self,
-        time: mi.Float,
-        sample1: mi.Float,
-        sample2: mi.Point2f,
-        sample3: mi.Point2f,
-        active: mi.Bool = True,
-    ) -> Tuple[mi.Ray3f, mi.Spectrum]:
-        ray, weight = self.sample_ray_differential(
-            time, sample1, sample2, sample3, active)
-        return mi.Ray3f(ray), weight
 
     def to_string(self):
         return ('FlatSensor[\n'

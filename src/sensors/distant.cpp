@@ -237,23 +237,6 @@ public:
         return { ray, ray_weight & active };
     }
 
-    std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
-        Float time, Float wavelength_sample, const Point2f &film_sample,
-        const Point2f &aperture_sample, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        RayDifferential3f ray;
-        Spectrum ray_weight;
-
-        std::tie(ray, ray_weight) = sample_ray(
-            time, wavelength_sample, film_sample, aperture_sample, active);
-
-        // Since the film size is always 1x1, we don't have differentials
-        ray.has_differentials = false;
-
-        return { ray, ray_weight & active };
-    }
-
     // This sensor does not occupy any particular region of space, return an
     // invalid bounding box
     ScalarBoundingBox3f bbox() const override { return ScalarBoundingBox3f(); }

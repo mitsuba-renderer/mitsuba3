@@ -118,35 +118,6 @@ public:
         return { ray, wav_weight };
     }
 
-    std::pair<RayDifferential3f, Spectrum>
-    sample_ray_differential(Float time, Float wavelength_sample,
-                            const Point2f & /*position_sample*/,
-                            const Point2f & /*aperture_sample*/,
-                            Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-        RayDifferential3f ray = dr::zeros<RayDifferential3f>();
-        ray.time = time;
-        ray.maxt = dr::Largest<Float>;
-
-        // 1. Sample spectrum
-        auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
-                               wavelength_sample,
-                               active);
-        ray.wavelengths = wavelengths;
-
-        // 2. Set ray origin and direction
-        ray.o = m_to_world.value() * Point3f(0.f, 0.f, 0.f);
-        ray.d = m_to_world.value() * Vector3f(0.f, 0.f, 1.f);
-        ray.o += ray.d * math::RayEpsilon<Float>;
-
-        // 3. Set differentials; since the film size is always 1x1, we don't
-        //    have differentials
-        ray.has_differentials = false;
-
-        return { ray, wav_weight };
-    }
-
     ScalarBoundingBox3f bbox() const override {
         // Return an invalid bounding box
         return ScalarBoundingBox3f();

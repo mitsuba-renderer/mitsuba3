@@ -125,8 +125,8 @@ class BasicPRBIntegrator(RBIntegrator):
             # Should we continue tracing to reach one more vertex?
             active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
-            # Get the BSDF. Potentially computes texture-space differentials.
-            bsdf = si.bsdf(ray)
+            # Get the BSDF
+            bsdf = si.bsdf()
 
             # ------------------ Detached BSDF sampling -------------------
 

@@ -535,8 +535,7 @@ public:
      *
      * The fields ``t``, ``time``, ``wavelengths``, ``shape``, ``prim_index``, ``instance``,
      * will already have been initialized by the caller. The field ``wi`` is initialized
-     * by the caller following the call to `compute_surface_interaction()`, and
-     * ``duv_dx``, and ``duv_dy`` are left uninitialized.
+     * by the caller following the call to `compute_surface_interaction()`.
      *
      * Args:
      *     ray: Ray associated with the ray intersection

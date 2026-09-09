@@ -104,14 +104,8 @@ public:
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
             Float(m_near_clip), Float(m_far_clip)).inverse();
 
-        // Position differentials on the near plane
-        m_dx = m_sample_to_camera * Point3f(1.f / m_resolution.x(), 0.f, 0.f) -
-               m_sample_to_camera * Point3f(0.f);
-        m_dy = m_sample_to_camera * Point3f(0.f, 1.f / m_resolution.y(), 0.f)
-             - m_sample_to_camera * Point3f(0.f);
-
         m_normalization = 1.f / m_image_rect.volume();
-        dr::make_opaque(m_sample_to_camera, m_dx, m_dy, m_normalization);
+        dr::make_opaque(m_sample_to_camera, m_normalization);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -135,35 +129,6 @@ public:
         ray.o = m_to_world.value() * near_p;
         ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
-
-        return { ray, wav_weight };
-    }
-
-    std::pair<RayDifferential3f, Spectrum> sample_ray_differential(
-        Float time, Float wavelength_sample, const Point2f &position_sample,
-        const Point2f & /*aperture_sample*/, Mask active) const override {
-        MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
-
-        auto [wavelengths, wav_weight] =
-            sample_wavelengths(dr::zeros<SurfaceInteraction3f>(),
-                               wavelength_sample,
-                               active);
-        RayDifferential3f ray;
-        ray.time = time;
-        ray.wavelengths = wavelengths;
-
-        // Compute the sample position on the near plane (local camera space).
-        Point3f near_p = m_sample_to_camera *
-                         Point3f(position_sample.x(), position_sample.y(), 0.f);
-
-        ray.o = m_to_world.value() * near_p;
-        ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
-        ray.maxt = m_far_clip - m_near_clip;
-
-        ray.o_x = m_to_world.value() * (near_p + m_dx);
-        ray.o_y = m_to_world.value() * (near_p + m_dy);
-        ray.d_x = ray.d_y = ray.d;
-        ray.has_differentials = true;
 
         return { ray, wav_weight };
     }
@@ -200,10 +165,8 @@ private:
     AffineTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_normalization;
-    Vector3f m_dx, m_dy;
 
-    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization,
-                   m_dx, m_dy)
+    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization)
 };
 
 MI_EXPORT_PLUGIN(OrthographicCamera)

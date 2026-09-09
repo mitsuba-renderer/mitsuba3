@@ -92,16 +92,9 @@ def test_sample_ray(variant_scalar_rgb, direction, origin):
 
     sensor = make_sensor(direction=direction, origin=origin)
 
-    # Test regular ray sampling
     ray = sensor.sample_ray(1., 1., sample1, sample2, True)
     assert dr.allclose(ray[0].o, origin, atol=1e-4)
     assert dr.allclose(ray[0].d, dr.normalize(direction))
-
-    # Test ray differential sampling
-    ray = sensor.sample_ray_differential(1., 1., sample2, sample1, True)
-    assert dr.allclose(ray[0].o, origin, atol=1e-4)
-    assert dr.allclose(ray[0].d, dr.normalize(direction))
-    assert not ray[0].has_differentials
 
 
 @pytest.mark.parametrize("radiance", [10**x for x in range(-3, 4)])

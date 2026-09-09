@@ -253,11 +253,6 @@ std::string type_mask_to_string(Index type_mask) {
         oss << "non_symmetric ";
         type_mask = type_mask & ~BSDFFlags::NonSymmetric;
     }
-    if (has_flag(type_mask, BSDFFlags::NeedsDifferentials)) {
-        add_separator();
-        oss << "needs_differentials ";
-        type_mask = type_mask & ~BSDFFlags::NeedsDifferentials;
-    }
 
     Assert(type_mask == 0);
     oss << "}";

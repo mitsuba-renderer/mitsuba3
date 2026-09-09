@@ -61,26 +61,4 @@ MI_PY_EXPORT(Ray) {
     bind_ray<Ray<ScalarPoint2d, ScalarSpectrum>>(m, "ScalarRay2d");
     bind_ray<Ray<ScalarPoint3f, ScalarSpectrum>>(m, "ScalarRay3f");
     bind_ray<Ray<ScalarPoint3d, ScalarSpectrum>>(m, "ScalarRay3d");
-
-    {
-        auto raydiff = nb::class_<RayDifferential3f, Ray3f>(m, "RayDifferential3f", D(RayDifferential))
-            .def(nb::init_implicit<Ray3f>())
-            .def(nb::init<>(), "Create an uninitialized ray")
-            .def(nb::init<const Ray3f &>(), "ray"_a)
-            .def(nb::init<Point3f, Vector3f, Float, const Wavelength &>(),
-                 "Initialize without differentials.",
-                 "o"_a, "d"_a, "time"_a=(ScalarFloat) 0.0, "wavelengths"_a=Wavelength())
-            .def("scale_differential", &RayDifferential3f::scale_differential,
-                 "amount"_a, D(RayDifferential, scale_differential))
-            .def_field(RayDifferential3f, o_x, D(RayDifferential, o_x))
-            .def_field(RayDifferential3f, o_y, D(RayDifferential, o_y))
-            .def_field(RayDifferential3f, d_x, D(RayDifferential, d_x))
-            .def_field(RayDifferential3f, d_y, D(RayDifferential, d_y))
-            .def_field(RayDifferential3f, has_differentials, D(RayDifferential, has_differentials));
-
-        MI_PY_DRJIT_STRUCT(raydiff, RayDifferential3f, o, d, maxt, time,
-                            wavelengths, o_x, o_y, d_x, d_y)
-    }
-
-    nb::implicitly_convertible<Ray3f, RayDifferential3f>();
 }
