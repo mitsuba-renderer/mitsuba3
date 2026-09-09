@@ -2753,10 +2753,6 @@ static const char *__doc_mitsuba_CornerMesh_attr_count = R"doc()doc";
 
 static const char *__doc_mitsuba_CornerMesh_attrs = R"doc(Custom ``vertex_*`` attributes (``attr_count`` entries))doc";
 
-static const char *__doc_mitsuba_CornerMesh_bsdf_index =
-R"doc(Optional per-face BSDF indices (one entry per input face,
-replicated when a polygon fans into several triangles))doc";
-
 static const char *__doc_mitsuba_CornerMesh_corner_count = R"doc(Number of face corners)doc";
 
 static const char *__doc_mitsuba_CornerMesh_corner_index =
@@ -5068,10 +5064,7 @@ static const char *__doc_mitsuba_Interaction_n = R"doc(Geometric normal (only va
 
 static const char *__doc_mitsuba_Interaction_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Interaction_offset_p =
-R"doc(Compute an offset position, used when spawning a ray from this
-interaction. When the interaction is on the surface of a shape, the
-position is offset along the surface normal to prevent self intersection.)doc";
+static const char *__doc_mitsuba_Interaction_offset_p = R"doc(Offset ``p`` along ``n`` towards the side of ``d`` by ``p_err``)doc";
 
 static const char *__doc_mitsuba_Interaction_operator_assign = R"doc()doc";
 
@@ -5079,9 +5072,27 @@ static const char *__doc_mitsuba_Interaction_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Interaction_p = R"doc(Position of the interaction in world coordinates)doc";
 
+static const char *__doc_mitsuba_Interaction_p_err =
+R"doc(Bound on the rounding error of ``p`` along ``n``, filled in by shapes.
+`Interaction3f.spawn_ray` offsets the ray origin by this amount.)doc";
+
 static const char *__doc_mitsuba_Interaction_spawn_ray = R"doc(Spawn a semi-infinite ray towards the given direction)doc";
 
-static const char *__doc_mitsuba_Interaction_spawn_ray_to = R"doc(Spawn a finite ray towards the given position)doc";
+static const char *__doc_mitsuba_Interaction_spawn_ray_to =
+R"doc(Spawn a finite ray towards a bare point
+
+The segment is shortened by ``mi.math.ShadowEpsilon`` since the point
+carries no error bound. Prefer the `PositionSample3f` overload when the
+target lies on a shape.)doc";
+
+static const char *__doc_mitsuba_Interaction_spawn_ray_to_2 =
+R"doc(Spawn a finite ray towards a sampled position
+
+The segment stops short of the target by `PositionSample3f.p_err`
+projected onto the segment, plus a relative amount that absorbs the
+rounding of the distance. The endpoint moves back along the ray rather
+than along ``ps.n``, which is more robust when ``ps.n`` is a shading
+normal.)doc";
 
 static const char *__doc_mitsuba_Interaction_t = R"doc(Distance traveled along the ray)doc";
 
@@ -5235,9 +5246,7 @@ static const char *__doc_mitsuba_JitObject_unregister =
 R"doc(Withdraw this instance from the JIT registry. This can be useful when
 an instance should not be reached by traced function calls.)doc";
 
-static const char *__doc_mitsuba_Layout = R"doc(Content of the packed records of a `Mesh`)doc";
-
-static const char *__doc_mitsuba_Layout_FaceBSDFs = R"doc(The face records carry per-face BSDF indices)doc";
+static const char *__doc_mitsuba_Layout = R"doc(Content of the packed vertex records of a `Mesh`)doc";
 
 static const char *__doc_mitsuba_Layout_Normals = R"doc(Shading normals)doc";
 
@@ -5783,8 +5792,7 @@ static const char *__doc_mitsuba_MergeKey_exterior_medium = R"doc()doc";
 static const char *__doc_mitsuba_MergeKey_interior_medium = R"doc()doc";
 
 static const char *__doc_mitsuba_MergeKey_layout =
-R"doc(Packed record layout, without the ``FaceBSDFs`` bit that a merge
-unions
+R"doc(Packed record layout
 
 The face-normal setting needs no separate field, since a built mesh
 carries the ``Normals`` bit exactly when it shades with vertex normals.)doc";
@@ -5856,7 +5864,6 @@ Name                Type              Shape       Range       Optional
 ``positions``       ``TensorXf32``    ``(P, 3)``
 ``normals``         ``TensorXf32``    ``(N, 3)``              x
 ``texcoords``       ``TensorXf32``    ``(V, 2)``              x
-``bsdf_index``      ``UInt32`` array  ``F``       ``[0, B)``  x
 ==================  ================  ==========  ==========  ========
 
 The fields have the following roles:
@@ -5874,8 +5881,6 @@ The fields have the following roles:
 - ``positions``: surface positions.
 
 - ``normals`` (optional): surface normals.
-
-- ``bsdf_index`` (optional): per-face index into a set of ``B`` materials.
 
 .. rubric:: Example usage
 
@@ -6041,10 +6046,6 @@ static const char *__doc_mitsuba_Mesh_bbox_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_bbox_3 = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_bsdf_index =
-R"doc(Return the per-face BSDF index (size `face_count()`). An empty
-buffer stands for zeros, see ``has_face_bsdfs()``.)doc";
-
 static const char *__doc_mitsuba_Mesh_build_parameterization =
 R"doc(Initialize the ``m_parameterization`` field for mapping UV
 coordinates to positions
@@ -6144,6 +6145,8 @@ static const char *__doc_mitsuba_Mesh_face_normal = R"doc(Returns the normal dir
 
 static const char *__doc_mitsuba_Mesh_face_normal_2 = R"doc(Returns the normal direction of the face with index ``index``)doc";
 
+static const char *__doc_mitsuba_Mesh_face_position_error = R"doc(Decode the position error bound stored in a packed face record)doc";
+
 static const char *__doc_mitsuba_Mesh_faces = R"doc(Return the vertex index triplets as an ``(F, 3)`` tensor)doc";
 
 static const char *__doc_mitsuba_Mesh_find_attribute = R"doc(Return the mesh attribute ``name`` or NULL)doc";
@@ -6154,9 +6157,8 @@ static const char *__doc_mitsuba_Mesh_flip_winding =
 R"doc(Reverse the corner order of every face, which flips the
 geometric normals
 
-The orientation of each face's UV triangle reverses along with it, so
-the packed tangent frames are updated to match. The caller is
-responsible for the subsequent ``refresh()``.)doc";
+The caller is responsible for the subsequent ``refresh()``, which
+also recomputes the UV orientation bits.)doc";
 
 static const char *__doc_mitsuba_Mesh_from_corners =
 R"doc(Build the mesh from corner-indexed data
@@ -6205,9 +6207,7 @@ Args:
 
     normal_index: Optional map from vertex index to normal group. An empty map
         encodes the identity, or the position map when the normal count
-        matches the surface position count.
-
-    bsdf_index: Optional per-face material index. An empty buffer stands for zeros.)doc";
+        matches the surface position count.)doc";
 
 static const char *__doc_mitsuba_Mesh_from_packed =
 R"doc(Build the mesh from a packed representation
@@ -6219,9 +6219,9 @@ call raises an exception; later mesh changes must go through
 the parameter interface.
 
 The function checks the tensor shapes for consistency but trusts that
-any specified indices are in-bounds and that the per-face UV
-orientation bits of a tangent layout are consistent with the stored
-texture coordinates.
+any specified indices are in-bounds. The fourth word of the face
+records is derived data that the mesh regenerates, so the caller may
+leave it zero.
 
 The operation is differentiable in the sense that derivatives propagate
 between function parameters and the resulting mesh state.
@@ -6243,7 +6243,13 @@ Args:
         is nonempty.
 
     normal_count: Number of normal groups. Only needed when ``normal_index`` is
-        nonempty.)doc";
+        nonempty.
+
+    bbox: Bounding box of the positions, if known.
+
+    face_state_valid: Set when the fourth face word already holds the
+        derived data (see ``update_face_state()``), which lets a mesh
+        with usable records skip the kernel that recomputes it.)doc";
 
 static const char *__doc_mitsuba_Mesh_from_packed_2 =
 R"doc(Build the mesh from host-side staging data
@@ -6268,8 +6274,6 @@ seams. It is used by features like `Mesh.dedge` and the
 mesh Laplacian in ``mitsuba.ad.largesteps``.)doc";
 
 static const char *__doc_mitsuba_Mesh_has_attribute = R"doc()doc";
-
-static const char *__doc_mitsuba_Mesh_has_face_bsdfs = R"doc(Does this mesh have a per-face BSDF assignment?)doc";
 
 static const char *__doc_mitsuba_Mesh_has_face_normals = R"doc(Does this mesh use face normals?)doc";
 
@@ -6298,8 +6302,6 @@ static const char *__doc_mitsuba_Mesh_m_area_pmf = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_m_bbox = R"doc(Bounding box of the mesh positions, computed on demand by `bbox()`)doc";
 
 static const char *__doc_mitsuba_Mesh_m_bbox_valid = R"doc(Does `m_bbox` reflect the current positions?)doc";
-
-static const char *__doc_mitsuba_Mesh_m_bsdf_index = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_m_built = R"doc(Set by the first successful build; construction is one-shot)doc";
 
@@ -6333,7 +6335,7 @@ representative vertex)doc";
 
 static const char *__doc_mitsuba_Mesh_m_normals = R"doc()doc";
 
-static const char *__doc_mitsuba_Mesh_m_packed_faces = R"doc(Packed faces, material IDs and UV orientation bits (4 x UInt32 per face))doc";
+static const char *__doc_mitsuba_Mesh_m_packed_faces = R"doc(Packed faces: vertex indices and a derived word (4 x UInt32 per face))doc";
 
 static const char *__doc_mitsuba_Mesh_m_packed_vertices = R"doc(Packed per-vertex state (8 x Float32 per vertex))doc";
 
@@ -6512,15 +6514,17 @@ static const char *__doc_mitsuba_Mesh_recompute_normals = R"doc((Re-) compute sm
 static const char *__doc_mitsuba_Mesh_refresh =
 R"doc(Regenerate everything downstream of the packed state
 
-Every mutation ends with a call to this method. It rebuilds the
-bounding box (adopting ``bbox`` when given), the area sampling table
-of emitter/sensor meshes, the UV parameterization of spatially
-varying emitters, and the silhouette structures of gradient-enabled
-meshes, refreshes the raw data pointers, marks the scene
-acceleration structure dirty, and rebinds the field views unless
-they are dormant. The directed edge structure is not touched here:
-it is expensive and purely topological, so `Object.parameters_changed()`
-clears it only when a topology write occurs.)doc";
+Every mutation ends with a call to this method. It recomputes the
+derived word of every face record, rebuilds the bounding box
+(adopting ``bbox`` when given), the area sampling table of
+emitter/sensor meshes, the UV parameterization of spatially varying
+emitters, and the silhouette structures of gradient-enabled meshes,
+refreshes the raw data pointers, marks the scene acceleration
+structure dirty, and rebinds the field views unless they are dormant.
+The directed edge structure is not touched here: it is expensive and
+purely topological, so `Object.parameters_changed()` clears it only
+when a topology write occurs. ``face_state_valid`` skips the
+recomputation of the face state when the caller already derived them.)doc";
 
 static const char *__doc_mitsuba_Mesh_remove_attribute =
 R"doc(Remove an attribute with the given ``name``.
@@ -6572,6 +6576,12 @@ static const char *__doc_mitsuba_Mesh_traverse = R"doc()doc";
 static const char *__doc_mitsuba_Mesh_traverse_cb = R"doc()doc";
 
 static const char *__doc_mitsuba_Mesh_traverse_cb_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_Mesh_update_face_state =
+R"doc(Recompute the state word of every packed face record
+
+The word holds derived data, see ``face_state()``. It comes from the
+packed vertex records, so the pass must run whenever those change.)doc";
 
 static const char *__doc_mitsuba_Mesh_validate =
 R"doc(Check the field views for consistency
@@ -7396,6 +7406,13 @@ R"doc(Transform mesh data written so far
 Producers that fill ``PackedMesh`` directly without ``set_vertex()``
 and ``set_face()`` should call this method at the end.)doc";
 
+static const char *__doc_mitsuba_PackedMesh_update_face_state =
+R"doc(Compute the state word of every face record on the host
+
+See ``face_state()``, whose ``eps`` is the ``mi.math.PositionEpsilon``
+of the variant. Call this last, after the records are transformed
+and tangents are added.)doc";
+
 static const char *__doc_mitsuba_PackedMesh_vertex_count = R"doc(Sizes of the vertex/face/position/normal arrays)doc";
 
 static const char *__doc_mitsuba_PackedMesh_vertices = R"doc()doc";
@@ -7779,6 +7796,11 @@ static const char *__doc_mitsuba_PositionSample_operator_assign = R"doc()doc";
 static const char *__doc_mitsuba_PositionSample_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_PositionSample_p = R"doc(Sampled position)doc";
+
+static const char *__doc_mitsuba_PositionSample_p_err =
+R"doc(Bound on the rounding error of ``p``, see `Interaction3f.p_err`. Records
+built from a surface interaction carry the bound along the geometric
+normal while ``n`` holds the shading normal.)doc";
 
 static const char *__doc_mitsuba_PositionSample_pdf = R"doc(Probability density at the sample)doc";
 
@@ -9368,7 +9390,9 @@ static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_has_null_shapes = R"doc(Does the scene contain shapes with 'null' BSDFs?)doc";
 
-static const char *__doc_mitsuba_Scene_m_instance_transforms = R"doc(Flattened sequence of instance ``to_world`` matrices (12 floats each))doc";
+static const char *__doc_mitsuba_Scene_m_instance_transforms =
+R"doc(Flattened sequence of instance ``to_world`` matrices and their
+inverses (2 x 12 floats each))doc";
 
 static const char *__doc_mitsuba_Scene_m_instances = R"doc(Instances in order of appearance in ``m_shapes``.)doc";
 
@@ -9399,35 +9423,29 @@ static const char *__doc_mitsuba_Scene_m_silhouette_shapes_dr = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_thread_reordering = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_null_walk =
-R"doc(Walk along ``ray`` through surfaces with null transmission
+R"doc(Walk along ``ray`` and accumulate transmittance due to surfaces with
+``null`` BSDFs
 
 The walk visits the shapes matching ``ray_mask`` from front to back
-and accumulates the product of their `BSDF.eval_null()` values. It
-provides the shared implementation of `ray_test_tr()` and
-`ray_intersect_tr()`.
+and accumulates the product of their `BSDF.eval_null()` values.
 
 Args:
-    ray: The ray to follow. It may be attached to AD variables and
-        stays unchanged.
+    ray: The ray to follow.
     ray_flags: Only the `RayFlags.FollowShape` and
-        `RayFlags.DetachShape` bits are used. They select how the
-        crossed surfaces attach to the ray.
+        `RayFlags.DetachShape` bits are used. It influences
+        the derivative computation of intersected surfaces.
     ray_mask: Visibility mask of the shapes to consider.
-    stop_at_surface: When ``true``, the walk crosses null shapes until
-        it reaches a shape that is opaque or an emitter, and the
-        returned intersection refers to that shape with ``t``
-        measured from ``ray.o``. When ``false``, the walk crosses
-        every shape it meets until the ray leaves the scene or the
-        transmittance reaches zero. The caller must then restrict
-        ``ray_mask`` to null shapes, and the returned intersection
-        is always invalid.
-    active: Mask of the lanes that take part in the walk.
+    stop_at_surface: When ``true``, the walk continues until it
+        encounters a shape that is opaque or an emitter.
+        When ``false``, it continues until no more intersections
+        can be found or when the transmittance reaches zero.
+        The caller should restrict ``ray_mask`` to null shapes
+        in this cae, and the returned intersection is always invalid.
+    active: Active mask
 
 Returns:
     A pair ``(pi, tr)`` of the preliminary intersection and the
-    transmittance product. The latter is one when no shape was
-    crossed and follows the conventions of `ray_test_tr()` in
-    polarized and differentiable modes.)doc";
+    transmittance product.)doc";
 
 static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
@@ -12209,6 +12227,17 @@ Args:
 
     far: Far clipping plane)doc";
 
+static const char *__doc_mitsuba_Transform_position_error =
+R"doc(Bound the rounding error of a transformed point
+
+Returns a bound on the rounding error of ``(*this) * p`` along a unit
+vector ``n``. Every matrix entry and every coordinate of ``p`` is
+assumed to carry a relative error of ``mi.math.PositionEpsilon``, and
+the coordinates of ``p`` additionally carry the absolute error
+``in_err``. Its default value equals the relative error and therefore
+suits inputs of unit magnitude. Shapes use this function to fill in
+`Interaction3f.p_err`. Only valid for affine transformations.)doc";
+
 static const char *__doc_mitsuba_Transform_rotate = R"doc(Create a rotation transformation around an arbitrary axis in 3D. The angle is specified in degrees)doc";
 
 static const char *__doc_mitsuba_Transform_rotate_2 = R"doc(Create a rotation transformation in 2D. The angle is specified in degrees)doc";
@@ -12844,6 +12873,17 @@ static const char *__doc_mitsuba_end = R"doc()doc";
 static const char *__doc_mitsuba_eval_reflectance = R"doc()doc";
 
 static const char *__doc_mitsuba_eval_transmittance = R"doc()doc";
+
+static const char *__doc_mitsuba_face_state =
+R"doc(Face state word of a triangle with the given vertex positions
+
+The word stores the position error bound along the face normal (see
+``FaceErrorMask``), with ``eps`` the ``mi.math.PositionEpsilon`` of the
+variant. The overload with texture coordinates additionally sets
+``FaceUVFlipped`` when the UV triangle is mirrored, which decides the
+handedness of the interpolated tangent frame.)doc";
+
+static const char *__doc_mitsuba_face_state_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_field =
 R"doc(Convenience wrapper to simultaneously instantiate a host and a device
@@ -14434,6 +14474,8 @@ Returns:
 
 static const char *__doc_mitsuba_radical_inverse_2 = R"doc(Van der Corput radical inverse in base 2)doc";
 
+static const char *__doc_mitsuba_ray_error = R"doc(Bound on the rounding error of the point ``ray(t)`` along the unit vector ``n``)doc";
+
 static const char *__doc_mitsuba_reduce_bbox =
 R"doc(Compute the bounding box of an interleaved position buffer.
 
@@ -15108,6 +15150,19 @@ static const char *__doc_mitsuba_string_to_upper = R"doc(Return a upper-case ver
 static const char *__doc_mitsuba_string_tokenize = R"doc(Chop up the string given a set of delimiters (warning: not unicode compliant))doc";
 
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
+
+static const char *__doc_mitsuba_triangle_position_error =
+R"doc(Bound on the rounding error of a position on the triangle ``(p0, p1,
+p2)`` along the unit vector ``n``, in units of ``eps``
+
+The bound must cover the rounding of the barycentric interpolation that
+produces the position, and the rounding of the intersection test that a
+ray spawned from it undergoes against the same triangle. The first part
+scales with the largest vertex magnitude per axis. The second part scales
+with the two edges that the intersection routine forms from one of the
+vertices, and its cross products mix all of their coordinates into every
+axis. Which vertex the ray tracing backend picks is unknown, hence the sum
+of the two largest edges covers every choice.)doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 

@@ -90,7 +90,7 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
     using Float    = Float_;
     using Spectrum = Spectrum_;
 
-    MI_IMPORT_BASE(PositionSample, p, n, uv, time, pdf, delta)
+    MI_IMPORT_BASE(PositionSample, p, n, p_err, uv, time, pdf, delta)
 
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
@@ -178,13 +178,13 @@ struct SilhouetteSample : public PositionSample<Float_, Spectrum_> {
      */
     Ray3f spawn_ray(Wavelength wavelengths = dr::zeros<Wavelength>()) const {
         Vector3f o_offset = (1 + dr::max(dr::abs(p))) *
-                            (d * offset + n * math::ShapeEpsilon<Float>);
+                            (d * offset + n * math::PositionEpsilon<Float>);
         return Ray3f(p + o_offset, d, 0.f, wavelengths);
     }
 
     // =============================================================
 
-    DRJIT_STRUCT(SilhouetteSample, p, n, uv, time, pdf, delta,
+    DRJIT_STRUCT(SilhouetteSample, p, n, p_err, uv, time, pdf, delta,
                  discontinuity_type, d, silhouette_d, prim_index, scene_index,
                  flags, projection_index, shape, foreshortening, offset)
 };

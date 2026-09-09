@@ -170,6 +170,7 @@ struct Interaction {
     using Spectrum = Spectrum_;
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
+    using PositionSample3f = typename RenderAliases::PositionSample3f;
 
     // =============================================================
 
@@ -192,6 +193,12 @@ struct Interaction {
     /// Geometric normal (only valid for `SurfaceInteraction3f`)
     Normal3f n;
 
+    /**
+     * Bound on the rounding error of ``p`` along ``n``, filled in by shapes.
+     * `Interaction3f.spawn_ray` offsets the ray origin by this amount.
+     */
+    Float p_err = 0.f;
+
     // =============================================================
 
     // =============================================================
@@ -200,8 +207,9 @@ struct Interaction {
 
     /// Constructor
     Interaction(Float t, Float time, const Wavelength &wavelengths,
-                const Point3f &p, const Normal3f &n = 0.f)
-        : t(t), time(time), wavelengths(wavelengths), p(p), n(n) { }
+                const Point3f &p, const Normal3f &n = 0.f, Float p_err = 0.f)
+        : t(t), time(time), wavelengths(wavelengths), p(p), n(n),
+          p_err(p_err) { }
 
     /// Virtual destructor
     virtual ~Interaction() = default;
@@ -217,6 +225,7 @@ struct Interaction {
         wavelengths = dr::zeros<Wavelength>(size);
         p           = dr::zeros<Point3f>(size);
         n           = dr::zeros<Normal3f>(size);
+        p_err       = dr::zeros<Float>(size);
     }
 
     /// Is the current interaction valid?
@@ -229,7 +238,13 @@ struct Interaction {
         return Ray3f(offset_p(d), d, dr::Largest<Float>, time, wavelengths);
     }
 
-    /// Spawn a finite ray towards the given position
+    /**
+     * Spawn a finite ray towards a bare point
+     *
+     * The segment is shortened by ``mi.math.ShadowEpsilon`` since the point
+     * carries no error bound. Prefer the `PositionSample3f` overload when the
+     * target lies on a shape.
+     */
     Ray3f spawn_ray_to(const Point3f &t) const {
         Point3f o = offset_p(t - p);
         Vector3f d = t - o;
@@ -239,22 +254,46 @@ struct Interaction {
                      wavelengths);
     }
 
+    /**
+     * Spawn a finite ray towards a sampled position
+     *
+     * The segment stops short of the target by `PositionSample3f.p_err`
+     * projected onto the segment, plus a relative amount that absorbs the
+     * rounding of the distance. The endpoint moves back along the ray rather
+     * than along ``ps.n``, which is more robust when ``ps.n`` is a shading
+     * normal.
+     */
+    Ray3f spawn_ray_to(const PositionSample3f &ps) const {
+        Point3f o = offset_p(ps.p - p);
+        Vector3f d = ps.p - o;
+        Float dist = dr::norm(d);
+        d /= dist;
+        Float cos_theta = dr::maximum(dr::abs_dot(ps.n, d), 0.1f),
+              maxt = dr::fnmadd(dist, math::PositionEpsilon<Float>, dist) -
+                     dr::detach(ps.p_err) / cos_theta;
+        return Ray3f(o, d, dr::maximum(maxt, 0.f), time, wavelengths);
+    }
+
     // =============================================================
 
-    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n);
+    DRJIT_STRUCT(Interaction, t, time, wavelengths, p, n, p_err);
 
 private:
-    /**
-     * Compute an offset position, used when spawning a ray from this
-     * interaction. When the interaction is on the surface of a shape, the
-     * position is offset along the surface normal to prevent self intersection.
-     */
+    /// Offset ``p`` along ``n`` towards the side of ``d`` by ``p_err``
     Point3f offset_p(const Vector3f &d) const {
-        Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>;
-        mag = dr::detach(dr::mulsign(mag, dr::dot(n, d)));
+        Float mag = dr::detach(dr::mulsign(p_err, dr::dot(n, d)));
         return dr::fmadd(mag, dr::detach(n), p);
     }
 };
+
+/// Bound on the rounding error of the point ``ray(t)`` along the unit vector ``n``
+template <typename Ray3f, typename Float, typename Normal3f>
+Float ray_error(const Ray3f &ray, const Float &t, const Normal3f &n) {
+    using Vector = typename Ray3f::Vector;
+    Vector mag = Vector(dr::abs(dr::detach(ray.o))) +
+                 dr::abs(dr::detach(ray.d) * dr::detach(t));
+    return dr::dot(dr::abs(dr::detach(n)), mag) * math::PositionEpsilon<Float>;
+}
 
 // -----------------------------------------------------------------------------
 
@@ -273,7 +312,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     using Spectrum = Spectrum_;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, p_err, is_valid)
 
     MI_IMPORT_RENDER_BASIC_TYPES()
     MI_IMPORT_OBJECT_TYPES()
@@ -337,7 +376,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     explicit SurfaceInteraction(const PositionSample3f &ps,
                                 const Wavelength &wavelengths)
-        : Base(0.f, ps.time, wavelengths, ps.p, ps.n), uv(ps.uv),
+        : Base(0.f, ps.time, wavelengths, ps.p, ps.n, ps.p_err), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
           wi(0), prim_index(0) {}
 
@@ -618,7 +657,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     // =============================================================
 
-    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, shape, uv,
+    DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, p_err, shape, uv,
                  sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, wi,
                  prim_index, instance_index)
 };
@@ -639,7 +678,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
     using Index = typename CoreAliases::UInt32;
 
     // Make parent fields/functions visible
-    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, is_valid)
+    MI_IMPORT_BASE(Interaction, t, time, wavelengths, p, n, p_err, is_valid)
     // =============================================================
 
 
@@ -695,7 +734,7 @@ struct MediumInteraction : Interaction<Float_, Spectrum_> {
 
     // =============================================================
 
-    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, medium,
+    DRJIT_STRUCT(MediumInteraction, t, time, wavelengths, p, n, p_err, medium,
                  sh_frame, wi, sigma_s, sigma_n, sigma_t,
                  combined_extinction, mint)
 };

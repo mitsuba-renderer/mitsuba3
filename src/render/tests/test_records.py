@@ -20,6 +20,7 @@ def test01_position_sample_construction_single(variant_scalar_rgb):
     expected = """PositionSample[
   p=[0, 42, 0],
   n=[0, 0, 0.4],
+  p_err=0,
   uv=[1, 2],
   time=0,
   pdf=0.002,
@@ -58,6 +59,7 @@ def test02_position_sample_construction_vec(variants_vec_backends_once):
      [0, 0, 0],
      [0, 0, 0],
      [0, 0, 0]],
+  p_err=[0, 0, 0, 0, 0],
   uv=[[0, 0],
       [0, 0],
       [0, 0],
@@ -90,6 +92,7 @@ def test04_direction_sample_construction_single(variants_vec_backends_once):
     assert str(record) == """DirectionSample[
   p=[[1, 2, 3]],
   n=[[4, 5, 6]],
+  p_err=[0],
   uv=[[7, 8]],
   time=[],
   pdf=[0.002],

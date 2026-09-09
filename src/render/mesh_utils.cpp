@@ -93,11 +93,8 @@ void PackedMesh::transform_records() {
 
     if (reverse_winding) {
         uint32_t *rec = faces.data();
-        for (size_t i = 0; i < face_count; ++i, rec += MeshFaceStride) {
+        for (size_t i = 0; i < face_count; ++i, rec += MeshFaceStride)
             std::swap(rec[0], rec[2]);
-            if (tangents)
-                rec[3] ^= FaceUVFlipped;
-        }
     }
 
     m_transform = m_negate_normals = reverse_winding = false;
@@ -137,8 +134,7 @@ void PackedMesh::set_vertex(size_t i, const ScalarPoint3f &p_,
     bbox.expand(p);
 }
 
-void PackedMesh::set_face(size_t i, const ScalarVector3u &indices,
-                          uint32_t bsdf) {
+void PackedMesh::set_face(size_t i, const ScalarVector3u &indices) {
     using PackedFace = dr::Array<uint32_t, MeshFaceStride>;
     Assert(i < face_count);
     m_written = true;
@@ -149,15 +145,13 @@ void PackedMesh::set_face(size_t i, const ScalarVector3u &indices,
               "vertices (%u, %u, %u), but the mesh only has %zu vertices.",
               i, indices.x(), indices.y(), indices.z(), vertex_count);
 
-    if (bsdf != 0)
-        layout |= Layout::FaceBSDFs;
-
     uint32_t i0 = indices.x(), i2 = indices.z();
     if (reverse_winding)
         std::swap(i0, i2);
 
+    // The fourth word is derived data, see Mesh::update_face_state()
     dr::store(faces.data() + i * MeshFaceStride,
-              PackedFace(i0, indices.y(), i2, bsdf));
+              PackedFace(i0, indices.y(), i2, 0u));
 }
 
 float *PackedMesh::add_attribute(std::string_view name, size_t dim,
@@ -222,8 +216,6 @@ void PackedMesh::add_tangents() {
 
         ScalarVector2f t1 = uv[1] - uv[0], t2 = uv[2] - uv[0];
         float area2 = dr::fmsub(t1.x(), t2.y(), t1.y() * t2.x());
-        if (area2 < 0.f)
-            frec[3] |= FaceUVFlipped;
 
         ScalarVector3f vos =
             dr::fmsub(t2.y(), p[1] - p[0], t1.y() * (p[2] - p[0]));
@@ -274,6 +266,30 @@ void PackedMesh::add_tangents() {
     }
 
     layout |= Layout::Tangents;
+}
+
+void PackedMesh::update_face_state(float eps) {
+    bool tangents = has_flag(layout, Layout::Tangents);
+    const float *vrec = vertices.data();
+    uint32_t *frec = faces.data();
+
+    for (size_t f = 0; f < face_count; ++f, frec += MeshFaceStride) {
+        const float *v[3] = { vrec + (size_t) frec[0] * MeshVertexStride,
+                              vrec + (size_t) frec[1] * MeshVertexStride,
+                              vrec + (size_t) frec[2] * MeshVertexStride };
+        ScalarPoint3f p0 = dr::load<ScalarPoint3f>(v[0] + PackedPositionOffset),
+                      p1 = dr::load<ScalarPoint3f>(v[1] + PackedPositionOffset),
+                      p2 = dr::load<ScalarPoint3f>(v[2] + PackedPositionOffset);
+
+        if (tangents)
+            frec[3] = face_state(p0, p1, p2,
+                                 dr::load<ScalarPoint2f>(v[0] + PackedTexcoordOffset),
+                                 dr::load<ScalarPoint2f>(v[1] + PackedTexcoordOffset),
+                                 dr::load<ScalarPoint2f>(v[2] + PackedTexcoordOffset),
+                                 eps);
+        else
+            frec[3] = face_state(p0, p1, p2, eps);
+    }
 }
 
 /// Missing indexed corner entries resolve to zeros
@@ -384,7 +400,7 @@ PackedMesh corner_to_packed_mesh(
     // tri_corner maps back to the input face corners. Triangles pass through.
     // Quads split along corners 0-2. Larger polygons fan around corner 0.
 
-    std::vector<uint32_t> tri_corner, tri_bsdf;
+    std::vector<uint32_t> tri_corner;
     size_t n_tris = n_corners / 3;
     if (desc.face_offsets) {
         const uint32_t *off = desc.face_offsets;
@@ -402,16 +418,12 @@ PackedMesh corner_to_packed_mesh(
         }
 
         tri_corner.reserve(3 * n_tris);
-        if (desc.bsdf_index)
-            tri_bsdf.reserve(n_tris);
         for (size_t f = 0; f < n_faces; ++f) {
             uint32_t begin = off[f], n = off[f + 1] - off[f];
             for (uint32_t i = 1; i + 1 < n; ++i) {
                 tri_corner.push_back(begin);
                 tri_corner.push_back(begin + i);
                 tri_corner.push_back(begin + i + 1);
-                if (desc.bsdf_index)
-                    tri_bsdf.push_back(desc.bsdf_index[f]);
             }
         }
     }
@@ -509,11 +521,9 @@ PackedMesh corner_to_packed_mesh(
              *nidx_out = pm.normal_index.data(),
              *faces_out = pm.faces.data();
 
+    // The fourth word is derived data, see Mesh::update_face_state()
     for (size_t t = 0; t < n_tris; ++t)
-        faces_out[t * MeshFaceStride + 3] =
-            desc.bsdf_index
-                ? (desc.face_offsets ? tri_bsdf[t] : desc.bsdf_index[t])
-                : 0;
+        faces_out[t * MeshFaceStride + 3] = 0;
 
     // Weld each surface point's corners in turn, so that ids follow the
     // source vertex order: conflict-free input keeps its vertex order

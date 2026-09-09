@@ -367,7 +367,7 @@ class PRBVolpathIntegrator(RBIntegrator):
         medium = dr.select(active, medium, dr.zeros(mi.MediumPtr))
         medium[(active_surface & si.is_medium_transition())] = si.target_medium(ds.d)
 
-        ray = ref_interaction.spawn_ray_to(ds.p)
+        ray = ref_interaction.spawn_ray_to(ds)
         max_dist = mi.Float(ray.maxt)
         total_dist = mi.Float(0.0)
         si = dr.zeros(mi.SurfaceInteraction3f)
@@ -431,6 +431,11 @@ class PRBVolpathIntegrator(RBIntegrator):
             # Continue tracing through scene if non-zero weights exist
             active &= (active_medium | active_surface) & dr.any(transmittance != 0.0)
             total_dist[active] += dr.select(active_medium, mei.t, si.t)
+
+            # Account for the rounding-related ray epsilon that Mitsuba
+            # adds when spawning rays
+            total_dist[active & active_surface] += \
+                dr.detach(dr.dot(ray.o - si.p, ray.d))
 
             # If a medium transition is taking place: Update the medium pointer
             has_medium_trans = active_surface & si.is_medium_transition()

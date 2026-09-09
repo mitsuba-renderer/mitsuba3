@@ -14,13 +14,37 @@ NAMESPACE_BEGIN(math)
 // Useful constants in various precisions
 // -----------------------------------------------------------------------
 
-#if (MI_ENABLE_EMBREE)
-template <typename T> constexpr auto RayEpsilon = dr::Epsilon<dr::float32_array_t<T>> * 1500;
+/**
+ * Floating point type in which the ray tracing backend operates
+ *
+ * Embree, OptiX and Metal trace in single precision regardless of the
+ * variant. Only the native kd-tree works in the precision of the variant.
+ */
+template <typename T> using trace_float_t =
+#if defined(MI_ENABLE_EMBREE)
+    dr::float32_array_t<T>;
 #else
-template <typename T> constexpr auto RayEpsilon = dr::Epsilon<T> * 1500;
+    std::conditional_t<dr::is_cuda_v<T> || dr::is_metal_v<T>,
+                       dr::float32_array_t<T>, T>;
 #endif
+
+/// Unit roundoff of the ray tracing backend
+template <typename T> constexpr auto TraceEpsilon = dr::Epsilon<trace_float_t<T>>;
+
+/**
+ * Unit roundoff times a safety factor, which scales the position error
+ * bounds that shapes report (see `Interaction3f.p_err`)
+ */
+template <typename T> constexpr auto PositionEpsilon = TraceEpsilon<T> * 32;
+
+/// Generic tolerance used by a few sensors, emitters and shapes
+template <typename T> constexpr auto RayEpsilon = TraceEpsilon<T> * 1500;
+
+/**
+ * Relative amount by which `Interaction3f.spawn_ray_to` shortens a ray
+ * towards a bare point that carries no error bound of its own
+ */
 template <typename T> constexpr auto ShadowEpsilon = RayEpsilon<T> * 10;
-template <typename T> constexpr auto ShapeEpsilon = RayEpsilon<T> / 80;
 
 // -----------------------------------------------------------------------
 

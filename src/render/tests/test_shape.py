@@ -14,6 +14,7 @@ def test01_ss_repr(variants_vec_backends_once_rgb):
   n=[[0, 0, 0],
      [0, 0, 0],
      [0, 0, 0]],
+  p_err=[0, 0, 0],
   uv=[[0, 0],
       [0, 0],
       [0, 0]],

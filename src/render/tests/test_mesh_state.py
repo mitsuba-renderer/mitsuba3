@@ -147,8 +147,6 @@ def test05_views_stay_symbolic(variant_llvm_ad_rgb):
         for view in (m.positions(), m.normals(), m.texcoords(), m.faces(),
                      m.tangents()):
             assert view.array.state == dr.VarState.Unevaluated
-        # No per-face materials: the view stays empty
-        assert dr.width(m.bsdf_index()) == 0
 
     mi.traverse(m)
     check_symbolic()
@@ -173,7 +171,6 @@ def test06_write_rules(variants_all_rgb):
     # Index fields accept writes at unchanged counts
     faces = np.array(params['faces'])
     params['faces'] = faces[[1, 0]].copy()
-    params['bsdf_index'] = np.uint32([0, 0])
     params.update()
     assert np.all(np.array(m.faces()) == faces[[1, 0]])
 
@@ -234,11 +231,9 @@ def test07_update_geometry_accel(variants_vec_rgb):
 
     # Structural phase: remesh through the parameter map. Fanning every
     # face into three around its centroid leaves the surface unchanged
-    # but resizes all buffers; the per-face material assignment written
-    # below must be rewritten in the same batch.
+    # but resizes all buffers, so the texture coordinates must be
+    # rewritten in the same batch.
     translate([0, 0, 0])
-    params['rect.bsdf_index'] = np.uint32([7, 9])
-    params.update()
 
     faces = np.array(params['rect.faces'])
     pos = np.array(params['rect.positions'])
@@ -253,25 +248,21 @@ def test07_update_geometry_accel(variants_vec_rgb):
                                     center], axis=1) for k in range(3)])
     fan_pos = np.vstack([pos, pos[faces].mean(axis=1)])
     fan_uv = np.vstack([uv, uv[faces].mean(axis=1)])
-    fan_bsdf = np.uint32(np.arange(3 * F) % 2)
 
     params['rect.faces'] = fan
     params['rect.positions'] = fan_pos
-    params['rect.texcoords'] = fan_uv
-    with pytest.raises(RuntimeError, match="'bsdf_index' has 2 entries"):
+    with pytest.raises(RuntimeError, match="'texcoords' has 4 rows"):
         params.update()
 
     params['rect.faces'] = fan
     params['rect.positions'] = fan_pos
     params['rect.texcoords'] = fan_uv
-    params['rect.bsdf_index'] = fan_bsdf
     params.update()
 
     # The old handles remained valid across the repack; the AD identity
     # of the resized tensor was dropped
     assert params['rect.positions'].shape == (V + F, 3)
     assert not dr.grad_enabled(params['rect.positions'])
-    assert np.all(np.array(params['rect.bsdf_index']) == fan_bsdf)
 
     t = scene.ray_intersect_preliminary(ray, coherent=True).t
     dr.assert_allclose(t, init_t)
@@ -301,7 +292,6 @@ def test08_scalar_and_jit_kernels_agree(variants_vec_rgb):
             'tangents': np.array(m.tangents()),
             'packed': np.array(m.packed_vertices()),
             'faces': np.array(mi.traverse(m)['faces']),
-            'bsdf_index': np.array(m.bsdf_index()),
         }
 
     jit = build_and_snapshot()
@@ -318,7 +308,6 @@ def test08_scalar_and_jit_kernels_agree(variants_vec_rgb):
     assert np.allclose(jit['tangents'], scalar['tangents'], atol=1e-5)
     assert np.allclose(jit['packed'], scalar['packed'], atol=1e-5)
     assert np.array_equal(jit['faces'], scalar['faces'])
-    assert np.array_equal(jit['bsdf_index'], scalar['bsdf_index'])
 
 
 def test09_transform(variants_all_rgb):

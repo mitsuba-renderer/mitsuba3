@@ -79,7 +79,6 @@ NAMESPACE_BEGIN(mitsuba)
  * ``positions``       ``TensorXf32``    ``(P, 3)``
  * ``normals``         ``TensorXf32``    ``(N, 3)``              x
  * ``texcoords``       ``TensorXf32``    ``(V, 2)``              x
- * ``bsdf_index``      ``UInt32`` array  ``F``       ``[0, B)``  x
  * ==================  ================  ==========  ==========  ========
  *
  * The fields have the following roles:
@@ -97,8 +96,6 @@ NAMESPACE_BEGIN(mitsuba)
  * - ``positions``: surface positions.
  *
  * - ``normals`` (optional): surface normals.
- *
- * - ``bsdf_index`` (optional): per-face index into a set of ``B`` materials.
  *
  * .. rubric:: Example usage
  *
@@ -225,7 +222,6 @@ public:
          const TensorXf32 &texcoords = TensorXf32(),
          const IndexBuffer &position_index = IndexBuffer(),
          const IndexBuffer &normal_index = IndexBuffer(),
-         const IndexBuffer &bsdf_index = IndexBuffer(),
          bool face_normals = false,
          bool flip_normals = false);
 
@@ -271,16 +267,13 @@ public:
      *     normal_index: Optional map from vertex index to normal group. An empty map
      *         encodes the identity, or the position map when the normal count
      *         matches the surface position count.
-     *
-     *     bsdf_index: Optional per-face material index. An empty buffer stands for zeros.
      */
     void from_fields(const TensorXu32 &faces,
                      const TensorXf32 &positions,
                      const TensorXf32 &normals = TensorXf32(),
                      const TensorXf32 &texcoords = TensorXf32(),
                      const IndexBuffer &position_index = IndexBuffer(),
-                     const IndexBuffer &normal_index = IndexBuffer(),
-                     const IndexBuffer &bsdf_index = IndexBuffer());
+                     const IndexBuffer &normal_index = IndexBuffer());
 
     /**
      * Build the mesh from a packed representation
@@ -292,9 +285,9 @@ public:
      * the parameter interface.
      *
      * The function checks the tensor shapes for consistency but trusts that
-     * any specified indices are in-bounds and that the per-face UV
-     * orientation bits of a tangent layout are consistent with the stored
-     * texture coordinates.
+     * any specified indices are in-bounds. The fourth word of the face
+     * records is derived data that the mesh regenerates, so the caller may
+     * leave it zero.
      *
      * The operation is differentiable in the sense that derivatives propagate
      * between function parameters and the resulting mesh state.
@@ -317,6 +310,12 @@ public:
      *
      *     normal_count: Number of normal groups. Only needed when ``normal_index`` is
      *         nonempty.
+     *
+     *     bbox: Bounding box of the positions, if known.
+     *
+     *     face_state_valid: Set when the fourth face word already holds the
+     *         derived data (see ``update_face_state()``), which lets a mesh
+     *         with usable records skip the kernel that recomputes it.
      */
     void from_packed(Layout layout,
                      const TensorXu32 &packed_faces,
@@ -325,7 +324,8 @@ public:
                      const IndexBuffer &normal_index = IndexBuffer(),
                      size_t position_count = 0,
                      size_t normal_count = 0,
-                     const ScalarBoundingBox3f *bbox = nullptr);
+                     const ScalarBoundingBox3f *bbox = nullptr,
+                     bool face_state_valid = false);
 
     /**
      * Build the mesh from host-side staging data
@@ -462,13 +462,6 @@ public:
      */
     TensorXu32 geometric_faces() const;
 
-    /// Return the per-face BSDF index (size `face_count()`). An empty
-    /// buffer stands for zeros, see ``has_face_bsdfs()``.
-    const IndexBuffer &bsdf_index() const {
-        ensure_views();
-        return m_bsdf_index;
-    }
-
     /// Return the surface position positions as a ``(P, 3)`` tensor
     const TensorXf32 &positions() const {
         ensure_views();
@@ -517,9 +510,6 @@ public:
 
     /// Does the mesh provide interpolated tangents?
     bool has_tangents() const { return has_normals() && has_texcoords(); }
-
-    /// Does this mesh have a per-face BSDF assignment?
-    bool has_face_bsdfs() const { return has_flag(m_layout, Layout::FaceBSDFs); }
 
     /// Does the mesh store per-vertex tangents?
     bool packs_tangent() const { return has_flag(m_layout, Layout::Tangents); }
@@ -710,6 +700,15 @@ public:
     MI_INLINE PackedFace<Index>
     packed_face(Index index, dr::mask_t<Index> active = true) const {
         return dr::gather<PackedFace<Index>>(m_packed_faces, index, active);
+    }
+
+    /// Decode the position error bound stored in a packed face record
+    template <typename Record>
+    static MI_INLINE auto face_position_error(const Record &rec) {
+        using Word    = dr::value_t<Record>;
+        using Value32 = dr::float32_array_t<Word>;
+        using Value   = dr::replace_scalar_t<Word, ScalarFloat>;
+        return Value(dr::reinterpret_array<Value32>(rec[3] & FaceErrorMask));
     }
 
     /**
@@ -1075,9 +1074,8 @@ protected:
      * Reverse the corner order of every face, which flips the
      * geometric normals
      *
-     * The orientation of each face's UV triangle reverses along with it, so
-     * the packed tangent frames are updated to match. The caller is
-     * responsible for the subsequent ``refresh()``.
+     * The caller is responsible for the subsequent ``refresh()``, which
+     * also recomputes the UV orientation bits.
      */
     void flip_winding();
 
@@ -1114,17 +1112,28 @@ protected:
     /**
      * Regenerate everything downstream of the packed state
      *
-     * Every mutation ends with a call to this method. It rebuilds the
-     * bounding box (adopting ``bbox`` when given), the area sampling table
-     * of emitter/sensor meshes, the UV parameterization of spatially
-     * varying emitters, and the silhouette structures of gradient-enabled
-     * meshes, refreshes the raw data pointers, marks the scene
-     * acceleration structure dirty, and rebinds the field views unless
-     * they are dormant. The directed edge structure is not touched here:
-     * it is expensive and purely topological, so `Object.parameters_changed()`
-     * clears it only when a topology write occurs.
+     * Every mutation ends with a call to this method. It recomputes the
+     * derived word of every face record, rebuilds the bounding box
+     * (adopting ``bbox`` when given), the area sampling table of
+     * emitter/sensor meshes, the UV parameterization of spatially varying
+     * emitters, and the silhouette structures of gradient-enabled meshes,
+     * refreshes the raw data pointers, marks the scene acceleration
+     * structure dirty, and rebinds the field views unless they are dormant.
+     * The directed edge structure is not touched here: it is expensive and
+     * purely topological, so `Object.parameters_changed()` clears it only
+     * when a topology write occurs. ``face_state_valid`` skips the
+     * recomputation of the face state when the caller already derived them.
      */
-    void refresh(const ScalarBoundingBox3f *bbox = nullptr);
+    void refresh(const ScalarBoundingBox3f *bbox = nullptr,
+                 bool face_state_valid = false);
+
+    /**
+     * Recompute the state word of every packed face record
+     *
+     * The word holds derived data, see ``face_state()``. It comes from the
+     * packed vertex records, so the pass must run whenever those change.
+     */
+    void update_face_state();
 
     /// (Re-)compute the bounding box from the packed positions.
     void recompute_bbox() const;
@@ -1273,7 +1282,7 @@ protected:
     /// Set by the first successful build; construction is one-shot
     bool m_built = false;
 
-    /// Packed faces, material IDs and UV orientation bits (4 x UInt32 per face)
+    /// Packed faces: vertex indices and a derived word (4 x UInt32 per face)
     IndexBuffer m_packed_faces;
 
     /// Packed per-vertex state (8 x Float32 per vertex)
@@ -1297,7 +1306,6 @@ protected:
     TensorXf32 m_normals;
     TensorXf32 m_texcoords;
     TensorXu32 m_faces;
-    IndexBuffer m_bsdf_index;
     TensorXf32 m_tangents;
 
     /// Provenance records, see `parts()`. Usually empty.

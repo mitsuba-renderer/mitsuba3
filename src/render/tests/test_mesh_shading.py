@@ -421,29 +421,35 @@ def test09_tangent_weighting_convention(variants_all_rgb):
 
 
 def test10_uv_flip_bits(variants_all_rgb):
-    """The cached UV orientation bits share a lane with the per-face BSDF
-    index, and follow texture coordinate edits without disturbing it."""
+    """The cached UV orientation bits share a lane with the position error
+    bound, and follow texture coordinate edits without disturbing it."""
     positions = np.float32([[0, 0, 0], [1, 0, 0], [0, 1, 0],
-                            [2, 0, 0], [3, 0, 0], [2, 1, 0]])
+                            [2, 0, 2], [3, 0, 2], [2, 1, 2]])
     uv = np.float32([[0, 0], [1, 0], [0, 1],    # det > 0
                      [0, 0], [0, 1], [1, 0]])   # det < 0
     m = mi.Mesh("mirrored")
     m.from_fields(faces=np.arange(6, dtype=np.uint32).reshape(2, 3),
                   positions=positions, texcoords=uv,
-                  normals=np.tile(np.float32([0, 0, 1]), (6, 1)),
-                  bsdf_index=np.uint32([3, 5]))
+                  normals=np.tile(np.float32([0, 0, 1]), (6, 1)))
     m.set_bsdf(anisotropic_bsdf())
     assert m.packs_tangent()
 
-    def flipped():
+    def hits():
         scene = mi.load_dict({'type': 'scene', 'm': m})
-        return [bool(dr.all(scene.ray_intersect(mi.Ray3f(
-                    mi.Point3f(x, 0.25, 1), mi.Vector3f(0, 0, -1)
-                )).frame_flipped)) for x in (0.25, 2.25)]
+        return [scene.ray_intersect(mi.Ray3f(
+                    mi.Point3f(x, 0.25, 3), mi.Vector3f(0, 0, -1)
+                )) for x in (0.25, 2.25)]
+
+    def flipped():
+        return [bool(dr.all(si.frame_flipped)) for si in hits()]
+
+    # Each face stores a bound along its normal: both faces have the same
+    # edges, and the second one sits at height 2
+    p_err = [float(dr.slice(si.p_err)) for si in hits()]
+    assert p_err[0] > 0
+    assert dr.allclose(p_err[1] - p_err[0], 2 * mi.math.PositionEpsilon)
 
     assert flipped() == [False, True]
-    assert np.all(np.array(m.bsdf_index()) == [3, 5])
-    assert np.all(np.array(mi.traverse(m)['bsdf_index']) == [3, 5])
     assert np.all(np.array(m.faces()) == np.arange(6).reshape(2, 3))
 
     # Mirroring every texture coordinate swaps both orientations
@@ -453,16 +459,12 @@ def test10_uv_flip_bits(variants_all_rgb):
     params['texcoords'] = edited
     params.update()
     assert flipped() == [True, False]
-    assert np.all(np.array(m.bsdf_index()) == [3, 5])
+    assert [float(dr.slice(si.p_err)) for si in hits()] == p_err
 
-    # The BSDF index lane is writable and survives a 'faces' rewrite at an
-    # unchanged face count
-    params['bsdf_index'] = np.uint32([4, 6])
-    params.update()
-    assert np.all(np.array(m.bsdf_index()) == [4, 6])
+    # A 'faces' rewrite at an unchanged face count keeps the bounds
     params['faces'] = np.array(params['faces'])[[1, 0]].copy()
     params.update()
-    assert np.all(np.array(m.bsdf_index()) == [4, 6])
+    assert [float(dr.slice(si.p_err)) for si in hits()] == p_err
 
 
 @fresolver_append_path

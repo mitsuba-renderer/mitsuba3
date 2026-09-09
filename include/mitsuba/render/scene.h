@@ -786,7 +786,8 @@ protected:
     /// Instances in order of appearance in ``m_shapes``.
     std::vector<const Shape *> m_instances;
 
-    /// Flattened sequence of instance ``to_world`` matrices (12 floats each)
+    /// Flattened sequence of instance ``to_world`` matrices and their
+    /// inverses (2 x 12 floats each)
     DynamicBuffer<Float> m_instance_transforms;
 
     /// Instancing-aware expansion of a preliminary intersection (see

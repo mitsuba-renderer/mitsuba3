@@ -358,6 +358,7 @@ public:
 
         Vector3f rad_vec_d = si.p - dr::detach(c);
         si.n = dr::normalize(rad_vec_d);
+        si.p_err = ray_error(ray, pi.t, si.n);
 
         // Surface position at the detached parameterization: the offset from the
         // center line is held fixed in the curve's frame, so that it rotates

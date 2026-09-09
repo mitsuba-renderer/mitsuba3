@@ -278,6 +278,7 @@ public:
         PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p     = to_world * p;
         ps.n     = dr::normalize(to_world * n);
+        ps.p_err = to_world.position_error(p, ps.n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
@@ -700,6 +701,7 @@ public:
         si.p = dr::detach(to_world) * local;
         si.n = Normal3f(dr::normalize(
             dr::detach(to_world) * Normal3f(local.x(), local.y(), 0.f)));
+        si.p_err = to_world.position_error(local, si.n);
 
         // The local coordinates are static as the cylinder moves
         Point3f p_att = to_world * local;

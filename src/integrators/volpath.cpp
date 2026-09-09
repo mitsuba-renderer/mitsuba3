@@ -402,7 +402,7 @@ public:
             return { emitter_val, ds };
         }
 
-        Ray3f ray = ref_interaction.spawn_ray_to(ds.p);
+        Ray3f ray = ref_interaction.spawn_ray_to(ds);
         Float max_dist = ray.maxt;
 
         // Potentially escaping the medium if this is the current medium's boundary
@@ -525,6 +525,12 @@ public:
 
             // Update the ray with new origin & t parameter
             dr::masked(ray, active_surface) = si.spawn_ray(ray.d);
+
+            // Account for the rounding-related ray epsilon that Mitsuba
+            // adds when spawning rays
+            dr::masked(total_dist, active_surface) +=
+                dr::detach(dr::dot(ray.o - si.p, ray.d));
+
             ray.maxt = remaining_dist;
             needs_intersection |= active_surface;
 

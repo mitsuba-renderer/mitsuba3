@@ -152,11 +152,6 @@ surface points, and ``N`` normal groups:
    - Vertex indices of each triangle, in ``[0, V)``
    - |exposed|, |discontinuous|
 
- * - bsdf_index
-   - :paramtype:`UInt32` ``(F,)``
-   - Per-face BSDF index. An empty list indicates that all faces use BSDF entry 0.
-   - |exposed|
-
  * - position_index
    - :paramtype:`UInt32` ``(V,)``
    - Surface point of each vertex, in ``[0, P)``. An empty list encodes the

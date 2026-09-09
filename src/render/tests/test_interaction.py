@@ -41,6 +41,7 @@ def test02_intersection_construction(variant_scalar_rgb):
   wavelengths=[],
   p=[1, 2, 3],
   n=[4, 5, 6],
+  p_err=0,
   shape=0x0,
   uv=[7, 8],
   sh_frame=Frame[

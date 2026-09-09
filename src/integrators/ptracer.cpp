@@ -349,7 +349,7 @@ public:
         // The segment toward the sensor corresponds to a directly visible
         // (camera) ray, so shapes hidden from the camera do not occlude it.
         // Surfaces with null transmission attenuate it instead.
-        Ray3f sensor_ray = si.spawn_ray_to(sensor_ds.p);
+        Ray3f sensor_ray = si.spawn_ray_to(sensor_ds);
         Spectrum tr = scene->ray_test_tr(sensor_ray, +RayFlags::Default, false,
                                          +RayMask::Primary, active);
         active &= dr::any(unpolarized_spectrum(tr) != 0.f);

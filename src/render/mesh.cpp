@@ -213,11 +213,10 @@ MI_VARIANT Mesh<Float, Spectrum>::Mesh(std::string_view name,
                                        const TensorXf32 &texcoords,
                                        const IndexBuffer &position_index,
                                        const IndexBuffer &normal_index,
-                                       const IndexBuffer &bsdf_index,
                                        bool face_normals, bool flip_normals)
     : Mesh(name, face_normals, flip_normals) {
     from_fields(faces, positions, normals, texcoords, position_index,
-                normal_index, bsdf_index);
+                normal_index);
 }
 
 /// Raise when the mesh was already built
@@ -244,8 +243,7 @@ void Mesh<Float, Spectrum>::from_fields(const TensorXu32 &faces,
                                         const TensorXf32 &normals,
                                         const TensorXf32 &texcoords,
                                         const IndexBuffer &position_index,
-                                        const IndexBuffer &normal_index,
-                                        const IndexBuffer &bsdf_index) {
+                                        const IndexBuffer &normal_index) {
     require_unbuilt(m_built, m_filename, "from_fields");
     drop_views();
 
@@ -264,7 +262,6 @@ void Mesh<Float, Spectrum>::from_fields(const TensorXu32 &faces,
     m_positions      = positions;
     m_texcoords      = texcoords;
     m_position_index = position_index;
-    m_bsdf_index     = bsdf_index;
     m_normals        = m_face_normals ? TensorXf32() : normals;
     m_normal_index   = m_face_normals ? IndexBuffer() : normal_index;
 
@@ -279,7 +276,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::drop_views() {
     m_texcoords  = TensorXf32(FloatBuffer(), { 0, 2 });
     m_faces      = TensorXu32(IndexBuffer(), { 0, 3 });
     m_tangents   = TensorXf32(FloatBuffer(), { 0, 3 });
-    m_bsdf_index = IndexBuffer();
 }
 
 MI_VARIANT void
@@ -290,7 +286,8 @@ Mesh<Float, Spectrum>::from_packed(Layout layout,
                                    const IndexBuffer &normal_index,
                                    size_t position_count,
                                    size_t normal_count,
-                                   const ScalarBoundingBox3f *bbox) {
+                                   const ScalarBoundingBox3f *bbox,
+                                   bool face_state_valid) {
     require_unbuilt(m_built, m_filename, "from_packed");
     require_baked(m_flip_normals ||
                   m_to_world.scalar() != ScalarAffineTransform4f(),
@@ -358,7 +355,7 @@ Mesh<Float, Spectrum>::from_packed(Layout layout,
              /* flip_normals */ false, /* updating */ false, bbox);
         drop_views();
     } else {
-        refresh(bbox);
+        refresh(bbox, face_state_valid);
         m_built = true;
     }
 }
@@ -397,15 +394,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::build_views() {
             return dr::gather<UInt32>(m_packed_faces, f * 4u + lane);
         }),
         { F, 3 });
-
-    if (has_face_bsdfs())
-        m_bsdf_index = element_view<IndexBuffer>(
-            F, 1, [&](const UInt32 &f, const UInt32 &) {
-                return dr::gather<UInt32>(m_packed_faces, f * 4u + 3u) &
-                       FaceBSDFIndexMask;
-            });
-    else
-        m_bsdf_index = IndexBuffer();
 
     // Invert the index maps, reusing the cached result when the maps did
     // not change. An empty map is the identity and needs no inverse.
@@ -517,11 +505,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::validate_impl(bool check_bounds,
               "(%zu) or an explicit 'normal_index' map.%s", m_filename, N, V,
               stale("normals"));
 
-    size_t wb = m_bsdf_index.size();
-    if (wb != 0 && wb != F)
-        Throw("Mesh \"%s\": 'bsdf_index' has %zu entries, expected one per "
-              "face (%zu).%s", m_filename, wb, F, stale("bsdf_index"));
-
     if (packs_tangent() && !(has_normals() && has_texcoords()))
         Throw("Mesh \"%s\": tangent computation requires both normals and "
               "texture coordinates.", m_filename);
@@ -613,10 +596,9 @@ void Mesh<Float, Spectrum>::pack(bool regenerate_normals, bool flip_normals,
     bool normals   = !m_face_normals,
          texcoords = !m_texcoords.array().empty(),
          tangents  = normals && texcoords && m_bsdf &&
-                     has_flag(m_bsdf->flags(), BSDFFlags::NeedsTangents),
-         has_bsdf  = !m_bsdf_index.empty();
+                     has_flag(m_bsdf->flags(), BSDFFlags::NeedsTangents);
 
-    m_layout = make_layout(normals, texcoords, tangents, has_bsdf);
+    m_layout = make_layout(normals, texcoords, tangents);
 
     if (normals && regenerate_normals)
         m_normals = compute_normals();
@@ -625,28 +607,13 @@ void Mesh<Float, Spectrum>::pack(bool regenerate_normals, bool flip_normals,
     if (tangents)
         tan = compute_tangents();
 
+    // The fourth word is derived data that refresh() fills in
     m_packed_faces = interleaved<MeshFaceStride, IndexBuffer>(
         m_face_count, [&](const UInt32 &f) {
             Vector3u fi = deinterleave<3>(m_faces, f);
             if (flip_normals)
                 fi = Vector3u(fi[2], fi[1], fi[0]);
-
-            UInt32 flags = has_bsdf ? dr::gather<UInt32>(m_bsdf_index, f)
-                                    : UInt32(0);
-
-            if (tangents) {
-                auto uv = [&](const UInt32 &v) {
-                    return dr::detach(deinterleave<2>(m_texcoords, v));
-                };
-                auto uv0 = uv(fi[0]), duv0 = uv(fi[1]) - uv0,
-                                      duv1 = uv(fi[2]) - uv0;
-                auto flipped =
-                    dr::fmsub(duv0.x(), duv1.y(), duv0.y() * duv1.x()) < 0.f;
-
-                flags |= dr::select(flipped, UInt32(FaceUVFlipped), UInt32(0));
-            }
-
-            return dr::Array<UInt32, MeshFaceStride>(fi[0], fi[1], fi[2], flags);
+            return dr::Array<UInt32, MeshFaceStride>(fi[0], fi[1], fi[2], 0u);
         });
 
     m_packed_vertices = interleaved<MeshVertexStride, FloatBuffer>(
@@ -702,6 +669,10 @@ MI_VARIANT void Mesh<Float, Spectrum>::from_packed(PackedMesh &&data) {
         has_flag(data.layout, Layout::Texcoords))
         data.add_tangents();
 
+    // Derive the fourth face word here, so that the records can be adopted
+    // without a kernel launch
+    data.update_face_state((float) math::PositionEpsilon<Float>);
+
     size_t V = data.vertex_count, F = data.face_count;
 
     ScalarBoundingBox3f bbox = data.bbox;
@@ -744,7 +715,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::from_packed(PackedMesh &&data) {
     from_packed(data.layout,
                 TensorXu32(std::move(faces), { F, MeshFaceStride }),
                 TensorXf32(std::move(vertices), { V, MeshVertexStride }),
-                pidx, nidx, data.position_count, data.normal_count, &bbox);
+                pidx, nidx, data.position_count, data.normal_count, &bbox,
+                /* face_state_valid */ true);
 
     // In spectral variants, color data converts to rgb2spec coefficients
     // in-place in the staging buffer, unless the producer opts out.
@@ -795,8 +767,35 @@ Mesh<Float, Spectrum>::geometric_faces() const {
         { m_face_count, 3 });
 }
 
+MI_VARIANT void Mesh<Float, Spectrum>::update_face_state() {
+    dr::suspend_grad<Float> guard;
+    bool tangents = packs_tangent();
+    float eps = (float) math::PositionEpsilon<Float>;
+
+    m_packed_faces = interleaved<MeshFaceStride, IndexBuffer>(
+        m_face_count, [&](const UInt32 &f) {
+            PackedFace<UInt32> rec = packed_face(f);
+            Point<Float32, 3> p0 = vertex_position(rec[0]),
+                              p1 = vertex_position(rec[1]),
+                              p2 = vertex_position(rec[2]);
+
+            if (tangents)
+                rec[3] = face_state(p0, p1, p2, vertex_texcoord(rec[0]),
+                                    vertex_texcoord(rec[1]),
+                                    vertex_texcoord(rec[2]), eps);
+            else
+                rec[3] = face_state(p0, p1, p2, eps);
+
+            return rec;
+        });
+}
+
 MI_VARIANT
-void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox) {
+void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox,
+                                    bool face_state_valid) {
+    if (!face_state_valid)
+        update_face_state();
+
     if (bbox) {
         m_bbox = *bbox;
         m_bbox_valid = true;
@@ -848,7 +847,6 @@ MI_VARIANT void Mesh<Float, Spectrum>::traverse(TraversalCallback *cb) {
 
     cb->put("faces", m_faces,
             ParamFlags::NonDifferentiable | ParamFlags::Discontinuous);
-    cb->put("bsdf_index", m_bsdf_index, ParamFlags::NonDifferentiable);
     cb->put("position_index", m_position_index,
             ParamFlags::NonDifferentiable | ParamFlags::Discontinuous);
     cb->put("normal_index", m_normal_index, ParamFlags::NonDifferentiable);
@@ -863,8 +861,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::parameters_changed(const std::vector<std:
 
     bool topology = has("faces") || has("position_index"),
          fields   = topology || has("positions") || has("normals") ||
-                    has("normal_index") || has("texcoords") ||
-                    has("bsdf_index");
+                    has("normal_index") || has("texcoords");
 
     if (fields) {
         // The group count of a written 'normal_index' would only be
@@ -1084,7 +1081,7 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
         // Write vertex count
         stream->write(&vertex_indices_count, sizeof(uint8_t));
 
-        // Write the vertex indices, skipping the per-face BSDF lane
+        // Write the vertex indices, skipping the error bound lane
         stream->write(face_ptr, 3 * sizeof(ScalarIndex));
         face_ptr += 4;
 
@@ -1226,13 +1223,10 @@ void Mesh<Float, Spectrum>::transform(const AffineTransform4f &t) {
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::flip_winding() {
-    bool tangents = packs_tangent();
-
     m_packed_faces = interleaved<MeshFaceStride, IndexBuffer>(
         m_face_count, [&](const UInt32 &f) {
             PackedFace<UInt32> rec = packed_face(f);
-            UInt32 flags = tangents ? rec[3] ^ UInt32(FaceUVFlipped) : rec[3];
-            return PackedFace<UInt32>(rec[2], rec[1], rec[0], flags);
+            return PackedFace<UInt32>(rec[2], rec[1], rec[0], rec[3]);
         });
 
     // Invalidate directed edge data structure
@@ -1470,8 +1464,7 @@ Mesh<Float, Spectrum>::sil_dedge_pmf() const {
 
 MI_VARIANT MergeKey Mesh<Float, Spectrum>::merge_key() const {
     return { m_bsdf.get(), m_emitter.get(), m_sensor.get(),
-             m_interior_medium.get(), m_exterior_medium.get(),
-             (Layout) (m_layout & ~Layout::FaceBSDFs),
+             m_interior_medium.get(), m_exterior_medium.get(), m_layout,
              (uint32_t) m_visibility };
 }
 
@@ -1499,7 +1492,7 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
     MergeKey key = first->merge_key();
 
     size_t V = 0, F = 0, P = 0, N = 0;
-    bool any_pmap = false, any_nmap = false, any_bsdf = false;
+    bool any_pmap = false, any_nmap = false;
     ScalarBoundingBox3f bbox;
     std::vector<Part> parts;
     parts.reserve(meshes.size());
@@ -1526,7 +1519,6 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
         P += m->m_position_count; N += m->m_normal_count;
         any_pmap |= m->m_position_index.size() != 0;
         any_nmap |= m->m_normal_index.size() != 0;
-        any_bsdf |= m->has_face_bsdfs();
         bbox.expand(m->bbox());
     }
 
@@ -1644,11 +1636,7 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
     result->m_filename = filename;
     result->m_visibility = first->m_visibility;
 
-    Layout layout = first->m_layout;
-    if (any_bsdf)
-        layout |= Layout::FaceBSDFs;
-
-    result->from_packed(layout,
+    result->from_packed(first->m_layout,
                         TensorXu32(std::move(faces), { F, MeshFaceStride }),
                         TensorXf32(std::move(vertices), { V, MeshVertexStride }),
                         pidx, nidx, any_pmap ? P : 0, any_nmap ? N : 0, &bbox);
@@ -1745,7 +1733,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     std::tie(face_idx, sample.y()) =
         m_area_pmf.sample_reuse(sample.y(), active);
 
-    Vector3u fi = face_indices(face_idx, active);
+    PackedFace<Index> frec = packed_face(face_idx, active);
+    Vector3u fi(frec[0], frec[1], frec[2]);
 
     Point3f p0 = vertex_position(fi[0], active),
             p1 = vertex_position(fi[1], active),
@@ -1783,6 +1772,7 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
     }
 
     ps.n = dr::normalize(ps.n);
+    ps.p_err = face_position_error(frec);
 
     return ps;
 }
@@ -2373,6 +2363,7 @@ Mesh<Float, Spectrum>::compute_surface_interaction(const Ray3f &ray,
     si.t = pi.t;
     si.p = dr::detach(p_att);
     si.n = dr::detach(n_geo);
+    si.p_err = face_position_error(frec);
 
     si.attach_motion(ray, p_att, ray_flags);
 

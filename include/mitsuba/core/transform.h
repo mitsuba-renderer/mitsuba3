@@ -111,6 +111,36 @@ struct Transform {
         return result;
     }
 
+    /**
+     * Bound the rounding error of a transformed point
+     *
+     * Returns a bound on the rounding error of ``(*this) * p`` along a unit
+     * vector ``n``. Every matrix entry and every coordinate of ``p`` is
+     * assumed to carry a relative error of ``mi.math.PositionEpsilon``, and
+     * the coordinates of ``p`` additionally carry the absolute error
+     * ``in_err``. Its default value equals the relative error and therefore
+     * suits inputs of unit magnitude. Shapes use this function to fill in
+     * `Interaction3f.p_err`. Only valid for affine transformations.
+     */
+    template <typename T, typename N, typename Expr = dr::expr_t<Float, T>>
+    Expr position_error(const mitsuba::Point<T, Size - 1> &p, const N &n,
+                        Expr in_err = math::PositionEpsilon<Expr>) const {
+        constexpr Scalar eps = math::PositionEpsilon<Expr>;
+        Matrix m = dr::abs(dr::detach(matrix));
+        auto pd = dr::abs(dr::detach(p));
+        auto nd = dr::abs(dr::detach(n));
+        in_err = dr::detach(in_err);
+        Expr result = 0.f;
+        for (size_t i = 0; i < Size - 1; ++i) {
+            Expr row = m.entry(i, Size - 1) * eps;
+            for (size_t k = 0; k < Size - 1; ++k)
+                row = dr::fmadd(m.entry(i, k),
+                                dr::fmadd(pd.entry(k), eps, in_err), row);
+            result = dr::fmadd(nd.entry(i), row, result);
+        }
+        return result;
+    }
+
     template<typename OtherPoint, bool OtherAffine>
     Transform& operator=(const Transform<OtherPoint, OtherAffine> &t) {
         matrix = Matrix(t.matrix);
