@@ -1,9 +1,12 @@
 #include <mitsuba/core/frame.h>
+#include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/spectrum.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/extremum.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
@@ -131,8 +134,8 @@ However, it supports the use of a spatially varying albedo.
 template <typename Float, typename Spectrum>
 class HomogeneousMedium final : public Medium<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function)
-    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
+    MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction, m_phase_function, m_extremum)
+    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume, Extremum)
 
     HomogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = true;
@@ -141,6 +144,15 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
+
+        // Create a default global extremum structure
+        m_extremum =
+            PluginManager::instance()->create_object<Extremum>(Properties("extremum_global"));
+
+        m_extremum->update_extremum(
+            ScalarBoundingBox3f(-dr::Infinity<ScalarFloat>,
+                                dr::Infinity<ScalarFloat>),
+            m_sigmat.get(), m_scale);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -148,6 +160,17 @@ public:
         cb->put("albedo",  m_albedo, ParamFlags::Differentiable);
         cb->put("sigma_t", m_sigmat, ParamFlags::Differentiable);
         Base::traverse(cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (string::contains(keys, "sigma_t"))
+            m_extremum->update_extremum(
+                ScalarBoundingBox3f(-dr::Infinity<ScalarFloat>,
+                                    dr::Infinity<ScalarFloat>),
+                m_sigmat.get(), std::nullopt);
+
+        if (string::contains(keys, "scale"))
+            m_extremum->set_scale(m_scale);
     }
 
     MI_INLINE auto eval_sigmat(const MediumInteraction3f &mi, Mask active) const {

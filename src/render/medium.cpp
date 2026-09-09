@@ -1,6 +1,8 @@
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/extremum.h>
+#include <mitsuba/render/extremum_segment.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/texture.h>
@@ -35,6 +37,7 @@ MI_VARIANT Medium<Float, Spectrum>::~Medium() { }
 
 MI_VARIANT void Medium<Float, Spectrum>::traverse(TraversalCallback *cb) {
     cb->put("phase_function", m_phase_function, ParamFlags::Differentiable);
+    cb->put("extremum", m_extremum, ParamFlags::NonDifferentiable);
 }
 
 MI_VARIANT
@@ -93,6 +96,31 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
     UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
     UnpolarizedSpectrum pdf = dr::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
+}
+
+MI_VARIANT
+std::tuple<typename Medium<Float, Spectrum>::MediumInteraction3f, Float, Float>
+Medium<Float, Spectrum>::prepare_medium_traversal(const Ray3f &ray, Mask active) const {
+    // Initialize basic medium interaction fields
+    MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
+    mei.wi          = -ray.d;
+    mei.sh_frame    = Frame3f(mei.wi);
+    mei.time        = ray.time;
+    mei.wavelengths = ray.wavelengths;
+    mei.medium      = this;
+
+    // Intersect AABB
+    auto [aabb_its, mint, maxt] = intersect_aabb(ray);
+    aabb_its &= (dr::isfinite(mint) || dr::isfinite(maxt));
+    active &= aabb_its;
+    dr::masked(mint, !active) = 0.f;
+    dr::masked(maxt, !active) = dr::Infinity<Float>;
+
+    dr::masked(mint, active) = dr::maximum(0.f, mint);
+    dr::masked(maxt, active) = dr::minimum(ray.maxt, maxt);
+    mei.mint = mint;
+
+    return {mei, mint, maxt};
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Medium, Object)

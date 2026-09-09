@@ -57,6 +57,12 @@ Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
     NotImplementedError("max_per_channel");
 }
 
+MI_VARIANT std::pair<Float, Float>
+Volume<Float, Spectrum>::extremum(BoundingBox3f /*bbox*/) const {
+    // placeholder minorant
+    return { 0.f, max() };
+}
+
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);

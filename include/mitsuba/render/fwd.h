@@ -13,6 +13,7 @@ template <typename Float, typename Spectrum> class DirectedEdge;
 template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
+template <typename Float, typename Spectrum> class Extremum;
 template <typename Float, typename Spectrum> class Film;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
@@ -41,6 +42,7 @@ template <typename Float, typename Spectrum> struct PositionSample;
 template <typename Float, typename Spectrum> struct BSDFSample3;
 template <typename Float, typename Spectrum> struct SilhouetteSample;
 template <typename Float, typename Spectrum> struct PhaseFunctionContext;
+template <typename Float, typename Spectrum> struct ExtremumSegment;
 template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
@@ -132,6 +134,8 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Emitter                = mitsuba::Emitter<Float, Spectrum>;
     using Endpoint               = mitsuba::Endpoint<Float, Spectrum>;
     using Medium                 = mitsuba::Medium<Float, Spectrum>;
+    using Extremum               = mitsuba::Extremum<Float, Spectrum>;
+    using ExtremumSegment        = mitsuba::ExtremumSegment<Float, Spectrum>;
     using PhaseFunction          = mitsuba::PhaseFunction<Float, Spectrum>;
     using Film                   = mitsuba::Film<Float, Spectrum>;
     using ImageBlock             = mitsuba::ImageBlock<Float, Spectrum>;
@@ -145,6 +149,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ObjectPtr              = dr::replace_scalar_t<Float, const Object *>;
     using BSDFPtr                = dr::replace_scalar_t<Float, const BSDF *>;
     using MediumPtr              = dr::replace_scalar_t<Float, const Medium *>;
+    using ExtremumPtr            = dr::replace_scalar_t<Float, const Extremum *>;
     using PhaseFunctionPtr       = dr::replace_scalar_t<Float, const PhaseFunction *>;
     using ShapePtr               = dr::replace_scalar_t<Float, const Shape *>;
     using MeshPtr                = dr::replace_scalar_t<Float, const Mesh *>;
@@ -196,6 +201,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Interaction3f             = typename RenderAliases::Interaction3f;                       \
     using SurfaceInteraction3f      = typename RenderAliases::SurfaceInteraction3f;                \
     using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
+    using ExtremumSegment           = typename RenderAliases::ExtremumSegment;                     \
     using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
     using SilhouetteSample3f        = typename RenderAliases::SilhouetteSample3f;                  \
@@ -219,6 +225,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Emitter                = typename RenderAliases::Emitter;                                \
     using Endpoint               = typename RenderAliases::Endpoint;                               \
     using Medium                 = typename RenderAliases::Medium;                                 \
+    using Extremum               = typename RenderAliases::Extremum;                               \
     using PhaseFunction          = typename RenderAliases::PhaseFunction;                          \
     using Film                   = typename RenderAliases::Film;                                   \
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \
@@ -228,6 +235,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \
+    using ExtremumPtr            = typename RenderAliases::ExtremumPtr;                            \
     using PhaseFunctionPtr       = typename RenderAliases::PhaseFunctionPtr;                       \
     using ShapePtr               = typename RenderAliases::ShapePtr;                               \
     using MeshPtr                = typename RenderAliases::MeshPtr;                                \

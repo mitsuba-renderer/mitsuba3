@@ -229,6 +229,7 @@ std::string_view plugin_type_name(ObjectType ot) {
         case ObjectType::Integrator: return "integrator";
         case ObjectType::PhaseFunction: return "phase";
         case ObjectType::ReconstructionFilter: return "rfilter";
+        case ObjectType::Extremum: return "extremum";
     }
     return "invalid"; // (to avoid a compiler warning; this should never happen)
 }
