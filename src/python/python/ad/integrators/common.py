@@ -1145,7 +1145,7 @@ class PSIntegrator(ADIntegrator):
         block = film.create_block(normalize=True)
         block.set_coalesce(block.coalesce() and spp >= 4)
         ADIntegrator._splat_to_block(
-            block, film, sensor_ds.uv,
+            block, film, sensor_ds.uv + mi.ScalarPoint2f(block.offset()),
             # Boundary samples are not tied to pixels: normalize by their
             # count and the pixel area, not by `spp`
             value=derivative * (dr.prod(film.crop_size()) /
@@ -1266,7 +1266,7 @@ class PSIntegrator(ADIntegrator):
             block = film.create_block(normalize=True)
             block.set_coalesce(block.coalesce() and spp >= 4)
             ADIntegrator._splat_to_block(
-                block, film, sensor_uv,
+                block, film, sensor_uv + mi.ScalarPoint2f(block.offset()),
                 value=value,
                 weight=0,
                 alpha=1,
