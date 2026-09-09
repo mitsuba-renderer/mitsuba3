@@ -25,6 +25,12 @@ option(MI_ENABLE_PYTHON "Build Python bindings for Mitsuba, Dr.Jit, and NanoGUI?
 # precision arithmetic.
 option(MI_ENABLE_EMBREE  "Use Embree for ray tracing operations?" ON)
 
+# The NVIDIA DLSS Ray Reconstruction denoiser can be used as an alternative to
+# the OptiX denoiser. It requires the headers of the DLSS SDK
+# (https://github.com/NVIDIA/DLSS) at compile time, which are located through
+# the 'DLSS_SDK_ROOT' variable, and a CUDA variant of Mitsuba.
+option(MI_ENABLE_DLSS "Enable the NVIDIA DLSS Ray Reconstruction denoiser?" OFF)
+
 # Use GCC/Clang address sanitizer?
 # NOTE: To use this in conjunction with Python plugin, you will need to call
 # On OSX:
@@ -317,6 +323,34 @@ if (MI_ENABLE_CUDA)
   add_definitions(-DMI_ENABLE_CUDA=1)
 endif()
 
+if (MI_ENABLE_DLSS)
+  if (NOT MI_ENABLE_CUDA)
+    message(WARNING "Mitsuba: MI_ENABLE_DLSS requires a CUDA variant, "
+                    "disabling DLSS support.")
+    set(MI_ENABLE_DLSS OFF)
+  else()
+    list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
+    find_package(DLSS)
+    if (DLSS_FOUND)
+      include_directories(${DLSS_INCLUDE_DIR})
+      add_definitions(-DMI_ENABLE_DLSS=1)
+      message(STATUS "Mitsuba: using DLSS Ray Reconstruction for denoising.")
+      if (NOT DLSS_RR_LIBRARY)
+        message(WARNING "Mitsuba: could not find the DLSS Ray Reconstruction "
+                        "library in the SDK. It has to be placed next to the "
+                        "executable, or in the directory given by the "
+                        "MI_DLSS_LIBRARY_PATH environment variable, for DLSS "
+                        "to report itself as available at runtime.")
+      endif()
+    else()
+      message(WARNING "Mitsuba: could not find the DLSS SDK headers, set "
+                      "DLSS_SDK_ROOT to a checkout of "
+                      "https://github.com/NVIDIA/DLSS. Disabling DLSS support.")
+      set(MI_ENABLE_DLSS OFF)
+    endif()
+  endif()
+endif()
+
 if (MI_ENABLE_LLVM)
   add_definitions(-DMI_ENABLE_LLVM=1)
 endif()
@@ -595,6 +629,26 @@ install(
 )
 
 add_custom_target(copy-resources ALL DEPENDS ${MI_COPY_FILES})
+
+# DLSS Ray Reconstruction implementation library. Note that this is only copied
+# into the build tree, it is deliberately not part of 'install' since Mitsuba
+# does not redistribute it.
+if (MI_ENABLE_DLSS AND DLSS_RR_LIBRARY)
+  add_custom_command(
+    TARGET copy-resources POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+    "${DLSS_RR_LIBRARY}"
+    "${MI_BINARY_DIR}"
+  )
+  if (MI_ENABLE_PYTHON)
+    add_custom_command(
+      TARGET copy-resources POST_BUILD
+      COMMAND ${CMAKE_COMMAND} -E copy_if_different
+      "${DLSS_RR_LIBRARY}"
+      "${MI_BINARY_DIR}/python/mitsuba"
+    )
+  endif()
+endif()
 
 # IOR data
 file(GLOB IOR_FILES "${CMAKE_CURRENT_SOURCE_DIR}/resources/data/ior/*spd")
