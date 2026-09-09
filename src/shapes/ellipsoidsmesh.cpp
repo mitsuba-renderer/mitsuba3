@@ -387,7 +387,7 @@ private:
             UInt32 offset = idx * uint32_t(nb_vertices);
             for (int i = 0; i < nb_faces; ++i) {
                 Vector3u face = m_shell_faces[i];
-                // 4-word face records; the BSDF index lane is zero
+                // 4-word face records; the fourth word is derived below
                 Vector4u rec(face[0] + offset, face[1] + offset,
                              face[2] + offset, 0u);
                 dr::scatter(m_packed_faces, rec, idx * nb_faces + i, true,
@@ -398,6 +398,7 @@ private:
             // Mesh::refresh(), which would build data structures that it
             // does not need. The field views now describe stale records
             // and rebuild on demand.
+            this->update_face_state();
             this->drop_views();
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
             m_packed_vertices_ptr = m_packed_vertices.data();
@@ -444,21 +445,22 @@ private:
                 UInt32 offset = (uint32_t) i * uint32_t(nb_vertices);
                 for (size_t j = 0; j < nb_faces; ++j) {
                     Vector3u face = m_shell_faces[j];
-                    // 4-word face records; the BSDF index lane stays zero
+                    // 4-word face records; the fourth word is derived below
                     for (size_t k = 0; k < 3; ++k)
                         m_packed_faces[i * nb_faces * 4 + j * 4 + k] = face[k] + offset;
                 }
-
-                // Skips Mesh::refresh(), see above
-                this->drop_views();
-#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
-                m_packed_vertices_ptr = m_packed_vertices.data();
-                m_packed_faces_ptr = m_packed_faces.data();
-#endif
-                if (initialized)
-                    recompute_bbox();
-                mark_dirty();
             }
+
+            // Skips Mesh::refresh(), see above
+            this->update_face_state();
+            this->drop_views();
+#if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
+            m_packed_vertices_ptr = m_packed_vertices.data();
+            m_packed_faces_ptr = m_packed_faces.data();
+#endif
+            if (initialized)
+                recompute_bbox();
+            mark_dirty();
         }
     }
 

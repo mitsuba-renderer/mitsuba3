@@ -287,15 +287,12 @@ def faces_of(mesh):
 
 
 def face_records(mesh):
-    """(F, 4) vertex indices + BSDF index from the parameter interface"""
+    """(F, 4) packed face records built from the parameter interface. The
+    fourth word is zero: the mesh regenerates the position error bound."""
     import numpy as np
     import mitsuba as mi
-    params = mi.traverse(mesh)
-    faces = np.array(params['faces'])
-    bsdf_index = np.array(params['bsdf_index'])
-    if bsdf_index.size == 0:  # an empty assignment stands for zeros
-        bsdf_index = np.zeros(faces.shape[0], dtype=np.uint32)
-    return np.column_stack([faces, bsdf_index])
+    faces = np.array(mi.traverse(mesh)['faces'])
+    return np.column_stack([faces, np.zeros(faces.shape[0], dtype=np.uint32)])
 
 
 def rows(value, dim):

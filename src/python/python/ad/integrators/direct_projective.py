@@ -252,7 +252,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             elif self.project_seed == "emitter":
                 # Return emitter sampling rays including the ones that fail
                 # `test_visibility`
-                ray_em = si.spawn_ray_to(ds_em.p)
+                ray_em = si.spawn_ray_to(ds_em)
                 ray_em.maxt = dr.largest(mi.Float)
 
                 # Directions towards the interior have no contribution for
@@ -262,7 +262,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 guide_seed = [dr.detach(ray_em), mi.Bool(active_guide)]
             elif self.project_seed == "both":
                 # By default we use the emitter sample as the seed ray
-                ray_seed = si.spawn_ray_to(ds_em.p)
+                ray_seed = si.spawn_ray_to(ds_em)
                 ray_seed.maxt = dr.largest(mi.Float)
                 active_guide = active_em_ & (dr.dot(si.n, ray_seed.d) > 0)
 

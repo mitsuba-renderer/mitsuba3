@@ -161,13 +161,14 @@ public:
         MI_MASK_ARGUMENT(active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value() *
-            Point3f(dr::fmadd(sample.x(), 2.f, -1.f),
-                    dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
-        ps.n    = m_frame.n;
-        ps.pdf  = m_inv_surface_area;
-        ps.uv   = sample;
-        ps.time = time;
+        Point3f local(dr::fmadd(sample.x(), 2.f, -1.f),
+                      dr::fmadd(sample.y(), 2.f, -1.f), 0.f);
+        ps.p     = m_to_world.value() * local;
+        ps.n     = m_frame.n;
+        ps.p_err = m_to_world.value().position_error(local, ps.n);
+        ps.pdf   = m_inv_surface_area;
+        ps.uv    = sample;
+        ps.time  = time;
         ps.delta = false;
 
         return ps;
@@ -214,11 +215,12 @@ public:
 
     SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
         SurfaceInteraction3f si{};
-        si.p = m_to_world.value() *
-            Point3f(dr::fmadd(uv.x(), 2.f, - 1.f),
-                    dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
+        Point3f local(dr::fmadd(uv.x(), 2.f, - 1.f),
+                      dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
+        si.p = m_to_world.value() * local;
         si.sh_frame  = m_frame;
         si.n         = m_frame.n;
+        si.p_err     = m_to_world.value().position_error(local, si.n);
         si.dp_du     = m_frame.s;
         si.dp_dv     = m_frame.t;
         si.uv        = uv;

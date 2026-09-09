@@ -290,7 +290,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     # We assume that `ray` intersects the scene
                     ray_seed_cand = ray_next
                 elif dr.hint(self.project_seed == "emitter", mode='scalar'):
-                    ray_seed_cand = si.spawn_ray_to(ds.p)
+                    ray_seed_cand = si.spawn_ray_to(ds)
                     ray_seed_cand.maxt = dr.largest(mi.Float)
                     # Directions towards the interior have no contribution
                     # unless we hit a transmissive BSDF
@@ -304,7 +304,7 @@ class PathProjectiveIntegrator(PSIntegrator):
                     mask_replace = (dr.dot(si.n, ray_seed_cand.d) > 0) | \
                                     mi.has_flag(bsdf_flags, mi.BSDFFlags.Transmission)
                     mask_replace &= sampler.next_1d(active_seed_cand) > 0.5
-                    ray_seed_cand[mask_replace] = si.spawn_ray_to(ds.p)
+                    ray_seed_cand[mask_replace] = si.spawn_ray_to(ds)
                     ray_seed_cand.maxt = dr.largest(mi.Float)
 
                 # Resovoir sampling: do we use this candidate seed ray?

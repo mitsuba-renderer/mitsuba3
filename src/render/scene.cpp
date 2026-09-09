@@ -274,23 +274,28 @@ MI_VARIANT Scene<Float, Spectrum>::~Scene() {
 
 // -----------------------------------------------------------------------
 
-/// Stash the 3x4 affine part of a transformation into a flat list
+/**
+ * Stash a transformation into a flat instance record: the 3x4 affine parts
+ * of the matrix and of its inverse, each column-major (24 values)
+ */
 template <typename Value, typename Transform>
-static void pack_matrix(Value *rec, const Transform &t) {
-    for (size_t col = 0; col < 4; ++col)
-        for (size_t row = 0; row < 3; ++row)
-            rec[col * 3 + row] = t.matrix(row, col);
+static void pack_transform(Value *rec, const Transform &t) {
+    for (size_t col = 0; col < 4; ++col) {
+        for (size_t row = 0; row < 3; ++row) {
+            rec[col * 3 + row]      = t.matrix(row, col);
+            rec[col * 3 + row + 12] = t.inverse_transpose(col, row);
+        }
+    }
 }
 
-/// Reassemble a transformation from a flat column-major 3x4 list
-template <typename AffineTransform4f, typename Rec>
-static AffineTransform4f unpack_matrix(const Rec &rec) {
-    using Matrix = typename AffineTransform4f::Matrix;
-    return AffineTransform4f(Matrix(
-        rec[0], rec[3], rec[6], rec[9],
-        rec[1], rec[4], rec[7], rec[10],
-        rec[2], rec[5], rec[8], rec[11],
-        0.f,    0.f,    0.f,    1.f));
+/// Reassemble a 4x4 matrix from a flat column-major 3x4 list
+template <typename Matrix, typename Rec>
+static Matrix unpack_matrix(const Rec &rec, size_t off = 0) {
+    return Matrix(
+        rec[off + 0], rec[off + 3], rec[off + 6], rec[off + 9],
+        rec[off + 1], rec[off + 4], rec[off + 7], rec[off + 10],
+        rec[off + 2], rec[off + 5], rec[off + 8], rec[off + 11],
+        0.f,          0.f,          0.f,          1.f);
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::update_portal_data() {
@@ -323,11 +328,11 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
 
     // Pack the primal transform data on the host
     size_t n = m_instances.size();
-    std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[12 * n]);
+    std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[24 * n]);
     for (size_t i = 0; i < n; ++i)
-        pack_matrix(data.get() + 12 * i, m_instances[i]->to_world_scalar());
+        pack_transform(data.get() + 24 * i, m_instances[i]->to_world_scalar());
     m_instance_transforms =
-        dr::load<DynamicBuffer<Float>>(data.get(), 12 * n);
+        dr::load<DynamicBuffer<Float>>(data.get(), 24 * n);
 
     // Overlay the records of differentiated instances so that gradients
     // flow from the packed buffer back to each instance's ``to_world``.
@@ -336,8 +341,8 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
             AffineTransform4f t = m_instances[i]->to_world();
             if (!dr::grad_enabled(t))
                 continue;
-            dr::Array<Float, 12> rec;
-            pack_matrix(rec.data(), t);
+            dr::Array<Float, 24> rec;
+            pack_transform(rec.data(), t);
             dr::scatter(m_instance_transforms, rec, UInt32((uint32_t) i),
                         true, ReduceMode::NoConflicts);
         }
@@ -389,10 +394,10 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
         [this, detach_shape](const Point3f &o, const Vector3f &d,
                              const UInt32 &index) {
             DRJIT_MARK_USED(detach_shape);
-            AffineTransform4f to_object =
-                unpack_matrix<AffineTransform4f>(
-                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
-                                                     index - 1u)).inverse();
+            Matrix4f to_object_m = unpack_matrix<Matrix4f>(
+                dr::gather<dr::Array<Float, 12>>(m_instance_transforms,
+                                                 2u * (index - 1u) + 1u));
+            AffineTransform4f to_object(to_object_m, dr::identity<Matrix4f>());
 
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
@@ -425,36 +430,47 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
             DRJIT_MARK_USED(detach_shape);
             DRJIT_MARK_USED(follow_shape);
             DRJIT_MARK_USED(grad_enabled);
-            AffineTransform4f to_world =
-                unpack_matrix<AffineTransform4f>(
-                    dr::gather<dr::Array<Float, 12>>(m_instance_transforms, index - 1u));
+            // The inverse transpose of the transform is the transpose of the
+            // stored inverse, so no inversion happens per hit
+            auto rec = dr::gather<dr::Array<Float, 24>>(m_instance_transforms,
+                                                        index - 1u);
+            AffineTransform4f to_world(
+                unpack_matrix<Matrix4f>(rec),
+                dr::transpose(unpack_matrix<Matrix4f>(rec, 12)));
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
                     to_world = dr::detach(to_world);
             }
 
-            AffineTransform4f to_world_d = dr::detach(to_world);
+            Normal3f n = to_world * si.n;
+            Float inv_len = dr::rsqrt(dr::squared_norm(n));
+            n *= inv_len;
+            si.n = n;
 
-            // Hit point `si.p` is only attached to the surface motion
+            // The reciprocal length 'inv_len' converts the nested error bound
+            // to world space. position_error() adds the rounding of the matrix
+            // product, which depends on the magnitude of the object-space position.
+            si.p_err = dr::fmadd(si.p_err, dr::detach(inv_len),
+                                 to_world.position_error(si.p, n, Float(0.f)));
+
             si.p = to_world * si.p;
-            si.n = dr::normalize(to_world_d * si.n);
 
             if (likely(has_flag(ray_flags, RayFlags::Shading))) {
                 // Transforming a normal applies the inverse transpose,
                 // which does not preserve its length. Differentiating the
                 // re-normalization projects the transformed partials back
                 // onto the tangent plane.
-                Normal3f n = to_world_d * si.sh_frame.n;
-                Float inv_len = dr::rcp(dr::norm(n));
-                n *= inv_len;
-                si.sh_frame.n = n;
+                Normal3f sh_n = to_world * si.sh_frame.n;
+                Float sh_inv_len = dr::rcp(dr::norm(sh_n));
+                sh_n *= sh_inv_len;
+                si.sh_frame.n = sh_n;
 
                 if (has_flag(ray_flags, RayFlags::NormalPartials)) {
-                    Vector3f dn_du = to_world_d * Normal3f(si.dn_du) * inv_len,
-                             dn_dv = to_world_d * Normal3f(si.dn_dv) * inv_len;
+                    Vector3f dn_du = to_world * Normal3f(si.dn_du) * sh_inv_len,
+                             dn_dv = to_world * Normal3f(si.dn_dv) * sh_inv_len;
 
-                    si.dn_du = dr::fnmadd(n, dr::dot(n, dn_du), dn_du);
-                    si.dn_dv = dr::fnmadd(n, dr::dot(n, dn_dv), dn_dv);
+                    si.dn_du = dr::fnmadd(sh_n, dr::dot(sh_n, dn_du), dn_du);
+                    si.dn_dv = dr::fnmadd(sh_n, dr::dot(sh_n, dn_dv), dn_dv);
                 }
 
                 // A tangent direction supplied by the nested shape
@@ -462,9 +478,9 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
                 // orthonormalizes it against the transformed normal and
                 // derives the bitangent. A mirroring instance transform
                 // flips the orientation of the nested parameterization.
-                si.sh_frame.s = to_world_d * si.sh_frame.s;
+                si.sh_frame.s = to_world * si.sh_frame.s;
                 si.frame_flipped ^=
-                    dr::det(Matrix3f(to_world_d.matrix)) < 0.f;
+                    dr::det(Matrix3f(to_world.matrix)) < 0.f;
 
                 si.dp_du = to_world * si.dp_du;
                 si.dp_dv = to_world * si.dp_dv;
@@ -485,6 +501,7 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
                     si.t = (dr::dot(si.n, si.p) - dr::dot(si.n, ray.o)) /
                             dr::dot(si.n, ray.d);
                     si.p = ray(si.t);
+                    si.p_err = dr::maximum(si.p_err, ray_error(ray, si.t, si.n));
                 }
             }
 
@@ -701,14 +718,13 @@ Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
                 ls.rel += relative_grad(unpolarized_spectrum(value)) - 1.f;
 
             // A crossed shape is not the result of the query. Continue past
-            // it with an offset analogous to spawn_ray().
+            // it by the error bound of the crossing, measured along the ray
+            // as in spawn_ray().
             dr::masked(ls.pi.valid, ls.active) = false;
 
-            Point3f p = dr::detach(si.p);
-            Normal3f n = dr::detach(si.n);
-            Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>,
-                  cos_theta = dr::maximum(dr::abs(dr::dot(n, query.d)), 1e-2f);
-            ls.t = ls.pi.t + mag / cos_theta;
+            Float cos_theta = dr::maximum(
+                dr::abs_dot(dr::detach(si.n), query.d), 1e-2f);
+            ls.t = ls.pi.t + dr::detach(si.p_err) / cos_theta;
 
             ls.active &= ls.t < dr::detach(ls.ray.maxt) &&
                          dr::any(unpolarized_spectrum(ls.tr) != 0.f);
@@ -857,7 +873,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     // Shadow ray that passes through null surfaces and returns their
     // transmittance (zero when occluded)
     if (test_visibility && dr::any_or<true>(active)) {
-        Spectrum tr = ray_test_tr(ref.spawn_ray_to(ds.p), +RayFlags::Default,
+        Spectrum tr = ray_test_tr(ref.spawn_ray_to(ds), +RayFlags::Default,
                                   false, +RayMask::Secondary, active);
         Mask occluded = !dr::any(unpolarized_spectrum(tr) != 0.f);
         spec *= tr;

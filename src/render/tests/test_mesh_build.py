@@ -496,9 +496,6 @@ def test12_construction_errors(variants_all_rgb, capfd):
         (lambda: m.from_fields(faces=faces, positions=zeros,
                                normal_index=np.uint32([0, 0, 0, 0])),
          RuntimeError, "requires a 'normals'"),
-        (lambda: m.from_fields(faces=faces, positions=zeros,
-                               bsdf_index=np.uint32([0, 0])),
-         RuntimeError, "'bsdf_index' has 2 entries"),
         # from_corners(). The dtype and shape of an argument are enforced
         # by the binding signature, hence the TypeError
         (lambda: m.from_corners(positions=positions[:, :2].copy(),
@@ -578,8 +575,8 @@ def test12_construction_errors(variants_all_rgb, capfd):
 # Merge
 # -------------------------------------------------------------------
 
-def _merge_input(name, offset, bsdf=None, bsdf_index=None, seam=False,
-                 normals=None, texcoords=False):
+def _merge_input(name, offset, bsdf=None, seam=False, normals=None,
+                 texcoords=False):
     """
     Build an input mesh for the Mesh.merge() tests, translated by ``offset``.
 
@@ -588,8 +585,6 @@ def _merge_input(name, offset, bsdf=None, bsdf_index=None, seam=False,
     positions instead, which gives merge() a non-identity map to renumber.
     """
     kwargs = {}
-    if bsdf_index is not None:
-        kwargs['bsdf_index'] = np.uint32(bsdf_index)
     if normals is not None:
         kwargs['normals'] = normals
     if texcoords:
@@ -610,11 +605,10 @@ def _merge_input(name, offset, bsdf=None, bsdf_index=None, seam=False,
 
 def test13_merge_batch(variants_all_rgb):
     """Mesh.merge() concatenates every level of the representation. The
-    vertex index lanes and maps shift by prefix offsets, while the BSDF
-    lane passes through unchanged."""
+    vertex index lanes and maps shift by prefix offsets."""
     bsdf = mi.load_dict({'type': 'diffuse'})
-    a = _merge_input("a", 0, bsdf, bsdf_index=[1])
-    b = _merge_input("b", 10, bsdf, bsdf_index=[2, 3], seam=True)
+    a = _merge_input("a", 0, bsdf)
+    b = _merge_input("b", 10, bsdf, seam=True)
     c = _merge_input("c", 20, bsdf)
 
     # Errors: empty input, non-mesh entries, incompatible meshes
@@ -635,10 +629,8 @@ def test13_merge_batch(variants_all_rgb):
     assert m.vertex_count() == 12 and m.face_count() == 4
     assert m.position_count() == 10
 
-    rec = face_records(m)
-    assert np.all(rec == [[0, 1, 2, 1],
-                          [3, 4, 5, 2], [6, 7, 8, 3],
-                          [9, 10, 11, 0]])
+    assert np.all(faces_of(m) == [[0, 1, 2], [3, 4, 5], [6, 7, 8],
+                                  [9, 10, 11]])
     assert np.all(np.array(m.position_index())
                   == [0, 1, 2, 3, 4, 5, 3, 5, 6, 7, 8, 9])
     assert np.allclose(np.array(m.positions()),

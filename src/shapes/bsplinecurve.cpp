@@ -907,6 +907,7 @@ public:
             (dr::squared_norm(dr::detach(dc_dv)) -
              dr::dot(rad_vec_d, dr::detach(dc_dvv))) * rad_vec_d -
             (dr::detach(dr_dv) * dr::detach(radius)) * dr::detach(dc_dv));
+        si.p_err = ray_error(ray, pi.t, si.n);
 
         // Surface position at the detached parameterization: the angular
         // coordinate does not move with the curve.

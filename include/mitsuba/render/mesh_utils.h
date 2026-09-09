@@ -31,30 +31,28 @@ constexpr uint32_t PackedFrameOffset = 3;
 /// Offset of the texture coordinates (2 floats)
 constexpr uint32_t PackedTexcoordOffset = 6;
 
-/// Bit flag which indicates a face with flipped UVs
+/// Bit of the face state word which indicates a face with flipped UVs
 constexpr uint32_t FaceUVFlipped = 0x80000000u;
 
-/// Bit mask used to encode the BSDF index
-constexpr uint32_t FaceBSDFIndexMask = 0x7fffffffu;
+/// Bits of the face state word that store the rounding error bound
+constexpr uint32_t FaceErrorMask = 0x7fffffffu;
 
-/// Content of the packed records of a `Mesh`
+/// Content of the packed vertex records of a `Mesh`
 enum class Layout : uint32_t {
     Positions = 0x0,  ///< Every vertex record carries positions
     Normals   = 0x1,  ///< Shading normals
     Tangents  = 0x2,  ///< Shading tangents
     Texcoords = 0x4,  ///< Texture coordinates
-    FaceBSDFs = 0x8,  ///< The face records carry per-face BSDF indices
 };
 
 MI_DECLARE_ENUM_OPERATORS(Layout)
 
 /// Assemble the `Layout` flags of the packed records
 constexpr Layout make_layout(bool normals, bool texcoords,
-                             bool tangents = false, bool face_bsdfs = false) {
+                             bool tangents = false) {
     return (Layout) ((normals    ? (uint32_t) Layout::Normals   : 0u) |
                      (texcoords  ? (uint32_t) Layout::Texcoords : 0u) |
-                     (tangents   ? (uint32_t) Layout::Tangents  : 0u) |
-                     (face_bsdfs ? (uint32_t) Layout::FaceBSDFs : 0u));
+                     (tangents   ? (uint32_t) Layout::Tangents  : 0u));
 }
 
 /**
@@ -68,8 +66,7 @@ struct MergeKey {
     const Object *bsdf, *emitter, *sensor, *interior_medium, *exterior_medium;
 
     /**
-     * Packed record layout, without the ``FaceBSDFs`` bit that a merge
-     * unions
+     * Packed record layout
      *
      * The face-normal setting needs no separate field, since a built mesh
      * carries the ``Normals`` bit exactly when it shades with vertex normals.
@@ -99,6 +96,79 @@ struct MergeKeyHasher {
         return (size_t) h;
     }
 };
+
+/**
+ * Bound the position error of a ray-triangle intersection along the normal
+ *
+ * This function computes the ``p_err`` bound used to offset spawned rays
+ * and avoid self-intersections. It covers two sources of rounding errors:
+ *
+ * 1. The interpolation that produces a hit position interpolates three
+ *    vertices with barycentric weights. Rounding error is proportional to
+ *    the maximum vertex magnitude projected onto ``n``. This term vanishes
+ *    for a triangle in a coordinate plane through the origin.
+ *
+ * 2. Intersection tests typically express the vertices relative to the ray
+ *    origin, and then form a cross product of the edges or edge functions
+ *    that are parameterized by them. A spawned ray starts on the triangle,
+ *    so these relative vertices are at most an edge long, and the terms of
+ *    the resulting expressions are bounded by the Euclidean lengths of the
+ *    edges. We do not know which vertex the backend will use as base
+ *    vertex, hence the calculation sums the largest two edge lengths to be
+ *    conservative.
+ *
+ * ``eps`` is used to provide an appropriate floating point epsilon such as
+ * ``mi.math.PositionEpsilon``, which is the variant-dependent unit roundoff
+ * times a safety factor.
+ */
+template <typename Value>
+Value triangle_position_error(const Point<Value, 3> &p0,
+                              const Point<Value, 3> &p1,
+                              const Point<Value, 3> &p2,
+                              const Normal<Value, 3> &n,
+                              dr::scalar_t<Value> eps) {
+    Value e0 = dr::norm(p1 - p0), e1 = dr::norm(p2 - p0),
+          e2 = dr::norm(p2 - p1);
+    Vector<Value, 3> mag =
+        dr::maximum(dr::abs(p0), dr::maximum(dr::abs(p1), dr::abs(p2)));
+    return (dr::dot(dr::abs(n), mag) +
+            (e0 + e1 + e2 - dr::minimum(e0, dr::minimum(e1, e2)))) *
+           eps;
+}
+
+/**
+ * Face state word of a triangle with the given vertex positions
+ *
+ * The word stores the position error bound along the face normal (see
+ * ``FaceErrorMask``), with ``eps`` the ``mi.math.PositionEpsilon`` of the
+ * variant. The overload with texture coordinates additionally sets
+ * ``FaceUVFlipped`` when the UV triangle is mirrored, which decides the
+ * handedness of the interpolated tangent frame.
+ */
+template <typename Value>
+dr::uint32_array_t<Value> face_state(const Point<Value, 3> &p0,
+                                     const Point<Value, 3> &p1,
+                                     const Point<Value, 3> &p2,
+                                     dr::scalar_t<Value> eps) {
+    Normal<Value, 3> n = dr::normalize(dr::cross(p1 - p0, p2 - p0));
+    return dr::reinterpret_array<dr::uint32_array_t<Value>>(
+        triangle_position_error(p0, p1, p2, n, eps));
+}
+
+template <typename Value>
+dr::uint32_array_t<Value> face_state(const Point<Value, 3> &p0,
+                                     const Point<Value, 3> &p1,
+                                     const Point<Value, 3> &p2,
+                                     const Point<Value, 2> &uv0,
+                                     const Point<Value, 2> &uv1,
+                                     const Point<Value, 2> &uv2,
+                                     dr::scalar_t<Value> eps) {
+    using UInt32 = dr::uint32_array_t<Value>;
+    Vector<Value, 2> t1 = uv1 - uv0, t2 = uv2 - uv0;
+    auto flipped = dr::fmsub(t1.x(), t2.y(), t1.y() * t2.x()) < 0.f;
+    return face_state(p0, p1, p2, eps) |
+           dr::select(flipped, UInt32(FaceUVFlipped), UInt32(0));
+}
 
 /**
  * Encode a unit normal ``n`` and a tangent ``s`` into three floats
@@ -175,6 +245,7 @@ frame_decode(const Vector<Value, 3> &p) {
 struct MI_EXPORT_LIB PackedMesh {
     using ScalarPoint3f  = Point<float, 3>;
     using ScalarNormal3f = Normal<float, 3>;
+    using ScalarPoint2f  = Point<float, 2>;
     using ScalarVector2f = Vector<float, 2>;
     using ScalarVector3f = Vector<float, 3>;
     using ScalarVector3u = Vector<uint32_t, 3>;
@@ -224,9 +295,7 @@ struct MI_EXPORT_LIB PackedMesh {
                     const ScalarVector2f &uv = { 0.f, 0.f });
 
     /// Write one face record, checking that its indices are in bounds
-    void set_face(size_t i,
-                  const ScalarVector3u &indices,
-                  uint32_t bsdf = 0);
+    void set_face(size_t i, const ScalarVector3u &indices);
 
     /**
      * Allocate a custom attribute and return a pointer to its buffer
@@ -249,6 +318,15 @@ struct MI_EXPORT_LIB PackedMesh {
      * transformed.
      */
     void add_tangents();
+
+    /**
+     * Compute the state word of every face record on the host
+     *
+     * See ``face_state()``, whose ``eps`` is the ``mi.math.PositionEpsilon``
+     * of the variant. Call this last, after the records are transformed
+     * and tangents are added.
+     */
+    void update_face_state(float eps);
 
     /// Dr.Jit backend of the allocated buffers
     JitBackend backend = JitBackend::None;
@@ -353,10 +431,6 @@ struct CornerMesh {
      */
     const uint32_t *face_offsets = nullptr;
 
-    /// Optional per-face BSDF indices (one entry per input face,
-    /// replicated when a polygon fans into several triangles)
-    const uint32_t *bsdf_index = nullptr;
-
     /// Shading normals (3 channels); optional
     CornerAttribute normals { "normals", 3 };
 
@@ -396,9 +470,14 @@ corner_to_packed_mesh(JitBackend backend, const CornerMesh &desc,
                       bool flip_normals = false,
                       const PackedMesh::ScalarAffineTransform4f &to_world = {});
 
-/// Magic number and current version of the ``.serialized`` mesh encoding,
-/// whose reader and writer are ``SerializedMesh::load_v5()`` and
-/// ``Mesh::write_serialized(Stream*)``. Keep the two in step.
+/**
+ * Magic number and current version of the ``.serialized`` mesh encoding,
+ * whose reader and writer are ``SerializedMesh::load_v5()`` and
+ * ``Mesh::write_serialized(Stream*)``. Keep the two in step.
+ *
+ * The face records are stored verbatim. Their fourth word is derived data
+ * that the loader regenerates.
+ */
 constexpr uint16_t SerializedMagic   = 0x041C;
 constexpr uint16_t SerializedVersion = 0x0005;
 

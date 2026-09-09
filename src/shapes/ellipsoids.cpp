@@ -398,6 +398,7 @@ public:
 
         si.n = dr::detach(
             dr::normalize(rot * (local_d / dr::square(ellipsoid.scale))));
+        si.p_err = ray_error(ray, pi.t, si.n);
 
         Point3f p_att = ellipsoid.center +
                         rot * (ellipsoid.scale *

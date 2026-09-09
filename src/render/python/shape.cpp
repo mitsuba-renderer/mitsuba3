@@ -9,8 +9,7 @@ MI_PY_EXPORT(DiscontinuityFlags) {
         .def_value(Layout, Positions)
         .def_value(Layout, Normals)
         .def_value(Layout, Texcoords)
-        .def_value(Layout, Tangents)
-        .def_value(Layout, FaceBSDFs);
+        .def_value(Layout, Tangents);
 
     auto disc_flags = nb::enum_<DiscontinuityFlags>(m, "DiscontinuityFlags", nb::is_arithmetic(), D(DiscontinuityFlags))
         .def_value(DiscontinuityFlags, Empty)

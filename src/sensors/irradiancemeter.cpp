@@ -91,10 +91,10 @@ public:
                                active);
 
         Vector3f d = Frame3f(ps.n).to_world(local);
-        Point3f o = ps.p + d * math::RayEpsilon<Float>;
+        Interaction3f it(0.f, time, wavelengths, ps.p, ps.n, ps.p_err);
 
         return {
-            Ray3f(o, d, time, wavelengths),
+            it.spawn_ray(d),
             depolarizer<Spectrum>(wav_weight) * dr::Pi<ScalarFloat>
         };
     }

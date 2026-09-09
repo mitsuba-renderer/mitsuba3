@@ -172,6 +172,7 @@ public:
 
             ds.p = si.p;
             ds.n = si.n;
+            ds.p_err = si.p_err;
             ds.uv = si.uv;
             ds.time = it.time;
             ds.delta = false;

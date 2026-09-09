@@ -115,6 +115,9 @@ public:
                    parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
+    /// Termination threshold of the numerical root finder, in ray parameter units
+    static constexpr float NumSolveEpsilon = 1e-5f;
+
     // Grid texture is always stored in single precision
     using InputFloat     = dr::replace_scalar_t<Float, float>;
     using InputTexture3f = dr::Texture<InputFloat, 3>;
@@ -356,9 +359,18 @@ public:
         Vector3f local_grad = dr::detach(sdf_grad(local_p));
         Normal3f local_n = dr::normalize(local_grad);
 
+        // Detached normal for the error bound, written so that its primal
+        // ops coincide with those of the attached normal computed below
         si.t = pi.t;
         si.p = dr::detach(to_world) * local_p;
-        si.n = dr::normalize(dr::detach(to_world) * local_n);
+        si.n = dr::normalize(dr::detach(to_world) * Normal3f(local_grad));
+
+        // The hit point is not reprojected onto the level set. Its error
+        // grows with the ray extent, and the root finder tolerance displaces
+        // it further along the ray.
+        si.p_err = to_world.position_error(local_p, si.n) +
+                   ray_error(ray, pi.t, si.n) +
+                   dr::detach(dr::abs_dot(si.n, ray.d)) * NumSolveEpsilon;
 
         Point3f p_att = si.p;
         if constexpr (dr::is_diff_v<Float>) {
@@ -374,10 +386,14 @@ public:
 
         si.attach_motion(ray, p_att, ray_flags);
 
-        Vector3f grad = sdf_grad(m_to_world.value().inverse() * si.p);
+        // Local hit point whose derivative follows the attached world
+        // position. Its primal value is 'local_p', so the grid lookups of
+        // the attached normal are shared with those of 'local_grad'.
+        Point3f local_p_att = local_p;
+        if constexpr (dr::is_diff_v<Float>)
+            local_p_att = dr::replace_grad(local_p, to_object * si.p);
 
-        si.n =
-            dr::normalize(m_to_world.value() * Normal3f(grad));
+        si.n = dr::normalize(to_world * Normal3f(sdf_grad(local_p_att)));
 
         if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
@@ -385,8 +401,7 @@ public:
                     si.sh_frame.n = si.n;
                     break;
                 case Smooth:
-                    si.sh_frame.n =
-                        smooth(m_to_world.value().inverse() * si.p);
+                    si.sh_frame.n = smooth(local_p_att);
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -798,7 +813,6 @@ private:
         auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
                                    FloatP f_far) -> FloatP {
             static constexpr uint32_t num_solve_max_iter = 50;
-            static constexpr float num_solve_epsilon     = 1e-5f;
 
             FloatP t   = 0;
             FloatP f_t = 0;
@@ -814,7 +828,7 @@ private:
 
                 t_near = dr::select(condition > 0.f, t, t_near);
                 f_near = dr::select(condition > 0.f, f_t, f_near);
-                done   = (dr::abs(t_near - t_far) < num_solve_epsilon) ||
+                done   = (dr::abs(t_near - t_far) < NumSolveEpsilon) ||
                        (num_solve_max_iter < ++i);
             }
 

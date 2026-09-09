@@ -15,7 +15,7 @@ MI_PY_EXPORT(math) {
 
     m.attr("RayEpsilon")      = nb::cast(math::RayEpsilon<Float>);
     m.attr("ShadowEpsilon")   = nb::cast(math::ShadowEpsilon<Float>);
-    m.attr("ShapeEpsilon")    = nb::cast(math::ShapeEpsilon<Float>);
+    m.attr("PositionEpsilon") = nb::cast(math::PositionEpsilon<Float>);
 
     m.def("legendre_p",
           nb::overload_cast<int, Float>(math::legendre_p<Float>),

@@ -17,20 +17,26 @@ MI_PY_EXPORT(Interaction) {
         .def_field(Interaction3f, wavelengths, D(Interaction, wavelengths))
         .def_field(Interaction3f, p,           D(Interaction, p))
         .def_field(Interaction3f, n,           D(Interaction, n))
+        .def_field(Interaction3f, p_err,       D(Interaction, p_err))
         // Methods
         .def(nb::init<>(), D(Interaction, Interaction))
         .def(nb::init<const Interaction3f &>(), "Copy constructor")
-        .def(nb::init<Float, Float, Wavelength, Point3f, Normal3f>(),
-             "t"_a, "time"_a, "wavelengths"_a, "p"_a, "n"_a = 0,
+        .def(nb::init<Float, Float, Wavelength, Point3f, Normal3f, Float>(),
+             "t"_a, "time"_a, "wavelengths"_a, "p"_a, "n"_a = 0, "p_err"_a = 0,
              D(Interaction, Interaction, 2))
         .def("zero_",        &Interaction3f::zero_, "size"_a = 1)
         .def("spawn_ray",    &Interaction3f::spawn_ray, "d"_a,    D(Interaction, spawn_ray))
-        .def("spawn_ray_to", &Interaction3f::spawn_ray_to, "t"_a, D(Interaction, spawn_ray_to))
+        .def("spawn_ray_to",
+             nb::overload_cast<const PositionSample3f &>(&Interaction3f::spawn_ray_to, nb::const_),
+             "ps"_a, D(Interaction, spawn_ray_to, 2))
+        .def("spawn_ray_to",
+             nb::overload_cast<const Point3f &>(&Interaction3f::spawn_ray_to, nb::const_),
+             "t"_a, D(Interaction, spawn_ray_to))
         .def("is_valid",     &Interaction3f::is_valid,     D(Interaction, is_valid))
         .def("zero_",        &Interaction3f::zero_, D(Interaction, zero))
         .def_repr(Interaction3f);
 
-    MI_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n)
+    MI_PY_DRJIT_STRUCT(it, Interaction3f, t, time, wavelengths, p, n, p_err)
 }
 
 MI_PY_EXPORT(SurfaceInteraction) {
@@ -84,8 +90,8 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_repr(SurfaceInteraction3f);
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
-                       shape, uv, sh_frame, frame_flipped, dp_du, dp_dv, dn_du,
-                       dn_dv, wi, prim_index, instance_index)
+                       p_err, shape, uv, sh_frame, frame_flipped, dp_du, dp_dv,
+                       dn_du, dn_dv, wi, prim_index, instance_index)
 }
 
 MI_PY_EXPORT(MediumInteraction) {
@@ -111,7 +117,7 @@ MI_PY_EXPORT(MediumInteraction) {
         .def_repr(MediumInteraction3f);
 
     MI_PY_DRJIT_STRUCT(mi, MediumInteraction3f, t, time, wavelengths, p, n,
-                       medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
+                       p_err, medium, sh_frame, wi, sigma_s, sigma_n, sigma_t,
                        combined_extinction, mint)
 }
 

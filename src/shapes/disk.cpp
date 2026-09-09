@@ -178,10 +178,12 @@ public:
         Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p    = m_to_world.value() * Point3f(p.x(), p.y(), 0.f);
-        ps.n    = m_frame.n;
-        ps.pdf  = m_inv_surface_area;
-        ps.time = time;
+        Point3f local(p.x(), p.y(), 0.f);
+        ps.p     = m_to_world.value() * local;
+        ps.n     = m_frame.n;
+        ps.p_err = m_to_world.value().position_error(local, ps.n);
+        ps.pdf   = m_inv_surface_area;
+        ps.time  = time;
         ps.delta = false;
 
         Float r = dr::norm(p);
@@ -466,6 +468,7 @@ public:
         Point2f prim_uv(local.x(), local.y());
 
         si.n = m_frame.n;
+        si.p_err = to_world.position_error(local, si.n);
 
         if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             Float r_2   = dr::squared_norm(prim_uv),

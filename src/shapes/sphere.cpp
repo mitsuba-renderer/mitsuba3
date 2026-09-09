@@ -130,6 +130,13 @@ public:
     using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
 
+    /// Bound on the rounding error of a position on the sphere along ``n``
+    Float position_error(const Normal3f &n) const {
+        Vector3f mag = dr::abs(Vector3f(dr::detach(m_center.value()))) +
+                       dr::detach(m_radius.value());
+        return dr::dot(dr::abs(dr::detach(n)), mag) * math::PositionEpsilon<Float>;
+    }
+
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
         m_flip_normals = props.get<bool>("flip_normals", false);
@@ -217,10 +224,12 @@ public:
         MI_MASK_ARGUMENT(active);
 
         Point3f local = warp::square_to_uniform_sphere(sample);
+        Vector3f dir = m_to_world.value() * Vector3f(local);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world.value() * local;
-        ps.n = local;
+        ps.p = m_center.value() + dir;
+        ps.n = dr::normalize(dir);
+        ps.p_err = position_error(ps.n);
 
         if (m_flip_normals)
             ps.n = -ps.n;
@@ -284,6 +293,7 @@ public:
             DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
+            ds.p_err    = position_error(ds.n);
             ds.d        = ds.p - it.p;
 
             Float dist2 = dr::squared_norm(ds.d);
@@ -301,6 +311,7 @@ public:
             DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             ds.p        = dr::fmadd(d, m_radius.value(), m_center.value());
             ds.n        = d;
+            ds.p_err    = position_error(ds.n);
             ds.d        = ds.p - it.p;
 
             Float dist2 = dr::squared_norm(ds.d);
@@ -649,6 +660,7 @@ public:
         si.t = pi.t;
         si.n = dr::detach(dr::normalize(ray(pi.t) - center));
         si.p = dr::detach(dr::fmadd(si.n, radius, center));
+        si.p_err = position_error(si.n);
 
         // Surface position at the detached parameterization: the local
         // coordinates are static as the sphere moves.

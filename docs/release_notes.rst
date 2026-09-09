@@ -27,9 +27,6 @@ Mitsuba 3.10.0
     makes it possible to use normal maps authored elsewhere in Mitsuba
     and optimize maps in Mitsuba for use in other tools.
 
-  - It adds early support for per-face material assignments. (Though this
-    will require further work in the renderer.)
-
   - Mesh orientation is now a property of the mesh data rather than of the
     scene description. The face winding order defines the orientation of the
     surface, and the ``flip_normals`` and ``to_world`` properties are baked
@@ -71,10 +68,9 @@ Mitsuba 3.10.0
     vertex attribute ``[dV]``      ``(V, d)``, and ``(F, d)`` per face
     ============================== ==========================================
 
-    The ``position_index`` ``[V]``, ``normal_index`` ``[V]``, and
-    ``bsdf_index`` ``[F]`` entries are new and writable. These maps are empty
-    by default and indicate that there is no indirection for positions/normals,
-    or no per-face material assignment.
+    The ``position_index`` ``[V]`` and ``normal_index`` ``[V]`` entries are
+    new and writable. These maps are empty by default and indicate that there
+    is no indirection for positions/normals.
 
     Because the values are now shaped tensors, the flat-buffer bookkeeping that
     used to surround an edit tends to disappear:
@@ -130,7 +126,7 @@ Mitsuba 3.10.0
                        positions=vertex_pos)                 # (P, 3) TensorXf
 
     The constructor optionally also accepts ``normals``, ``texcoords``,
-    ``position_index``, ``normal_index``, and ``bsdf_index``. Alternatively,
+    ``position_index``, and ``normal_index``. Alternatively,
     an empty mesh created via ``mi.Mesh(name)`` can be built by calling
     ``from_fields()`` (the same parameters as above), ``from_corners()``
     (corner-indexed data as produced by OBJ files or DCC applications), or
@@ -228,6 +224,20 @@ Mitsuba 3.10.0
   tracing queries, while skipping null BSDF surfaces and returning the
   associated transmittance.
 
+- **Ray epsilon**. Rays spawned from a surface must be offset by a small
+  distance to avoid self-intersection. Mitsuba previously used a fixed fraction
+  (1500 ULP) of the largest coordinate magnitude and an even larger fraction
+  (15000 ULP) for the far end of shadow rays. These are >2-3 orders of
+  magnitude larger than what the backends actually require in practice (~1-8
+  ULP), and it introduces light leaks and breaks ray tracing of small scenes or
+  closely spaced surfaces.
+
+  Shapes now explicitly bound the rounding error of their intersections via new
+  fields - `Interaction3f.p_err` and `PositionSample3f.p_err`.
+  `Interaction3f.spawn_ray` uses it to offset the ray origin, and a new
+  overload of `Interaction3f.spawn_ray_to`  uses it to also handle the bounds
+  on both sides of a shadow ray test. The bounds are close to the hardware's
+  actual needs and adapts to the scene scale and the surface orientation.
 
 Mitsuba 3.9.1
 -------------

@@ -150,17 +150,23 @@ WINDOW_BSDFS = [
 ]
 WINDOW_IDS = ['mask', 'thindielectric', 'null']
 BELOW = ([0, -0.5, 0], [0, -1, 0], [0, 0, 1])
+PYTHON_INTEGRATORS = ('prb', 'prb_basic', 'prb_projective', 'prbvolpath',
+                      'direct_projective')
+UNPOLARIZED_INTEGRATORS = ('volpathmis', 'prbvolpath')
 
 
 @pytest.mark.parametrize('integrator, reference, camera, ref_depth', [
     ('path', 'volpath', None, 6),
     ('direct', 'path', BELOW, 2),
+    ('volpath', 'path', None, 6),
+    ('volpathmis', 'path', None, 6),
     ('prb', 'path', None, 6),
     ('prb_basic', 'path', None, 6),
     ('prb_projective', 'path', None, 6),
+    ('prbvolpath', 'path', None, 6),
     ('direct_projective', 'path', BELOW, 2),
-], ids=['path', 'direct', 'prb', 'prb_basic', 'prb_projective',
-        'direct_projective'])
+], ids=['path', 'direct', 'volpath', 'volpathmis', 'prb', 'prb_basic',
+        'prb_projective', 'prbvolpath', 'direct_projective'])
 @pytest.mark.parametrize('bsdf', WINDOW_BSDFS, ids=WINDOW_IDS)
 def test03_null_consistency(variants_all_rgb, integrator, reference, camera,
                             ref_depth, bsdf):
@@ -170,9 +176,10 @@ def test03_null_consistency(variants_all_rgb, integrator, reference, camera,
     same transmittance, and crossings do not count as path vertices. The
     direct integrators are compared against a path tracer of depth two,
     with the camera below the window."""
-    if not integrator.startswith(('path', 'direct')) or 'projective' in integrator:
-        if '_ad_' not in mi.variant():
-            pytest.skip('Python integrators require an AD variant')
+    if integrator in PYTHON_INTEGRATORS and '_ad_' not in mi.variant():
+        pytest.skip('Python integrators require an AD variant')
+    if integrator in UNPOLARIZED_INTEGRATORS and mi.is_polarized:
+        pytest.skip('Integrator does not support polarized variants')
     kwargs = dict(window=dict(bsdf=bsdf))
     if camera is not None:
         kwargs['camera'] = camera

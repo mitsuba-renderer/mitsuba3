@@ -52,7 +52,7 @@ MI_PY_EXPORT(SilhouetteSample) {
              "wavelengths"_a = nb::none(), D(SilhouetteSample, spawn_ray))
         .def_repr(SilhouetteSample3f);
 
-    MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, uv,
+    MI_PY_DRJIT_STRUCT(ss, SilhouetteSample3f, p, discontinuity_type, n, p_err, uv,
                        time, pdf, delta, d, silhouette_d, prim_index,
                        scene_index, flags, projection_index, shape,
                        foreshortening, offset)
@@ -73,10 +73,10 @@ public:
     PyMesh(std::string_view name, const TensorXu32 &faces,
            const TensorXf32 &positions, const TensorXf32 &normals,
            const TensorXf32 &texcoords, const IndexBuffer &position_index,
-           const IndexBuffer &normal_index, const IndexBuffer &bsdf_index,
-           bool face_normals, bool flip_normals)
+           const IndexBuffer &normal_index, bool face_normals,
+           bool flip_normals)
         : Mesh(name, faces, positions, normals, texcoords, position_index,
-               normal_index, bsdf_index, face_normals, flip_normals) { }
+               normal_index, face_normals, flip_normals) { }
     std::string to_string() const override {
         NB_OVERRIDE(to_string);
     }
@@ -387,9 +387,6 @@ Args:
         corner, which assumes convex polygons. Without it, every three
         consecutive corners form a triangle.
 
-    bsdf_index: Optional ``(face_count,)`` array of per-face material
-        indices
-
     normals: Optional ``(record_count, 3)`` array of shading normals
         (float32), which are normalized on the way in. Meshes using face
         normals ignore them, and meshes without them receive generated
@@ -410,7 +407,6 @@ static void mesh_from_corners(Mesh &mesh, NdPoints positions,
                               NdIndex corner_vertex,
                               std::optional<NdIndex> corner_index,
                               std::optional<NdIndex> face_offsets,
-                              std::optional<NdIndex> bsdf_index,
                               std::optional<NdPoints> normals,
                               std::optional<NdTexcoords> texcoords,
                               nb::dict attrs) {
@@ -432,15 +428,6 @@ static void mesh_from_corners(Mesh &mesh, NdPoints positions,
                   "entries.");
         desc.face_count = face_offsets->shape(0) - 1;
         desc.face_offsets = index_data(*face_offsets, "face_offsets");
-    }
-
-    if (bsdf_index) {
-        size_t n_faces =
-            face_offsets ? desc.face_count : desc.corner_count / 3;
-        if (bsdf_index->shape(0) != n_faces)
-            Throw("from_corners(): 'bsdf_index' needs one entry per face "
-                  "(%zu).", n_faces);
-        desc.bsdf_index = index_data(*bsdf_index, "bsdf_index");
     }
 
     std::vector<NdArrayF> views;
@@ -529,12 +516,11 @@ MI_PY_EXPORT(Shape) {
         .def(nb::init<std::string_view, const TensorXu32 &,
                       const TensorXf32 &, const TensorXf32 &,
                       const TensorXf32 &, const IndexBuffer &,
-                      const IndexBuffer &, const IndexBuffer &, bool, bool>(),
+                      const IndexBuffer &, bool, bool>(),
              "name"_a, "faces"_a, "positions"_a,
              "normals"_a = TensorXf32(), "texcoords"_a = TensorXf32(),
              "position_index"_a = IndexBuffer(),
-             "normal_index"_a = IndexBuffer(),
-             "bsdf_index"_a = IndexBuffer(), "face_normals"_a = false,
+             "normal_index"_a = IndexBuffer(), "face_normals"_a = false,
              "flip_normals"_a = false, D(Mesh, Mesh, 3))
         .def("write_ply",
              nb::overload_cast<const fs::path &>(&Mesh::write_ply, nb::const_),
@@ -570,7 +556,6 @@ MI_PY_EXPORT(Shape) {
         .def("texcoords", &Mesh::texcoords, D(Mesh, texcoords))
         .def("tangents", &Mesh::tangents, D(Mesh, tangents))
         .def("faces", &Mesh::faces, D(Mesh, faces))
-        .def("bsdf_index", &Mesh::bsdf_index, D(Mesh, bsdf_index))
         .def("packed_vertices", nb::overload_cast<>(&Mesh::packed_vertices),
              D(Mesh, packed_vertices))
 
@@ -600,15 +585,13 @@ MI_PY_EXPORT(Shape) {
         .def("from_corners", &mesh_from_corners<Mesh>,
              "positions"_a, "corner_vertex"_a,
              "corner_index"_a = nb::none(), "face_offsets"_a = nb::none(),
-             "bsdf_index"_a = nb::none(), "normals"_a = nb::none(),
-             "texcoords"_a = nb::none(), "attrs"_a = nb::dict(),
-             doc_from_corners)
+             "normals"_a = nb::none(), "texcoords"_a = nb::none(),
+             "attrs"_a = nb::dict(), doc_from_corners)
         .def("from_fields", &Mesh::from_fields,
              "faces"_a, "positions"_a, "normals"_a = TensorXf32(),
              "texcoords"_a = TensorXf32(),
              "position_index"_a = IndexBuffer(),
-             "normal_index"_a = IndexBuffer(),
-             "bsdf_index"_a = IndexBuffer(), D(Mesh, from_fields))
+             "normal_index"_a = IndexBuffer(), D(Mesh, from_fields))
         .def("from_packed",
              [](Mesh &self, uint32_t layout, const TensorXu32 &packed_faces,
                 const TensorXf32 &packed_vertices,
