@@ -1138,7 +1138,7 @@ class PSIntegrator(ADIntegrator):
         block = film.create_block(normalize=True)
         block.set_coalesce(block.coalesce() and spp >= 4)
         block.put(
-            pos=sensor_ds.uv,
+            pos=sensor_ds.uv + mi.ScalarPoint2f(block.offset()),
             wavelengths=wavelengths,
             # Boundary samples are not tied to pixels: normalize by their
             # count and the pixel area, not by `spp`
@@ -1258,7 +1258,7 @@ class PSIntegrator(ADIntegrator):
             block = film.create_block(normalize=True)
             block.set_coalesce(block.coalesce() and spp >= 4)
             block.put(
-                pos=sensor_uv,
+                pos=sensor_uv + mi.ScalarPoint2f(block.offset()),
                 wavelengths=wavelengths,
                 value=value,
                 weight=0,
