@@ -1349,7 +1349,8 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
 
             // Skip merging for emitters and shapes
             if (state[repr].type == ObjectType::Emitter ||
-                state[repr].type == ObjectType::Shape)
+                state[repr].type == ObjectType::Shape ||
+                state[repr].type == ObjectType::Extremum)
                 continue;
 
             // Try to find an equivalent node

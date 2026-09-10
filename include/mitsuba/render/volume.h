@@ -6,6 +6,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume_utils.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -13,7 +14,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Volume : public JitObject<Volume<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(Texture)
+    MI_IMPORT_TYPES(Texture, Extremum)
 
     // ======================================================================
     // Volume interface
@@ -60,6 +61,26 @@ public:
      */
     virtual void max_per_channel(ScalarFloat *out) const;
 
+    /**
+     * \brief Compute local extrema over a spatial region
+     *
+     * Returns the minorant (minimum) and majorant (maximum) value over the
+     * specified bounding box region.
+     *
+     * \param bbox  Bounding box defining the query region, expected to be
+     *              in the volume's local coordinate frame
+     * \return (minorant, majorant) pair
+     */
+    virtual std::pair<Float, Float>
+    extremum(BoundingBox3f bbox) const;
+
+    /// Returns the world-space parametrization of the volume's local coordinates.
+    virtual VolumeParametrization<ScalarFloat> parametrization() const {
+        VolumeParametrization<ScalarFloat> param;
+        param.to_world = m_to_local.inverse();
+        return param;
+    }
+
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
@@ -92,6 +113,18 @@ public:
 
     MI_DECLARE_PLUGIN_BASE_CLASS(Volume)
 
+    /// A scoped guard that pins the reference count for bulk operations in scalar mode.
+    struct PinGuard {
+        const Volume *volume;
+        explicit PinGuard(const Volume *v) : volume(v) { volume->pin_ref_count(); }
+        ~PinGuard() { volume->unpin_ref_count(); }
+
+        PinGuard(const PinGuard &) = delete;
+        PinGuard &operator=(const PinGuard &) = delete;
+    };
+
+    virtual PinGuard pin() const { return PinGuard(this); }
+
 protected:
     Volume(const Properties &props);
 
@@ -107,6 +140,11 @@ protected:
         m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 0.f));
         m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 1.f));
     }
+
+    /// Pin the reference count of the data that constitutes the volume, e.g. a Texture.
+    virtual void pin_ref_count() const {}
+    /// Unpin the reference count.
+    virtual void unpin_ref_count() const {}
 
 protected:
     /// Used to bring points in world coordinates to local coordinates.

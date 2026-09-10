@@ -3,6 +3,7 @@
 
 #include <mitsuba/render/bsdf.h>
 #include <mitsuba/render/emitter.h>
+#include <mitsuba/render/extremum.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/medium.h>
@@ -49,6 +50,7 @@ static nb::object caster(Object *o) {
 
     PY_TRY_CAST(PhaseFunction);
     PY_TRY_CAST(Medium);
+    PY_TRY_CAST(Extremum);
 
     return nb::object();
 }
@@ -96,6 +98,9 @@ MI_PY_DECLARE(MediumInteraction);
 MI_PY_DECLARE(PreliminaryIntersection);
 MI_PY_DECLARE(DirectedEdge);
 MI_PY_DECLARE(Medium);
+MI_PY_DECLARE(ExtremumSegment);
+MI_PY_DECLARE(TrackingState);
+MI_PY_DECLARE(Extremum);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
 MI_PY_DECLARE(MicroflakeDistribution);
@@ -212,11 +217,14 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Shape);
     MI_PY_IMPORT(DirectedEdge);
     MI_PY_IMPORT(Medium);
+    MI_PY_IMPORT(ExtremumSegment);
+    MI_PY_IMPORT(Extremum);
     MI_PY_IMPORT(Endpoint);
     MI_PY_IMPORT(Emitter);
     MI_PY_IMPORT(Interaction);
     MI_PY_IMPORT(SurfaceInteraction);
     MI_PY_IMPORT(MediumInteraction);
+    MI_PY_IMPORT(TrackingState);
     MI_PY_IMPORT(PreliminaryIntersection);
     MI_PY_IMPORT(PositionSample);
     MI_PY_IMPORT(SilhouetteSample);

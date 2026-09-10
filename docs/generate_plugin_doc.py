@@ -138,6 +138,11 @@ VOLUME_ORDERING = [
     'gridvolume'
 ]
 
+EXTREMUM_ORDERING = [
+    'extremum_global',
+    'extremum_grid'
+]
+
 
 def find_order_id(filename, ordering):
     f = os.path.split(filename)[-1].split('.')[0]
@@ -246,7 +251,8 @@ def generate(build_dir):
         ('samplers',    SAMPLER_ORDERING),
         ('films',       FILM_ORDERING),
         ('rfilters',    RFILTER_ORDERING),
-        ('volumes',     VOLUME_ORDERING)
+        ('volumes',     VOLUME_ORDERING),
+        ('extrema',     EXTREMUM_ORDERING)
     ]
 
     for section, ordering in sections:

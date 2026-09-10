@@ -1,5 +1,6 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/medium.h>
+#include <mitsuba/render/extremum.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/python/python.h>
@@ -50,9 +51,10 @@ public:
 };
 
 template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
-    MI_PY_IMPORT_TYPES(PhaseFunctionContext)
+    MI_PY_IMPORT_TYPES(PhaseFunctionContext, Extremum, ExtremumPtr)
 
     using RetPhaseFunction = std::conditional_t<drjit::is_array_v<Ptr>, PhaseFunctionPtr, drjit::scalar_t<PhaseFunctionPtr>>;
+    using RetExtremum = std::conditional_t<drjit::is_array_v<Ptr>, ExtremumPtr, drjit::scalar_t<ExtremumPtr>>;
 
     cls.def("phase_function",
             [](Ptr ptr) -> RetPhaseFunction { return ptr->phase_function(); },
@@ -91,7 +93,10 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
             [](Ptr ptr, const MediumInteraction3f &mi, Mask active = true) {
                 return ptr->get_scattering_coefficients(mi, active); },
             "mi"_a, "active"_a=true,
-            D(Medium, get_scattering_coefficients));
+            D(Medium, get_scattering_coefficients))
+       .def("extremum",
+            [](Ptr ptr) -> RetExtremum { return ptr->extremum(); },
+            D(Medium, extremum));
 }
 
 MI_PY_EXPORT(Medium) {

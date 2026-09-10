@@ -427,6 +427,116 @@ public:
             out[i] = m_max_per_channel[i];
     }
 
+    std::pair<Float, Float>
+    extremum(BoundingBox3f bbox) const override {
+
+        if (m_texture.shape()[3] != 1)
+            NotImplementedError("extremum() only supported for single-channel volumes");
+
+        bbox.clip(BoundingBox3f(Point3f(0.f), Point3f(1.f)));
+
+        // early exit in scalar mode
+        if (dr::any_or<false>(!bbox.valid()))
+            return { 0.f, 0.f };
+
+        Mask active = bbox.valid();
+        const Vector3i res = resolution();
+
+        // Convert to voxel indices with proper padding for interpolation
+        int32_t padding =
+            (m_texture.filter_mode() == dr::FilterMode::Linear) ? 1 : 0;
+
+        Vector3i voxel_min =
+            dr::maximum(dr::floor(bbox.min * Vector3f(res)) - Vector3i(padding),
+                        Vector3i(0));
+        Vector3i voxel_max = dr::minimum(
+            dr::floor(bbox.max * Vector3f(res)) + Vector3i(padding), res - 1);
+
+        UInt32 n       = dr::prod((voxel_max - voxel_min) + 1);
+        Vector3i range = (voxel_max - voxel_min) + 1;
+
+        // Scan voxels in bounds and find min/max
+        Float max_val = -dr::Infinity<Float>;
+        Float min_val = dr::Infinity<Float>;
+
+        if constexpr ( !dr::is_jit_v<Float>){
+            // If possible use pinned data to avoid ref count issues.
+            const ScalarFloat *data = m_pinned_data
+                                    ? m_pinned_data
+                                    : m_texture.tensor().data();
+
+            for (int32_t z = voxel_min.z(); z <= voxel_max.z(); ++z) {
+                for (int32_t y = voxel_min.y(); y <= voxel_max.y(); ++y) {
+                    for (int32_t x = voxel_min.x(); x <= voxel_max.x(); ++x) {
+                        size_t idx = ( x
+                                    + y * res.x()
+                                    + z * res.x() * res.y() );
+                        ScalarFloat val = data[idx];
+                        max_val = dr::maximum(max_val, val);
+                        min_val = dr::minimum(min_val, val);
+                    }
+                }
+            }
+
+        } else {
+            struct LoopState {
+                UInt32 x;
+                UInt32 y;
+                UInt32 z;
+                Float min_val;
+                Float max_val;
+                Mask active;
+
+                DRJIT_STRUCT(LoopState, x, y, z, min_val, max_val, active)
+            } ls = {
+                UInt32(0), UInt32(0), UInt32(0),
+                min_val,
+                max_val,
+                active
+            };
+
+            auto array = m_texture.tensor().array();
+            dr::tie(ls) = dr::while_loop(
+                dr::make_tuple(ls),
+                [](const LoopState &ls) { return ls.active; },
+                [array, res, n, voxel_min, range](LoopState &ls) {
+                    Float &min_val = ls.min_val;
+                    Float &max_val = ls.max_val;
+                    Mask &active   = ls.active;
+
+                    // volume wide indices
+                    UInt32 x = voxel_min.x() + ls.x;
+                    UInt32 y = voxel_min.y() + ls.y;
+                    UInt32 z = voxel_min.z() + ls.z;
+
+                    // serial index
+                    UInt32 tex_idx = x + y * res.x() + z * res.x() * res.y();
+
+                    Float val = dr::gather<Float>(array, tex_idx, active);
+                    dr::masked(max_val, active) = dr::maximum(max_val, val);
+                    dr::masked(min_val, active) = dr::minimum(min_val, val);
+
+                    // This approach avoids modulo and division which are
+                    // detrimental to performance.
+                    ls.x += 1;
+
+                    Mask carry_x = ls.x >= range.x();
+                    ls.x         = dr::select(carry_x, UInt32(0), ls.x);
+                    ls.y += dr::select(carry_x, UInt32(1), UInt32(0));
+
+                    Mask carry_y = carry_x && (ls.y >= range.y());
+                    ls.y         = dr::select(carry_y, UInt32(0), ls.y);
+                    ls.z += dr::select(carry_y, UInt32(1), UInt32(0));
+
+                    ls.active &= ls.z < range.z();
+                });
+            max_val = ls.max_val;
+            min_val = ls.min_val;
+        }
+
+        return { min_val, max_val };
+    }
+
     ScalarVector3i resolution() const override {
         const size_t *shape = m_texture.shape();
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
@@ -589,6 +699,14 @@ protected:
             out[i] = result.entry(i);
     }
 
+    void pin_ref_count() const override {
+        m_pinned_data = m_texture.tensor().data();
+    }
+
+    void unpin_ref_count() const override {
+        m_pinned_data = nullptr;
+    }
+
 protected:
     Texture3f m_texture;
     bool m_accel;
@@ -596,6 +714,7 @@ protected:
     bool m_fixed_max = false;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+    mutable const ScalarFloat* m_pinned_data = nullptr;
 
     MI_TRAVERSE_CB(Base, m_texture)
 };

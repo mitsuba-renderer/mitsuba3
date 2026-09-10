@@ -11,7 +11,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Medium : public JitObject<Medium<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture, Extremum);
 
     /// Destructor
     ~Medium();
@@ -93,6 +93,26 @@ public:
         return m_has_spectral_extinction;
     }
 
+    /**
+     * \brief Intersects ray with the medium bbox and creates a medium interaction.
+     *
+     * \param ray   The ray that is used to test the medium bbox.
+     *
+     * \return
+     *      A tuple (mei, mint, maxt): ``mei`` is a  ``MediumInteraction3f``
+     *      object initialized with the current ray and medium data. ``mint``
+     *      and ``maxt`` represent the minimum and maximum intersection
+     *      distances of the ray with the medium's bbox. In case there are no
+     *      valid intersection, the range defaults to [0, +Inf].
+     */
+    std::tuple<MediumInteraction3f, Float, Float>
+    prepare_medium_traversal(const Ray3f &ray, Mask active) const;
+
+    /// Returns the extremum structure for local extremum acceleration.
+    MI_INLINE const Extremum *extremum() const {
+        return m_extremum.get();
+    }
+
     void traverse(TraversalCallback *callback) override;
 
     /// Return a human-readable representation of the Medium
@@ -109,8 +129,9 @@ protected:
     bool m_sample_emitters;
     bool m_is_homogeneous;
     bool m_has_spectral_extinction;
+    ref<Extremum> m_extremum;
 
-    MI_DECLARE_TRAVERSE_CB(m_phase_function)
+    MI_DECLARE_TRAVERSE_CB(m_phase_function, m_extremum)
 };
 
 MI_EXTERN_CLASS(Medium)
@@ -130,6 +151,8 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(sample_interaction)
     DRJIT_CALL_METHOD(transmittance_eval_pdf)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
+    DRJIT_CALL_GETTER(extremum)
+    DRJIT_CALL_METHOD(prepare_medium_traversal)
 DRJIT_CALL_END()
 
 // -----------------------------------------------------------------------
