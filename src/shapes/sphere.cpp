@@ -660,24 +660,25 @@ public:
         Point3f local = to_object * si.p;
 
         if (likely(shading)) {
-            Point2f angles = dir_to_sph(Vector3f(local));
-            Float theta = angles.x();
-            Float phi = angles.y();
-
-            dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-            si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
-
-            si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
-
             Float rd_2    = dr::square(local.x()) + dr::square(local.y()),
                   rd      = dr::sqrt(rd_2),
                   inv_rd  = dr::rcp(rd),
                   cos_phi = local.x() * inv_rd,
                   sin_phi = local.y() * inv_rd;
 
+            Mask singularity_mask = active && (rd == 0.f);
+
+            // Avoid undefined azimuth at the poles
+            Float theta = dr::unit_angle_z(Vector3f(local)),
+                  phi   = dr::atan2(dr::select(singularity_mask, 0.f, local.y()),
+                                    dr::select(singularity_mask, 1.f, local.x()));
+
+            dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
+            si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
+
+            si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
             si.dp_dv = Vector3f(local.z() * cos_phi, local.z() * sin_phi, -rd);
 
-            Mask singularity_mask = active && (rd == 0.f);
             if (unlikely(dr::any_or<true>(singularity_mask)))
                 si.dp_dv[singularity_mask] = Vector3f(1.f, 0.f, 0.f);
 
