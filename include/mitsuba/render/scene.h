@@ -31,6 +31,13 @@ NAMESPACE_BEGIN(mitsuba)
  * * Sampling directions approximately proportional to the
  *   direct radiance from emitters received at a given scene location
  *   (see `sample_emitter_direction()`).
+ *
+ * In AD-enabled variants, all methods follow the same convention: sampling
+ * decisions and probability densities are detached, while values evaluated at
+ * those fixed samples are attached. Sampling routines thus return the attached
+ * value divided by the detached density. Emitter samples and ray intersections
+ * (by default) treat the ray as fixed and produce hits that slide along the
+ * intersected surface.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Scene final : public JitObject<Scene<Float, Spectrum>> {

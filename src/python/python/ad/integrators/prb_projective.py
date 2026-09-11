@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import PSIntegrator, mis_weight, solid_angle_to_area_jacobian
+from .common import PSIntegrator, mis_weight, reattach_wi, reattach_wo
 
 class PathProjectiveIntegrator(PSIntegrator):
     r"""
@@ -204,13 +204,10 @@ class PathProjectiveIntegrator(PSIntegrator):
                 # Recompute an attached si.wi to account for motion of the
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
-                    si_prev_diff = scene.compute_surface_interaction(
+                    si_prev_diff = dr.replace_grad(si_prev, scene.compute_surface_interaction(
                         ray_prev, pi_prev, ray_flags=mi.RayFlags.Minimal,
-                        active=active_next & ~use_si_shade)
-                    si_prev = dr.replace_grad(si_prev, si_prev_diff)
-                    si_detached = dr.detach(si) # Ignore motion of current point
-                    wi_global = dr.normalize(si_prev.p - si_detached.p)
-                    si.wi = dr.replace_grad(si.wi, si_detached.to_local(wi_global))
+                        active=active_next & ~use_si_shade))
+                    reattach_wi(si, si_prev_diff.p)
 
             if dr.hint(ignore_ray, mode='scalar'):
                 si[use_si_shade] = si_shade
@@ -245,47 +242,12 @@ class PathProjectiveIntegrator(PSIntegrator):
             # Is emitter sampling even possible on the current vertex?
             active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
 
-            # If so, randomly sample an emitter without derivative tracking.
-            ds, em_weight = scene.sample_emitter_direction(
-                si, sampler.next_2d(), True, active_em)
-            active_em &= (ds.pdf != 0.0)
-
+            # If so, sample an emitter. The sample is detached, and its
+            # weight is attached to the emitter and to the motion of 'si'.
             with dr.resume_grad(when=not primal):
-                if dr.hint(not primal, mode='scalar'):
-                    is_surface = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Surface)
-                    is_infinite = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.Infinite)
-                    is_spatially_varying = mi.has_flag(ds.emitter.flags(), mi.EmitterFlags.SpatiallyVarying)
-
-                    # For textured area lights, we need to track UV changes on
-                    # the emitter if it is moving
-                    textured_area_em = active_em & is_surface & is_spatially_varying
-                    ray_em = si.spawn_ray_to(ds.p)
-                    # Move ray origin closer, visibibliy is already accounted for
-                    ray_em.o = dr.fma(ray_em.d, ray_em.maxt, ray_em.o)
-                    ray_em.maxt = dr.largest(ray_em.maxt)
-                    si_em = scene.ray_intersect(ray_em, textured_area_em)
-
-                    # Re-attach gradients for the the `ds` struct
-                    ds_diff = mi.DirectionSample3f(scene, si_em, si)
-                    ds_diff = dr.select(textured_area_em, ds_diff, dr.zeros(mi.DirectionSample3f))
-                    ds_diff.d = dr.select(textured_area_em, ds_diff.d, dr.normalize(ds.p - si.p))
-                    ds_diff.d = dr.select(~is_infinite, ds_diff.d, ds.d)
-                    ds = dr.replace_grad(ds, ds_diff)
-
-                    # If the current interaction point is moving, we need
-                    # to differentiate the solid angle to surface area
-                    # reparameterization.
-                    J = solid_angle_to_area_jacobian(
-                        si.p, dr.detach(ds.p), dr.detach(ds.n), active_em & is_surface
-                    )
-
-                    # Given the detached emitter sample, *recompute* its
-                    # contribution with AD to enable light source optimization
-                    em_val_diff = scene.eval_emitter_direction(si, ds, active_em)
-                    inv_ds_pdf = dr.select(ds.pdf != 0, dr.rcp(ds.pdf), 0)
-                    em_weight = dr.replace_grad(em_weight, em_val_diff * dr.detach(inv_ds_pdf))
-                    em_weight *= dr.relative_grad(J)
-
+                ds, em_weight = scene.sample_emitter_direction(
+                    si, sampler.next_2d(), test_visibility=True, active=active_em)
+                active_em &= (ds.pdf != 0.0)
 
                 # Evaluate BSDF * cos(theta) differentiably
                 wo = si.to_local(ds.d)
@@ -387,26 +349,13 @@ class PathProjectiveIntegrator(PSIntegrator):
                     active=active_next)
 
                 with dr.resume_grad():
-                    # If the current interaction point is moving, we need
-                    # to differentiate the solid angle to surface area
-                    # reparameterization.
-                    J = solid_angle_to_area_jacobian(
-                        si.p, si_next.p, si_next.n, active_next & si_next.is_valid()
-                    )
-
                     # 'L' stores the reflected radiance at the current vertex
                     # but does not track parameter derivatives. The following
                     # addresses this by canceling the detached BSDF value and
                     # replacing it with an equivalent term that has derivative
-                    # tracking enabled.
-
-                    # Recompute 'wo' to propagate derivatives to cosine term
-                    wo_world_diff = dr.normalize(si_next.p - si.p)
-                    wo_world = dr.replace_grad(
-                        ray_next.d,
-                        dr.select(si_next.is_valid(), wo_world_diff, ray_next.d)
-                    )
-                    wo = si.to_local(wo_world)
+                    # tracking enabled. The direction to the next vertex and
+                    # the geometry term account for the motion of 'si'.
+                    wo, J = reattach_wo(si, si_next, ray_next, active_next)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)

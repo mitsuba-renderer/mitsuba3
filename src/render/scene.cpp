@@ -603,6 +603,20 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     return { ray, weight, emitter };
 }
 
+/// Factor with unit value and the relative derivative of 'x'. A zero entry
+/// of 'x' contributes no derivative.
+template <typename T> static T relative_grad(const T &x) {
+    if constexpr (dr::is_diff_v<T>) {
+        if (!dr::grad_enabled(x))
+            return T(1.f);
+        T x0 = dr::detach(x);
+        return dr::select(x0 != 0.f, x / x0, T(1.f));
+    } else {
+        DRJIT_MARK_USED(x);
+        return T(1.f);
+    }
+}
+
 MI_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
                                                  bool test_visibility, Mask active) const {
@@ -626,30 +640,47 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         // Account for the discrete probability of sampling this emitter
         ds.pdf *= pdf_emitter(index, active);
         spec *= emitter_weight;
-
-        active &= (ds.pdf != 0.f);
-
-        // Mark occluded samples as invalid if requested by the user
-        if (test_visibility && dr::any_or<true>(active)) {
-            Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
-            dr::masked(spec, occluded) = 0.f;
-            dr::masked(ds.pdf, occluded) = 0.f;
-        }
     } else if (emitter_count == 1) {
         // Sample a direction towards the (single) emitter
         std::tie(ds, spec) = m_emitters[0]->sample_direction(ref, sample, active);
-
-        active &= (ds.pdf != 0.f);
-
-        // Mark occluded samples as invalid if requested by the user
-        if (test_visibility && dr::any_or<true>(active)) {
-            Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
-            dr::masked(spec, occluded) = 0.f;
-            dr::masked(ds.pdf, occluded) = 0.f;
-        }
     } else {
-        ds = dr::zeros<DirectionSample3f>();
-        spec = 0.f;
+        return { dr::zeros<DirectionSample3f>(), Spectrum(0.f) };
+    }
+
+    active &= (ds.pdf != 0.f);
+
+    if constexpr (dr::is_diff_v<Float>) {
+        // Detach the sample and re-attach the weight following the
+        // convention described in the class documentation
+        if (dr::grad_enabled(ref.p, ds.p, ds.pdf, spec)) {
+            UInt32 flags = ds.emitter->flags();
+            Mask is_surface  = has_flag(flags, EmitterFlags::Surface),
+                 is_infinite = has_flag(flags, EmitterFlags::Infinite);
+
+            Spectrum spec_d = dr::detach(spec);
+            ds = dr::detach(ds);
+
+            // The sample is a fixed point seen from the moving reference
+            // point. Delta and infinite emitters keep their direction.
+            Vector3f d = dr::normalize(ds.p - ref.p);
+            ds.d = dr::select(is_infinite, ds.d, d);
+            Float G = dr::select(active && is_surface,
+                                 dr::abs_dot(ds.n, d) / dr::squared_norm(ds.p - ref.p),
+                                 1.f);
+
+            // The weight equals 'Le / ds.pdf'. The additive form keeps the
+            // derivative of 'Le' where the radiance is currently zero.
+            Spectrum Le = ds.emitter->eval_direction(ref, ds, active);
+            Float inv_pdf = dr::select(ds.pdf != 0.f, dr::rcp(ds.pdf), 0.f);
+            spec = (spec_d + (Le - dr::detach(Le)) * inv_pdf) * relative_grad(G);
+        }
+    }
+
+    // Mark occluded samples as invalid if requested by the user
+    if (test_visibility && dr::any_or<true>(active)) {
+        Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
+        dr::masked(spec, occluded) = 0.f;
+        dr::masked(ds.pdf, occluded) = 0.f;
     }
 
     return { ds, spec };

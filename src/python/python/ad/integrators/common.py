@@ -1370,3 +1370,45 @@ def solid_angle_to_area_jacobian(o: mi.Point3f,
     J = dr.select(active, J, 1)
 
     return J
+
+
+def reattach_wi(si: mi.SurfaceInteraction3f, p_prev: mi.Point3f):
+    """
+    Attach the incident direction ``si.wi`` to the motion of the previous
+    vertex, holding ``si`` itself fixed. The primal value of ``si.wi`` is
+    unchanged.
+
+    Args:
+        si: Interaction whose incident direction is modified in place
+        p_prev: Position of the previous vertex, attached to its motion
+    """
+    si_d = dr.detach(si)
+    si.wi = dr.replace_grad(si.wi, si_d.to_local(dr.normalize(p_prev - si_d.p)))
+
+
+def reattach_wo(si: mi.SurfaceInteraction3f,
+                si_next: mi.SurfaceInteraction3f,
+                ray: mi.Ray3f,
+                active: mi.Bool):
+    """
+    Attach the outgoing direction and the geometry term of the path segment
+    from ``si`` to ``si_next`` to the motion of ``si``, holding the endpoint
+    fixed. The primal direction is that of ``ray``.
+
+    Args:
+        si: Interaction at the start of the segment, attached to its motion
+        si_next: Interaction at the end of the segment. Only its detached
+            position and normal are used. Lanes without a valid endpoint keep
+            the ray direction and a unit geometry term.
+        ray: Ray that produced ``si_next``
+        active: Mask of active lanes
+
+    Returns:
+        A tuple ``(wo, J)`` with the outgoing direction in the local frame of
+        ``si`` and the solid angle to surface area Jacobian
+    """
+    valid = active & si_next.is_valid()
+    p, n = dr.detach(si_next.p), dr.detach(si_next.n)
+    J = solid_angle_to_area_jacobian(si.p, p, n, valid)
+    d = dr.replace_grad(ray.d, dr.select(valid, dr.normalize(p - si.p), ray.d))
+    return si.to_local(d), J
