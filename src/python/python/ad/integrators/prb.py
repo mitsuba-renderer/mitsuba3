@@ -98,14 +98,19 @@ class PRBIntegrator(RBIntegrator):
                                              coherent=True,
                                              reorder=False,
                                              active=active,
-                                             visibility_mask=mi.RayMask.Camera)
+                                             ray_mask=mi.RayMask.Primary)
 
-        # Variables caching information from the previous bounce
+        # Variables caching information from the previous bounce. Null
+        # crossings are not path vertices and leave them unchanged.
         ray_prev        = mi.Ray3f(ray)
         pi_prev         = dr.zeros(mi.PreliminaryIntersection3f)
         si_prev         = dr.zeros(mi.SurfaceInteraction3f)
         bsdf_pdf_prev   = mi.Float(1.0)
         bsdf_delta_prev = mi.Bool(True)
+        ray_mask        = mi.UInt32(mi.RayMask.Primary)
+
+        # Null tests fold to literals in scenes without null shapes
+        has_null = scene.has_null_shapes()
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
@@ -127,17 +132,13 @@ class PRBIntegrator(RBIntegrator):
 
             # Get the BSDF
             bsdf = si.bsdf()
+            bsdf_flags = bsdf.flags()
 
             # ---------------------- Direct emission ----------------------
 
-            # Ray mask of the trace that produced si. The emitter lookup uses
-            # it to hide an invisible environment from escaped depth-0 rays.
-            ray_mask = dr.select(depth == 0, mi.RayMask.Camera,
-                                 mi.RayMask.All)
-
-            # Compute MIS weight for emitter sample from previous bounce
+            # The emitter lookup uses the mask of the ray that produced si
             ds = mi.DirectionSample3f(scene, si=si, ref=si_prev,
-                                      visibility_mask=ray_mask)
+                                      ray_mask=ray_mask)
 
             mis = mis_weight(
                 bsdf_pdf_prev,
@@ -149,11 +150,14 @@ class PRBIntegrator(RBIntegrator):
 
             # ---------------------- Emitter sampling ----------------------
 
-            # Should we continue tracing to reach one more vertex?
-            active_next &= (depth + 1 < self.max_depth) & si.is_valid()
+            # Continue tracing? Null crossings don't count towards max_depth
+            depth_ok = depth + 1 < self.max_depth
+            can_cross = mi.has_flag(bsdf_flags, mi.BSDFFlags.Null) if has_null else mi.Bool(False)
+            active_next &= si.is_valid() & (depth_ok | can_cross)
 
             # Is emitter sampling even possible on the current vertex?
-            active_em = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+            active_em = active_next & depth_ok & \
+                        mi.has_flag(bsdf_flags, mi.BSDFFlags.Smooth)
 
             # If so, sample an emitter. The sample is detached, and its
             # weight is attached to the emitter and to the motion of 'si'.
@@ -182,12 +186,6 @@ class PRBIntegrator(RBIntegrator):
             η *= bsdf_sample.eta
             β *= bsdf_weight
 
-            # Information about the current vertex needed by the next iteration
-
-            si_prev = dr.detach(si, True)
-            bsdf_pdf_prev = bsdf_sample.pdf
-            bsdf_delta_prev = mi.has_flag(bsdf_sample.sampled_type, mi.BSDFFlags.Delta)
-
             # -------------------- Stopping criterion ---------------------
 
             # Don't run another iteration if the throughput has reached zero
@@ -204,12 +202,26 @@ class PRBIntegrator(RBIntegrator):
             rr_continue = sampler.next_1d() < rr_prob
             active_next &= ~rr_active | rr_continue
 
+            # Information about the current vertex needed by the next
+            # iteration (unchanged by null crossings)
+            null = bsdf_sample.is_null() if has_null else mi.Bool(False)
+            scattered = si.is_valid() & ~null
+            si_prev[scattered]         = dr.detach(si, True)
+            pi_prev[scattered]         = pi
+            ray_prev[scattered]        = ray
+            bsdf_pdf_prev[scattered]   = bsdf_sample.pdf
+            bsdf_delta_prev[scattered] = bsdf_sample.is_delta()
+            ray_mask[scattered]        = mi.RayMask.Secondary
+            depth[scattered]          += 1
+            active_next &= depth_ok | ~scattered
+
             # ----------------- Find the next interaction -----------------
 
             pi_next = scene.ray_intersect_preliminary(ray_next,
                                                       coherent=False,
                                                       reorder=False,
-                                                      active=active_next)
+                                                      active=active_next,
+                                                      ray_mask=ray_mask)
 
             # ------------------ Differential phase only ------------------
 
@@ -227,8 +239,12 @@ class PRBIntegrator(RBIntegrator):
                     # the geometry term account for the motion of 'si'.
                     wo, J = reattach_wo(si, si_next, ray_next, active_next)
 
-                    # Re-evaluate BSDF * cos(theta) differentiably
+                    # Re-evaluate BSDF * cos(theta) differentiably. A null
+                    # crossing continues with the null transmission instead.
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
+                    if dr.hint(has_null, mode='scalar'):
+                        null &= active_next
+                        bsdf_val[null] = bsdf.eval_null(si, null)
 
                     # Differentiable version of the reflected radiance.
                     Lr_ind = L * dr.relative_grad(bsdf_val) * dr.relative_grad(J)
@@ -263,12 +279,8 @@ class PRBIntegrator(RBIntegrator):
 
             # ------------------ Update loop variables ------------------
 
-            depth[si.is_valid()] += 1
             active = active_next
-
-            pi_prev = pi
             pi = pi_next
-            ray_prev = ray
             ray = ray_next
 
         return (

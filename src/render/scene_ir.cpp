@@ -26,7 +26,8 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
     for (size_t i = 0; i < shapes.size(); ++i) {
         ShapeIR g;
         shapes[i]->describe(g);
-        g.visibility_mask = shapes[i]->visibility_mask();
+        g.visibility_mask =
+            accel_mask(shapes[i]->visibility(), shapes[i]->has_null());
         g.data_slot = slot++;
         if (g.kind == ShapeIR::Kind::Instance)
             inst_shapes.push_back(std::move(g));
@@ -40,7 +41,8 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         group_geoms[i].resize(children.size());
         for (size_t j = 0; j < children.size(); ++j) {
             children[j]->describe(group_geoms[i][j]);
-            group_geoms[i][j].visibility_mask = children[j]->visibility_mask();
+            group_geoms[i][j].visibility_mask =
+                accel_mask(children[j]->visibility(), children[j]->has_null());
             group_geoms[i][j].data_slot = slot++;
         }
     }

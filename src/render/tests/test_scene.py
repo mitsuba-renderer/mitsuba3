@@ -365,134 +365,222 @@ def test12_many_top_level_analytic_shapes(variants_vec_backends_once_rgb):
         assert dr.all(got == shapes[i])
 
 
-def make_visibility_scene(visible, integrator='path'):
-    """A camera at z=3 looks along -z at an area emitter (z=1) that faces it.
-    A diffuse wall at z=-1 sits behind the emitter (on its dark side) and only
-    receives light indirectly, via the large wall at z=4 behind the camera."""
-    T = mi.ScalarTransform4f
+# ---------------------------------------------------------------------------
+# Visibility flags and surfaces with null transmission
+# ---------------------------------------------------------------------------
+
+def rect(z, **props):
+    """A rectangle in the plane z=``z`` facing +z"""
+    return dict(type='rectangle',
+                to_world=mi.ScalarTransform4f().translate([0, 0, z]), **props)
+
+
+def ray_z(maxt=float('inf'), origin=[0, 0, 0]):
+    """The +z ray from ``origin``"""
+    return mi.Ray3f(origin, [0, 0, 1], maxt, 0.0, [])
+
+
+def transmittance(scene, maxt, origin=[0, 0, 0]):
+    """Transmittance of the +z shadow ray from ``origin`` up to ``maxt``"""
+    return np.array(scene.ray_test_tr(ray_z(maxt, origin))).ravel()[0]
+
+
+def hit_t(scene, mask):
+    """Distance to the closest hit of the +z ray under the ray mask"""
+    return scene.ray_intersect(ray_z(), mi.RayFlags.Default, ray_mask=mask).t
+
+
+DIFFUSE = {'type': 'diffuse'}
+MASK = {'type': 'mask', 'opacity': 0.25, 'material': DIFFUSE}
+THIN = {'type': 'thindielectric'}
+NULL = {'type': 'null'}
+
+
+def make_null_scene(bsdf):
+    """A diffuse wall at z=3 behind a window (z=1) and a small sphere (z=2)
+    that both use ``bsdf``"""
     return mi.load_dict({
         'type': 'scene',
-        'integrator': {'type': integrator, 'max_depth': 4},
-        'sensor': {
-            'type': 'perspective',
-            'fov': 20,
-            'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0],
-                                    up=[0, 1, 0]),
-            'film': {'type': 'hdrfilm', 'width': 8, 'height': 8,
-                     'rfilter': {'type': 'box'}},
-            'sampler': {'type': 'independent', 'sample_count': 64},
-        },
-        'light': {
-            'type': 'rectangle',
-            'to_world': T().translate([0, 0, 1]) @ T().scale(0.5),
-            'emitter': {
-                'type': 'area',
-                'radiance': {'type': 'rgb', 'value': 5.0},
-                'visible': visible,
-            },
-        },
-        'back_wall': {
-            'type': 'rectangle',
-            'to_world': T().translate([0, 0, -1]) @ T().scale(2.0),
-            'bsdf': {'type': 'diffuse',
-                     'reflectance': {'type': 'rgb', 'value': 0.5}},
-        },
-        'front_wall': {
-            'type': 'rectangle',
-            'to_world': T().translate([0, 0, 4])
-                        @ T().rotate([1, 0, 0], 180)
-                        @ T().scale(4.0),
-            'bsdf': {'type': 'diffuse',
-                     'reflectance': {'type': 'rgb', 'value': 0.5}},
-        },
+        'wall': rect(3, bsdf=DIFFUSE),
+        'window': rect(1, bsdf=bsdf),
+        'sphere': {'type': 'sphere', 'center': [0, 0, 2], 'radius': 0.25,
+                   'bsdf': bsdf},
     })
 
 
-def test13_visibility_mask_queries(variants_all_rgb):
-    """Camera rays skip shapes whose emitter has visible=False; other
-    rays still see and are occluded by them."""
-    scene = make_visibility_scene(visible=False)
-
+@pytest.mark.parametrize('bsdf', [DIFFUSE, MASK, THIN, NULL],
+                         ids=['diffuse', 'mask', 'thindielectric', 'null'])
+def test13_null_shape_classes(variants_all_rgb, bsdf):
+    """Shapes are classified by the null transmission of their BSDF. The
+    class shows in the shape's visibility mask, in has_null(), and in the
+    scene's summary flag."""
+    null = bsdf is not DIFFUSE
+    scene = make_null_scene(bsdf)
+    assert scene.has_null_shapes() == null
     for shape in scene.shapes():
-        if shape.is_emitter():
-            assert shape.visibility_mask() == 0xFE
-            assert not shape.emitter().visible()
-            assert mi.has_flag(shape.emitter().flags(),
-                               mi.EmitterFlags.Invisible)
-        else:
-            assert shape.visibility_mask() == 0xFF
-
-    ray = mi.Ray3f([0, 0, 3], [0, 0, -1])
-
-    # Default mask: the emitter is hit like any other shape
-    si = scene.ray_intersect(ray)
-    dr.assert_allclose(si.t, 2)
-
-    # Camera mask: the ray passes through and hits the wall behind
-    si = scene.ray_intersect(ray, mi.RayFlags.Default, False, True,
-                             visibility_mask=mi.RayMask.Camera)
-    dr.assert_allclose(si.t, 4)
-    pi = scene.ray_intersect_preliminary(ray,
-                                         visibility_mask=mi.RayMask.Camera)
-    dr.assert_allclose(pi.t, 4)
-
-    # Occlusion follows the same rule
-    short_ray = mi.Ray3f([0, 0, 3], [0, 0, -1], 2.5, 0.0, [])
-    assert dr.all(scene.ray_test(short_ray))
-    assert not dr.any(scene.ray_test(short_ray, False, True,
-                                     visibility_mask=mi.RayMask.Camera))
+        has_null = null and shape.id() != 'wall'
+        assert shape.has_null() == has_null
 
 
-def test14_visibility_mask_render(variants_all_rgb):
-    """A hidden area emitter does not appear in the rendered image but still
-    illuminates the scene."""
-    img_visible = mi.render(make_visibility_scene(visible=True))
-    img_hidden = mi.render(make_visibility_scene(visible=False))
-
-    n = mi.TensorXf(img_visible).shape[0]
-    c = n // 2
-    center_visible = np.array(img_visible)[c, c, :]
-    center_hidden = np.array(img_hidden)[c, c, :]
-
-    # Directly visible emitter radiance vs. the indirectly lit wall behind it
-    assert np.all(center_visible > 3)
-    assert np.all(center_hidden < 1)
-    # The wall behind the emitter is still indirectly illuminated by it
-    # (light -> front wall -> back wall)
-    assert np.all(center_hidden > 1e-4)
+def test14_null_bsdf_replacement(variants_all_rgb):
+    """Replacing a shape's BSDF updates its class, the scene summary, and
+    the acceleration data structure, so that shadow rays observe the new
+    transmittance right away."""
+    scene = mi.load_dict({'type': 'scene', 'window': rect(1, bsdf=DIFFUSE)})
+    window = scene.shapes()[0]
+    for bsdf, null, tr in [(None, False, 0.0), (MASK, True, 0.75),
+                           (DIFFUSE, False, 0.0)]:
+        if bsdf is not None:
+            window.set_bsdf(mi.load_dict(bsdf))
+            scene.parameters_changed()
+        assert window.has_null() == null
+        assert scene.has_null_shapes() == null
+        assert transmittance(scene, 2.0) == pytest.approx(tr)
 
 
-def test15_visibility_env_emitter(variants_all_rgb):
-    """A hidden environment emitter produces no directly visible radiance but
-    still illuminates the scene."""
+@pytest.mark.parametrize('bsdf, maxt, origin, tr', [
+    (MASK, 2.5, [0, 0, 0], 0.75**3),
+    (NULL, 2.5, [0, 0, 0], 1.0),
+    (DIFFUSE, 2.5, [0, 0, 0], 0.0),
+    (MASK, 2.5, [0.5, 0.5, 0], 0.75),
+    (MASK, 2.5, [5, 5, 0], 1.0),
+    (MASK, 3.5, [0, 0, 0], 0.0),
+], ids=['window+sphere', 'null', 'opaque', 'window', 'miss', 'wall'])
+def test15_null_transmittance(variants_all_rgb, bsdf, maxt, origin, tr):
+    """Shadow rays of ray_test_tr() pass through null shapes and return
+    the product of their transmission (the sphere is entered and left),
+    while opaque shapes occlude. The plain ray_test() treats every shape as
+    an occluder."""
+    scene = make_null_scene(bsdf)
+    assert transmittance(scene, maxt, origin) == pytest.approx(tr)
+    occluded = scene.ray_test(ray_z(maxt, origin))
+    assert bool(dr.all(occluded)) == (origin != [5, 5, 0])
+
+
+@pytest.mark.parametrize('maxt, tr', [(0.5, 1.0), (2.0, 0.5), (2.5, 0.25)])
+def test16_null_transmittance_epsilon(variants_all_rgb, maxt, tr):
+    """The continuation ray after a crossing keeps the endpoint of the
+    segment: a second sheet just beyond maxt is not crossed."""
+    half = {'type': 'mask', 'opacity': 0.5, 'material': DIFFUSE}
+    scene = mi.load_dict({'type': 'scene', 'a': rect(1, bsdf=half),
+                          'b': rect(2.00005, bsdf=half)})
+    assert transmittance(scene, maxt) == pytest.approx(tr)
+
+
+def test17_null_intersection(variants_all_rgb):
+    """ray_intersect_tr() skips null shapes and returns the first opaque
+    hit with the transmittance up to it. Opaque shapes hidden from the
+    ray's mask do not stop the walk either."""
+    scene = make_null_scene(MASK)
+    si, tr = scene.ray_intersect_tr(ray_z())
+    dr.assert_allclose(si.t, 3)
+    assert np.array(tr).ravel()[0] == pytest.approx(0.75**3)
+
+    si, tr = scene.ray_intersect_tr(ray_z(origin=[5, 5, 0]))
+    assert not dr.any(si.is_valid())
+    assert np.array(tr).ravel()[0] == 1.0
+
+    scene = mi.load_dict({'type': 'scene', 'window': rect(1, bsdf=MASK),
+                          'wall': rect(2, bsdf=DIFFUSE, visibility='primary')})
+    si, tr = scene.ray_intersect_tr(ray_z())
+    assert not dr.any(si.is_valid())
+    assert np.array(tr).ravel()[0] == pytest.approx(0.75)
+    dr.assert_allclose(scene.ray_intersect_tr(
+        ray_z(), ray_mask=mi.RayMask.Primary)[0].t, 2)
+
+
+def test18_null_textured_mask(variants_all_rgb):
+    """A spatially varying opacity is looked up at the UV coordinates of
+    the crossed surface."""
+    checker = {'type': 'mask', 'material': DIFFUSE,
+               'opacity': {'type': 'checkerboard', 'color0': 0.0, 'color1': 1.0}}
+    scene = mi.load_dict({'type': 'scene', 'pane': rect(1, bsdf=checker)})
+    values = [transmittance(scene, 2, o)
+              for o in ([0.25, 0.25, 0], [0.25, -0.25, 0])]
+    assert sorted(values) == [0.0, 1.0]
+
+
+@pytest.mark.parametrize('bsdf', [MASK, THIN], ids=['mask', 'thindielectric'])
+def test19_null_instances(variants_all_rgb, bsdf):
+    """The walk of ray_test_tr() evaluates an instanced null shape in the
+    local frame of its shape group, matching the same shape placed at the
+    top level."""
     T = mi.ScalarTransform4f
+    to_world = T().translate([0, 0, 1]) @ T().rotate([1, 0, 0], 30)
+    wall = rect(2, bsdf=DIFFUSE)
 
-    def make_scene(visible):
-        return mi.load_dict({
-            'type': 'scene',
-            'integrator': {'type': 'path', 'max_depth': 4},
-            'sensor': {
-                'type': 'perspective',
-                'fov': 40,
-                'to_world': T().look_at(origin=[0, 0, 3], target=[0, 0, 0],
-                                        up=[0, 1, 0]),
-                'film': {'type': 'hdrfilm', 'width': 8, 'height': 8,
-                         'rfilter': {'type': 'box'}},
-                'sampler': {'type': 'independent', 'sample_count': 16},
-            },
-            'env': {'type': 'constant',
-                    'radiance': {'type': 'rgb', 'value': 1.0},
-                    'visible': visible},
-            'ball': {'type': 'sphere', 'to_world': T().scale(0.4),
-                     'bsdf': {'type': 'diffuse'}},
-        })
+    plain = mi.load_dict({
+        'type': 'scene', 'wall': wall,
+        'pane': dict(type='rectangle', to_world=to_world, bsdf=bsdf)})
+    inst = mi.load_dict({
+        'type': 'scene', 'wall': wall,
+        'group': {'type': 'shapegroup',
+                  'pane': dict(type='rectangle', bsdf=bsdf)},
+        'inst': {'type': 'instance', 'to_world': to_world,
+                 'shapegroup': {'type': 'ref', 'id': 'group'}}})
+    assert inst.has_null_shapes()
+    ref = transmittance(plain, 1.5)
+    assert 0 < ref < 1
+    assert transmittance(inst, 1.5) == pytest.approx(ref)
 
-    img_visible = np.array(mi.render(make_scene(True)))
-    img_hidden = np.array(mi.render(make_scene(False)))
 
-    # Escaped camera rays see the environment only when it is visible
-    assert np.allclose(img_visible[0, 0], 1.0, atol=1e-3)
-    assert np.allclose(img_hidden[0, 0], 0.0)
-    # The sphere in the image center is lit identically in both cases
-    assert img_hidden[4, 4, 0] > 0.1
-    assert np.allclose(img_visible[4, 4], img_hidden[4, 4], rtol=0.2)
+@pytest.mark.parametrize('grouped', [False, True], ids=['top-level', 'grouped'])
+@pytest.mark.parametrize('props, null, visibility, t_primary, t_secondary', [
+    ({}, False, 'All', 1, 1),
+    ({'visibility': 'secondary'}, False, 'Secondary', 2, 1),
+    ({'visibility': 'primary'}, False, 'Primary', 1, 2),
+    ({'visibility': 'hidden'}, False, 'Hidden', 2, 2),
+    ({'visibility': 'secondary', 'bsdf': THIN}, True, 'Secondary', 2, 1),
+], ids=['all', 'secondary', 'primary', 'hidden', 'secondary-null'])
+def test20_shape_visibility(variants_all_rgb, grouped, props, null,
+                            visibility, t_primary, t_secondary):
+    """A shape can be hidden from primary rays, from secondary rays, or
+    from both. Each ray mask then sees the expected surface, and a shape
+    inside a shape group behaves like a top-level one."""
+    pane = rect(1, **{'bsdf': {'type': 'dielectric'}, **props})
+    if grouped:
+        d = {'group': {'type': 'shapegroup', 'pane': pane},
+             'inst': {'type': 'instance',
+                      'shapegroup': {'type': 'ref', 'id': 'group'}}}
+    else:
+        d = {'pane': pane}
+    scene = mi.load_dict({'type': 'scene', 'wall': rect(2, bsdf=DIFFUSE), **d})
+
+    if not grouped:
+        pane = [s for s in scene.shapes() if s.id() == 'pane'][0]
+        expected = getattr(mi.ShapeVisibility, visibility)
+        assert pane.visibility() == expected
+        assert pane.has_null() == null
+
+    dr.assert_allclose(hit_t(scene, mi.RayMask.All), 1)
+    dr.assert_allclose(hit_t(scene, mi.RayMask.Primary), t_primary)
+    dr.assert_allclose(hit_t(scene, mi.RayMask.Secondary), t_secondary)
+    occluded = scene.ray_test(ray_z(1.5), False, ray_mask=mi.RayMask.Secondary)
+    assert bool(dr.all(occluded)) == (t_secondary == 1)
+
+
+@pytest.mark.parametrize('shapes, message', [
+    ({'e': {'type': 'rectangle',
+            'emitter': {'type': 'area', 'visibility': 'secondary'}}},
+     'must be specified on the shape'),
+    ({'e': {'type': 'rectangle', 'visibility': 'shadow'}},
+     "Invalid 'visibility' value"),
+    ({'group': {'type': 'shapegroup', 'child': {'type': 'sphere'}},
+      'inst': {'type': 'instance', 'visibility': 'secondary',
+               'shapegroup': {'type': 'ref', 'id': 'group'}}},
+     'Instances cannot be hidden'),
+    ({'group': {'type': 'shapegroup', 'visibility': 'secondary',
+                'child': {'type': 'sphere'}}},
+     'Shape groups cannot be hidden'),
+    ({'e': {'type': 'point', 'visibility': 'secondary'}},
+     'only applies to emitters'),
+    ({'e': {'type': 'directional', 'visibility': 'secondary'}},
+     'only applies to emitters'),
+], ids=['area-emitter', 'invalid', 'instance', 'shapegroup', 'point',
+        'directional'])
+def test21_visibility_errors(variants_all_rgb, shapes, message):
+    """The visibility property is rejected on area emitters (the shape owns
+    it), on instances and shape groups, on emitters that rays cannot
+    intersect, and with an unknown value."""
+    with pytest.raises(RuntimeError, match=message):
+        mi.load_dict({'type': 'scene', **shapes})

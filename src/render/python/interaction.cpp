@@ -11,6 +11,15 @@ MI_PY_EXPORT(RayFlags) {
         .def_value(RayFlags, DetachShape);
 
     nb::enum_<RayMask>(m, "RayMask", nb::is_arithmetic(), D(RayMask))
-        .def_value(RayMask, Camera)
+        .def_value(RayMask, Opaque)
+        .def_value(RayMask, Null)
+        .def_value(RayMask, Primary)
+        .def_value(RayMask, Secondary)
         .def_value(RayMask, All);
+
+    nb::enum_<ShapeVisibility>(m, "ShapeVisibility", D(ShapeVisibility))
+        .def_value(ShapeVisibility, Hidden)
+        .def_value(ShapeVisibility, Primary)
+        .def_value(ShapeVisibility, Secondary)
+        .def_value(ShapeVisibility, All);
 }

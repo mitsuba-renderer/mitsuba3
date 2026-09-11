@@ -65,7 +65,8 @@ MI_PY_EXPORT(SurfaceInteraction) {
             "M_world"_a, "in_forward_world"_a, "out_forward_world"_a,
             D(SurfaceInteraction, to_local_mueller))
         .def("emitter", &SurfaceInteraction3f::emitter, D(SurfaceInteraction, emitter),
-            "scene"_a, "active"_a = true, "visibility_mask"_a = +RayMask::All)
+            "scene"_a, nb::kw_only(), "ray_mask"_a = +RayMask::Secondary,
+            "active"_a = true)
         .def("is_sensor", &SurfaceInteraction3f::is_sensor, D(SurfaceInteraction, is_sensor))
         .def("is_medium_transition", &SurfaceInteraction3f::is_medium_transition,
             D(SurfaceInteraction, is_medium_transition))
@@ -74,8 +75,8 @@ MI_PY_EXPORT(SurfaceInteraction) {
                                                 nb::const_),
             "d"_a, D(SurfaceInteraction, target_medium))
         .def("target_medium",
-            nb::overload_cast<const Float &>(&SurfaceInteraction3f::target_medium,
-                                            nb::const_),
+            nb::overload_cast<Float>(&SurfaceInteraction3f::target_medium,
+                                     nb::const_),
             "cos_theta"_a, D(SurfaceInteraction, target_medium, 2))
         .def("bsdf", &SurfaceInteraction3f::bsdf, D(SurfaceInteraction, bsdf))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,

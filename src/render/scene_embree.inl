@@ -39,7 +39,9 @@ void rtcOccluded32(const int *valid, RTCScene scene,
         static_assert(sizeof(tmp) == sizeof(RTCRay16));
         rtcOccluded16(valid + N * i, scene, context, (RTCRay16 *) tmp);
 
+        // Copy back 'tfar' and the user flags word
         memcpy(in + N * (i + M * 8), tmp + N * 8, N * sizeof(uint32_t));
+        memcpy(in + N * (i + M * 11), tmp + N * 11, N * sizeof(uint32_t));
     }
 }
 
@@ -116,6 +118,44 @@ static void embree_backface_cull(const RTCFilterFunctionNArguments *args) {
     }
 }
 
+template <size_t N>
+static void embree_null_filter_packet(const RTCFilterFunctionNArguments *args) {
+    using UInt32P = dr::Packet<uint32_t, N>;
+
+    uint32_t *flags_ptr = &RTCRayN_flags(args->ray, N, 0),
+             *valid_ptr = (uint32_t *) args->valid;
+
+    UInt32P flags = dr::load_aligned<UInt32P>(flags_ptr),
+            valid = dr::load_aligned<UInt32P>(valid_ptr);
+
+    auto null = (valid != 0u) && ((flags & (uint32_t) CPURayFlags::SkipNull) != 0u);
+    dr::store_aligned(flags_ptr, dr::select(null, flags | (uint32_t) CPURayFlags::HasNull, flags));
+    dr::store_aligned(valid_ptr, dr::select(null, UInt32P(0u), valid));
+}
+
+// Filter that skips null intersections and records their presence
+static void embree_null_filter(const RTCFilterFunctionNArguments *args) {
+    switch (args->N) {
+        case 1: {
+            unsigned int &flags = RTCRayN_flags(args->ray, 1, 0);
+            if (*args->valid && (flags & CPURayFlags::SkipNull)) {
+                flags |= CPURayFlags::HasNull;
+                *args->valid = 0;
+            }
+            break;
+        }
+        case 4:  embree_null_filter_packet<4>(args); break;
+        case 8:  embree_null_filter_packet<8>(args); break;
+        case 16: embree_null_filter_packet<16>(args); break;
+        default: Throw("embree_null_filter(): unsupported packet size!");
+    }
+}
+
+static void embree_backface_cull_null(const RTCFilterFunctionNArguments *args) {
+    embree_backface_cull(args);
+    embree_null_filter(args);
+}
+
 /// Build one Embree geometry from a `ShapeIR`.
 template <typename Float, typename Spectrum>
 static RTCGeometry
@@ -125,14 +165,13 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
     ShapeIR g;
     shape->describe(g);
 
-    // Each case sets the per-shape visibility mask, which Embree tests
-    // against the per-lane ray mask (this requires EMBREE_RAY_MASK).
-    // Instances keep the all-bits default, since Embree also tests the masks
-    // of the geometries within the instanced scene.
+    bool null = shape->has_null();
+    uint32_t visibility_mask = accel_mask(shape->visibility(), null);
+
     switch (g.kind) {
         case ShapeIR::Kind::Custom: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
-            rtcSetGeometryMask(geom, shape->visibility_mask());
+            rtcSetGeometryMask(geom, visibility_mask);
             rtcSetGeometryUserPrimitiveCount(geom, (unsigned int) g.prim_count);
             rtcSetGeometryUserData(geom, (void *) shape);
             rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
@@ -145,7 +184,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
         case ShapeIR::Kind::Triangles:
         case ShapeIR::Kind::TrianglesCulled: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-            rtcSetGeometryMask(geom, shape->visibility_mask());
+            rtcSetGeometryMask(geom, visibility_mask);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
                                        g.vertex_stride, g.vertex_count);
@@ -154,7 +193,11 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                                        g.index_stride, g.face_count);
             if (g.kind == ShapeIR::Kind::TrianglesCulled) {
                 rtcSetGeometryIntersectFilterFunction(geom, embree_backface_cull);
-                rtcSetGeometryOccludedFilterFunction(geom, embree_backface_cull);
+                rtcSetGeometryOccludedFilterFunction(
+                    geom, null ? embree_backface_cull_null
+                               : embree_backface_cull);
+            } else if (null) {
+                rtcSetGeometryOccludedFilterFunction(geom, embree_null_filter);
             }
             rtcSetGeometryUserData(geom, (void *) shape);
             rtcCommitGeometry(geom);
@@ -167,13 +210,15 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 device, g.kind == ShapeIR::Kind::BSplineCurve
                             ? RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE
                             : RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
-            rtcSetGeometryMask(geom, shape->visibility_mask());
+            rtcSetGeometryMask(geom, visibility_mask);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT4, g.cp_ptr, 0,
                                        4 * sizeof(float), g.cp_count);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_INDEX, 0,
                                        RTC_FORMAT_UINT, g.seg_ptr, 0,
                                        sizeof(uint32_t), g.seg_count);
+            if (null)
+                rtcSetGeometryOccludedFilterFunction(geom, embree_null_filter);
             rtcSetGeometryUserData(geom, (void *) shape);
             rtcCommitGeometry(geom);
             return geom;
@@ -396,7 +441,7 @@ typename EmbreeAccel<Float, Spectrum>::PreliminaryIntersection3f
 EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
     bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
-    Mask active, const UInt32 &visibility_mask) const {
+    Mask active, UInt32 ray_mask) const {
     using Single = dr::float32_array_t<Float>;
     DRJIT_MARK_USED(scene);
 
@@ -420,7 +465,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         dr::store(&rh.ray.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&rh.ray.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         rh.ray.tfar = ray_maxt;
-        rh.ray.mask = visibility_mask;
+        rh.ray.mask = ray_mask;
         rh.ray.id = 0;
         rh.ray.flags = 0;
         rh.hit.geomID = (uint32_t) -1;
@@ -461,7 +506,7 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
         cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
                                   (void *) accel, accel_handle.index(), ray_o,
                                   ray_d, ray_time, ray_maxt, coherent, active,
-                                  visibility_mask, 0, out);
+                                  ray_mask, 0, out);
 
         // Embree traces in float32, so the hit fields are stolen as ``Single``.
         PreliminaryIntersection3f pi;
@@ -500,12 +545,17 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
 }
 
 template <typename Float, typename Spectrum>
-typename EmbreeAccel<Float, Spectrum>::Mask
+ShadowTest<typename EmbreeAccel<Float, Spectrum>::Mask>
 EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                        const Ray3f &ray, Mask coherent,
                                        Mask active,
-                                       const UInt32 &visibility_mask) const {
+                                       UInt32 ray_mask,
+                                       bool skip_null) const {
     using Single = dr::float32_array_t<Float>;
+
+    // Rays with SkipNull pass through shapes with null transmission and record
+    // the encounter in the flags word (see CPURayFlags)
+    uint32_t ray_flags = skip_null ? CPURayFlags::SkipNull : 0;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);
@@ -525,13 +575,14 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
         dr::store(&ray2.org_x, dr::concat(Vector3s(ray.o), float(0.f)));
         dr::store(&ray2.dir_x, dr::concat(Vector3s(ray.d), float(ray.time)));
         ray2.tfar = (float) ray_maxt;
-        ray2.mask = visibility_mask;
+        ray2.mask = ray_mask;
         ray2.id = 0;
-        ray2.flags = 0;
+        ray2.flags = ray_flags;
 
         rtcOccluded1(accel, &context, &ray2);
 
-        return ray2.tfar < 0.f;
+        return { ray2.tfar < 0.f,
+                 (ray2.flags & CPURayFlags::HasNull) != 0 };
     } else if constexpr (dr::is_llvm_v<Float>) {
         // Conversion, in case this is a double precision build
         dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
@@ -539,14 +590,15 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
 
         // Shadow ray: trace against rtcOccludedN, which accepts any hit and
         // terminates traversal early.
-        uint32_t out[1] { };
+        uint32_t out[2] { };
         cpu_llvm_ray_trace<Float>((void *) occlude_func_ptr,
                                   occlude_handle.index(), (void *) accel,
-                                  accel_handle.index(), ray_o, ray_d, ray_time,
-                                  ray_maxt, coherent, active, visibility_mask,
-                                  1, out);
+                                  accel_handle.index(), ray_o, ray_d,
+                                  ray_time, ray_maxt, coherent, active,
+                                  ray_mask, 1, out, ray_flags);
 
-        return Mask::steal(out[0]);
+        return { Mask::steal(out[0]),
+                 (UInt32::steal(out[1]) & (uint32_t) CPURayFlags::HasNull) != 0u };
     } else {
         DRJIT_MARK_USED(ray);
         DRJIT_MARK_USED(coherent);

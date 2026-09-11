@@ -955,7 +955,7 @@ Mesh<Float, Spectrum>::set_bsdf(typename Mesh<Float, Spectrum>::BSDF *bsdf) {
     bool backside_changed =
         !m_bsdf || (bsdf && (has_flag(m_bsdf->flags(), BSDFFlags::BackSide) !=
                              has_flag(bsdf->flags(), BSDFFlags::BackSide)));
-    m_bsdf = bsdf;
+    Base::set_bsdf(bsdf);
 
     // The silhouette density depends on whether the BSDF is single-sided
     if (backside_changed)
@@ -1471,7 +1471,8 @@ Mesh<Float, Spectrum>::sil_dedge_pmf() const {
 MI_VARIANT MergeKey Mesh<Float, Spectrum>::merge_key() const {
     return { m_bsdf.get(), m_emitter.get(), m_sensor.get(),
              m_interior_medium.get(), m_exterior_medium.get(),
-             (Layout) (m_layout & ~Layout::FaceBSDFs) };
+             (Layout) (m_layout & ~Layout::FaceBSDFs),
+             (uint32_t) m_visibility };
 }
 
 MI_VARIANT
@@ -1641,6 +1642,7 @@ Mesh<Float, Spectrum>::merge(const std::vector<Shape<Float, Spectrum> *> &shapes
 
     ref<Mesh> result = new Mesh(props);
     result->m_filename = filename;
+    result->m_visibility = first->m_visibility;
 
     Layout layout = first->m_layout;
     if (any_bsdf)
@@ -1798,7 +1800,7 @@ Mesh<Float, Spectrum>::eval_parameterization(const Point2f &uv,
 
     PreliminaryIntersection3f pi =
         m_parameterization->ray_intersect_preliminary(
-            ray, /* coherent = */ true, false, 0, 0, active);
+            ray, /* coherent = */ true, +RayMask::All, active);
     active &= pi.is_valid();
 
     if (dr::none_or<false>(active))

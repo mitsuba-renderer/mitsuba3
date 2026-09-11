@@ -242,7 +242,7 @@ public:
         if (m_specular_reflectance)
             cb->put("specular_reflectance", m_specular_reflectance, ParamFlags::Differentiable);
 
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic)) {
+        if (!this->has_flag(BSDFFlags::Anisotropic)) {
             cb->put("alpha",   m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         } else {
             cb->put("alpha_u", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);

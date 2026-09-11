@@ -203,8 +203,8 @@ public:
         return 0.f;
     }
 
-    Spectrum eval_null_transmission(const SurfaceInteraction3f & si,
-                                    Mask active) const override {
+    Spectrum eval_null(const SurfaceInteraction3f & si,
+                       Mask active) const override {
 
         Float r = std::get<0>(fresnel(dr::abs(Frame3f::cos_theta(si.wi)), m_eta, m_inv_eta));
 

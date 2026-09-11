@@ -187,6 +187,7 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 
     using Vector3f = Vector<Float, 3>;
     using UInt32   = dr::uint32_array_t<Float>;
+    using Mask     = dr::mask_t<Float>;
 
     // =============================================================
 
@@ -231,6 +232,12 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
     BSDFSample3(const Vector3f &wo)
         : wo(wo), pdf(0.f), eta(1.f), sampled_type(0),
           sampled_component(uint32_t(-1)) { }
+
+    /// Does the sampled lobe have a Dirac delta distribution?
+    Mask is_delta() const { return has_flag(sampled_type, BSDFFlags::Delta); }
+
+    /// Was the sampled lobe the un-scattered transmission (`BSDFFlags.Null`)?
+    Mask is_null() const { return has_flag(sampled_type, BSDFFlags::Null); }
 
 
     // =============================================================
@@ -448,21 +455,19 @@ public:
                     const Point2f &sample2,
                     Mask active = true) const;
 
-
     /**
      * Evaluate un-scattered transmission component of the BSDF
      *
-     * This method will evaluate the un-scattered transmission
-     * (`BSDFFlags.Null`) of the BSDF for light arriving from direction
-     * ``si.wi``. The default implementation returns zero.
+     * This method evaluates the un-scattered transmission for light arriving
+     * from direction ``si.wi``. BSDFs with a `BSDFFlags.Null` component should
+     * override this method. The default implementation returns zero.
      *
      * Args:
      *     si: A surface interaction data structure describing the underlying
-     *         surface position. The incident direction is obtained from
-     *         the field ``si.wi``.
+     *         surface position.
      */
-    virtual Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
-                                            Mask active = true) const;
+    virtual Spectrum eval_null(const SurfaceInteraction3f &si,
+                               Mask active = true) const;
 
     /**
      * Returns whether this BSDF contains the specified attribute.
@@ -535,6 +540,11 @@ public:
 
     /// Flags for all components combined.
     uint32_t flags(Mask /*active*/ = true) const { return m_flags; }
+
+    /// Does any component of the BSDF have one of the given flags?
+    bool has_flag(BSDFFlags flags) const {
+        return mitsuba::has_flag(m_flags, flags);
+    }
 
     /// Flags for a specific component of this BSDF.
     uint32_t flags(size_t i, Mask /*active*/ = true) const {
@@ -633,7 +643,7 @@ NAMESPACE_END(mitsuba)
 DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(sample)
     DRJIT_CALL_METHOD(eval)
-    DRJIT_CALL_METHOD(eval_null_transmission)
+    DRJIT_CALL_METHOD(eval_null)
     DRJIT_CALL_METHOD(pdf)
     DRJIT_CALL_METHOD(eval_pdf)
     DRJIT_CALL_METHOD(eval_pdf_sample)
@@ -644,6 +654,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(eval_attribute_3)
     DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
+    auto has_flag(mitsuba::BSDFFlags f) const { return mitsuba::has_flag(flags(), f); }
 DRJIT_CALL_END()
 
 // -----------------------------------------------------------------------

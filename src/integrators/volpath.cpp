@@ -107,6 +107,9 @@ public:
         Mask specular_chain = active;
         UInt32 depth = 0;
 
+        // Null tests fold to literals in scenes without null shapes
+        bool has_null = scene->has_null_shapes();
+
         UInt32 channel = 0;
         if (is_rgb_v<Spectrum>) {
             uint32_t n_channels = (uint32_t) dr::size_v<Spectrum>;
@@ -162,7 +165,7 @@ public:
 
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, scene, channel](LoopState& ls) {
+            [this, scene, channel, has_null](LoopState& ls) {
 
             Mask& active = ls.active;
             UInt32& depth = ls.depth;
@@ -196,8 +199,8 @@ public:
 
             // Ray mask of the current path segment. Depth-0 segments use the
             // camera mask, which hides emitters marked as invisible.
-            UInt32 ray_mask = dr::select(depth == 0u, +RayMask::Camera,
-                                         +RayMask::All);
+            UInt32 ray_mask = dr::select(depth == 0u, +RayMask::Primary,
+                                         +RayMask::Secondary);
 
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && (medium != nullptr);
@@ -220,7 +223,7 @@ public:
                 Mask intersect = needs_intersection && active_medium;
                 if (dr::any_or<true>(intersect))
                     dr::masked(si, intersect) = scene->ray_intersect(
-                        ray, +RayFlags::Default, false, intersect, ray_mask);
+                        ray, +RayFlags::Default, false, ray_mask, intersect);
                 needs_intersection &= !active_medium;
 
                 dr::masked(mei.t, active_medium && (si.t < mei.t)) = dr::Infinity<Float>;
@@ -300,7 +303,7 @@ public:
             Mask intersect = active_surface && needs_intersection;
             if (dr::any_or<true>(intersect))
                 dr::masked(si, intersect) = scene->ray_intersect(
-                    ray, +RayFlags::Default, false, intersect, ray_mask);
+                    ray, +RayFlags::Default, false, ray_mask, intersect);
 
             if (dr::any_or<true>(active_surface)) {
                 // ---------------- Intersection with emitters ----------------
@@ -308,7 +311,7 @@ public:
                 Mask count_direct = ray_from_camera || specular_chain;
                 // Reusing the trace's ray mask hides an invisible environment
                 // from escaped depth-0 rays
-                EmitterPtr emitter = si.emitter(scene, true, ray_mask);
+                EmitterPtr emitter = si.emitter(scene, ray_mask);
                 Mask active_e = active_surface && (emitter != nullptr);
 
                 // Rays that see an emitter through the mask are valid samples.
@@ -332,7 +335,7 @@ public:
                 // --------------------- Emitter sampling ---------------------
                 BSDFContext ctx;
                 BSDFPtr bsdf  = si.bsdf();
-                Mask active_e = active_surface && has_flag(bsdf->flags(), BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
+                Mask active_e = active_surface && bsdf->has_flag(BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
 
                 if (likely(dr::any_or<true>(active_e))) {
                     auto [emitted, ds] = sample_emitter(si, scene, sampler, medium, channel, active_e);
@@ -360,7 +363,8 @@ public:
                 dr::masked(ray, active_surface) = bsdf_ray;
                 needs_intersection |= active_surface;
 
-                Mask non_null_bsdf = active_surface && !has_flag(bs.sampled_type, BSDFFlags::Null);
+                Mask null = has_null ? bs.is_null() : Mask(false),
+                     non_null_bsdf = active_surface && !null;
                 dr::masked(depth, non_null_bsdf) += 1;
 
                 // update the last scatter PDF event if we encountered a non-null scatter event
@@ -368,9 +372,9 @@ public:
                 dr::masked(last_scatter_direction_pdf, non_null_bsdf) = bs.pdf;
 
                 valid_ray |= non_null_bsdf;
-                specular_chain |= non_null_bsdf && has_flag(bs.sampled_type, BSDFFlags::Delta);
+                specular_chain |= non_null_bsdf && bs.is_delta();
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
-                act_null_scatter |= active_surface && has_flag(bs.sampled_type, BSDFFlags::Null);
+                act_null_scatter |= active_surface && null;
                 Mask has_medium_trans                = active_surface && si.is_medium_transition();
                 dr::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
@@ -514,7 +518,7 @@ public:
             active_surface &= si.is_valid() && active && !active_medium;
             if (dr::any_or<true>(active_surface)) {
                 auto bsdf         = si.bsdf();
-                Spectrum bsdf_val = bsdf->eval_null_transmission(si, active_surface);
+                Spectrum bsdf_val = bsdf->eval_null(si, active_surface);
                 bsdf_val = si.to_world_mueller(bsdf_val, si.wi, si.wi);
                 dr::masked(transmittance, active_surface) *= bsdf_val;
             }

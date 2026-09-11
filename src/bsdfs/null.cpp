@@ -19,10 +19,6 @@ Null material (:monosp:`null`)
 This plugin models a completely invisible surface material.
 Light will not interact with this BSDF in any way.
 
-Internally, this is implemented as a forward-facing Dirac delta distribution.
-Note that the standard :ref:`path tracer <integrator-path>` does not have a good sampling strategy to deal with this,
-but the (:ref:`volumetric path tracer <integrator-volpath>`) does.
-
 The main purpose of this material is to be used as the BSDF of a shape enclosing a participating medium.
 
  */
@@ -77,11 +73,8 @@ public:
         return 0.f;
     }
 
-    Spectrum eval_null_transmission(const SurfaceInteraction3f & /*si*/,
-                                    Mask /*active*/) const override {
-        // As above, we do not want the polarization state to change. So it is
-        // safe to return a scalar (which will broadcast to the identity
-        // matrix).
+    Spectrum eval_null(const SurfaceInteraction3f & /*si*/,
+                       Mask /*active*/) const override {
         return 1.f;
     }
 

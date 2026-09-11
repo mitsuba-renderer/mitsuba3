@@ -24,12 +24,10 @@ Constant environment emitter (:monosp:`constant`)
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
- * - visible
-   - |bool|
-   - Whether the emitter appears in directly visible (camera) rays. When set
-     to |false|, rays that leave the scene without prior scattering events
-     produce no radiance, while reflections and indirect illumination remain
-     unaffected. (Default: |true|)
+ * - visibility
+   - |string|
+   - Which rays see the emitter (see the :ref:`visibility section
+     <sec-shape-visibility>`). (Default: ``all``)
 
 This plugin implements a constant environment emitter, which surrounds
 the scene and radiates diffuse illumination towards it. This is often

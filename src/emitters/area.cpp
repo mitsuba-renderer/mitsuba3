@@ -23,13 +23,6 @@ Area light (:monosp:`area`)
    - Specifies the emitted radiance in units of power per unit area per unit steradian.
    - |exposed|, |differentiable|
 
- * - visible
-   - |bool|
-   - Whether the emitter appears in directly visible (camera) rays. When set
-     to |false|, camera rays pass through the emitter's shape and hit whatever
-     lies behind it, while shadows, reflections, and indirect illumination
-     remain unaffected. (Default: |true|)
-
  * - twosided
    - |bool|
    - Emit light from both sides of the surface. The default emits only into
@@ -42,6 +35,9 @@ Since the emission profile of an area light is completely diffuse, it
 has the same apparent brightness regardless of the observer's viewing
 direction. Furthermore, since it occupies a nonzero amount of space, an
 area light generally causes scene objects to cast soft shadows.
+
+The :ref:`visibility <sec-shape-visibility>` of an area light is a property
+of the shape that carries it.
 
 To create an area light source, simply instantiate the desired
 emitter shape and specify an :monosp:`area` instance as its child:

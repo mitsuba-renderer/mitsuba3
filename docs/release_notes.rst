@@ -166,6 +166,69 @@ Mitsuba 3.10.0
     ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 
+- **Ray visibility and null surfaces**. Shapes and emitters accept a
+  ``visibility`` property with the following possible values and
+  interpretations:
+
+  - ``all``: the object is unconditionally visible. This is the default.
+
+  - ``primary``: the object is visible to primary rays (i.e., to sensors)
+    and *invisible* to secondary rays (shadow rays, indirect reflection).
+    This is useful to effectively remove glass windows and improve direct
+    illumination sampling strategies in interior scenes.
+
+  - ``secondary``: the object is *invisible* to primary rays (i.e., to
+    sensors) and visible to secondary rays (shadow rays, indirect
+    reflection). This is useful to place invisible area lights into a
+    scene.
+
+  - ``hidden``: the object exists but is not observed by regular rays.
+    This could be useful for implementing measurement surfaces (e.g.
+    irradiance sensors) or to add a special type of geometry that is only
+    found via explicit ``RayMask.All`` queries performed by a custom
+    integrator.
+
+  The value of the property is available as `Shape.visibility()` and
+  `Emitter.visibility()` (a `ShapeVisibility`), and `Shape.has_null()` reports
+  whether the shape's BSDF has a null component. BSDFs that advertise
+  `BSDFFlags.Null` must implement `BSDF.eval_null()`, since shadow rays now
+  evaluate it.
+
+  ⚠️ **WARNING** ⚠️: This is an **API-breaking change**. Several functions and
+  types gained ``ray_mask`` arguments in the position that ``active`` used to
+  occupy. In Python, ``ray_mask`` and the arguments after it are keyword-only,
+  so existing code that passes ``active`` positionally raises a ``TypeError``.
+
+  .. code-block:: python
+
+      # Before
+      scene.ray_intersect(ray, ray_flags, coherent, active)
+      scene.ray_intersect(ray, ray_flags, coherent, reorder, reorder_hint, reorder_hint_bits, active)
+      scene.ray_intersect_preliminary(ray, coherent, active)
+      scene.ray_test(ray, coherent, active)
+      si.emitter(scene, active)
+
+      # After
+      scene.ray_intersect(ray, ray_flags, coherent=False, ray_mask=mi.RayMask.Secondary,
+                          active=True, reorder=False, reorder_hint=0, reorder_hint_bits=0)
+      scene.ray_intersect_preliminary(ray, coherent=False, ray_mask=..., active=True,
+                                      reorder=False, reorder_hint=0, reorder_hint_bits=0)
+      scene.ray_test(ray, coherent, ray_mask=..., active=True)
+      si.emitter(scene, ray_mask=..., active=True)
+      mi.DirectionSample3f(scene, si, ref, ray_mask=...)
+
+  Integrators should trace camera rays with ``mi.RayMask.Primary`` and all
+  other rays with the default ``mi.RayMask.Secondary``.
+
+- Surfaces with a null BSDF component (``null``, ``mask``, ``thindielectric``,
+  etc.) no longer occlude shadow rays and no longer count as path vertices,
+  which enables emitter sampling through foliage, thin dielectrics with a
+  single sheet of glass, etc. New functions `Scene.ray_test_tr()` and
+  `Scene.ray_intersect_tr()` generalize the existing shadow ray test and ray
+  tracing queries, while skipping null BSDF surfaces and returning the
+  associated transmittance.
+
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

@@ -5,13 +5,12 @@ import mitsuba as mi
 def test01_create(variants_all):
     b = mi.load_dict({'type': 'hair'})
     assert b is not None
-    assert b.component_count() == 2
+    assert b.component_count() == 1
     assert b.flags(0) == (
             mi.BSDFFlags.Glossy | mi.BSDFFlags.FrontSide |
             mi.BSDFFlags.Anisotropic | mi.BSDFFlags.NonSymmetric
     )
-    assert b.flags(1) == (mi.BSDFFlags.Null | mi.BSDFFlags.BackSide)
-    assert b.flags() == (b.flags(0) | b.flags(1))
+    assert b.flags() == b.flags(0)
 
 
 def test02_white_furnace(variants_vec_backends_once_rgb):

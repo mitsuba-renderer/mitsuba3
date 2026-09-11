@@ -6,6 +6,7 @@
 
 #include <embree3/rtcore.h>
 #include <mitsuba/render/shape.h>
+#include "accel_cpu_common.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -23,6 +24,11 @@ void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
     bounds_o->upper_z = (float) bbox.max.z();
 }
 
+/**
+ * Intersect/occlusion callback for a single ray. Shadow rays with SkipNull pass
+ * through shapes with null transmission and record the encounter in the
+ * ray's flags word instead of being occluded.
+ */
 template <typename Float, typename Spectrum>
 void embree_intersect_scalar(int* valid,
                              void* geometryUserPtr,
@@ -66,12 +72,19 @@ void embree_intersect_scalar(int* valid,
 #endif
         }
     } else {
-        if (dr::all(shape->ray_test(ray, primID, true)))
+        if (dr::all(shape->ray_test(ray, primID, true))) {
+            if ((rtc_ray->flags & CPURayFlags::SkipNull) &&
+                shape->has_null()) {
+                rtc_ray->flags |= CPURayFlags::HasNull;
+                return;
+            }
             rtc_ray->tfar = -dr::Infinity<float>;
+        }
     }
 }
 
-template <typename Float, typename Spectrum, size_t N, typename RTCRay_, typename RTCHit_>
+template <typename Float, typename Spectrum, size_t N, typename RTCRay_,
+          typename RTCHit_>
 static void embree_intersect_packet(int *valid, void *geometryUserPtr,
                                     unsigned int geomID,
                                     unsigned int instID,
@@ -120,6 +133,13 @@ static void embree_intersect_packet(int *valid, void *geometryUserPtr,
         dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
     } else {
         active &= shape->ray_test_packet(ray, primID, active);
+        UInt32P flags = dr::load_aligned<UInt32P>(rtc_ray->flags);
+        MaskP skip = active && (flags & (uint32_t) CPURayFlags::SkipNull) != 0u;
+        if (dr::any(skip) && shape->has_null()) {
+            dr::store_aligned(rtc_ray->flags,
+                              dr::select(skip, flags | (uint32_t) CPURayFlags::HasNull, flags));
+            active &= !skip;
+        }
         dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
     }
 }

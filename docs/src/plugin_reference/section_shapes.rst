@@ -56,6 +56,80 @@ detail).
             # }
         }
 
+.. _sec-shape-visibility:
+
+Visibility
+----------
+
+Every shape accepts a ``visibility`` property that controls which rays can
+intersect it. The property can take on any of the following string values:
+
+.. list-table::
+   :header-rows: 1
+   :widths: 15 85
+
+   * - Value
+     - Meaning
+
+   * - ``all``
+     - The shape is unconditionally visible. This is the default.
+
+   * - ``primary``
+     - The shape is visible to primary rays (i.e., to sensors) and *invisible*
+       to secondary rays (shadow rays, indirect reflection). This feature is
+       particularly useful for windows in interior scenes. In this case, the
+       windows still appear in the rendered image, but indirect light can enter
+       the room more easily without refraction. This improves the effectiveness of
+       direct illumination sampling strategies and thereby reduces noise.
+
+   * - ``secondary``
+     - The shape is *invisible* to primary rays and visible to secondary rays.
+       This is useful to place area lights into a scene without them appearing
+       in the image, or to hide a light blocker from the camera.
+
+   * - ``hidden``
+     - The shape exists but is not observed by regular rays. This could be
+       useful for implementing measurement surfaces (e.g. irradiance sensors)
+       or to add a special type of geometry that is only found via explicit
+       ``RayMask.All`` queries performed by a custom integrator.
+
+This feature is best thought of as a filter on path space, where the overall
+integration remains unbiased apart from the removal of certain path
+configurations. Rays that a shape is invisible to pass through it and hit
+whatever lies behind.
+
+An emitter that is invisible to secondary rays does not illuminate the scene
+and is never sampled. On area emitters, the ``visibility`` property must be
+specified on the shape rather than on the emitter. Emitters without a shape,
+such as :ref:`constant <emitter-constant>` and :ref:`envmap <emitter-envmap>`,
+accept the same property directly.
+
+:ref:`Instances <shape-instance>` and :ref:`shape groups <shape-shapegroup>`
+reject the property. However, visibility flags may be specified on shapes
+within shape groups. Emitters that rays cannot intersect, such as point or
+directional lights, reject the property as well.
+
+.. tabs::
+    .. code-tab:: xml
+
+        <shape type="rectangle">
+            <string name="visibility" value="secondary"/>
+            <emitter type="area">
+                <rgb name="radiance" value="10"/>
+            </emitter>
+        </shape>
+
+    .. code-tab:: python
+
+        'light': {
+            'type': 'rectangle',
+            'visibility': 'secondary',
+            'emitter': {
+                'type': 'area',
+                'radiance': 10.0
+            }
+        }
+
 .. _sec-shape-mesh-parameters:
 
 Mesh parameters

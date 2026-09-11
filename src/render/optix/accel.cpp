@@ -65,15 +65,8 @@ void optix_refresh_shape_data(const SceneIR &sd,
         }
 }
 
-size_t count_hitgroup_records(const std::vector<BlasEntry> &blases) {
-    size_t count = 0;
-    for (const BlasEntry &b : blases)
-        count += b.geoms.size();
-    return count;
-}
-
 void fill_hitgroup_records(const std::vector<BlasEntry> &blases,
-                           HitGroupSbtRecord *out, size_t &cursor,
+                           HitGroupSbtRecord *out,
                            const OptixProgramGroup *pg,
                            const OptixProgramGroupMapping &pg_mapping,
                            ShapeDataBuffers &data_buffers) {
@@ -88,7 +81,7 @@ void fill_hitgroup_records(const std::vector<BlasEntry> &blases,
             HitGroupSbtRecord rec{ { jit_registry_id(g.ctx), data } };
             uint32_t pg_index = pg_mapping.at(g.type);
             jit_optix_check(optixSbtRecordPackHeader(pg[pg_index], &rec));
-            out[cursor++] = rec;
+            *out++ = rec;
         }
     }
 }

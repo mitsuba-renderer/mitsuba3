@@ -85,3 +85,9 @@ illumination") includes a single scattering event like shown here:
 .. image:: ../../resources/data/docs/images/integrator/path_explanation.jpg
     :width: 80%
     :align: center
+
+Surfaces with a null BSDF component (e.g. :ref:`null <bsdf-null>`,
+:ref:`thindielectric <bsdf-thindielectric>`, or :ref:`mask <bsdf-mask>`) do
+not count as scattering events, and crossing them leaves the path depth
+unchanged. Shadow rays pass through such surfaces and are attenuated by their
+transmittance.

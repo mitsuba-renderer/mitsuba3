@@ -1232,6 +1232,80 @@ class TranslateCameraConfig(ConfigBase):
         dr.eval()
 
 
+MASK_WINDOW = {'type': 'mask', 'opacity': 0.5, 'material': {'type': 'diffuse'}}
+
+# Opacity of a mask window in front of a directly visible gray plane. Camera
+# rays and emitter connections both cross the window. The image is linear in
+# the opacity, and the large finite difference step keeps the reference from
+# being dominated by samples that switch between reflection and transmission.
+class MaskOpacityVisibleConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'window.bsdf.opacity.value'
+        self.ref_fd_epsilon = 0.1
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {'type': 'rectangle', 'bsdf': {'type': 'diffuse'}},
+            'window': {'type': 'rectangle',
+                       'to_world': T().translate([0, 0, 1]),
+                       'bsdf': MASK_WINDOW},
+            'light': {'type': 'constant'}
+        }
+        # The derivative estimate switches sign between reflected and
+        # transmitted samples, which makes it noisy per pixel
+        self.spp = 2048
+        self.error_mean_threshold = 0.12
+        self.error_max_threshold = 1.0
+
+
+# Opacity of a mask window between an area light and a gray plane. The window
+# and the light are outside the view frustum, so only the illumination
+# crosses the window.
+class MaskOpacityIlluminationConfig(ConfigBase):
+    def __init__(self) -> None:
+        super().__init__()
+        self.key = 'window.bsdf.opacity.value'
+        self.ref_fd_epsilon = 0.1
+        self.scene_dict = {
+            'type': 'scene',
+            'plane': {'type': 'rectangle', 'bsdf': {'type': 'diffuse'}},
+            'window': {'type': 'rectangle',
+                       'to_world': T().translate([1.5, 0, 0.75])
+                                   @ T().rotate([0, 1, 0], -90)
+                                   @ T().scale([0.75, 2, 1]),
+                       'bsdf': MASK_WINDOW},
+            'light': {'type': 'rectangle',
+                      'to_world': T().translate([3, 0, 1])
+                                  @ T().rotate([0, 1, 0], -90),
+                      'emitter': {'type': 'area', 'radiance': 20.0}}
+        }
+
+
+# Albedo of a gray plane seen through a window with null transmission, for
+# each kind of null BSDF
+def make_albedo_behind_window_config(name, bsdf):
+    class Config(ConfigBase):
+        def __init__(self) -> None:
+            super().__init__()
+            self.key = 'plane.bsdf.reflectance.value'
+            self.scene_dict = {
+                'type': 'scene',
+                'plane': {'type': 'rectangle', 'bsdf': {'type': 'diffuse'}},
+                'window': {'type': 'rectangle',
+                           'to_world': T().translate([0, 0, 1]), 'bsdf': bsdf},
+                'light': {'type': 'constant'}
+            }
+    Config.__name__ = Config.__qualname__ = name
+    return Config
+
+DiffuseAlbedoBehindMaskConfig = make_albedo_behind_window_config(
+    'DiffuseAlbedoBehindMaskConfig', MASK_WINDOW)
+DiffuseAlbedoBehindThinDielectricConfig = make_albedo_behind_window_config(
+    'DiffuseAlbedoBehindThinDielectricConfig', {'type': 'thindielectric'})
+DiffuseAlbedoBehindNullConfig = make_albedo_behind_window_config(
+    'DiffuseAlbedoBehindNullConfig', {'type': 'null'})
+
+
 # -------------------------------------------------------------------
 #                           List configs
 # -------------------------------------------------------------------
@@ -1239,6 +1313,11 @@ class TranslateCameraConfig(ConfigBase):
 BASIC_CONFIGS_LIST = [
     DiffuseAlbedoConfig,
     DiffuseAlbedoGIConfig,
+    MaskOpacityVisibleConfig,
+    MaskOpacityIlluminationConfig,
+    DiffuseAlbedoBehindMaskConfig,
+    DiffuseAlbedoBehindThinDielectricConfig,
+    DiffuseAlbedoBehindNullConfig,
     AreaLightRadianceConfig,
     DirectlyVisibleAreaLightRadianceConfig,
     PointLightIntensityConfig,
@@ -1277,14 +1356,33 @@ INDIRECT_ILLUMINATION_CONFIGS_LIST = [
     TranslateGlassPlaneLensConfig
 ]
 
+# List of configs that look through a window with null transmission. The
+# direct integrators shade the window instead of what lies behind it.
+THROUGH_WINDOW_CONFIGS_LIST = [
+    MaskOpacityVisibleConfig,
+    DiffuseAlbedoBehindMaskConfig,
+    DiffuseAlbedoBehindThinDielectricConfig,
+    DiffuseAlbedoBehindNullConfig
+]
+
 # List of integrators to test they are triplets:
 # (integrator type, handles continuous derivaites w/ moving geometry, handle discontinuities)
 INTEGRATORS = [
     ('path', False, False),
+    ('direct', False, False),
     ('prb', True, False),
     ('direct_projective', True, True),
     ('prb_projective', True, True),
 ]
+
+
+def load_integrator(config, integrator_name, **kwargs):
+    """Instantiate ``integrator_name`` with the config's integrator settings.
+    The direct integrator has no depth parameter."""
+    d = dict(config.integrator_dict, type=integrator_name)
+    if integrator_name == 'direct':
+        del d['max_depth']
+    return mi.load_dict(d, **kwargs)
 
 CONFIGS = []
 for integrator_name, handles_moving_geom, handles_discontinuities in INTEGRATORS:
@@ -1294,7 +1392,8 @@ for integrator_name, handles_moving_geom, handles_discontinuities in INTEGRATORS
         (DISCONTINUOUS_CONFIGS_LIST if handles_discontinuities else [])
     )
     for config in todos:
-        if (('direct' in integrator_name) and config in INDIRECT_ILLUMINATION_CONFIGS_LIST):
+        if ('direct' in integrator_name) and \
+           config in INDIRECT_ILLUMINATION_CONFIGS_LIST + THROUGH_WINDOW_CONFIGS_LIST:
             continue
         CONFIGS.append((integrator_name, config))
 
@@ -1308,8 +1407,7 @@ def test01_rendering_primal(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    config.integrator_dict['type'] = integrator_name
-    integrator = mi.load_dict(config.integrator_dict, parallel=False)
+    integrator = load_integrator(config, integrator_name, parallel=False)
 
     filename = join(output_dir, f"test_{config.name}_image_primal_ref.exr")
     image_primal_ref = mi.TensorXf32(mi.Bitmap(filename))
@@ -1330,8 +1428,7 @@ def test02_rendering_forward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    config.integrator_dict['type'] = integrator_name
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = load_integrator(config, integrator_name)
     if 'projective' in integrator_name:
         integrator.proj_seed_spp = 4192
 
@@ -1367,9 +1464,7 @@ def test03_rendering_backward(variants_all_ad_rgb, integrator_name, config):
     config = config()
     config.initialize()
 
-    config.integrator_dict['type'] = integrator_name
-
-    integrator = mi.load_dict(config.integrator_dict)
+    integrator = load_integrator(config, integrator_name)
     if 'projective' in integrator_name:
         integrator.proj_seed_spp = 4192
 
