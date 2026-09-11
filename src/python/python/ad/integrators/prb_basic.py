@@ -3,7 +3,7 @@ from __future__ import annotations # Delayed parsing of type annotations
 import drjit as dr
 import mitsuba as mi
 
-from .common import RBIntegrator, solid_angle_to_area_jacobian
+from .common import RBIntegrator, reattach_wi, reattach_wo
 
 class BasicPRBIntegrator(RBIntegrator):
     r"""
@@ -103,12 +103,8 @@ class BasicPRBIntegrator(RBIntegrator):
                 # previous surface interaction
                 if (not primal) & mi.Bool(depth >= 1):
                     si_prev = scene.compute_surface_interaction(
-                        ray_prev, pi_prev, ray_flags=mi.RayFlags.Default)
-                    # We should not account for the current interaction's motion
-                    si_detach = dr.detach(si)
-                    wi_global = dr.normalize(si_prev.p - si_detach.p)
-                    si_wi_diff = si_detach.to_local(wi_global)
-                    si.wi = dr.replace_grad(si.wi, si_wi_diff)
+                        ray_prev, pi_prev, ray_flags=mi.RayFlags.Minimal)
+                    reattach_wi(si, si_prev.p)
 
             # ---------------------- Direct emission ----------------------
 
@@ -156,30 +152,17 @@ class BasicPRBIntegrator(RBIntegrator):
 
             if dr.hint(not primal, mode='scalar'):
                 si_next = scene.compute_surface_interaction(
-                    ray_next, pi_next, ray_flags=mi.RayFlags.Default,
+                    ray_next, pi_next, ray_flags=mi.RayFlags.Minimal,
                     active=active_next)
 
                 with dr.resume_grad():
-                    # If the current interaction point is moving, we need
-                    # to differentiate the solid angle to surface area
-                    # reparameterization.
-                    J = solid_angle_to_area_jacobian(
-                        si.p, si_next.p, si_next.n, active_next & si_next.is_valid()
-                    )
-
                     # 'L' stores the reflected radiance at the current vertex
                     # but does not track parameter derivatives. The following
                     # addresses this by canceling the detached BSDF value and
                     # replacing it with an equivalent term that has derivative
-                    # tracking enabled.
-
-                    # Recompute 'wo' to propagate derivatives to cosine term
-                    wo_world_diff = dr.normalize(si_next.p - si.p)
-                    wo_world = dr.replace_grad(
-                        ray_next.d,
-                        dr.select(si_next.is_valid(), wo_world_diff, ray_next.d)
-                    )
-                    wo = si.to_local(wo_world)
+                    # tracking enabled. The direction to the next vertex and
+                    # the geometry term account for the motion of 'si'.
+                    wo, J = reattach_wo(si, si_next, ray_next, active_next)
 
                     # Re-evaluate BSDF * cos(theta) differentiably
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)

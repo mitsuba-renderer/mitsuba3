@@ -220,18 +220,11 @@ public:
             Vector3f wo = dr::zeros<Vector3f>();
 
             if (dr::any_or<true>(active_em)) {
-                // Sample the emitter
+                // Sample the emitter. The sample is detached, and its weight
+                // is attached to the emitter and to the motion of 'si'.
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
                     si, ls.sampler->next_2d(), true, active_em);
                 active_em &= (ds.pdf != 0.f);
-
-                // Given the detached emitter sample, recompute its contribution
-                // with AD to enable light source optimization.
-                if (dr::grad_enabled(si.p)) {
-                    ds.d = dr::normalize(ds.p - si.p);
-                    Spectrum em_val = scene->eval_emitter_direction(si, ds, active_em);
-                    em_weight = dr::select(ds.pdf != 0, em_val / ds.pdf, 0);
-                }
 
                 wo = si.to_local(ds.d);
             }

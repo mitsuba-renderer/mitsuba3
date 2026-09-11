@@ -169,7 +169,8 @@ public:
             auto [uv, pdf] = m_radiance->sample_position(sample, active);
             active &= (pdf != 0.f);
 
-            si = m_shape->eval_parameterization(uv, +RayFlags::Default, active);
+            si = m_shape->eval_parameterization(
+                uv, +RayFlags::FollowShape | +RayFlags::Default, active);
             si.wavelengths = it.wavelengths;
             active &= si.is_valid();
 
@@ -238,6 +239,18 @@ public:
         active &= dp < 0.f;
 
         SurfaceInteraction3f si(ds, it.wavelengths);
+
+        if constexpr (dr::is_diff_v<Float>) {
+            // The sample is fixed. When the shape moves, evaluate the texture
+            // where the direction meets the moved surface.
+            if (m_shape && m_radiance->is_spatially_varying() &&
+                m_shape->parameters_grad_enabled()) {
+                SurfaceInteraction3f si_m = m_shape->eval_parameterization(
+                    ds.uv, +RayFlags::FollowShape | +RayFlags::Default, active);
+                si.uv += uv_slide(si_m, dr::detach(ds.d), active);
+            }
+        }
+
         UnpolarizedSpectrum spec = m_radiance->eval(si, active);
         return dr::select(active, depolarizer<Spectrum>(spec), 0.f);
     }
@@ -304,6 +317,46 @@ public:
 
     MI_DECLARE_CLASS(AreaLight)
 private:
+    /**
+     * Derivative of the texture coordinates seen along a fixed direction
+     *
+     * A detached emitter sample fixes the direction ``d`` from the reference
+     * point. When the shape moves, this direction meets the surface at a
+     * different location. The function returns the resulting change of the
+     * texture coordinates at ``si`` as a zero-valued quantity whose derivative
+     * is the first-order displacement, so that it can be added to ``si.uv``.
+     *
+     * Args:
+     *     si: Surface interaction at the sample, evaluated with
+     *         `RayFlags.FollowShape` so that the derivative of ``si.p`` is
+     *         the motion of the surface at fixed texture coordinates
+     *
+     *     d: Detached unit direction from the reference point to the sample
+     *
+     *     active: Mask of active lanes
+     *
+     * Returns:
+     *     The zero-valued change of the texture coordinates
+     */
+    Point2f uv_slide(const SurfaceInteraction3f &si, const Vector3f &d,
+                     Mask active) const {
+        // Point where the fixed direction meets the moving tangent plane,
+        // relative to the moving point (see Mesh::compute_surface_interaction)
+        Vector3f dp = si.p - dr::detach(si.p),
+                 n  = dr::detach(si.n);
+        Float n_d = dr::select(active, dr::dot(n, d), 1.f);
+        Vector3f rel = d * (dr::dot(n, dp) / n_d) - dp;
+
+        // Least squares solution of [dp_du, dp_dv] * duv = rel
+        Vector3f e1 = dr::detach(si.dp_du), e2 = dr::detach(si.dp_dv);
+        Float a11 = dr::dot(e1, e1), a12 = dr::dot(e1, e2),
+              a22 = dr::dot(e2, e2), r1 = dr::dot(e1, rel),
+              r2  = dr::dot(e2, rel),
+              det = dr::select(active, dr::fmsub(a11, a22, a12 * a12), 1.f);
+        return Point2f(dr::fmsub(a22, r1, a12 * r2),
+                       dr::fnmadd(a12, r1, a11 * r2)) / det;
+    }
+
     ref<Texture> m_radiance;
     bool m_twosided;
 
