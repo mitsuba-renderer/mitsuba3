@@ -76,10 +76,14 @@ struct MergeKey {
      */
     Layout layout;
 
+    /// Ray categories that can see the mesh (a ``ShapeVisibility`` value)
+    uint32_t visibility;
+
     bool operator==(const MergeKey &k) const {
         return bsdf == k.bsdf && emitter == k.emitter && sensor == k.sensor &&
                interior_medium == k.interior_medium &&
-               exterior_medium == k.exterior_medium && layout == k.layout;
+               exterior_medium == k.exterior_medium && layout == k.layout &&
+               visibility == k.visibility;
     }
 
     bool operator!=(const MergeKey &k) const { return !operator==(k); }
@@ -88,7 +92,7 @@ struct MergeKey {
 /// Hash function of a ``MergeKey``, for use with ``tsl::robin_map``
 struct MergeKeyHasher {
     size_t operator()(const MergeKey &k) const {
-        uint64_t h = (uint64_t) k.layout;
+        uint64_t h = (uint64_t) k.layout | ((uint64_t) k.visibility << 32);
         for (const Object *p : { k.bsdf, k.emitter, k.sensor,
                                  k.interior_medium, k.exterior_medium })
             h = fmix64(h ^ (uintptr_t) p);

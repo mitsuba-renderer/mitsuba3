@@ -161,9 +161,8 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, is_environment)
         .def_method(Emitter, is_portal)
         .def_method(Emitter, sampling_weight)
-        .def_method(Emitter, visible)
-        .def_method(Emitter, visibility_mask)
-        .def_method(Emitter, flags, "active"_a = true)
+        .def_method(Emitter, visibility)
+        .def_method(Emitter, flags)
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));

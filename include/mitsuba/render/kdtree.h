@@ -15,6 +15,7 @@
 #include <mitsuba/core/vector.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/mesh.h>
+#include <mitsuba/render/scene_ir.h>
 
 /// Compile-time KD-tree depth limit to enable traversal with stack memory
 #define MI_KD_MAXDEPTH 48u
@@ -2195,10 +2196,10 @@ public:
     template <bool ShadowRay>
     MI_INLINE PreliminaryIntersection3f
     ray_intersect_preliminary(const Ray3f &ray, Mask active,
-                              uint32_t visibility_mask = (uint32_t) RayMask::All) const {
+                              uint32_t ray_mask = (uint32_t) RayMask::All) const {
         DRJIT_MARK_USED(active);
         if constexpr (!dr::is_array_v<Float>)
-            return ray_intersect_scalar<ShadowRay>(ray, visibility_mask);
+            return ray_intersect_scalar<ShadowRay>(ray, ray_mask);
         else
             Throw("kdtree should only be used in scalar mode");
     }
@@ -2206,7 +2207,7 @@ public:
     template <bool ShadowRay>
     MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
     ray_intersect_scalar(ScalarRay3f ray,
-                         uint32_t visibility_mask = (uint32_t) RayMask::All) const {
+                         uint32_t ray_mask = (uint32_t) RayMask::All) const {
         /// Ray traversal stack entry
         struct KDStackEntry {
             // Ray distance associated with the node entry and exit point
@@ -2275,7 +2276,7 @@ public:
                     Index prim_index = m_indices[i];
 
                     PreliminaryIntersection<ScalarFloat, Shape> prim_pi =
-                        intersect_prim<ShadowRay>(prim_index, ray, visibility_mask);
+                        intersect_prim<ShadowRay>(prim_index, ray, ray_mask);
 
                     if (unlikely(prim_pi.is_valid())) {
                         if constexpr (ShadowRay)
@@ -2306,13 +2307,13 @@ public:
     template <bool ShadowRay>
     MI_INLINE PreliminaryIntersection3f
     ray_intersect_naive(Ray3f ray, Mask active,
-                        uint32_t visibility_mask = (uint32_t) RayMask::All) const {
+                        uint32_t ray_mask = (uint32_t) RayMask::All) const {
         if constexpr (!dr::is_array_v<Float>) {
             PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
 
             for (Size i = 0; i < primitive_count(); ++i) {
                 PreliminaryIntersection3f prim_pi =
-                    intersect_prim<ShadowRay>(i, ray, visibility_mask);
+                    intersect_prim<ShadowRay>(i, ray, ray_mask);
 
                 if constexpr (dr::is_array_v<Float>) {
                     dr::masked(pi, prim_pi.is_valid()) = prim_pi;
@@ -2372,7 +2373,7 @@ protected:
     template <bool ShadowRay = false>
     MI_INLINE PreliminaryIntersection<ScalarFloat, Shape>
     intersect_prim(Index prim_index, const ScalarRay3f &ray,
-                   uint32_t visibility_mask = (uint32_t) RayMask::All) const {
+                   uint32_t ray_mask = (uint32_t) RayMask::All) const {
         Index shape_index  = find_shape(prim_index);
         const Shape *shape = this->shape(shape_index);
         const Mesh *mesh = (const Mesh *) shape;
@@ -2381,8 +2382,8 @@ protected:
 
         // A full ray mask matches every shape, so the test is skipped entirely
         // on the common path
-        if (visibility_mask != (uint32_t) RayMask::All &&
-            (visibility_mask & shape->visibility_mask()) == 0)
+        if (ray_mask != (uint32_t) RayMask::All &&
+            (ray_mask & accel_mask(shape->visibility(), shape->has_null())) == 0)
             return pi;
 
         if constexpr (ShadowRay) {

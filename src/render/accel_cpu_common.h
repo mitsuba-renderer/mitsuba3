@@ -57,12 +57,26 @@ auto decode_cpu_llvm_pi(
 }
 
 /**
+ * Ray flag bits used by the Embree backend. The word travels in the ``flags``
+ * field of the ray record, which Embree itself never touches.
+ */
+enum CPURayFlags : uint32_t {
+    /// Shadow rays skip shapes with null transmission (input)
+    SkipNull = 1,
+
+    /// A SkipNull shadow ray skipped at least one shape (output)
+    HasNull  = 2
+};
+
+/**
  * Assemble the standard 14-element input vector for a CPU (LLVM) ray
  * trace and invoke ``jit_llvm_ray_trace``.
  *
- * With ``shadow_ray``, this is an occlusion query and ``out`` holds one boolean
- * result variable index. Otherwise it holds eight. Ray components are supplied
- * in the precision the backend traces in (float32 for Embree, ``Float`` for the
+ * With ``shadow_ray``, this is an occlusion query that carries the
+ * ``ray_flags`` word into the trace (see `CPURayFlags`). ``out`` then receives
+ * two variable indices: the boolean hit mask and the flags word after the
+ * trace. Otherwise ``out`` receives eight. Ray components are supplied in the
+ * precision the backend traces in (float32 for Embree, ``Float`` for the
  * native kd-tree).
  */
 template <typename Float, typename RayScalar, typename Mask>
@@ -71,8 +85,8 @@ void cpu_llvm_ray_trace(void *func_ptr, uint32_t func_handle_index,
                         const dr::Array<RayScalar, 3> &ray_o,
                         const dr::Array<RayScalar, 3> &ray_d, RayScalar ray_time,
                         RayScalar ray_maxt, Mask coherent, Mask active,
-                        const dr::uint32_array_t<Float> &visibility_mask,
-                        int shadow_ray, uint32_t *out) {
+                        dr::uint32_array_t<Float> ray_mask,
+                        int shadow_ray, uint32_t *out, uint32_t ray_flags = 0) {
     using UInt32 = dr::uint32_array_t<Float>;
     using UInt64 = dr::uint64_array_t<Float>;
 
@@ -82,15 +96,15 @@ void cpu_llvm_ray_trace(void *func_ptr, uint32_t func_handle_index,
                JitBackend::LLVM, scene_ptr, accel_handle_index, 0));
 
     RayScalar ray_mint = dr::zeros<RayScalar>();
-    UInt32 zero = dr::zeros<UInt32>();
+    UInt32 zero = dr::zeros<UInt32>(), flags(ray_flags);
 
     uint32_t in[14] = { coherent.index(),  active.index(),
                         ray_o.x().index(), ray_o.y().index(),
                         ray_o.z().index(), ray_mint.index(),
                         ray_d.x().index(), ray_d.y().index(),
                         ray_d.z().index(), ray_time.index(),
-                        ray_maxt.index(),  visibility_mask.index(),
-                        zero.index(),      zero.index() };
+                        ray_maxt.index(),  ray_mask.index(),
+                        zero.index(),      flags.index() };
 
     jit_llvm_ray_trace(func_v.index(), scene_v.index(), shadow_ray, in, out);
 }

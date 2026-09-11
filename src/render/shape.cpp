@@ -16,6 +16,19 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+ShapeVisibility parse_visibility(std::string_view value) {
+    if (value == "all")
+        return ShapeVisibility::All;
+    else if (value == "primary")
+        return ShapeVisibility::Primary;
+    else if (value == "secondary")
+        return ShapeVisibility::Secondary;
+    else if (value == "hidden")
+        return ShapeVisibility::Hidden;
+    Throw("Invalid 'visibility' value \"%s\", expected \"all\", \"primary\", "
+          "\"secondary\", or \"hidden\".", value);
+}
+
 MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     : JitObject<Shape>(props.id()) {
     m_to_world =
@@ -58,6 +71,14 @@ MI_VARIANT Shape<Float, Spectrum>::Shape(const Properties &props)
     }
 
     m_silhouette_sampling_weight = props.get<ScalarFloat>("silhouette_sampling_weight", 1.0f);
+    m_visibility = parse_visibility(
+        props.get<std::string_view>("visibility", "all"));
+
+    // The shape owns this property. The emitter still reports its own field
+    // here because initialize() has not attached it to this shape yet.
+    if (m_emitter && m_emitter->visibility() != ShapeVisibility::All)
+        Throw("The 'visibility' property of an area emitter must be "
+              "specified on the shape that carries it.");
 }
 
 MI_VARIANT Shape<Float, Spectrum>::~Shape() { }
@@ -89,11 +110,6 @@ Shape<Float, Spectrum>::describe(ShapeIR &g) const {
         d[3] = (float) b.max.x(); d[4] = (float) b.max.y(); d[5] = (float) b.max.z();
     };
 #endif
-}
-
-MI_VARIANT uint32_t Shape<Float, Spectrum>::visibility_mask() const {
-    return m_emitter ? m_emitter->visibility_mask()
-                     : (uint32_t) RayMask::All;
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
@@ -353,7 +369,12 @@ Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip)
 
 MI_VARIANT void
 Shape<Float, Spectrum>::set_bsdf(BSDF *bsdf) {
+    bool was_null = has_null();
     m_bsdf = bsdf;
+
+    // 'null' shapes potenially go into a separate BLAS, which requires a rebuil
+    if (was_null != has_null())
+        mark_dirty();
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarSize

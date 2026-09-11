@@ -213,11 +213,15 @@ public:
 
         /* ---------------------- Path construction ------------------------- */
         // First intersection from the emitter to the scene
-        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(ray, active);
+        PreliminaryIntersection3f pi = scene->ray_intersect_preliminary(
+            ray, /* coherent = */ false, +RayMask::Secondary, active);
 
         active &= pi.is_valid();
         if (m_max_depth >= 0)
             active &= depth < m_max_depth;
+
+        // Null tests fold to literals in scenes without null shapes
+        bool has_null = scene->has_null_shapes();
 
         // Set up a Dr.Jit loop (optimizes away to a normal loop in scalar mode,
         // generates wavefront or megakernel renderer based on configuration).
@@ -246,7 +250,7 @@ public:
         // Incrementally build light path using BSDF sampling.
         dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
             [](const LoopState& ls) { return ls.active; },
-            [this, scene, sensor, block, sample_scale](LoopState& ls) {
+            [this, scene, sensor, block, sample_scale, has_null](LoopState& ls) {
 
             SurfaceInteraction3f si = scene->compute_surface_interaction(
                 ls.ray, ls.pi, +RayFlags::Default);
@@ -286,7 +290,9 @@ public:
             if (dr::none_or<false>(ls.active))
                 return;
 
-            ls.depth++;
+            // A null crossing is not a path vertex
+            Mask scattered = has_null ? !bs.is_null() : Mask(true);
+            dr::masked(ls.depth, scattered) += 1;
             if (m_max_depth >= 0)
                 ls.active &= ls.depth < m_max_depth;
 
@@ -306,10 +312,9 @@ public:
             // Reorder threads based on the shape they hit
             ls.pi = scene->ray_intersect_preliminary(ls.ray,
                                                      /* coherent = */ false,
-                                                     /* reorder = */ jit_flag(JitFlag::LoopRecord),
-                                                     /* reorder_hint = */ 0,
-                                                     /* reorder_hint_bits = */ 0,
-                                                     ls.active);
+                                                     +RayMask::Secondary,
+                                                     ls.active,
+                                                     /* reorder = */ jit_flag(JitFlag::LoopRecord));
 
             ls.active &= ls.pi.is_valid();
         },
@@ -343,9 +348,11 @@ public:
         // Check that sensor is visible from current position (shadow ray).
         // The segment toward the sensor corresponds to a directly visible
         // (camera) ray, so shapes hidden from the camera do not occlude it.
+        // Surfaces with null transmission attenuate it instead.
         Ray3f sensor_ray = si.spawn_ray_to(sensor_ds.p);
-        active &= !scene->ray_test(sensor_ray, false, active,
-                                   +RayMask::Camera);
+        Spectrum tr = scene->ray_test_tr(sensor_ray, +RayFlags::Default, false,
+                                         +RayMask::Primary, active);
+        active &= dr::any(unpolarized_spectrum(tr) != 0.f);
         if (dr::none_or<false>(active))
             return 0.f;
 
@@ -391,7 +398,7 @@ public:
             surface_weight[not_on_surface && invalid_side] = 0.f;
         }
 
-        result = weight * surface_weight * sample_scale;
+        result = weight * surface_weight * tr * sample_scale;
 
         // Splatting, adjusting UVs for sensor's crop window if needed.
         // The crop window is already accounted for in the UV positions

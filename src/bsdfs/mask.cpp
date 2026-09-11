@@ -216,10 +216,10 @@ public:
         return { value, pdf };
     }
 
-    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
-                                    Mask active) const override {
+    Spectrum eval_null(const SurfaceInteraction3f &si,
+                       Mask active) const override {
         Float opacity = eval_opacity(si, active);
-        return 1 - opacity * (1 - m_nested_bsdf->eval_null_transmission(si, active));
+        return 1 - opacity * (1 - m_nested_bsdf->eval_null(si, active));
     }
 
     MI_INLINE Float eval_opacity(const SurfaceInteraction3f &si, Mask active) const {

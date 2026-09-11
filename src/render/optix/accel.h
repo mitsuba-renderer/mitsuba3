@@ -73,22 +73,15 @@ struct OptixProgramGroupMapping {
     }
 };
 
-/// Counts the HitGroupSbtRecords the BLAS list contributes (one per geom, since
-/// every geom packs exactly one record). ``blases`` is the full
-/// `SceneIR::blases` (top-level BLASes first, then groups, in slot order).
-extern MI_EXPORT_LIB size_t
-count_hitgroup_records(const std::vector<BlasEntry> &blases);
-
 /// Packs the HitGroupSbtRecords for every geom of every BLAS in ``blases`` into
-/// ``out``, advancing ``cursor``. The BLAS list is already in canonical (kind,
-/// slot) order, so the resulting SBT layout is contiguous per BLAS and matches
-/// the offsets `prepare_ias()` assigns. Allocates the referenced
-/// custom-primitive data buffers in ``data_buffers`` (without filling them: the
-/// records only need the stable pointer); `optix_refresh_shape_data()` writes
-/// their contents.
+/// ``out``. The BLAS list is already in canonical (kind, slot) order, so the
+/// resulting SBT layout is contiguous per BLAS and matches the offsets
+/// `prepare_ias()` assigns. Allocates the referenced custom-primitive data
+/// buffers in ``data_buffers`` (without filling them: the records only need
+/// the stable pointer); `optix_refresh_shape_data()` writes their contents.
 extern MI_EXPORT_LIB void
 fill_hitgroup_records(const std::vector<BlasEntry> &blases,
-                      HitGroupSbtRecord *out, size_t &cursor,
+                      HitGroupSbtRecord *out,
                       const OptixProgramGroup *pg,
                       const OptixProgramGroupMapping &pg_mapping,
                       ShapeDataBuffers &data_buffers);

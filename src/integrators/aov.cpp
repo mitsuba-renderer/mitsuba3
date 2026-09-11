@@ -171,7 +171,8 @@ public:
 
         std::pair<Spectrum, Mask> result { 0.f, false };
         SurfaceInteraction3f si =
-            scene->ray_intersect(ray, (uint32_t) RayFlags::Default, true, false, 0, 0, active);
+            scene->ray_intersect(ray, +RayFlags::Default, /* coherent = */ true,
+                                 +RayMask::Primary, active);
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {

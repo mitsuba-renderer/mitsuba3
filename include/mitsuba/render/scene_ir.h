@@ -11,6 +11,19 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+enum class ShapeVisibility : uint32_t;
+
+/**
+ * Mask that the acceleration data structures store for a shape
+ *
+ * Shapes with null transmission occupy the upper three bits, see `RayMask`
+ * for the layout. A ray intersects the shape when its ray mask overlaps
+ * this value.
+ */
+inline uint32_t accel_mask(ShapeVisibility visibility, bool has_null) {
+    return (uint32_t) visibility << (has_null ? 3 : 0);
+}
+
 struct ShapeIR {
     /// Mitsuba bundles each of the following geometry kinds into its own BLAS.
     /// Instance must remain last (see ``NumGeometryKinds``).
@@ -37,7 +50,7 @@ struct ShapeIR {
     Kind kind = Kind::Custom;
     ShapeType type{};
 
-    /// 8-bit visibility mask (see ``Shape::visibility_mask()``), filled in by
+    /// Visibility mask (see ``accel_mask()``), filled in by
     /// ``SceneIRBuilder``. Backends with per-instance masks (OptiX, Metal)
     /// rely on same-mask geometry sharing one BLAS.
     uint32_t visibility_mask = 0xFFu;

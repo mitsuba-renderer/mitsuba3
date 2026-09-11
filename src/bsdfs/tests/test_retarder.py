@@ -528,7 +528,7 @@ def test08_rotated_quarter_wave(variant_scalar_mono_polarized):
     si.sh_frame = mi.Frame3f(si.n)
 
     _, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
-    M_null = bsdf.eval_null_transmission(si)
+    M_null = bsdf.eval_null(si)
     assert dr.allclose(M, M_null, atol=1e-3)
 
     assert dr.allclose(M @ linear_horizontal, circular_right, atol=1e-3)
@@ -540,7 +540,7 @@ def test08_rotated_quarter_wave(variant_scalar_mono_polarized):
     si.wi = [0, 0, -1]
 
     _, M = bsdf.sample(ctx, si, 0.0, [0.0, 0.0])
-    M_null = bsdf.eval_null_transmission(si)
+    M_null = bsdf.eval_null(si)
     assert dr.allclose(M, M_null, atol=1e-3)
 
     assert dr.allclose(M @ linear_horizontal, circular_left, atol=1e-3)

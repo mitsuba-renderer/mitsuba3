@@ -169,7 +169,11 @@ class ProjectiveDetail():
 
             dist = dr.norm(sensor_center - ray_test.o)
             ray_test.maxt = dist * (1 - mi.math.ShadowEpsilon)
-            visible = ~scene.ray_test(ray_test, active) & active
+
+            # Camera segment: null surfaces attenuate it instead of occluding
+            tr = scene.ray_test_tr(ray_test, active=active,
+                                   ray_mask=mi.RayMask.Primary)
+            visible = dr.any(mi.unpolarized_spectrum(tr) != 0) & active
 
             # Is the boundary point within the view frustum?
             it = dr.zeros(mi.Interaction3f)

@@ -26,6 +26,8 @@ MI_PY_EXPORT(BSDFSample) {
         .def_rw("eta", &BSDFSample3f::eta, D(BSDFSample3, eta))
         .def_rw("sampled_type", &BSDFSample3f::sampled_type, D(BSDFSample3, sampled_type))
         .def_rw("sampled_component", &BSDFSample3f::sampled_component, D(BSDFSample3, sampled_component))
+        .def("is_delta", &BSDFSample3f::is_delta, D(BSDFSample3, is_delta))
+        .def("is_null", &BSDFSample3f::is_null, D(BSDFSample3, is_null))
         .def_repr(BSDFSample3f);
 
     MI_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
@@ -72,9 +74,9 @@ public:
         NB_OVERRIDE(eval_diffuse_reflectance, si, active);
     }
 
-    Spectrum eval_null_transmission(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        NB_OVERRIDE(eval_null_transmission, si, active);
+    Spectrum eval_null(const SurfaceInteraction3f &si,
+                       Mask active) const override {
+        NB_OVERRIDE(eval_null, si, active);
     }
 
     Mask has_attribute(const std::string &name, Mask active) const override {
@@ -140,10 +142,10 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
                     return bsdf->eval_pdf_sample(ctx, si, wo, sample1, sample2, active);
                 }, "ctx"_a, "si"_a, "wo"_a, "sample1"_a, "sample2"_a, "active"_a = true,
                 D(BSDF, eval_pdf))
-        .def("eval_null_transmission",
+        .def("eval_null",
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
-                 return bsdf->eval_null_transmission(si, active);
-             }, "si"_a, "active"_a = true, D(BSDF, eval_null_transmission))
+                 return bsdf->eval_null(si, active);
+             }, "si"_a, "active"_a = true, D(BSDF, eval_null))
         .def("eval_diffuse_reflectance",
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
                  return bsdf->eval_diffuse_reflectance(si, active);
@@ -171,7 +173,9 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
                 return bsdf->eval_attribute_3(name, si, active);
             },
             "name"_a, "si"_a, "active"_a = true, D(BSDF, eval_attribute_3))
-        .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags));
+        .def("flags", [](Ptr bsdf) { return bsdf->flags(); }, D(BSDF, flags))
+        .def("has_flag", [](Ptr bsdf, BSDFFlags flags) { return bsdf->has_flag(flags); },
+             "flags"_a, D(BSDF, has_flag));
 }
 
 MI_PY_EXPORT(BSDF) {

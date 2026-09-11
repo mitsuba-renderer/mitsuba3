@@ -9,8 +9,8 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * Flags to determine which members of `SurfaceInteraction3f`
- * should be computed when calling `Shape.compute_surface_interaction()`.
+ * Flags to determine which members of `SurfaceInteraction3f` should be computed
+ * when calling `Shape.compute_surface_interaction()`.
  *
  * It also specifies differentiation behavior with respect to shape
  * parameters.
@@ -92,26 +92,70 @@ enum class RayFlags : uint32_t {
 MI_DECLARE_ENUM_OPERATORS(RayFlags)
 
 /**
- * Visibility mask bits for scene ray tracing queries.
+ * The ray categories that can see a shape or emitter
  *
- * Every shape advertises an 8-bit visibility mask, and the ray tracing methods
- * of `Scene` accept a ray-side counterpart. A shape can only be intersected
- * when the bitwise AND of the two masks is nonzero.
+ * This is the value of the ``visibility`` property of shapes and emitters
+ * (see `Shape.visibility()`). The section on visibility in the shape plugin
+ * documentation explains the meaning and typical uses of each value. The
+ * ray-side counterpart is `RayMask`.
+ */
+enum class ShapeVisibility : uint32_t {
+    /// Visible to primary rays, hidden from indirect/shadow rays
+    Primary   = 1,
+
+    /// Hidden from primary rays, visible to indirect/shadow rays
+    Secondary = 2,
+
+    /// Visible to every ray (the default)
+    All       = 3,
+
+    /// Hidden from every ray except explicit `RayMask.All` queries
+    Hidden    = 4
+};
+
+/**
+ * Per-ray visibility mask
  *
- * Mitsuba uses this mechanism to hide emitters from directly visible
- * (i.e., camera) rays. Integrators trace such rays with `RayMask.Camera`
- * and use `RayMask.All` everywhere else. The remaining bits are currently
- * unused.
+ * The `Scene` ray tracing methods only report intersections with shapes that
+ * the ray mask matches. The acceleration data structures store a mask for
+ * every shape that combines its `ShapeVisibility` with whether its BSDF has a
+ * `BSDFFlags.Null` component (see `Shape.has_null()`), and a ray intersects
+ * the shape when the two masks overlap. The bits are assigned as follows:
+ *
+ * .. code-block:: text
+ *
+ *    Visibility    Opaque   Null
+ *    Primary       0x01     0x08
+ *    Secondary     0x02     0x10
+ *    Hidden        0x04     0x20
+ *
+ * The `RayMask` enum exposes bit combinations to specifically seek out certain
+ * shapes (e.g., shapes visible to primary rays, opaque shapes only, etc.).
+ *
+ * Note to developers: the OptiX backend supports at most 8 flag bits. Mitsuba
+ * uses 6 bits and leaves 2 unused. They could be used in future extensions.
  */
 enum class RayMask : uint32_t {
-    /// Matched by all shapes except emitters marked as invisible
-    Camera = 0x01,
+    /// Shapes without null transmission
+    Opaque    = 0x07,
 
-    /// Default ray mask, matched by every shape
-    All = 0xFF
+    /// Shapes with null transmission
+    Null      = 0x38,
+
+    /// Shapes visible to camera rays
+    Primary   = 0x09,
+
+    /// Shapes visible to shadow and indirect rays
+    Secondary = 0x12,
+
+    /// Every shape, including hidden ones
+    All       = 0x3F
 };
 
 MI_DECLARE_ENUM_OPERATORS(RayMask)
+
+/// Parse the value of a ``visibility`` property
+extern MI_EXPORT_LIB ShapeVisibility parse_visibility(std::string_view value);
 
 // -----------------------------------------------------------------------------
 
@@ -329,16 +373,17 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /**
      * Return the emitter associated with the intersection (if any)
      *
-     * The ``visibility_mask`` should be the ray-side mask of the trace that
+     * The ``ray_mask`` should be the ray-side mask of the trace that
      * produced this interaction (see `RayMask`). Escaped rays report the
      * environment emitter only when the mask matches its visibility.
      *
      * Note:
      *     Defined in scene.h
      */
-    EmitterPtr emitter(const Scene *scene, Mask active = true,
-                       const dr::uint32_array_t<Float> &visibility_mask
-                           = (uint32_t) RayMask::All) const;
+    EmitterPtr emitter(const Scene *scene,
+                       dr::uint32_array_t<Float> ray_mask
+                           = (uint32_t) RayMask::Secondary,
+                       Mask active = true) const;
 
     /// Is the intersected shape also a sensor?
     Mask is_sensor() const { return shape->is_sensor(); }
@@ -363,7 +408,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * Returns the exterior medium when ``cos_theta > 0`` and
      * the interior medium when ``cos_theta <= 0``.
      */
-    MediumPtr target_medium(const Float &cos_theta) const {
+    MediumPtr target_medium(Float cos_theta) const {
         return dr::select(cos_theta > 0, shape->exterior_medium(),
                                          shape->interior_medium());
     }

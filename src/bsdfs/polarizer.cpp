@@ -160,7 +160,7 @@ public:
         return 0.f;
     }
 
-    Spectrum eval_null_transmission(const SurfaceInteraction3f &si, Mask active) const override {
+    Spectrum eval_null(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);
 
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);

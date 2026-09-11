@@ -14,6 +14,10 @@ MI_VARIANT ShapeGroup<Float, Spectrum>::ShapeGroup(const Properties &props)
     m_shape_types = 0;
     Base::m_shape_type = ShapeType::ShapeGroup;
 
+    if (Base::m_visibility != ShapeVisibility::All)
+        Throw("Shape groups cannot be hidden from primary or secondary rays. "
+              "Set 'visibility' on the shapes within the group instead.");
+
     // Add children to the underlying data structure
     for (auto &prop : props.objects()) {
         Base *shape = prop.try_get<Base>();

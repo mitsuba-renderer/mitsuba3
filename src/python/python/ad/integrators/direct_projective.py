@@ -149,13 +149,12 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 si = scene.ray_intersect(
                     ray, ray_flags=mi.RayFlags.Default, coherent=True,
                     active=active,
-                    visibility_mask=mi.RayMask.Camera)
+                    ray_mask=mi.RayMask.Primary)
 
         # The emitter lookup reuses the camera mask so that escaped rays
         # ignore a hidden environment emitter
         with dr.resume_grad(when=not primal):
-            emitter = si.emitter(scene, active,
-                                 visibility_mask=mi.RayMask.Camera)
+            emitter = si.emitter(scene, ray_mask=mi.RayMask.Primary, active=active)
             L += emitter.eval(si, active)
 
         active_next = active & si.is_valid() & (self.max_depth > 1)
@@ -166,7 +165,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # ---------------------- Emitter sampling ----------------------
 
         # Is emitter sampling possible on the current vertex?
-        active_em_ = active_next & mi.has_flag(bsdf.flags(), mi.BSDFFlags.Smooth)
+        active_em_ = active_next & bsdf.has_flag(mi.BSDFFlags.Smooth)
 
         # If so, sample an emitter. The sample is detached, and its weight
         # is attached to the emitter and to the motion of 'si'.
@@ -190,14 +189,22 @@ class DirectProjectiveIntegrator(PSIntegrator):
         sample_bsdf, weight_bsdf = bsdf.sample(bsdf_ctx, si, sampler.next_1d(active_next),
                                                sampler.next_2d(active_next), active_next)
         active_bsdf = active_next & dr.any(mi.unpolarized_spectrum(weight_bsdf) != 0.0)
-        delta_bsdf = mi.has_flag(sample_bsdf.sampled_type, mi.BSDFFlags.Delta)
+        delta_bsdf = sample_bsdf.is_delta()
 
         # Construct the BSDF sampled ray
         ray_bsdf = si.spawn_ray(si.to_world(sample_bsdf.wo))
 
+        # A ray that leaves through a null lobe remains a camera ray. The null
+        # tests fold to literals in scenes without null shapes.
+        has_null = scene.has_null_shapes()
+        null = sample_bsdf.is_null() if has_null else mi.Bool(False)
+        ray_mask = dr.select(null, mi.RayMask.Primary, mi.RayMask.Secondary)
+
         with dr.resume_grad(when=not primal):
-            # Trace the BSDF sampled ray
-            si_bsdf = scene.ray_intersect(ray_bsdf, active=active_bsdf)
+            # Trace the BSDF sampled ray. Like shadow rays, it passes through
+            # null surfaces so that both strategies reach the same emitters.
+            si_bsdf, tr_bsdf = scene.ray_intersect_tr(
+                ray_bsdf, active=active_bsdf, ray_mask=ray_mask)
 
             if dr.hint(not primal, mode='scalar'):
                 # Re-compute `weight_bsdf` with AD attached only in the
@@ -206,6 +213,13 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 wo, J = reattach_wo(si, si_bsdf, ray_bsdf, active_next)
 
                 bsdf_val, bsdf_pdf = bsdf.eval_pdf(bsdf_ctx, si, wo, active_bsdf)
+
+                # A null crossing continues with the null transmission instead
+                if dr.hint(has_null, mode='scalar'):
+                    null &= active_bsdf
+                    bsdf_val[null] = bsdf.eval_null(si, null)
+                    bsdf_pdf[null] = sample_bsdf.pdf
+
                 inv_bsdf_pdf = dr.select(bsdf_pdf != 0, dr.rcp(bsdf_pdf), 0)
                 weight_bsdf = dr.replace_grad(weight_bsdf, bsdf_val * dr.detach(inv_bsdf_pdf))
                 weight_bsdf *= dr.relative_grad(J)
@@ -215,7 +229,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 reattach_wi(si_bsdf, si.p)
 
             # Evaluate the emitter
-            L_bsdf = si_bsdf.emitter(scene, active_bsdf).eval(si_bsdf, active_bsdf)
+            L_bsdf = si_bsdf.emitter(scene, ray_mask=ray_mask, active=active_bsdf).eval(si_bsdf, active_bsdf)
 
             # Compute the detached MIS weight for the BSDF sample
             ds_bsdf = mi.DirectionSample3f(scene, si=si_bsdf, ref=si)
@@ -223,7 +237,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
                 ref=si, ds=ds_bsdf, active=active_bsdf & ~delta_bsdf)
             mis_bsdf = dr.select(delta_bsdf, 1.0, mis_weight(sample_bsdf.pdf, pdf_emitter))
 
-            L[active_bsdf] += L_bsdf * weight_bsdf * mis_bsdf
+            L[active_bsdf] += weight_bsdf * tr_bsdf * L_bsdf * mis_bsdf
 
         # ---------------------- Seed rays for projection ----------------------
 
@@ -267,9 +281,10 @@ class DirectProjectiveIntegrator(PSIntegrator):
 
             # ----------- Estimate the radiance of the background -----------
 
+            # The ray passes through null surfaces like a BSDF-sampled ray
             ray_bg = ss.spawn_ray(wavelengths)
-            si_bg = scene.ray_intersect(ray_bg, active=active)
-            radiance_bg = si_bg.emitter(scene).eval(si_bg, active)
+            si_bg, tr_bg = scene.ray_intersect_tr(ray_bg, active=active)
+            radiance_bg = tr_bg * si_bg.emitter(scene).eval(si_bg, active)
 
             # ----------- Estimate the radiance of the foreground -----------
 
@@ -383,9 +398,11 @@ class DirectProjectiveIntegrator(PSIntegrator):
         sensor_ds, sensor_weight = sensor.sample_direction(it, sampler.next_2d(active), active)
         active &= (sensor_ds.pdf != 0)
 
-        # Visibility to sensor
+        # Transmittance towards the sensor (zero when occluded)
         cam_test_ray = si_boundary.spawn_ray_to(sensor_ds.p)
-        active &= ~scene.ray_test(cam_test_ray, active)
+        tr = scene.ray_test_tr(cam_test_ray, active=active,
+                               ray_mask=mi.RayMask.Primary)
+        active &= dr.any(mi.unpolarized_spectrum(tr) != 0)
 
         # Evaluate the BSDF
         bsdf_ctx = mi.BSDFContext(mi.TransportMode.Importance)
@@ -394,7 +411,7 @@ class DirectProjectiveIntegrator(PSIntegrator):
             bsdf_ctx, si_boundary, wo_local, active)
         active &= (dr.max(bsdf_val) != 0)
 
-        importance = bsdf_val * sensor_weight
+        importance = bsdf_val * sensor_weight * tr
         return importance, sensor_ds.uv, mi.UInt32(2), active
 
 mi.register_integrator("direct_projective", lambda props: DirectProjectiveIntegrator(props))

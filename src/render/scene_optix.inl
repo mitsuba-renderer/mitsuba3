@@ -46,9 +46,11 @@ struct MiOptixSceneState {
     /// follow the host scene's. Set once in init().
     uint32_t sbt_record_base = 0;
     uint32_t sbt_jit_index;
-    /// Hit record buffers replaced by nested scenes. Queued copies may still
-    /// read them, so they are released together with the scene.
-    std::vector<void *> retired_sbt;
+    /// State of the host scene whose record table a nested scene shares
+    /// (see init()). The host outlives its nested scenes.
+    MiOptixSceneState *host = nullptr;
+    /// Shapes in hit record order, to skip redundant record writes
+    std::vector<const void *> sbt_order;
 
     /// Copies of MiOptixConfig fields, cached to avoid a hash lookup + mutex lock.
     uint32_t config_key;
@@ -336,6 +338,39 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     return config;
 }
 
+/// Number of hit records of a scene: one per geometry of every BLAS
+static size_t optix_record_count(const SceneIR &sd) {
+    size_t count = 0;
+    for (const BlasEntry &blas : sd.blases)
+        count += blas.geoms.size();
+    return count;
+}
+
+/// Pack the hit records of ``sd`` on the host and copy them into the slice
+/// of the record table that belongs to ``s``, which starts at
+/// ``sbt_record_base``. The table is the host scene's when ``s`` is nested.
+static void optix_write_sbt_records(MiOptixSceneState &s, const SceneIR &sd,
+                                    const MiOptixConfig &config) {
+    std::vector<const void *> order;
+    for (const BlasEntry &blas : sd.blases)
+        for (const ShapeIR &g : blas.geoms)
+            order.push_back(g.ctx);
+    if (order == s.sbt_order)
+        return;
+    s.sbt_order = std::move(order);
+
+    size_t size = s.sbt_order.size() * sizeof(HitGroupSbtRecord);
+    auto *staging = (HitGroupSbtRecord *) jit_malloc(JitBackend::CUDA, size,
+                                                     /* shared = */ 1);
+    fill_hitgroup_records(sd.blases, staging, config.pg, config.pg_mapping,
+                          s.shape_data);
+
+    const OptixShaderBindingTable &sbt = s.host ? s.host->sbt : s.sbt;
+    auto *table = (HitGroupSbtRecord *) sbt.hitgroupRecordBase;
+    jit_memcpy_async(JitBackend::CUDA, table + s.sbt_record_base, staging, size);
+    jit_free(staging);
+}
+
 // -----------------------------------------------------------------------
 //  OptixAccel<Float, Spectrum> -- lifecycle
 // -----------------------------------------------------------------------
@@ -471,8 +506,6 @@ static void optix_rebuild_accel(
                 jit_free(s->ias_data.inputs);
                 for (void *buf : s->shape_data)
                     jit_free(buf);
-                for (void *buf : s->retired_sbt)
-                    jit_free(buf);
                 delete s;
             }
         },
@@ -504,51 +537,38 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     // Lower the scene once; the SBT records, GAS and IAS all read from this.
     SceneIR sd = SceneIRBuilder<Float, Spectrum>::build(scene);
 
-    // Per-group GAS storage (index-aligned with m_shapegroups), sized once here
-    // and reused across rebuilds.
+    // Per-group GAS storage (index-aligned with m_shapegroups) for reuse
     s.group_accel.resize(scene->m_shapegroups.size());
 
-    // Fill the hit-group records: one per geom of every BLAS, packed in BLAS
-    // order (top-level BLASes first, then groups) so the SBT offsets line up with
-    // the IAS instances. Shared by the SBT-update and from-scratch paths below.
-    auto fill_records = [&](HitGroupSbtRecord *records, size_t cursor,
-                            const MiOptixConfig &config) {
-        fill_hitgroup_records(sd.blases, records, cursor, config.pg,
-                              config.pg_mapping, s.shape_data);
-    };
+    // The hit records are packed one per geom of every BLAS, in BLAS order
+    // (top-level BLASes first, then groups) so that the SBT offsets line up
+    // with the IAS instances.
+    size_t count = optix_record_count(sd);
 
     if (other_scene) {
         Log(Debug, "Re-use OptiX config, pipeline and update SBT ..");
         MiOptixSceneState &s2 = *other_scene->m_accel.state;
         const MiOptixConfig &config = optix_configs[s2.config_key];
 
-        // The updated SBT keeps the host scene's records up front, then appends
-        // this scene's records. The new records are packed on the host and
-        // uploaded, after which the host scene's records are copied into place
-        // with a device-to-device copy on the same queue. Nothing here waits
-        // for the device.
+        // Grow the host scene's record table so that this scene's records
+        // follow the existing ones (see sbt_record_base). The old table can
+        // be released right away: device memory only returns to use through
+        // later operations on the same stream.
         size_t prev_count = s2.sbt.hitgroupRecordCount,
-               shapes_count = prev_count + count_hitgroup_records(sd.blases);
+               prev_size = prev_count * sizeof(HitGroupSbtRecord);
+        auto *old = (HitGroupSbtRecord *) s2.sbt.hitgroupRecordBase;
+        auto *table = (HitGroupSbtRecord *) jit_malloc(
+            JitBackend::CUDA, prev_size + count * sizeof(HitGroupSbtRecord));
+        jit_memcpy_async(JitBackend::CUDA, table, old, prev_size);
+        jit_free(old);
 
-        // This scene's records follow the host scene's (see sbt_record_base).
-        s.sbt_record_base = (uint32_t) prev_count;
-
-        auto *records = (HitGroupSbtRecord *) jit_malloc(
-            JitBackend::CUDA, shapes_count * sizeof(HitGroupSbtRecord),
-            /* shared = */ 1);
-        fill_records(records, prev_count, config);
-        records = (HitGroupSbtRecord *) jit_malloc_migrate(
-            records, JitBackend::CUDA, 1);
-        jit_memcpy_async(JitBackend::CUDA, records, s2.sbt.hitgroupRecordBase,
-                         prev_count * sizeof(HitGroupSbtRecord));
-        s2.retired_sbt.push_back(s2.sbt.hitgroupRecordBase);
-
-        s2.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
-        s2.sbt.hitgroupRecordBase = records;
-
+        s2.sbt.hitgroupRecordBase = table;
+        s2.sbt.hitgroupRecordCount = (unsigned int) (prev_count + count);
         jit_optix_update_sbt(s2.sbt_jit_index, &s2.sbt);
 
-        memcpy(&s.sbt, &s2.sbt, sizeof(OptixShaderBindingTable));
+        s.host = &s2;
+        s.sbt_record_base = (uint32_t) prev_count;
+        optix_write_sbt_records(s, sd, config);
 
         s.sbt_jit_index = s2.sbt_jit_index;
         jit_var_inc_ref(s.sbt_jit_index);
@@ -576,23 +596,14 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         jit_optix_check(optixSbtRecordPackHeader(config.pg[0],
                                                  s.sbt.missRecordBase));
 
-        // Pack the records straight into a host-visible shared buffer, then
-        // upload it with a single queue-ordered migrate.
-        size_t shapes_count = count_hitgroup_records(sd.blases);
-
-        auto *records = (HitGroupSbtRecord *) jit_malloc(
-            JitBackend::CUDA, shapes_count * sizeof(HitGroupSbtRecord),
-            /* shared = */ 1);
-
-        fill_records(records, 0, config);
-
-        s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
-        s.sbt.hitgroupRecordCount = (unsigned int) shapes_count;
-
         s.sbt.missRecordBase =
             jit_malloc_migrate(s.sbt.missRecordBase, JitBackend::CUDA, 1);
-        s.sbt.hitgroupRecordBase =
-            jit_malloc_migrate(records, JitBackend::CUDA, 1);
+
+        s.sbt.hitgroupRecordStrideInBytes = sizeof(HitGroupSbtRecord);
+        s.sbt.hitgroupRecordCount = (unsigned int) count;
+        s.sbt.hitgroupRecordBase = jit_malloc(
+            JitBackend::CUDA, count * sizeof(HitGroupSbtRecord));
+        optix_write_sbt_records(s, sd, config);
 
         s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
         s.config_key = config.key;
@@ -620,8 +631,18 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 template <typename Float, typename Spectrum>
 void OptixAccel<Float, Spectrum>::rebuild(
     Scene<Float, Spectrum> *scene) {
+    MiOptixSceneState &s = *state;
+
     // Lower the scene once; the GAS and IAS phases read from this.
     SceneIR sd = SceneIRBuilder<Float, Spectrum>::build(scene);
+
+    // A shape class change (see Shape::set_bsdf) reorders the hit records.
+    // The record count is fixed after loading, so the records fit into the
+    // existing table.
+    {
+        std::lock_guard<std::mutex> guard(optix_configs_lock);
+        optix_write_sbt_records(s, sd, optix_configs[s.config_key]);
+    }
 
     optix_rebuild_accel<Float, Spectrum>(scene, state, accel_handle, sd);
 }
@@ -672,23 +693,17 @@ void OptixAccel<Float, Spectrum>::static_shutdown() {
 // -----------------------------------------------------------------------
 
 template <typename Float, typename Spectrum>
-typename OptixAccel<Float, Spectrum>::PreliminaryIntersection3f
-OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
-    const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask /*coherent*/,
-    bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
-    Mask active, const UInt32 &visibility_mask) const {
+void OptixAccel<Float, Spectrum>::trace(
+    const Ray3f &ray, Mask active, UInt32 ray_mask,
+    uint32_t ray_flags_, uint32_t n_fields, const OptixHitObjectField *fields,
+    uint32_t *out, bool reorder, UInt32 reorder_hint,
+    uint32_t reorder_hint_bits) const {
     MiOptixSceneState &s = *state;
-
-    UInt32 ray_mask(visibility_mask),
-           ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                     OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-           sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
     // Enforce backface culling, which is only enabled on EllipsoidsMesh
     // instances.
-    ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
-
-    bool has_instances = !scene->m_shapegroups.empty();
+    UInt32 ray_flags(ray_flags_ | OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES),
+           sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
 
     using Single = dr::float32_array_t<Float>;
     dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
@@ -707,6 +722,23 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
         sbt_offset.index(), sbt_stride.index(),
         miss_sbt_index.index(),
     };
+
+    jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
+                        n_fields, fields, out, reorder, reorder_hint.index(),
+                        reorder_hint_bits, false, active.index(),
+                        s.pipeline_jit_index, s.sbt_jit_index);
+}
+
+template <typename Float, typename Spectrum>
+typename OptixAccel<Float, Spectrum>::PreliminaryIntersection3f
+OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
+    const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask /*coherent*/,
+    bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
+    Mask active, UInt32 ray_mask) const {
+    using Single = dr::float32_array_t<Float>;
+
+    bool has_instances = !scene->m_shapegroups.empty();
+
     OptixHitObjectField fields[] {
         OptixHitObjectField::IsHit,
         OptixHitObjectField::RayTMax,
@@ -721,11 +753,10 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
     // Scene property takes precedence
     reorder &= scene->m_thread_reordering;
 
-    jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        has_instances ? 7 : 6, fields, hitobject_out,
-                        reorder, reorder_hint.index(), reorder_hint_bits,
-                        false, active.index(),
-                        s.pipeline_jit_index, s.sbt_jit_index);
+    trace(ray, active, ray_mask,
+          OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,
+          has_instances ? 7 : 6, fields, hitobject_out, reorder, reorder_hint,
+          reorder_hint_bits);
 
     Mask valid = UInt32::steal(hitobject_out[0]) != 0;
     active &= valid;
@@ -752,50 +783,37 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
 }
 
 template <typename Float, typename Spectrum>
-typename OptixAccel<Float, Spectrum>::Mask
+ShadowTest<typename OptixAccel<Float, Spectrum>::Mask>
 OptixAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                       const Ray3f &ray, Mask /*coherent*/,
                                       Mask active,
-                                      const UInt32 &visibility_mask) const {
-    MiOptixSceneState &s = *state;
-
-    UInt32 ray_mask(visibility_mask),
-           ray_flags(OPTIX_RAY_FLAG_DISABLE_ANYHIT |
-                     OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT |
-                     OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT),
-           sbt_offset(0), sbt_stride(1), miss_sbt_index(0);
-
-    // Enforce backface culling, which is only enabled on EllipsoidsMesh
-    // instances.
-    ray_flags |= OPTIX_RAY_FLAG_CULL_BACK_FACING_TRIANGLES;
-
-    using Single = dr::float32_array_t<Float>;
-    dr::Array<Single, 3> ray_o(ray.o), ray_d(ray.d);
-    Single ray_mint(0.f), ray_maxt(ray.maxt), ray_time(ray.time);
-
-    // Be careful with 'ray.maxt' in double precision variants
-    if constexpr (!std::is_same_v<Single, Float>)
-        ray_maxt = dr::minimum(ray_maxt, dr::Largest<Single>);
-
-    uint32_t trace_args[] {
-        accel_handle.index(),
-        ray_o.x().index(), ray_o.y().index(), ray_o.z().index(),
-        ray_d.x().index(), ray_d.y().index(), ray_d.z().index(),
-        ray_mint.index(), ray_maxt.index(), ray_time.index(),
-        ray_mask.index(), ray_flags.index(),
-        sbt_offset.index(), sbt_stride.index(),
-        miss_sbt_index.index()
+                                      UInt32 ray_mask,
+                                      bool skip_null) const {
+    OptixHitObjectField fields[] {
+        OptixHitObjectField::IsHit,
+        OptixHitObjectField::SBTDataPointer
     };
+    uint32_t hitobject_out[2];
 
-    OptixHitObjectField field = OptixHitObjectField::IsHit;
-    uint32_t hitobject_out;
+    // A skip_null query also fetches the SBT data of the hit that ended the
+    // traversal to classify it below
+    trace(ray, active, ray_mask,
+          OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT |
+              OPTIX_RAY_FLAG_TERMINATE_ON_FIRST_HIT,
+          skip_null ? 2 : 1, fields, hitobject_out);
 
-    jit_optix_ray_trace(sizeof(trace_args) / sizeof(uint32_t), trace_args,
-                        1, &field, &hitobject_out,
-                        false, 0, 0, false, active.index(),
-                        s.pipeline_jit_index, s.sbt_jit_index);
+    Mask hit = UInt32::steal(hitobject_out[0]) != 0;
+    if (!skip_null)
+        return { hit, Mask(false) };
 
-    return UInt32::steal(hitobject_out) != 0;
+    // Shape registry ID from the SBT data (see OptixHitGroupData)
+    UInt64 sbt_ptr = UInt64::steal(hitobject_out[1]);
+    UInt32 shape_id = UInt32::steal(jit_optix_sbt_data_load(
+        sbt_ptr.index(), VarType::UInt32, 0, (active && hit).index()));
+    ShapePtr shape = dr::reinterpret_array<ShapePtr, UInt32>(shape_id);
+
+    Mask null = hit && shape->has_null();
+    return { hit && !null, null };
 }
 
 template <typename Float, typename Spectrum>

@@ -51,12 +51,10 @@ Environment emitter (:monosp:`envmap`)
      will be combined using multiple importance sampling (MIS)? This is
      extremely cheap to do and can slightly reduce variance. (Default: false)
 
- * - visible
-   - |bool|
-   - Whether the emitter appears in directly visible (camera) rays. When set
-     to |false|, rays that leave the scene without prior scattering events
-     produce no radiance, while reflections and indirect illumination remain
-     unaffected. (Default: |true|)
+ * - visibility
+   - |string|
+   - Which rays see the emitter (see the :ref:`visibility section
+     <sec-shape-visibility>`). (Default: ``all``)
 
  * - data
    - |tensor|

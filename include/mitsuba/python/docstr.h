@@ -335,6 +335,8 @@ static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory re
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Dr.Jit's pointer registry)doc";
 
+static const char *__doc_OptixHitObjectField = R"doc()doc";
+
 static const char *__doc_OptixImage2D = R"doc()doc";
 
 static const char *__doc_OptixImage2D_data = R"doc()doc";
@@ -972,6 +974,10 @@ static const char *__doc_mitsuba_BSDFSample3_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_fields_2 = R"doc()doc";
 
+static const char *__doc_mitsuba_BSDFSample3_is_delta = R"doc(Does the sampled lobe have a Dirac delta distribution?)doc";
+
+static const char *__doc_mitsuba_BSDFSample3_is_null = R"doc(Was the sampled lobe the un-scattered transmission (`BSDFFlags.Null`)?)doc";
+
 static const char *__doc_mitsuba_BSDFSample3_labels = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFSample3_name = R"doc()doc";
@@ -1076,17 +1082,16 @@ Args:
     si: A surface interaction data structure describing the underlying
         surface position.)doc";
 
-static const char *__doc_mitsuba_BSDF_eval_null_transmission =
+static const char *__doc_mitsuba_BSDF_eval_null =
 R"doc(Evaluate un-scattered transmission component of the BSDF
 
-This method will evaluate the un-scattered transmission
-(`BSDFFlags.Null`) of the BSDF for light arriving from direction
-``si.wi``. The default implementation returns zero.
+This method evaluates the un-scattered transmission for light arriving
+from direction ``si.wi``. BSDFs with a `BSDFFlags.Null` component should
+override this method. The default implementation returns zero.
 
 Args:
     si: A surface interaction data structure describing the underlying
-        surface position. The incident direction is obtained from
-        the field ``si.wi``.)doc";
+        surface position.)doc";
 
 static const char *__doc_mitsuba_BSDF_eval_pdf =
 R"doc(Jointly evaluate the BSDF f(wi, wo) and the probability per unit
@@ -1155,6 +1160,8 @@ R"doc(Returns whether this BSDF contains the specified attribute.
 
 Args:
     name: Name of the attribute)doc";
+
+static const char *__doc_mitsuba_BSDF_has_flag = R"doc(Does any component of the BSDF have one of the given flags?)doc";
 
 static const char *__doc_mitsuba_BSDF_m_components = R"doc(Flags for each component of this BSDF.)doc";
 
@@ -3225,8 +3232,8 @@ Args:
 
     ref: Reference position
 
-    visibility_mask: Ray-side visibility mask used for the emitter
-        lookup (see `SurfaceInteraction.emitter`))doc";
+    ray_mask: Ray-side visibility mask used for the emitter lookup
+        (see `SurfaceInteraction.emitter`))doc";
 
 static const char *__doc_mitsuba_DirectionSample_DirectionSample_2 = R"doc(Element-by-element constructor)doc";
 
@@ -3625,7 +3632,7 @@ static const char *__doc_mitsuba_EmitterFlags_Empty = R"doc(No flags set (defaul
 
 static const char *__doc_mitsuba_EmitterFlags_Infinite = R"doc(The emitter is placed at infinity (e.g. environment maps))doc";
 
-static const char *__doc_mitsuba_EmitterFlags_Invisible = R"doc(The emitter is hidden from directly visible (camera) rays)doc";
+static const char *__doc_mitsuba_EmitterFlags_Invisible = R"doc(The emitter is hidden from directly visible (camera) rays.)doc";
 
 static const char *__doc_mitsuba_EmitterFlags_Portal = R"doc(Light portal (see ``Scene::portals()``), does not emit anything itself)doc";
 
@@ -3639,10 +3646,7 @@ static const char *__doc_mitsuba_Emitter_class_name = R"doc(This is both a class
 
 static const char *__doc_mitsuba_Emitter_dirty = R"doc(Return whether the emitter parameters have changed)doc";
 
-static const char *__doc_mitsuba_Emitter_flags =
-R"doc(Flags for all components combined. The ``visible`` property is
-merged in here (rather than stored in ``m_flags``) because plugin
-constructors assign ``m_flags`` after the base class has run.)doc";
+static const char *__doc_mitsuba_Emitter_flags = R"doc(Return the complete set of emitter flags)doc";
 
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
@@ -3654,17 +3658,13 @@ static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all 
 
 static const char *__doc_mitsuba_Emitter_m_sampling_weight = R"doc(Sampling weight)doc";
 
-static const char *__doc_mitsuba_Emitter_m_visible = R"doc(False if the emitter is hidden from camera rays)doc";
+static const char *__doc_mitsuba_Emitter_m_visibility = R"doc(Ray categories that can see the emitter)doc";
 
 static const char *__doc_mitsuba_Emitter_parameters_changed = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(The emitter's sampling weight.)doc";
+static const char *__doc_mitsuba_Emitter_sampling_weight = R"doc(Relative weight of sampling this emitter. Zero when hidden from secondary rays.)doc";
 
 static const char *__doc_mitsuba_Emitter_set_dirty = R"doc(Modify the emitter's ``dirty`` flag)doc";
-
-static const char *__doc_mitsuba_Emitter_set_visible =
-R"doc(Used by the Scene to implement the deprecated ``hide_emitters``
-integrator flag before building its acceleration data structures)doc";
 
 static const char *__doc_mitsuba_Emitter_traverse = R"doc()doc";
 
@@ -3674,11 +3674,7 @@ static const char *__doc_mitsuba_Emitter_type = R"doc(This is both a class and t
 
 static const char *__doc_mitsuba_Emitter_variant_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
-static const char *__doc_mitsuba_Emitter_visibility_mask =
-R"doc(Return the 8-bit visibility mask (see `RayMask`). Invisible emitters
-clear the `RayMask.Camera` bit.)doc";
-
-static const char *__doc_mitsuba_Emitter_visible = R"doc(Is this emitter visible to directly visible (camera) rays?)doc";
+static const char *__doc_mitsuba_Emitter_visibility = R"doc(Ray categories that can see this emitter)doc";
 
 static const char *__doc_mitsuba_Endpoint =
 R"doc(Abstract interface subsuming emitters and sensors in Mitsuba.
@@ -5799,6 +5795,8 @@ static const char *__doc_mitsuba_MergeKey_operator_ne = R"doc()doc";
 
 static const char *__doc_mitsuba_MergeKey_sensor = R"doc()doc";
 
+static const char *__doc_mitsuba_MergeKey_visibility = R"doc(Ray categories that can see the mesh (a ``ShapeVisibility`` value))doc";
+
 static const char *__doc_mitsuba_Mesh =
 R"doc(Triangle mesh
 
@@ -7100,6 +7098,8 @@ static const char *__doc_mitsuba_OptixAccel_state = R"doc(Heap-allocated native 
 static const char *__doc_mitsuba_OptixAccel_static_initialization = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixAccel_static_shutdown = R"doc()doc";
+
+static const char *__doc_mitsuba_OptixAccel_trace = R"doc()doc";
 
 static const char *__doc_mitsuba_OptixDenoiser =
 R"doc(Wrapper for the OptiX AI denoiser
@@ -8631,8 +8631,8 @@ stores a maximum ray position ``maxt``, a time value ``time`` as well as the
 wavelength information associated with the ray.)doc";
 
 static const char *__doc_mitsuba_RayFlags =
-R"doc(Flags to determine which members of `SurfaceInteraction3f`
-should be computed when calling `Shape.compute_surface_interaction()`.
+R"doc(Flags to determine which members of `SurfaceInteraction3f` should be computed
+when calling `Shape.compute_surface_interaction()`.
 
 It also specifies differentiation behavior with respect to shape
 parameters.)doc";
@@ -8692,20 +8692,36 @@ direction in the shading frame (`SurfaceInteraction3f.wi`).
 This is also the default option selected by `RayFlags.Default`.)doc";
 
 static const char *__doc_mitsuba_RayMask =
-R"doc(Visibility mask bits for scene ray tracing queries.
+R"doc(Per-ray visibility mask
 
-Every shape advertises an 8-bit visibility mask, and the ray tracing methods
-of `Scene` accept a ray-side counterpart. A shape can only be intersected
-when the bitwise AND of the two masks is nonzero.
+The `Scene` ray tracing methods only report intersections with shapes that
+the ray mask matches. The acceleration data structures store a mask for
+every shape that combines its `ShapeVisibility` with whether its BSDF has a
+`BSDFFlags.Null` component (see `Shape.has_null()`), and a ray intersects
+the shape when the two masks overlap. The bits are assigned as follows:
 
-Mitsuba uses this mechanism to hide emitters from directly visible
-(i.e., camera) rays. Integrators trace such rays with `RayMask.Camera`
-and use `RayMask.All` everywhere else. The remaining bits are currently
-unused.)doc";
+.. code-block:: text
 
-static const char *__doc_mitsuba_RayMask_All = R"doc(Default ray mask, matched by every shape)doc";
+   Visibility    Opaque   Null
+   Primary       0x01     0x08
+   Secondary     0x02     0x10
+   Hidden        0x04     0x20
 
-static const char *__doc_mitsuba_RayMask_Camera = R"doc(Matched by all shapes except emitters marked as invisible)doc";
+The `RayMask` enum exposes bit combinations to specifically seek out certain
+shapes (e.g., shapes visible to primary rays, opaque shapes only, etc.).
+
+Note to developers: the OptiX backend supports at most 8 flag bits. Mitsuba
+uses 6 bits and leaves 2 unused. They could be used in future extensions.)doc";
+
+static const char *__doc_mitsuba_RayMask_All = R"doc(Every shape, including hidden ones)doc";
+
+static const char *__doc_mitsuba_RayMask_Null = R"doc(Shapes with null transmission)doc";
+
+static const char *__doc_mitsuba_RayMask_Opaque = R"doc(Shapes without null transmission)doc";
+
+static const char *__doc_mitsuba_RayMask_Primary = R"doc(Shapes visible to camera rays)doc";
+
+static const char *__doc_mitsuba_RayMask_Secondary = R"doc(Shapes visible to shadow and indirect rays)doc";
 
 static const char *__doc_mitsuba_Ray_Ray = R"doc(Construct a new ray (o, d) at time ``time``)doc";
 
@@ -9145,7 +9161,14 @@ three key abstractions implemented on top of these groups, specifically:
 
 * Sampling directions approximately proportional to the
   direct radiance from emitters received at a given scene location
-  (see `sample_emitter_direction()`).)doc";
+  (see `sample_emitter_direction()`).
+
+In AD-enabled variants, all methods follow the same convention: sampling
+decisions and probability densities are detached, while values evaluated at
+those fixed samples are attached. Sampling routines thus return the attached
+value divided by the detached density. Emitter samples and ray intersections
+(by default) treat the ray as fixed and produce hits that slide along the
+intersected surface.)doc";
 
 static const char *__doc_mitsuba_Scene_2 = R"doc()doc";
 
@@ -9228,7 +9251,7 @@ static const char *__doc_mitsuba_Scene_bbox = R"doc(Return a bounding box surrou
 
 static const char *__doc_mitsuba_Scene_class_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_clear_shapes_dirty = R"doc(Unmarks all shapes as dirty)doc";
+static const char *__doc_mitsuba_Scene_clear_shapes_dirty = R"doc(Clears the dirty flag of every shape and refreshes has_null_shapes())doc";
 
 static const char *__doc_mitsuba_Scene_compact_accel =
 R"doc(\brief Should the BVH builder compact the acceleration data structure?
@@ -9299,6 +9322,8 @@ Returns:
     The incident radiance and discrete or solid angle density of the
     sample.)doc";
 
+static const char *__doc_mitsuba_Scene_has_null_shapes = R"doc(Does the scene contain shapes of the `RayMask.Null` classes?)doc";
+
 static const char *__doc_mitsuba_Scene_instance = R"doc(Return the ``instance`` shape with the given index.)doc";
 
 static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's `Integrator`)doc";
@@ -9325,15 +9350,15 @@ static const char *__doc_mitsuba_Scene_m_bbox = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_children = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_compact_accel =
-R"doc(Compact GPU acceleration structures after building. This reduces BLAS
-memory at the cost of an extra build-time query and compaction pass.)doc";
+static const char *__doc_mitsuba_Scene_m_compact_accel = R"doc(Compact GPU acceleration structures after building?)doc";
 
 static const char *__doc_mitsuba_Scene_m_compact_accel_auto = R"doc(Enable/disable automatic BVH compaction criterion in compact_accel().)doc";
 
 static const char *__doc_mitsuba_Scene_m_emitter_distr = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_m_emitter_pmf = R"doc()doc";
+static const char *__doc_mitsuba_Scene_m_emitter_pmf =
+R"doc(Uniform emitter selection probability. Zero when the scene has no
+emitter that sample_emitter() could pick.)doc";
 
 static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
 
@@ -9341,12 +9366,11 @@ static const char *__doc_mitsuba_Scene_m_emitters_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 
+static const char *__doc_mitsuba_Scene_m_has_null_shapes = R"doc(Does the scene contain shapes with 'null' BSDFs?)doc";
+
 static const char *__doc_mitsuba_Scene_m_instance_transforms = R"doc(Flattened sequence of instance ``to_world`` matrices (12 floats each))doc";
 
-static const char *__doc_mitsuba_Scene_m_instances =
-R"doc(Instances in order of appearance in ``m_shapes``.
-`PreliminaryIntersection3f.instance_index` references this array biased
-by one, since 0 marks non-instanced intersections.)doc";
+static const char *__doc_mitsuba_Scene_m_instances = R"doc(Instances in order of appearance in ``m_shapes``.)doc";
 
 static const char *__doc_mitsuba_Scene_m_integrator = R"doc()doc";
 
@@ -9373,6 +9397,37 @@ static const char *__doc_mitsuba_Scene_m_silhouette_shapes = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_silhouette_shapes_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_thread_reordering = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_null_walk =
+R"doc(Walk along ``ray`` through surfaces with null transmission
+
+The walk visits the shapes matching ``ray_mask`` from front to back
+and accumulates the product of their `BSDF.eval_null()` values. It
+provides the shared implementation of `ray_test_tr()` and
+`ray_intersect_tr()`.
+
+Args:
+    ray: The ray to follow. It may be attached to AD variables and
+        stays unchanged.
+    ray_flags: Only the `RayFlags.FollowShape` and
+        `RayFlags.DetachShape` bits are used. They select how the
+        crossed surfaces attach to the ray.
+    ray_mask: Visibility mask of the shapes to consider.
+    stop_at_surface: When ``true``, the walk crosses null shapes until
+        it reaches a shape that is opaque or an emitter, and the
+        returned intersection refers to that shape with ``t``
+        measured from ``ray.o``. When ``false``, the walk crosses
+        every shape it meets until the ray leaves the scene or the
+        transmittance reaches zero. The caller must then restrict
+        ``ray_mask`` to null shapes, and the returned intersection
+        is always invalid.
+    active: Mask of the lanes that take part in the walk.
+
+Returns:
+    A pair ``(pi, tr)`` of the preliminary intersection and the
+    transmittance product. The latter is one when no shape was
+    crossed and follows the conventions of `ray_test_tr()` in
+    polarized and differentiable modes.)doc";
 
 static const char *__doc_mitsuba_Scene_parameters_changed = R"doc(Update internal state following a parameter update)doc";
 
@@ -9406,17 +9461,9 @@ static const char *__doc_mitsuba_Scene_ray_intersect =
 R"doc(Intersect a ray with the shapes comprising the scene and return a
 detailed data structure describing the intersection, if one is found.
 
-In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
-the function processes arrays of rays and returns arrays of surface
-interactions following the usual conventions.
-
-This method is a convenience wrapper of the generalized version of
-``ray_intersect()`` below. It assumes that incoherent rays are being traced,
-that the user desires access to all fields of the
-`SurfaceInteraction3f`, and that no thread reordering is requested. In
-other words, it simply invokes the general ``ray_intersect()`` overload
-with ``coherent=false``, ``ray_flags`` equal to `RayFlags.Default`,
-and ``reorder=false``.
+This convenience overload traces incoherent secondary rays with
+`RayFlags.Default` and no thread reordering. See the general overload
+of ``ray_intersect()`` below for details.
 
 Args:
     ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
@@ -9434,8 +9481,7 @@ In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
 the function processes arrays of rays and returns arrays of surface
 interactions following the usual conventions.
 
-This ray intersection method exposes two additional flags to control the
-intersection process. Internally, it is split into two steps:
+Internally, the intersection is split into two steps:
 
 #. Finding a `PreliminaryIntersection3f` using the ray tracing
    backend underlying the current variant (i.e., Mitsuba's builtin
@@ -9461,16 +9507,6 @@ shape parameters, and the computed intersection (see
 this). The default, `RayFlags.Default`, propagates derivatives through
 all steps of the intersection computation.
 
-The ``coherent`` flag is a hint that can improve performance in the first
-step of finding the `PreliminaryIntersection3f` if the input set of rays
-is coherent (e.g., when they are generated by `Sensor.sample_ray()`,
-which means that adjacent rays will traverse essentially the same region
-of space). This flag is currently only used by the combination of
-``llvm_*`` variants and the Embree ray tracing backend.
-
-This method is a convenience wrapper of the generalized
-``ray_intersect()`` method below. It assumes that ``reorder=false``.
-
 Args:
     ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
         (`Ray3f.time`) information, which matters when the shapes are in motion
@@ -9483,77 +9519,11 @@ Args:
         and when using ``llvm_*`` variants of the renderer along with
         Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
-        can only be intersected when the bitwise AND of this value and
-        the shape's `Shape.visibility_mask()` is nonzero. The default,
-        `RayMask.All`, matches every shape; camera rays should pass
-        `RayMask.Camera` so that emitters flagged as invisible are
-        skipped.
-
-Returns:
-    A detailed surface interaction record. Its ``is_valid()`` method
-    should be queried to check if an intersection was actually found.)doc";
-
-static const char *__doc_mitsuba_Scene_ray_intersect_3 =
-R"doc(Intersect a ray with the shapes comprising the scene and return a
-detailed data structure describing the intersection, if one is found
-
-In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
-the function processes arrays of rays and returns arrays of surface
-interactions following the usual conventions.
-
-This generalized ray intersection method exposes two additional flags to
-control the intersection process. Internally, it is split into two
-steps:
-
-#. Finding a `PreliminaryIntersection3f` using the ray tracing
-   backend underlying the current variant (i.e., Mitsuba's builtin
-   kd-tree, Embree, or OptiX). This is done using the
-   `ray_intersect_preliminary()` function that is also available
-   directly below (and preferable if a full `SurfaceInteraction3f`
-   is not needed.).
-
-#. Expanding the `PreliminaryIntersection3f` into a full
-   `SurfaceInteraction3f` (this part happens within Mitsuba/Dr.Jit
-   and tracks derivative information in AD variants of the system).
-
-The `SurfaceInteraction3f` data structure is large, and computing its
-contents in the second step requires a non-trivial amount of computation
-and sequence of memory accesses. The ``ray_flags`` parameter can be used
-to specify that only a sub-set of the full intersection data structure
-actually needs to be computed, which can improve performance.
-
-In the context of differentiable rendering, the ``ray_flags`` parameter
-also influences how derivatives propagate between the input ray, the
-shape parameters, and the computed intersection (see
-`RayFlags.FollowShape` and `RayFlags.DetachShape` for details on
-this). The default, `RayFlags.Default`, propagates derivatives through
-all steps of the intersection computation.
-
-The ``coherent`` flag is a hint that can improve performance in the first
-step of finding the `PreliminaryIntersection3f` if the input set of rays
-is coherent (e.g., when they are generated by `Sensor.sample_ray()`,
-which means that adjacent rays will traverse essentially the same region
-of space). This flag is currently only used by the combination of
-``llvm_*`` variants and the Embree ray tracing backend.
-
-The ``reorder`` flag is a trigger for the Shader Execution Reordering (SER)
-feature on NVIDIA GPUs. It can improve performance in highly divergent
-workloads by shuffling threads into coherent warps. This shuffling
-operation uses the result of the intersection (the shape ID) as a sorting
-key to group threads into coherent warps.
-
-Args:
-    ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
-        (`Ray3f.time`) information, which matters when the shapes are in motion
-
-    ray_flags: An integer combining flag bits from `RayFlags` (merged using
-        binary or).
-
-    coherent: Setting this flag to ``True`` can noticeably improve performance when
-        ``ray`` contains a coherent set of rays (e.g. primary camera rays),
-        and when using ``llvm_*`` variants of the renderer along with
-        Embree. It has no effect in scalar or CUDA/OptiX variants.
+    ray_mask: Ray-side visibility mask (see `RayMask`). A shape can
+        only be intersected when this value matches its
+        `Shape.visibility()` class. The default, `RayMask.Secondary`,
+        matches every shape that is visible to secondary rays. Camera
+        rays should pass `RayMask.Primary`.
 
     reorder: Setting this flag to ``True`` will trigger a reordering of the threads
         using the GPU's Shader Execution Reordering (SER) functionality if the
@@ -9570,13 +9540,6 @@ Args:
         least significant bit). It is recommended to use as few as possible.
         At most, 16 bits can be used. This flag has no effect in scalar or
         LLVM variants, or if the ``reorder`` parameter is ``False``.
-
-    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
-        can only be intersected when the bitwise AND of this value and
-        the shape's `Shape.visibility_mask()` is nonzero. The default,
-        `RayMask.All`, matches every shape; camera rays should pass
-        `RayMask.Camera` so that emitters flagged as invisible are
-        skipped.
 
 Returns:
     A detailed surface interaction record. Its ``is_valid()`` method
@@ -9618,17 +9581,6 @@ In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
 the function processes arrays of rays and returns arrays of preliminary
 intersection records following the usual conventions.
 
-This method is a convenience wrapper of the generalized version of ``ray_intersect_preliminary()`` below, which assumes that no reordering is
-requested. In other words, it simply invokes the general
-``ray_intersect_preliminary()`` overload with ``reorder=false``.
-
-The ``coherent`` flag is a hint that can improve performance if the input
-set of rays is coherent (e.g., when they are generated by
-`Sensor.sample_ray()`, which means that adjacent rays will traverse
-essentially the same region of space). This flag is currently only used
-by the combination of ``llvm_*`` variants and the Embree ray
-intersector.
-
 Args:
     ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
         (`Ray3f.time`) information, which matters when the shapes are in motion
@@ -9638,60 +9590,11 @@ Args:
         and when using ``llvm_*`` variants of the renderer along with
         Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-Returns:
-    A preliminary surface interaction record. Its ``is_valid()`` method
-    should be queried to check if an intersection was actually found.)doc";
-
-static const char *__doc_mitsuba_Scene_ray_intersect_preliminary_2 =
-R"doc(Intersect a ray with the shapes comprising the scene and return
-preliminary information, if one is found
-
-This function invokes the ray tracing backend underlying the current
-variant (i.e., Mitsuba's builtin kd-tree, Embree, or OptiX) and returns
-preliminary intersection information consisting of
-
-* the ray distance up to the intersection (if one is found).
-
-* the intersected shape and primitive index.
-
-* local UV coordinates of the intersection within the primitive.
-
-* A pointer to the intersected shape or instance.
-
-The information is only preliminary at this point, because it lacks
-various other information (geometric and shading frame, texture
-coordinates, curvature, etc.) that is generally needed by shading
-models. In variants of Mitsuba that perform automatic differentiation,
-it is important to know that computation done by the ray tracing
-backend is not reflected in Dr.Jit's computation graph. The
-`ray_intersect()` method will re-evaluate certain parts of the computation
-with derivative tracking to rectify this.
-
-In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
-the function processes arrays of rays and returns arrays of preliminary
-intersection records following the usual conventions.
-
-The ``coherent`` flag is a hint that can improve performance if the input
-set of rays is coherent (e.g., when they are generated by
-`Sensor.sample_ray()`, which means that adjacent rays will traverse
-essentially the same region of space). This flag is currently only used
-by the combination of ``llvm_*`` variants and the Embree ray
-intersector.
-
-The ``reorder`` flag is a trigger for the Shader Execution Reordering (SER)
-feature on NVIDIA GPUs. It can improve performance in highly divergent
-workloads by shuffling threads into coherent warps. This shuffling
-operation uses the result of the intersection (the shape ID) as a sorting
-key to group threads into coherent warps.
-
-Args:
-    ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
-        (`Ray3f.time`) information, which matters when the shapes are in motion
-
-    coherent: Setting this flag to ``True`` can noticeably improve performance when
-        ``ray`` contains a coherent set of rays (e.g. primary camera rays),
-        and when using ``llvm_*`` variants of the renderer along with
-        Embree. It has no effect in scalar or CUDA/OptiX variants.
+    ray_mask: Ray-side visibility mask (see `RayMask`). A shape can
+        only be intersected when this value matches its
+        `Shape.visibility()` class. The default, `RayMask.Secondary`,
+        matches every shape that is visible to secondary rays. Camera
+        rays should pass `RayMask.Primary`.
 
     reorder: Setting this flag to ``True`` will trigger a reordering of the threads
         using the GPU's Shader Execution Reordering (SER) functionality if the
@@ -9709,33 +9612,29 @@ Args:
         At most, 16 bits can be used. This flag has no effect in scalar or
         LLVM variants, or if the ``reorder`` parameter is ``False``.
 
-    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
-        can only be intersected when the bitwise AND of this value and
-        the shape's `Shape.visibility_mask()` is nonzero. The default,
-        `RayMask.All`, matches every shape; camera rays should pass
-        `RayMask.Camera` so that emitters flagged as invisible are
-        skipped.
-
 Returns:
     A preliminary surface interaction record. Its ``is_valid()`` method
     should be queried to check if an intersection was actually found.)doc";
+
+static const char *__doc_mitsuba_Scene_ray_intersect_tr =
+R"doc(Ray intersection that passes through surfaces with null transmission
+
+This method finds the closest opaque or emissive surface along the ray
+and returns it together with the transmittance of the null surfaces in
+front of it (see `ray_test_tr()`). Integrators use it for rays that
+should reach the same emitters as shadow rays. See `ray_intersect()`
+for further detail on the function's arguments.
+
+Returns:
+    A pair ``(si, tr)`` of the surface interaction and the
+    transmittance up to it)doc";
 
 static const char *__doc_mitsuba_Scene_ray_test =
 R"doc(Intersect a ray with the shapes comprising the scene and return a
 boolean specifying whether or not an intersection was found.
 
-In vectorized variants of Mitsuba (``cuda_*`` or ``llvm_*``),
-the function processes arrays of rays and returns arrays of booleans
-following the usual conventions.
-
-Testing for the mere presence of intersections is considerably faster
-than finding an actual intersection, hence this function should be
-preferred over `ray_intersect()` when geometric information about the
-first visible intersection is not needed.
-
-This method is a convenience wrapper of the generalized version of ``ray_test()`` below, which assumes that incoherent rays are being traced.
-In other words, it simply invokes the general ``ray_test()`` overload
-with ``coherent=false``.
+This convenience overload traces incoherent secondary rays. See the
+general overload of ``ray_test()`` below for details.
 
 Args:
     ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
@@ -9757,13 +9656,6 @@ than finding an actual intersection, hence this function should be
 preferred over `ray_intersect()` when geometric information about the
 first visible intersection is not needed.
 
-The ``coherent`` flag is a hint that can improve performance in the first
-step of finding the `PreliminaryIntersection3f` if the input set of rays
-is coherent, which means that adjacent rays will traverse essentially
-the same region of space. This flag is currently only used by the
-combination of ``llvm_*`` variants and the Embree ray tracing
-backend.
-
 Args:
     ray: A 3D ray including maximum extent (`Ray3f.maxt`) and time
         (`Ray3f.time`) information, which matters when the shapes are in motion
@@ -9773,19 +9665,36 @@ Args:
         and when using ``llvm_*`` variants of the renderer along with
         Embree. It has no effect in scalar or CUDA/OptiX variants.
 
-    visibility_mask: Ray-side visibility mask (see `RayMask`). A shape
-        can only occlude the ray when the bitwise AND of this value and
-        the shape's `Shape.visibility_mask()` is nonzero.
+    ray_mask: Ray-side visibility mask (see `RayMask`). A shape can
+        only occlude the ray when this value matches its
+        `Shape.visibility()` class.
 
 Returns:
     ``True`` if an intersection was found)doc";
+
+static const char *__doc_mitsuba_Scene_ray_test_tr =
+R"doc(Shadow ray test that passes through surfaces with null transmission
+
+Shapes with a `BSDFFlags.Null` component do not occlude the ray. The
+method instead returns the product of their `BSDF.eval_null()` values
+along the segment, which is zero when an opaque shape blocks the ray.
+Participating media are ignored. Only the differentiation bits of
+``ray_flags`` are used. See `ray_test()` for further detail on the
+function's arguments.
+
+Returns:
+    The transmittance along the segment. In polarized rendering modes,
+    this is a Mueller matrix in world coordinates whose factors are
+    ordered like the throughput of the path tracer: the surface
+    closest to the ray origin is the leftmost factor.)doc";
 
 static const char *__doc_mitsuba_Scene_sample_emitter =
 R"doc(Sample one emitter in the scene and rescale the input sample
 for reuse.
 
-Currently, the sampling scheme implemented by the `Scene` class is
-very simplistic (uniform).
+The emitters are chosen proportionally to `Emitter.sampling_weight()`,
+which is zero for emitters hidden from secondary rays. When no emitter
+can be sampled, the returned index is ``-1`` and the weight is zero.
 
 Args:
     sample: A uniformly distributed number in [0, 1).
@@ -9817,6 +9726,8 @@ Args:
 
     test_visibility: When set to ``True``, a shadow ray will be cast to ensure that the
         sampled emitter position and the reference point are mutually visible.
+        The shadow ray passes through surfaces with null transmission and
+        the returned weight includes their transmittance (see `ray_test_tr()`).
 
 Returns:
     A tuple ``(ds, spec)`` where
@@ -10063,6 +9974,19 @@ static const char *__doc_mitsuba_SerializedFlags_LayoutMask = R"doc()doc";
 
 static const char *__doc_mitsuba_SerializedFlags_SinglePrecision = R"doc()doc";
 
+static const char *__doc_mitsuba_ShadowTest =
+R"doc(Result of a backend shadow ray test (``*Accel::ray_test()``)
+
+With ``skip_null``, shapes with null transmission do not occlude the ray
+but set ``null`` when encountered. Backends with ``stops_at_first_hit``
+report whichever hit ended the traversal, so ``null=true, occluded=false``
+does not exclude an opaque occluder elsewhere along the ray. A test
+without ``skip_null`` always reports ``null=false``.)doc";
+
+static const char *__doc_mitsuba_ShadowTest_null = R"doc(The ray hit a shape with null transmission)doc";
+
+static const char *__doc_mitsuba_ShadowTest_occluded = R"doc(The ray hit an opaque shape)doc";
+
 static const char *__doc_mitsuba_Shape =
 R"doc(Base class of all geometric shapes in Mitsuba
 
@@ -10253,7 +10177,7 @@ R"doc(Distance between consecutive vertex records in bytes; the position
 occupies the first three floats of each record.)doc";
 
 static const char *__doc_mitsuba_ShapeIR_visibility_mask =
-R"doc(8-bit visibility mask (see ``Shape::visibility_mask()``), filled in by
+R"doc(Visibility mask (see ``accel_mask()``), filled in by
 ``SceneIRBuilder``. Backends with per-instance masks (OptiX, Metal)
 rely on same-mask geometry sharing one BLAS.)doc";
 
@@ -10345,6 +10269,24 @@ static const char *__doc_mitsuba_ShapeType_SDFGrid = R"doc(SDF Grids (``sdfgrid`
 static const char *__doc_mitsuba_ShapeType_ShapeGroup = R"doc(ShapeGroup (``shapegroup``))doc";
 
 static const char *__doc_mitsuba_ShapeType_Sphere = R"doc(Spheres (``sphere``))doc";
+
+static const char *__doc_mitsuba_ShapeVisibility =
+R"doc(The ray categories that can see a shape or emitter
+
+This is the value of the ``visibility`` property of shapes and emitters
+(see `Shape.visibility()`). The section on visibility in the shape plugin
+documentation explains the meaning and typical uses of each value. The
+ray-side counterpart is `RayMask`.)doc";
+
+static const char *__doc_mitsuba_ShapeVisibility_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_ShapeVisibility_All = R"doc(Visible to every ray (the default))doc";
+
+static const char *__doc_mitsuba_ShapeVisibility_Hidden = R"doc(Hidden from every ray except explicit `RayMask.All` queries)doc";
+
+static const char *__doc_mitsuba_ShapeVisibility_Primary = R"doc(Visible to primary rays, hidden from indirect/shadow rays)doc";
+
+static const char *__doc_mitsuba_ShapeVisibility_Secondary = R"doc(Hidden from primary rays, visible to indirect/shadow rays)doc";
 
 static const char *__doc_mitsuba_Shape_Shape = R"doc()doc";
 
@@ -10551,6 +10493,8 @@ Args:
 
 static const char *__doc_mitsuba_Shape_has_flipped_normals = R"doc(Does this shape have flipped normals?)doc";
 
+static const char *__doc_mitsuba_Shape_has_null = R"doc(Does the shape's BSDF have a `BSDFFlags.Null` component?)doc";
+
 static const char *__doc_mitsuba_Shape_initialize = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_interior_medium = R"doc(Return the medium that lies on the interior of this shape)doc";
@@ -10609,6 +10553,8 @@ static const char *__doc_mitsuba_Shape_m_silhouette_sampling_weight = R"doc(Samp
 static const char *__doc_mitsuba_Shape_m_texture_attributes = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_m_to_world = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_m_visibility = R"doc(Ray categories that can see the shape (see visibility()))doc";
 
 static const char *__doc_mitsuba_Shape_mark_as_instance = R"doc()doc";
 
@@ -10898,13 +10844,11 @@ static const char *__doc_mitsuba_Shape_type = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_variant_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_visibility_mask =
-R"doc(Return the shape's 8-bit visibility mask (see `RayMask`)
+static const char *__doc_mitsuba_Shape_visibility =
+R"doc(Ray categories that can see this shape (see `ShapeVisibility`)
 
-A ray can only intersect this shape when the bitwise AND of its
-ray-side mask and this value is nonzero. Ordinary shapes match every
-ray. Shapes with an attached emitter return its
-`Emitter.visibility_mask()`.)doc";
+Together with `has_null()`, this determines the mask that the
+acceleration data structure stores for the shape (see `RayMask`).)doc";
 
 static const char *__doc_mitsuba_SilhouetteSample =
 R"doc(Data structure holding the result of visibility silhouette sampling
@@ -11361,7 +11305,7 @@ static const char *__doc_mitsuba_SurfaceInteraction_dp_dv = R"doc(Position parti
 static const char *__doc_mitsuba_SurfaceInteraction_emitter =
 R"doc(Return the emitter associated with the intersection (if any)
 
-The ``visibility_mask`` should be the ray-side mask of the trace that
+The ``ray_mask`` should be the ray-side mask of the trace that
 produced this interaction (see `RayMask`). Escaped rays report the
 environment emitter only when the mask matches its visibility.
 
@@ -12597,6 +12541,13 @@ R"doc(Writes a specified amount of data into the stream, compressing
 it first using ZLib.
 Throws an exception when not all data could be written.)doc";
 
+static const char *__doc_mitsuba_accel_mask =
+R"doc(Mask that the acceleration data structures store for a shape
+
+Shapes with null transmission occupy the upper three bits, see `RayMask`
+for the layout. A ray intersects the shape when its ray mask overlaps
+this value.)doc";
+
 static const char *__doc_mitsuba_accumulate_2d =
 R"doc(Accumulate the contents of a source bitmap into a
 target bitmap with specified offsets for both.
@@ -12881,7 +12832,7 @@ Returns:
 static const char *__doc_mitsuba_emitter =
 R"doc(Return the emitter associated with the intersection (if any)
 
-The ``visibility_mask`` should be the ray-side mask of the trace that
+The ``ray_mask`` should be the ray-side mask of the trace that
 produced this interaction (see `RayMask`). Escaped rays report the
 environment emitter only when the mask matches its visibility.
 
@@ -13960,6 +13911,8 @@ static const char *__doc_mitsuba_pair_hasher = R"doc()doc";
 static const char *__doc_mitsuba_pair_hasher_operator_call = R"doc()doc";
 
 static const char *__doc_mitsuba_parse_fov = R"doc(Helper function to parse the field of view field of a camera)doc";
+
+static const char *__doc_mitsuba_parse_visibility = R"doc(Parse the value of a ``visibility`` property)doc";
 
 static const char *__doc_mitsuba_parser_ParserConfig =
 R"doc(Configuration options for the parser

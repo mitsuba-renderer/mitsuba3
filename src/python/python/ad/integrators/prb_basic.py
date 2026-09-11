@@ -80,13 +80,17 @@ class BasicPRBIntegrator(RBIntegrator):
         β = mi.Spectrum(1)                               # Path throughput weight
         active = mi.Bool(active)                         # Active SIMD lanes
         pi_prev = dr.zeros(mi.PreliminaryIntersection3f) # Interaction of the previous bounce
+        ray_mask = mi.UInt32(mi.RayMask.Primary)         # Mask of the current ray
+
+        # Null tests fold to literals in scenes without null shapes
+        has_null = scene.has_null_shapes()
 
         # The camera mask hides emitters marked as invisible
         pi = scene.ray_intersect_preliminary(ray,        # Current interaction
                                              coherent=True,
                                              reorder=False,
                                              active=active,
-                                             visibility_mask=mi.RayMask.Camera)
+                                             ray_mask=mi.RayMask.Primary)
 
         while dr.hint(active,
                       max_iterations=self.max_depth,
@@ -108,21 +112,19 @@ class BasicPRBIntegrator(RBIntegrator):
 
             # ---------------------- Direct emission ----------------------
 
-            # Ray mask of the trace that produced si. The emitter lookup uses
-            # it to hide an invisible environment from escaped depth-0 rays.
-            ray_mask = dr.select(depth == 0, mi.RayMask.Camera,
-                                 mi.RayMask.All)
-
-            # Differentiable evaluation of intersected emitter / envmap
+            # Differentiable evaluation of intersected emitter / envmap. The
+            # lookup uses the mask of the ray that produced si.
             with dr.resume_grad(when=not primal):
-                emitter = si.emitter(scene, visibility_mask=ray_mask)
+                emitter = si.emitter(scene, ray_mask=ray_mask)
                 Le = β * emitter.eval(si, active_next)
-
-            # Should we continue tracing to reach one more vertex?
-            active_next &= (depth + 1 < self.max_depth) & si.is_valid()
 
             # Get the BSDF
             bsdf = si.bsdf()
+
+            # Continue tracing? Null crossings don't count towards max_depth
+            depth_ok = depth + 1 < self.max_depth
+            can_cross = bsdf.has_flag(mi.BSDFFlags.Null) if has_null else mi.Bool(False)
+            active_next &= si.is_valid() & (depth_ok | can_cross)
 
             # ------------------ Detached BSDF sampling -------------------
 
@@ -140,13 +142,24 @@ class BasicPRBIntegrator(RBIntegrator):
             β_max = dr.max(mi.unpolarized_spectrum(β))
             active_next &= (β_max != 0)
 
+            # Information about the current vertex needed by the next
+            # iteration (unchanged by null crossings)
+            null = bsdf_sample.is_null() if has_null else mi.Bool(False)
+            scattered = si.is_valid() & ~null
+            pi_prev[scattered]  = pi
+            ray_prev[scattered] = ray
+            ray_mask[scattered] = mi.RayMask.Secondary
+            depth[scattered]   += 1
+            active_next &= depth_ok | ~scattered
+
             # ------------------ Find the next ineraction ------------------
 
             ray_next = si.spawn_ray(si.to_world(bsdf_sample.wo))
             pi_next = scene.ray_intersect_preliminary(ray_next,
                                                       coherent=False,
                                                       reorder=False,
-                                                      active=active_next)
+                                                      active=active_next,
+                                                      ray_mask=ray_mask)
 
             # ------------------ Differential phase only ------------------
 
@@ -164,8 +177,12 @@ class BasicPRBIntegrator(RBIntegrator):
                     # the geometry term account for the motion of 'si'.
                     wo, J = reattach_wo(si, si_next, ray_next, active_next)
 
-                    # Re-evaluate BSDF * cos(theta) differentiably
+                    # Re-evaluate BSDF * cos(theta) differentiably. A null
+                    # crossing continues with the null transmission instead.
                     bsdf_val = bsdf.eval(bsdf_ctx, si, wo, active_next)
+                    if dr.hint(has_null, mode='scalar'):
+                        null &= active_next
+                        bsdf_val[null] = bsdf.eval_null(si, null)
 
                     # Differentiable version of the reflected radiance.
                     Lr = L * dr.relative_grad(bsdf_val) * dr.relative_grad(J)
@@ -188,12 +205,8 @@ class BasicPRBIntegrator(RBIntegrator):
 
             # ------------------ Update loop variables ------------------
 
-            depth[si.is_valid()] += 1
             active = active_next
-
-            pi_prev = pi
             pi = pi_next
-            ray_prev = ray
             ray = ray_next
 
         return (

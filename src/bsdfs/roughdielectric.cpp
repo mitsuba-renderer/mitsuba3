@@ -238,7 +238,7 @@ public:
     void traverse(TraversalCallback *cb) override {
         cb->put("eta", m_eta, ParamFlags::Differentiable | ParamFlags::Discontinuous);
 
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic))
+        if (!this->has_flag(BSDFFlags::Anisotropic))
             cb->put("alpha", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
         else {
             cb->put("alpha_u", m_alpha_u, ParamFlags::Differentiable | ParamFlags::Discontinuous);
@@ -625,7 +625,7 @@ public:
             << "  distribution = "           << m_type           << "," << std::endl
             << "  sample_visible = "         << (int) m_sample_visible << "," << std::endl;
 
-        if (!has_flag(m_flags, BSDFFlags::Anisotropic)) {
+        if (!this->has_flag(BSDFFlags::Anisotropic)) {
             oss << "  alpha = "                  << string::indent(m_alpha_v) << "," << std::endl;
         } else {
             oss << "  alpha_u = "                << string::indent(m_alpha_u) << "," << std::endl

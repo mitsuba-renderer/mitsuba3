@@ -838,14 +838,17 @@ public:
     Emitter *emitter(Mask /*unused*/ = true) { return m_emitter.get(); }
 
     /**
-     * Return the shape's 8-bit visibility mask (see `RayMask`)
+     * Ray categories that can see this shape (see `ShapeVisibility`)
      *
-     * A ray can only intersect this shape when the bitwise AND of its
-     * ray-side mask and this value is nonzero. Ordinary shapes match every
-     * ray. Shapes with an attached emitter return its
-     * `Emitter.visibility_mask()`.
+     * Together with `has_null()`, this determines the mask that the
+     * acceleration data structure stores for the shape (see `RayMask`).
      */
-    uint32_t visibility_mask() const;
+    ShapeVisibility visibility() const { return m_visibility; }
+
+    /// Does the shape's BSDF have a `BSDFFlags.Null` component?
+    bool has_null() const {
+        return m_bsdf && has_flag(m_bsdf->flags(), BSDFFlags::Null);
+    }
 
     /// Is this shape also an area sensor?
     bool is_sensor() const { return (bool) m_sensor; }
@@ -949,6 +952,9 @@ protected:
     uint32_t m_discontinuity_types = (uint32_t) DiscontinuityFlags::Empty;
     /// Sampling weight (proportional to scene)
     float m_silhouette_sampling_weight;
+
+    /// Ray categories that can see the shape (see visibility())
+    ShapeVisibility m_visibility = ShapeVisibility::All;
 
     std::map<std::string, ref<Texture>, std::less<>> m_texture_attributes;
 
@@ -1085,6 +1091,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_GETTER(silhouette_sampling_weight)
     DRJIT_CALL_GETTER(has_flipped_normals)
     DRJIT_CALL_GETTER(shape_type)
+    DRJIT_CALL_GETTER(has_null)
     auto is_emitter() const { return emitter() != nullptr; }
     auto is_sensor() const { return sensor() != nullptr; }
     auto is_mesh() const { return (shape_type() & +mitsuba::ShapeType::Mesh) != 0; }

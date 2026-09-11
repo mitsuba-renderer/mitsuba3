@@ -163,18 +163,18 @@ struct DirectionSample : public PositionSample<Float_, Spectrum_> {
      *
      *     ref: Reference position
      *
-     *     visibility_mask: Ray-side visibility mask used for the emitter
-     *         lookup (see `SurfaceInteraction.emitter`)
+     *     ray_mask: Ray-side visibility mask used for the emitter lookup
+     *         (see `SurfaceInteraction.emitter`)
      */
     DirectionSample(const Scene<Float, Spectrum> *scene,
                     const SurfaceInteraction3f &si,
                     const Interaction3f &ref,
-                    const dr::uint32_array_t<Float> &visibility_mask
-                        = (uint32_t) RayMask::All) : Base(si) {
+                    dr::uint32_array_t<Float> ray_mask
+                        = (uint32_t) RayMask::Secondary) : Base(si) {
         Vector3f rel = si.p - ref.p;
         dist = dr::norm(rel);
         d = select(si.is_valid(), rel / dist, -si.wi);
-        emitter = si.emitter(scene, true, visibility_mask);
+        emitter = si.emitter(scene, ray_mask);
     }
 
     /// Element-by-element constructor

@@ -144,17 +144,17 @@ void kdtree_trace_func_wrapper(const int *valid, void *ptr,
 
         ScalarRay3f ray = ScalarRay3f(ray_o, ray_d, ray_maxt, ray_time, wavelength_t<Spectrum>());
 
-        uint32_t visibility_mask =
+        uint32_t ray_mask =
             ((uint32_t *) &args[offsetof(RayHit, mask) * Width])[i];
 
         if constexpr (ShadowRay) {
             bool hit = kdtree->template ray_intersect_scalar<true>(
-                ray, visibility_mask).is_valid();
+                ray, ray_mask).is_valid();
             if (hit)
                 ray_maxt = -dr::Infinity<ScalarFloat>;
         } else {
             auto pi = kdtree->template ray_intersect_scalar<false>(
-                ray, visibility_mask);
+                ray, ray_mask);
             if (pi.is_valid()) {
                 ScalarFloat& prim_u = ((ScalarFloat*) &args[offsetof(RayHit, u) * Width])[i];
                 ScalarFloat& prim_v = ((ScalarFloat*) &args[offsetof(RayHit, v) * Width])[i];
@@ -181,11 +181,11 @@ typename NativeAccel<Float, Spectrum>::PreliminaryIntersection3f
 NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
     const Scene<Float, Spectrum> * /*scene*/, const Ray3f &ray, Mask coherent,
     bool /*reorder*/, UInt32 /*reorder_hint*/, uint32_t /*reorder_hint_bits*/,
-    Mask active, const UInt32 &visibility_mask) const {
+    Mask active, UInt32 ray_mask) const {
     if constexpr (!dr::is_array_v<Float>) {
         DRJIT_MARK_USED(coherent);
         auto pi = accel->template ray_intersect_preliminary<false>(
-            ray, active, visibility_mask);
+            ray, active, ray_mask);
         // The kd-tree repurposes this field internally (see kdtree.h)
         pi.instance_index = 0;
         return pi;
@@ -196,7 +196,7 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
         cpu_llvm_ray_trace<Float>((void *) func_ptr, func_handle.index(),
                                   (void *) accel, accel_handle.index(), ray_o,
                                   ray_d, ray.time, ray.maxt, coherent, active,
-                                  visibility_mask, 0, out);
+                                  ray_mask, 0, out);
 
         // The kd-tree traces in ``Float`` precision, so the hit fields are
         // stolen at that width.
@@ -206,29 +206,41 @@ NativeAccel<Float, Spectrum>::ray_intersect_preliminary(
 }
 
 template <typename Float, typename Spectrum>
-typename NativeAccel<Float, Spectrum>::Mask
+ShadowTest<typename NativeAccel<Float, Spectrum>::Mask>
 NativeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                        const Ray3f &ray, Mask coherent,
                                        Mask active,
-                                       const UInt32 &visibility_mask) const {
+                                       UInt32 ray_mask,
+                                       bool skip_null) const {
+    // The kd-tree has no pass-through mechanism. A skip_null query tests the
+    // opaque classes only and conservatively reports every unoccluded lane as
+    // a possible null crossing.
+    UInt32 mask = ray_mask;
+    if (skip_null)
+        mask &= ~(uint32_t) RayMask::Null;
+
+    Mask occluded;
     if constexpr (!dr::is_jit_v<Float>) {
         DRJIT_MARK_USED(coherent);
-        return accel->template ray_intersect_preliminary<true>(
-            ray, active, visibility_mask).is_valid();
+        occluded = accel->template ray_intersect_preliminary<true>(
+            ray, active, mask).is_valid();
     } else {
         dr::Array<Float, 3> ray_o(ray.o), ray_d(ray.d);
 
         // Shadow ray: trace against the any-hit wrapper, which stops at the
-        // first hit and returns a boolean hit mask.
-        uint32_t out[1] { };
+        // first hit and returns a boolean hit mask. The kd-tree ignores the
+        // ray flags word, which is the second output.
+        uint32_t out[2] { };
         cpu_llvm_ray_trace<Float>((void *) occlude_func_ptr,
                                   occlude_handle.index(), (void *) accel,
                                   accel_handle.index(), ray_o, ray_d, ray.time,
-                                  ray.maxt, coherent, active, visibility_mask,
-                                  1, out);
+                                  ray.maxt, coherent, active, mask, 1, out);
 
-        return Mask::steal(out[0]);
+        jit_var_dec_ref(out[1]);
+        occluded = Mask::steal(out[0]);
     }
+
+    return { occluded, skip_null ? !occluded : Mask(false) };
 }
 
 template <typename Float, typename Spectrum>

@@ -34,10 +34,12 @@ struct NativeAccel {
     PreliminaryIntersection3f ray_intersect_preliminary(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray, Mask coherent,
         bool reorder, UInt32 reorder_hint, uint32_t reorder_hint_bits,
-        Mask active, const UInt32 &visibility_mask) const;
-    Mask ray_test(const Scene<Float, Spectrum> *scene, const Ray3f &ray,
-                  Mask coherent, Mask active,
-                  const UInt32 &visibility_mask) const;
+        Mask active, UInt32 ray_mask) const;
+    ShadowTest<Mask> ray_test(const Scene<Float, Spectrum> *scene,
+                              const Ray3f &ray, Mask coherent, Mask active,
+                              UInt32 ray_mask,
+                              bool skip_null) const;
+    static constexpr bool stops_at_first_hit = false;
     /// The kd-tree supports a genuine brute-force traversal (used by tests).
     SurfaceInteraction3f ray_intersect_naive(
         const Scene<Float, Spectrum> *scene, const Ray3f &ray,

@@ -101,11 +101,30 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     props.mark_queried("kd_retract_bad_splits");
     props.mark_queried("kd_exact_primitive_threshold");
 
-    // Implement the deprecated "hide_emitters" flag by marking every emitter
-    // as invisible before the acceleration data structures bake the masks
-    if (m_integrator && m_integrator->hide_emitters())
-        for (Emitter *emitter : m_emitters)
-            emitter->set_visible(false);
+    // Only emitters that rays can intersect have a meaningful visibility.
+    // Plugin constructors assign the flags after the base class has run,
+    // which is why this check does not live in the Emitter constructor.
+    for (Emitter *emitter : m_emitters) {
+        if (!emitter->shape() && !emitter->is_environment() &&
+            emitter->m_visibility != ShapeVisibility::All)
+            Throw("Emitter \"%s\": the 'visibility' property only applies to "
+                  "emitters that rays can intersect (area and environment "
+                  "emitters).", emitter->id());
+    }
+
+    // Implement the deprecated "hide_emitters" flag by hiding every emitter
+    // from camera rays before the acceleration data structures bake the
+    // masks. The shape owns the property when the emitter has one.
+    if (m_integrator && m_integrator->hide_emitters()) {
+        for (Emitter *emitter : m_emitters) {
+            ShapeVisibility &visibility = emitter->shape()
+                ? emitter->shape()->m_visibility : emitter->m_visibility;
+            if (visibility == ShapeVisibility::Primary)
+                visibility = ShapeVisibility::Hidden;
+            else if (visibility == ShapeVisibility::All)
+                visibility = ShapeVisibility::Secondary;
+        }
+    }
 
     // Release transient buffers created while loading the shapes
     if constexpr (dr::is_jit_v<Float>)
@@ -176,14 +195,19 @@ MI_VARIANT
 void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
     // Check if we need to use non-uniform emitter sampling.
     bool non_uniform_sampling = false;
+    ScalarFloat weight_sum = 0.f;
     for (auto &e : m_emitters) {
-        if (e->sampling_weight() != ScalarFloat(1.0)) {
-            non_uniform_sampling = true;
-            break;
-        }
+        ScalarFloat weight = e->sampling_weight();
+        non_uniform_sampling |= weight != ScalarFloat(1.0);
+        weight_sum += weight;
     }
-    size_t n_emitters = m_emitters.size();
-    if (non_uniform_sampling) {
+
+    // Emitters hidden from secondary rays have a zero weight. A scene where
+    // this applies to every emitter has nothing left to sample.
+    size_t n_emitters = weight_sum != 0.f ? m_emitters.size() : 0;
+    m_emitter_pmf = n_emitters != 0 ? 1.f / n_emitters : 0.f;
+
+    if (non_uniform_sampling && n_emitters != 0) {
         std::unique_ptr<ScalarFloat[]> sample_weights(new ScalarFloat[n_emitters]);
         for (size_t i = 0; i < n_emitters; ++i)
             sample_weights[i] = m_emitters[i]->sampling_weight();
@@ -191,7 +215,6 @@ void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
             sample_weights.get(), n_emitters);
     } else {
         // By default use uniform sampling with constant PMF
-        m_emitter_pmf = m_emitters.empty() ? 0.f : (1.f / n_emitters);
         m_emitter_distr = nullptr;
     }
     // Clear emitter's dirty flag
@@ -482,11 +505,10 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
-                                      Mask coherent, bool reorder,
+                                      Mask coherent, UInt32 ray_mask,
+                                      Mask active, bool reorder,
                                       UInt32 reorder_hint,
-                                      uint32_t reorder_hint_bits,
-                                      Mask active,
-                                      const UInt32 &visibility_mask) const {
+                                      uint32_t reorder_hint_bits) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
     DRJIT_MARK_USED(coherent);
     DRJIT_MARK_USED(reorder);
@@ -497,17 +519,17 @@ Scene<Float, Spectrum>::ray_intersect(const Ray3f &ray, uint32_t ray_flags,
     // SurfaceInteraction. This composition is backend-independent.
     PreliminaryIntersection3f pi = m_accel.ray_intersect_preliminary(
         this, ray, coherent, reorder, reorder_hint, reorder_hint_bits, active,
-        visibility_mask);
+        ray_mask);
     return compute_surface_interaction(ray, pi, ray_flags, active);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::PreliminaryIntersection3f
 Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
-                                                  Mask coherent, bool reorder,
+                                                  Mask coherent,
+                                                  UInt32 ray_mask,
+                                                  Mask active, bool reorder,
                                                   UInt32 reorder_hint,
-                                                  uint32_t reorder_hint_bits,
-                                                  Mask active,
-                                                  const UInt32 &visibility_mask) const {
+                                                  uint32_t reorder_hint_bits) const {
     DRJIT_MARK_USED(coherent);
     DRJIT_MARK_USED(reorder);
     DRJIT_MARK_USED(reorder_hint);
@@ -515,16 +537,162 @@ Scene<Float, Spectrum>::ray_intersect_preliminary(const Ray3f &ray,
 
     return m_accel.ray_intersect_preliminary(this, ray, coherent, reorder,
                                              reorder_hint, reorder_hint_bits,
-                                             active, visibility_mask);
+                                             active, ray_mask);
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::Mask
-Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent, Mask active,
-                                 const UInt32 &visibility_mask) const {
+Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent,
+                                 UInt32 ray_mask, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
     DRJIT_MARK_USED(coherent);
 
-    return m_accel.ray_test(this, ray, coherent, active, visibility_mask);
+    return m_accel.ray_test(this, ray, coherent, active, ray_mask,
+                            /* skip_null = */ false).occluded;
+}
+
+/// Factor with unit value and the relative derivative of 'x'. A zero entry
+/// of 'x' contributes no derivative.
+template <typename T> static T relative_grad(const T &x) {
+    if constexpr (dr::is_diff_v<T>) {
+        if (!dr::grad_enabled(x))
+            return T(1.f);
+        T x0 = dr::detach(x);
+        return dr::select(x0 != 0.f, x / x0, T(1.f));
+    } else {
+        DRJIT_MARK_USED(x);
+        return T(1.f);
+    }
+}
+
+MI_VARIANT Spectrum Scene<Float, Spectrum>::ray_test_tr(
+    const Ray3f &ray, uint32_t ray_flags, Mask coherent, UInt32 ray_mask,
+    Mask active) const {
+    MI_MASKED_FUNCTION(ProfilerPhase::RayTest, active);
+
+    // Without null shapes, this is an ordinary occlusion query. Otherwise,
+    // null shapes do not occlude but are reported, and only lanes that
+    // crossed one need the walk below.
+    auto [occluded, null] = m_accel.ray_test(this, ray, coherent, active,
+                                             ray_mask, m_has_null_shapes);
+
+    Spectrum tr(dr::select(occluded, Float(0.f), Float(1.f)));
+    if (!m_has_null_shapes)
+        return tr;
+
+    Mask unresolved = active && null && !occluded;
+
+    // OptiX and Metal stop at the first hit and cannot tell whether an
+    // opaque shape follows a null one. A second query against the opaque
+    // shapes settles the lanes in question, which then skip the walk.
+    if constexpr (SceneAccel<Float, Spectrum>::stops_at_first_hit) {
+        if (dr::any_or<true>(unresolved)) {
+            Mask blocked = m_accel.ray_test(
+                this, ray, coherent, unresolved,
+                ray_mask & (uint32_t) RayMask::Opaque,
+                /* skip_null = */ false).occluded;
+            dr::masked(tr, blocked) = Spectrum(0.f);
+            unresolved &= !blocked;
+        }
+    }
+
+    if (dr::any_or<true>(unresolved))
+        tr *= null_walk(ray, ray_flags, ray_mask & (uint32_t) RayMask::Null,
+                        /* stop_at_surface = */ false, unresolved).second;
+
+    return tr;
+}
+
+MI_VARIANT std::pair<typename Scene<Float, Spectrum>::SurfaceInteraction3f, Spectrum>
+Scene<Float, Spectrum>::ray_intersect_tr(const Ray3f &ray, uint32_t ray_flags,
+                                         Mask coherent, UInt32 ray_mask,
+                                         Mask active) const {
+    MI_MASKED_FUNCTION(ProfilerPhase::RayIntersect, active);
+
+    if (!m_has_null_shapes)
+        return { ray_intersect(ray, ray_flags, coherent, ray_mask, active),
+                 Spectrum(1.f) };
+
+    auto [pi, tr] = null_walk(ray, ray_flags, ray_mask,
+                              /* stop_at_surface = */ true, active);
+    return { compute_surface_interaction(ray, pi, ray_flags, active), tr };
+}
+
+MI_VARIANT std::pair<typename Scene<Float, Spectrum>::PreliminaryIntersection3f, Spectrum>
+Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
+                                  UInt32 ray_mask, bool stop_at_surface,
+                                  Mask active) const {
+    // Crossings need UV coordinates to evaluate textured null transmission.
+    // The differentiation bits are those requested by the caller.
+    uint32_t flags = (ray_flags & ((uint32_t) RayFlags::FollowShape |
+                                   (uint32_t) RayFlags::DetachShape)) |
+                     (uint32_t) RayFlags::Default;
+
+    struct LoopState {
+        Ray3f ray;                    //< Input ray, possibly attached, never modified
+        Float t;                      //< Distance from 'ray.o' to the next query origin
+        Spectrum tr;                  //< Detached transmittance product
+        UnpolarizedSpectrum rel;      //< Relative derivative of 'tr' (Dr.Jit sum loop)
+        PreliminaryIntersection3f pi; //< Last query result, 't' measured from 'ray.o'
+        UInt32 mask;                  //< Ray mask of the queries
+        Mask active;                  //< Lanes that are still walking
+        DRJIT_STRUCT(LoopState, ray, t, tr, rel, pi, mask, active)
+    } ls = { ray, 0.f, Spectrum(1.f), UnpolarizedSpectrum(0.f),
+             dr::zeros<PreliminaryIntersection3f>(), ray_mask, active };
+
+    dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
+        [](const LoopState &ls) { return ls.active; },
+        [this, flags, stop_at_surface](LoopState &ls) {
+            Ray3f query = dr::detach(ls.ray);
+            query.o = query(ls.t);
+            query.maxt -= ls.t;
+
+            ls.pi = ray_intersect_preliminary(query, false, ls.mask, ls.active);
+            ls.pi.t += ls.t;
+
+            if (stop_at_surface)
+                ls.active &= ls.pi.is_valid() && ls.pi.shape->has_null() &&
+                             !ls.pi.shape->is_emitter();
+            else
+                ls.active &= ls.pi.is_valid();
+
+            if (dr::none_or<false>(ls.active))
+                return;
+
+            // Evaluating the crossing along the input ray attaches it
+            // according to 'flags'
+            SurfaceInteraction3f si =
+                compute_surface_interaction(ls.ray, ls.pi, flags, ls.active);
+
+            Spectrum value = si.bsdf()->eval_null(si, ls.active);
+            if constexpr (is_polarized_v<Spectrum>)
+                value = si.to_world_mueller(value, si.wi, si.wi);
+
+            // The masks here protect lanes that ended during this iteration
+            value = dr::select(ls.active, value, Spectrum(1.f));
+            ls.tr *= dr::detach(value);
+            if constexpr (dr::is_diff_v<Float>)
+                ls.rel += relative_grad(unpolarized_spectrum(value)) - 1.f;
+
+            // A crossed shape is not the result of the query. Continue past
+            // it with an offset analogous to spawn_ray().
+            dr::masked(ls.pi.valid, ls.active) = false;
+
+            Point3f p = dr::detach(si.p);
+            Normal3f n = dr::detach(si.n);
+            Float mag = (1.f + dr::max(dr::abs(p))) * math::RayEpsilon<Float>,
+                  cos_theta = dr::maximum(dr::abs(dr::dot(n, query.d)), 1e-2f);
+            ls.t = ls.pi.t + mag / cos_theta;
+
+            ls.active &= ls.t < dr::detach(ls.ray.maxt) &&
+                         dr::any(unpolarized_spectrum(ls.tr) != 0.f);
+        },
+        "Scene::null_walk()", /* max_iterations = */ -1);
+
+    Spectrum tr = ls.tr;
+    if constexpr (dr::is_diff_v<Float>)
+        tr = tr * Spectrum(1.f + ls.rel);
+
+    return { ls.pi, tr };
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -539,17 +707,14 @@ MI_VARIANT std::tuple<typename Scene<Float, Spectrum>::UInt32, Float, Float>
 Scene<Float, Spectrum>::sample_emitter(Float index_sample, Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitter, active);
 
-    if (unlikely(m_emitters.size() < 2)) {
-        if (m_emitters.size() == 1)
-            return { UInt32(0), 1.f, index_sample };
-        else
-            return { UInt32(-1), 0.f, index_sample };
-    }
-
     if (m_emitter_distr != nullptr) {
         auto [index, reused_sample, pmf] = m_emitter_distr->sample_reuse_pmf(index_sample);
         return {index, dr::rcp(pmf), reused_sample};
     }
+
+    // No emitters, or none that illuminates the scene
+    if (unlikely(m_emitter_pmf == 0.f))
+        return { UInt32(-1), 0.f, index_sample };
 
     uint32_t emitter_count = (uint32_t) m_emitters.size();
     ScalarFloat emitter_count_f = (ScalarFloat) emitter_count;
@@ -581,7 +746,7 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     EmitterPtr emitter{};
 
     // Don't inline emitter sampling in JIT variants(if there is just a single emitter)
-    size_t emitter_count = m_emitters.size();
+    size_t emitter_count = m_emitter_pmf != 0.f ? m_emitters.size() : 0;
     if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
         auto [index, emitter_weight, sample_1_re] = sample_emitter(sample1, active);
         emitter = dr::gather<EmitterPtr>(m_emitters_dr, index, active);
@@ -603,20 +768,6 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
     return { ray, weight, emitter };
 }
 
-/// Factor with unit value and the relative derivative of 'x'. A zero entry
-/// of 'x' contributes no derivative.
-template <typename T> static T relative_grad(const T &x) {
-    if constexpr (dr::is_diff_v<T>) {
-        if (!dr::grad_enabled(x))
-            return T(1.f);
-        T x0 = dr::detach(x);
-        return dr::select(x0 != 0.f, x / x0, T(1.f));
-    } else {
-        DRJIT_MARK_USED(x);
-        return T(1.f);
-    }
-}
-
 MI_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
                                                  bool test_visibility, Mask active) const {
@@ -627,7 +778,7 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
     Spectrum spec;
 
     // Don't inline emitter sampling in JIT variants(if there is just a single emitter)
-    size_t emitter_count = m_emitters.size();
+    size_t emitter_count = m_emitter_pmf != 0.f ? m_emitters.size() : 0;
     if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
         // Randomly pick an emitter
         auto [index, emitter_weight, sample_x_re] = sample_emitter(sample.x(), active);
@@ -676,10 +827,13 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
         }
     }
 
-    // Mark occluded samples as invalid if requested by the user
+    // Shadow ray that passes through null surfaces and returns their
+    // transmittance (zero when occluded)
     if (test_visibility && dr::any_or<true>(active)) {
-        Mask occluded = ray_test(ref.spawn_ray_to(ds.p), active);
-        dr::masked(spec, occluded) = 0.f;
+        Spectrum tr = ray_test_tr(ref.spawn_ray_to(ds.p), +RayFlags::Default,
+                                  false, +RayMask::Secondary, active);
+        Mask occluded = !dr::any(unpolarized_spectrum(tr) != 0.f);
+        spec *= tr;
         dr::masked(ds.pdf, occluded) = 0.f;
     }
 
@@ -913,15 +1067,21 @@ MI_VARIANT void Scene<Float, Spectrum>::static_accel_shutdown() {
 }
 
 MI_VARIANT void Scene<Float, Spectrum>::clear_shapes_dirty() {
-    for (auto &s : m_shapes)
+    bool has_null = false;
+    for (auto &s : m_shapes) {
         s->m_dirty = false;
+        has_null |= s->has_null();
+    }
     for (auto &s : m_shapegroups) {
         s->m_dirty = false;
         // Clear the group's children too (consumed into its accel by the same
         // build); a backend's per-group dirty check relies on this.
-        for (auto &c : s->shapes())
+        for (auto &c : s->shapes()) {
             const_cast<Shape *>(c.get())->m_dirty = false;
+            has_null |= c->has_null();
+        }
     }
+    m_has_null_shapes = has_null;
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Scene, Object)

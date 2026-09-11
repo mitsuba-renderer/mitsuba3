@@ -54,8 +54,7 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type,
-                   mark_dirty)
+    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type, m_visibility, mark_dirty)
     MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
@@ -74,6 +73,10 @@ public:
 
         if (!m_shapegroup)
             Throw("A reference to a 'shapegroup' must be specified!");
+
+        if (m_visibility != ShapeVisibility::All)
+            Throw("Instances cannot be hidden from primary or secondary rays. "
+                  "Set 'visibility' on the shapes of the referenced shape group instead.");
 
         m_shape_type = ShapeType::Instance;
 

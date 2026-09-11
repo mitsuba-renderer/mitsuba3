@@ -65,6 +65,17 @@ public:
         return { bs, weight & active };
     }
 
+    Spectrum eval_null(const SurfaceInteraction3f &si,
+                       Mask active) const override {
+        auto [perturbed_si, frame_p_local] = perturb(si, active);
+        Spectrum value =
+            m_nested_bsdf->eval_null(perturbed_si, active);
+        active &= Frame3f::cos_theta(perturbed_si.wi) *
+                  Frame3f::cos_theta(si.wi) > 0.f;
+
+        return value & active;
+    }
+
     Spectrum eval(const BSDFContext &ctx, const SurfaceInteraction3f &si,
                   const Vector3f &wo, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::BSDFEvaluate, active);

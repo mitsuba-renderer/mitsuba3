@@ -30,7 +30,7 @@ BSDF<Float, Spectrum>::eval_pdf_sample(const BSDFContext &ctx,
         return { e_val, pdf_val, bs, bsdf_weight };
 }
 
-MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null_transmission(
+MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null(
     const SurfaceInteraction3f & /* si */, Mask /* active */) const {
     return 0.f;
 }
