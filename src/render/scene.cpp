@@ -550,8 +550,31 @@ Scene<Float, Spectrum>::ray_test(const Ray3f &ray, Mask coherent,
                             /* skip_null = */ false).occluded;
 }
 
-/// Factor with unit value and the relative derivative of 'x'. A zero entry
-/// of 'x' contributes no derivative.
+// The helper function relative_grad(x) below, whose Python equivalent is
+//
+//     def relative_grad(x):
+//         return x / dr.detach(x)   # a zero entry of 'x' returns 1 instead
+//
+// makes it possible to differentiate a loop that computes a product of terms
+// using a Dr.Jit sum loop, which requires no trajectory storage.
+//
+// This uses the fact that the product rule
+//
+//     d/dt prod_i v_i = (prod_i v_i) * sum_i (dv_i/dt) / v_i
+//
+// expresses the derivative of a product as a sum, which is exactly what such
+// loops accumulate. Since relative_grad() has primal value 1, subtracting 1
+// yields a term that carries derivatives alone:
+//
+//     @dr.syntax
+//     def product(x, n):
+//         y, rel, i = Float(1), Float(0), UInt(0)
+//         while dr.hint(i < n, max_iterations=-1):
+//             v = f(x, i)
+//             y   *= dr.detach(v)          # detached, as the rules require
+//             rel += relative_grad(v) - 1  # sum with zero primal value
+//             i   += 1
+//         return y * (1 + rel)   # primal from 'y', derivative from 'rel'
 template <typename T> static T relative_grad(const T &x) {
     if constexpr (dr::is_diff_v<T>) {
         if (!dr::grad_enabled(x))
@@ -621,8 +644,8 @@ MI_VARIANT std::pair<typename Scene<Float, Spectrum>::PreliminaryIntersection3f,
 Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
                                   UInt32 ray_mask, bool stop_at_surface,
                                   Mask active) const {
-    // Crossings need UV coordinates to evaluate textured null transmission.
-    // The differentiation bits are those requested by the caller.
+    // Copy shape differentiation bits from the caller, and compute the
+    // default intersection fields
     uint32_t flags = (ray_flags & ((uint32_t) RayFlags::FollowShape |
                                    (uint32_t) RayFlags::DetachShape)) |
                      (uint32_t) RayFlags::Default;
@@ -670,6 +693,10 @@ Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
             // The masks here protect lanes that ended during this iteration
             value = dr::select(ls.active, value, Spectrum(1.f));
             ls.tr *= dr::detach(value);
+
+            // In polarized modes, the accumulated derivative is wrong. The
+            // factors are then Mueller matrices that do not commute, and only
+            // their (0, 0) entry enters 'rel'. Primal values stay correct.
             if constexpr (dr::is_diff_v<Float>)
                 ls.rel += relative_grad(unpolarized_spectrum(value)) - 1.f;
 

@@ -553,9 +553,9 @@ EmbreeAccel<Float, Spectrum>::ray_test(const Scene<Float, Spectrum> * /*scene*/,
                                        bool skip_null) const {
     using Single = dr::float32_array_t<Float>;
 
-    // Rays with SkipNull pass through shapes with null transmission and record
-    // the encounter in the flags word (see CPURayFlags)
-    uint32_t ray_flags = skip_null ? CPURayFlags::SkipNull : 0;
+    // Rays with SkipNull pass through shapes with null transmission
+    // and record the encounter in the flags word
+    uint32_t ray_flags = skip_null ? (uint32_t) CPURayFlags::SkipNull : 0;
 
     // Be careful with 'ray.maxt' in double precision variants
     Single ray_maxt = Single(ray.maxt);

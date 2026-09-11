@@ -134,8 +134,8 @@ def estimate(shapes, max_depth=6, spp=1, integrator='path', radiance=1.0, **env)
 
     def run(seed, count):
         sampler.seed(seed, count)
-        return np.array(scene.integrator().sample(
-            scene, sampler, ray, None, True)[0]).mean()
+        spec = scene.integrator().sample(scene, sampler, ray, None, True)[0]
+        return np.array(mi.unpolarized_spectrum(spec)).mean()
 
     if mi.variant().startswith('scalar'):
         return np.mean([run(seed, 1) for seed in range(spp)])
