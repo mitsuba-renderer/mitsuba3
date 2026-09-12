@@ -60,19 +60,24 @@ reduces noise in enclosed spaces and leaves the expected image unchanged.
 template <typename Float, typename Spectrum>
 class Portal final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, world_transform_scalar)
     MI_IMPORT_TYPES(Shape)
 
     Portal(const Properties &props) : Base(props) {
         // Solid angle sampling needs a rectangle
-        ScalarVector3f du = m_to_world.scalar() * ScalarVector3f(1.f, 0.f, 0.f),
-                       dv = m_to_world.scalar() * ScalarVector3f(0.f, 1.f, 0.f);
+
+        if (m_to_world->is_animated()) {
+            Throw("Animated portals are not supported!");
+        }
+        ScalarAffineTransform4f to_world = world_transform_scalar();
+        ScalarVector3f du = to_world * ScalarVector3f(1.f, 0.f, 0.f),
+                       dv = to_world * ScalarVector3f(0.f, 1.f, 0.f);
         ScalarFloat len_u = dr::norm(du), len_v = dr::norm(dv);
         if (!(len_u > 0.f && len_v > 0.f))
-            Throw("Portal with transform %s is degenerate!", m_to_world.scalar());
+            Throw("Portal with transform %s is degenerate!", to_world);
         if (dr::abs(dr::dot(du, dv)) > 1e-4f * len_u * len_v)
             Throw("Portals must be rectangular: 'to_world' must map the local "
-                  "x and y axes to orthogonal vectors (got %s)!", m_to_world.scalar());
+                  "x and y axes to orthogonal vectors (got %s)!", to_world);
 
         m_flags = +EmitterFlags::Portal;
 
@@ -86,9 +91,10 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
+        ScalarAffineTransform4f to_world = world_transform_scalar();
         for (ScalarFloat x : { -1.f, 1.f })
             for (ScalarFloat y : { -1.f, 1.f })
-                bbox.expand(m_to_world.scalar() * ScalarPoint3f(x, y, 0.f));
+                bbox.expand(to_world * ScalarPoint3f(x, y, 0.f));
         return bbox;
     }
 

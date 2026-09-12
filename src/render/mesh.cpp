@@ -247,7 +247,7 @@ void Mesh<Float, Spectrum>::from_fields(const TensorXu32 &faces,
     require_unbuilt(m_built, m_filename, "from_fields");
     drop_views();
 
-    if (m_to_world.scalar() != ScalarAffineTransform4f())
+    if (to_world_scalar() != ScalarAffineTransform4f())
         Throw("from_fields(): mesh \"%s\": please preapply any 'to_world' "
               "transformations to the provided fields (better) or use the "
               "transform() method to apply it after construction (slower).",
@@ -290,7 +290,7 @@ Mesh<Float, Spectrum>::from_packed(Layout layout,
                                    bool face_state_valid) {
     require_unbuilt(m_built, m_filename, "from_packed");
     require_baked(m_flip_normals ||
-                  m_to_world.scalar() != ScalarAffineTransform4f(),
+                  to_world_scalar() != ScalarAffineTransform4f(),
                   m_filename);
     drop_views();
 
@@ -655,7 +655,7 @@ void Mesh<Float, Spectrum>::pack(bool regenerate_normals, bool flip_normals,
 MI_VARIANT void Mesh<Float, Spectrum>::from_packed(PackedMesh &&data) {
     require_unbuilt(m_built, m_filename, "from_packed");
     require_baked(m_flip_normals ||
-                  m_to_world.scalar() != ScalarAffineTransform4f(),
+                  to_world_scalar() != ScalarAffineTransform4f(),
                   m_filename);
 
     static constexpr JitBackend Backend = dr::backend_v<Float>;
@@ -742,9 +742,9 @@ MI_VARIANT void Mesh<Float, Spectrum>::from_corners(const CornerMesh &desc) {
     PackedMesh data =
         corner_to_packed_mesh(dr::backend_v<Float>, desc, m_filename,
                               has_face_normals(), m_flip_normals,
-                              m_to_world.scalar());
+                              to_world_scalar());
     m_flip_normals = false;
-    m_to_world = ScalarAffineTransform4f();
+    m_to_world = new AnimatedTransform4f();
     from_packed(std::move(data));
 }
 

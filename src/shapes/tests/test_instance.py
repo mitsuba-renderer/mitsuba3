@@ -196,22 +196,22 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[-0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, -0.5]' in instance_str
-    assert '[0, 0.5, 0, 0.5]' in instance_str
+    assert 'T=[-0.5, 0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert '[0.5, 0, 0, 0.5]' in instance_str
-    assert '[0, 0.5, 0, -0.5]' in instance_str
+    assert 'T=[0.5, -0.5, 0]' in instance_str
+    assert 'S=[0.5, 0.5, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
@@ -493,3 +493,206 @@ def test08_ad_gradients_combined(variants_all_ad_rgb):
                 ('theta', int(ray_flags), output, gd_theta[0], gi_theta[0])
             assert dr.allclose(gd_phi, gi_phi, rtol=1e-4, atol=1e-5), \
                 ('phi', int(ray_flags), output, gd_phi[0], gi_phi[0])
+
+
+@pytest.mark.parametrize("num_keyframes", [2, 3, 5])
+def test09_animated_instance(variants_all_rgb, num_keyframes):
+    from mitsuba import ScalarTransform4f as T
+
+    keyframes = {}
+    for i in range(num_keyframes):
+        t = 10.0 * i / (num_keyframes - 1)
+        # Create key frames outside [0, 1] interval
+        keyframes[t + 5] = T().translate([0, 0, t / 10.0])
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'sphere'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f(keyframes)
+        }
+    })
+
+    o = mi.Point3f(0, 0, -3)
+    d = mi.Vector3f(0, 0, 1)
+    # Check valid interaction before defined keyframe range
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=0.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -1], atol=1e-6)
+
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=10.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, -0.5], atol=1e-6)
+
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=15.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+    # Check valid interaction after defined keyframe range
+    si = scene.ray_intersect(mi.Ray3f(o=o, d=d, time=100.0))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+
+
+def test10_animated_instance_rotation_scaling(variants_all_rgb):
+    from mitsuba import ScalarTransform4f as T
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'rectangle'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().rotate([0, 1, 0], 0).scale([1, 1, 1]),
+                10.0: T().rotate([0, 1, 0], 90).scale([2, 2, 2])
+            })
+        },
+        'instance_2': {
+            # Unrelated second moving instances
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: T().translate([0, 10, 0]).scale([1, 1, 1]),
+                10.0: T().translate([0, 15, 0]).scale([2, 3, 2])
+            })
+        }
+    })
+
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=0.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-6)
+    assert dr.allclose(dr.abs(si.n), [0, 0, 1], atol=1e-4)
+
+    # At t=0, scale is 1.0; a ray at y=1.2 misses the rectangle (height [-1, 1])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=0.0)
+    assert not dr.any(scene.ray_intersect(ray_off).is_valid())
+
+    # At t=5, rotation is 45 deg around Y and scale is 1.5
+    ray = mi.Ray3f(o=[0, 0, -3], d=[0, 0, 1], time=5.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(dr.abs(si.n), [dr.sqrt(0.5), 0, dr.sqrt(0.5)], atol=1e-2)
+
+    # At t=5, scale is 1.5; a ray at y=1.2 now hits the rectangle (height [-1.5, 1.5])
+    ray_off = mi.Ray3f(o=[0, 1.2, -3], d=[0, 0, 1], time=5.0)
+    assert dr.all(scene.ray_intersect(ray_off).is_valid())
+
+    # At t=10, rotation is 90 deg around Y and scale is 2.0
+    ray = mi.Ray3f(o=[-3, 0, 0], d=[1, 0, 0], time=10.0)
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.p, [0, 0, 0], atol=1e-5)
+    assert dr.allclose(dr.abs(si.n), [1, 0, 0], atol=1e-4)
+
+
+def test11_non_uniform_animation_error(variants_vec_backends_once):
+    from mitsuba import ScalarTransform4f as T
+
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type': 'scene',
+            'group_0': {
+                'type': 'shapegroup',
+                'shape': {'type': 'sphere'}
+            },
+            'instance': {
+                'type': 'instance',
+                'group': {'type': 'ref', 'id': 'group_0'},
+                'to_world': mi.AnimatedTransform4f({
+                    0.0: T().translate([0, 0, 0]),
+                    0.3: T().translate([0, 0, 1]),
+                    1.0: T().translate([0, 0, 2])
+                })
+            }
+        })
+
+
+def test12_animated_instance_shear(variants_all_rgb):
+    sheared = mi.ScalarAffineTransform4f([[1, 1, 0, 0],
+                                         [0, 1, 0, 0],
+                                         [0, 0, 1, 0],
+                                         [0, 0, 0, 1]])
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {
+            'type': 'shapegroup',
+            'shape': {'type': 'rectangle'}
+        },
+        'instance': {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f({
+                0.0: mi.ScalarAffineTransform4f(dr.scalar.Matrix4f(1)),
+                1.0: sheared
+            })
+        }
+    })
+
+    # At t=0, shear is 0; x in [-1, 1]. A ray at x=1.2, y=0.8 misses.
+    si_0 = scene.ray_intersect(mi.Ray3f(o=[1.2, 0.8, -3], d=[0, 0, 1], time=0.0))
+    assert not dr.any(si_0.is_valid())
+
+    # At t=0.5, shear is 0.5: x' = x + 0.5 * y. At y=0.8, range is [-0.6, 1.4].
+    # A ray at x=1.2, y=0.8 hits.
+    si_half = scene.ray_intersect(mi.Ray3f(o=[1.2, 0.8, -3], d=[0, 0, 1], time=0.5))
+    assert dr.all(si_half.is_valid())
+    assert dr.allclose(si_half.p, [1.2, 0.8, 0], atol=1e-5)
+
+    # At t=1.0, shear is 1.0: x' = x + y. At y=0.8, range is [-0.2, 1.8].
+    # A ray at x=1.5, y=0.8 hits (at t=0.5 it was outside [-0.6, 1.4]).
+    si_1 = scene.ray_intersect(mi.Ray3f(o=[1.5, 0.8, -3], d=[0, 0, 1], time=1.0))
+    assert dr.all(si_1.is_valid())
+    assert dr.allclose(si_1.p, [1.5, 0.8, 0], atol=1e-5)
+
+
+def test13_animated_instances_with_differing_time_ranges(variants_all_rgb):
+    from mitsuba import ScalarTransform4f as T
+
+    def instance(keyframes):
+        return {
+            'type': 'instance',
+            'group': {'type': 'ref', 'id': 'group_0'},
+            'to_world': mi.AnimatedTransform4f(keyframes)
+        }
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'group_0': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+        # Spans the whole [0, 1] range and thereby defines it
+        'inst_a': instance({0.0: T().translate([-4, 0, 0]),
+                            1.0: T().translate([-4, 0, 1])}),
+        # Covers only the second half of it
+        'inst_b': instance({0.5: T().translate([0, 0, 0]),
+                            1.0: T().translate([0, 0, 1])}),
+        # Neither end of its range lines up with [0, 1], and its keyframe
+        # spacing (0.2) does not divide the gaps (0.3) on either side
+        'inst_c': instance({0.3: T().translate([4, 0, 0]),
+                            0.5: T().translate([4, 0, 1]),
+                            0.7: T().translate([4, 0, 2])}),
+    })
+
+    def z_of(x, time):
+        si = scene.ray_intersect(mi.Ray3f(o=[x, 0, -5], d=[0, 0, 1], time=time))
+        assert dr.all(si.is_valid()), (x, time)
+        return si.p.z
+
+    for time in [0.0, 0.15, 0.3, 0.4, 0.5, 0.6, 0.7, 0.85, 1.0]:
+        # Outside their own keyframe range, 'inst_b' and 'inst_c' are held at
+        # their first/last keyframe rather than disappearing, matching
+        # AnimatedTransform's clamping.
+        z_b = dr.clip(2 * (time - 0.5), 0, 1)
+        z_c = dr.clip((time - 0.3) / 0.2, 0, 2)
+
+        assert dr.allclose(z_of(-4, time), time - 1, atol=1e-4), time
+        assert dr.allclose(z_of(0, time), z_b - 1, atol=1e-4), time
+        assert dr.allclose(z_of(4, time), z_c - 1, atol=1e-4), time

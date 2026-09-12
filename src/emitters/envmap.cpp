@@ -1,4 +1,5 @@
 #include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/distr_2d.h>
 #include <mitsuba/core/fresolver.h>
@@ -41,8 +42,8 @@ Environment emitter (:monosp:`envmap`)
    - |exposed|, |differentiable|
 
  * - to_world
-   - |transform|
-   - Specifies an optional emitter-to-world transformation.  (Default: none, i.e. emitter space = world space)
+   - |transform| or |animation|
+   - Specifies an optional emitter-to-world transformation (can be animated).  (Default: none, i.e. emitter space = world space)
    - |exposed|
 
  * - mis_compensation
@@ -286,7 +287,7 @@ public:
     Spectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Vector3f v = m_to_world.value().inverse() * (-si.wi);
+        Vector3f v = m_to_world->eval(si.time).inverse() * (-si.wi);
 
         Point2f uv = direction_to_uv(v);
 
@@ -313,7 +314,7 @@ public:
         pdf *= inv_sin_theta * dr::InvTwoPi<Float> * dr::InvPi<Float>;
 
         // Unlike `sample_direction()`, ray goes from the envmap toward the scene
-        Vector3f d_global = m_to_world.value() * -d;
+        Vector3f d_global = m_to_world->eval(time) * -d;
 
         // Compute ray origin
         Vector3f perpendicular_offset =
@@ -349,11 +350,13 @@ public:
         Float inv_sin_theta;
         Vector3f d = uv_to_direction(uv, inv_sin_theta);
         pdf *= inv_sin_theta * (1.f / (2.f * dr::square(dr::Pi<Float>)));
-        d = m_to_world.value() * d;
+
+        AffineTransform4f to_world = m_to_world->eval(it.time);
+        d = to_world * d;
 
         if (!m_portals.empty()) {
             Vector3f d_portal = m_portals.sample(it.p, choice),
-                     d_local  = m_to_world.value().inverse() * d_portal;
+                     d_local  = to_world.inverse() * d_portal;
             dr::masked(d, choice.use_portal)   = d_portal;
             dr::masked(uv, choice.use_portal)  = direction_to_uv(d_local);
             dr::masked(pdf, choice.use_portal) = eval_pdf(d_local);
@@ -388,7 +391,7 @@ public:
                         Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Float pdf = eval_pdf(m_to_world.value().inverse() * ds.d);
+        Float pdf = eval_pdf(m_to_world->eval(ds.time).inverse() * ds.d);
         return m_portals.empty() ? pdf : m_portals.pdf(it.p, ds.d, pdf);
     }
 

@@ -349,6 +349,34 @@ left-multiplied onto the current one. The following choices are available:
 
       <lookat origin="10, 50, -800" target="0, 0, 0" up="0, 1, 0"/>
 
+Animated Transformations
+************************
+
+Transformations can be animated over time to render motion blur. An animation
+replaces the ``<transform>`` tag with an ``<animation>`` tag, which contains one
+``<transform>`` per keyframe, each carrying a ``time`` attribute:
+
+.. code-block:: xml
+
+    <animation name="to_world">
+        <transform time="0.0">
+            <translate value="0, 0, 0"/>
+        </transform>
+        <transform time="1.0">
+            <translate value="1, 0, 0"/>
+        </transform>
+    </animation>
+
+An ``<animation>`` may carry an ``id`` so that several objects can share one set
+of keyframes via ``<ref>``.
+
+Note that an animated transformation alone does not produce motion blur: the
+sensor's ``shutter_open`` and ``shutter_close`` parameters have to be set as
+well, since rays are otherwise all traced at time 0. See
+:ref:`sec-animation` for the shutter interval, which objects can be animated,
+how the keyframes are interpolated, and the differences between the ray tracing
+backends.
+
 References
 ----------
 

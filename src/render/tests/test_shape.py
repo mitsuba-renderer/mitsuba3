@@ -113,3 +113,32 @@ def test03_shape_set_bsdf(variants_all_backends_once):
     custom_shape.set_bsdf(new_bsdf)
     assert mi.has_flag(custom_shape.bsdf().flags(), mi.BSDFFlags.DeltaReflection)
     assert custom_shape.called
+
+
+def test04_to_world_and_animated_to_world(variant_scalar_rgb):
+    at = mi.AnimatedTransform4f({
+        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
+        1.0: mi.ScalarAffineTransform4f.translate([10, 0, 0])
+    })
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sg': {
+            'type': 'shapegroup',
+            'sphere': {'type': 'sphere'}
+        },
+        'inst': {
+            'type': 'instance',
+            'shapegroup': {'type': 'ref', 'id': 'sg'},
+            'to_world': at
+        }
+    })
+
+    shape = scene.shapes()[0]
+    assert shape.animated_to_world().is_animated()
+    assert dr.allclose(shape.to_world().translation(), [0, 0, 0])
+    assert dr.allclose(shape.to_world(0.5).translation(), [5, 0, 0])
+    assert dr.allclose(shape.to_world(1.0).translation(), [10, 0, 0])
+    assert dr.allclose(shape.to_world_scalar().translation(), [0, 0, 0])
+    assert dr.allclose(shape.to_world_scalar(0.5).translation(), [5, 0, 0])
+    assert dr.allclose(shape.to_world_scalar(1.0).translation(), [10, 0, 0])
