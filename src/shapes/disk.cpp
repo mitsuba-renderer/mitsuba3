@@ -100,10 +100,7 @@ public:
     using typename Base::ScalarSize;
 
     Disk(const Properties &props) : Base(props) {
-        if (props.get<bool>("flip_normals", false))
-            m_to_world =
-                m_to_world.scalar() *
-                ScalarAffineTransform4f::scale(ScalarVector3f(1.f, 1.f, -1.f));
+        m_flip_normals = props.get<bool>("flip_normals", false);
 
         m_discontinuity_types = (uint32_t) DiscontinuityFlags::PerimeterType;
 
@@ -121,6 +118,8 @@ public:
         m_dv = dr::norm(dp_dv);
 
         Normal3f n = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
+        if (m_flip_normals)
+            n = -n;
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -530,6 +529,7 @@ private:
     Frame3f m_frame;
     Float m_du, m_dv;
     Float m_inv_surface_area;
+    bool m_flip_normals;
 
     MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area)
 };
