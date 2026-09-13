@@ -60,6 +60,12 @@ Left-handed sensors are also supported. To switch the handedness, flip any one
 of the axes, e.g. by passing a scale transform like ``<scale x="-1"/>`` to the
 sensor's :monosp:`to_world` parameter.
 
+**Pixel jitter**. Integrators randomize the position of each camera ray
+within its pixel, which antialiases the image as the sample count grows. All
+sensors accept a boolean :monosp:`jitter` parameter (default:
+:monosp:`true`) that disables this behavior and sends every ray through the
+pixel center instead.
+
 .. _explanation_srf_sensor:
 
 **Spectral sensitivity**. Furthermore, sensors can define a custom sensor

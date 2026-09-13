@@ -181,3 +181,30 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_jitter(variants_all_backends_once):
+    import numpy as np
+
+    # Without jitter, every ray passes through the pixel center and the
+    # sample count no longer matters. The scene has a depth edge in the
+    # middle of every pixel column so that jittered renders differ.
+    def render(jitter, spp):
+        scene = mi.load_dict({
+            'type': 'scene',
+            'integrator': {'type': 'depth'},
+            'sensor': {
+                'type': 'perspective', 'fov': 90,
+                'jitter': jitter,
+                'film': {'type': 'hdrfilm', 'width': 8, 'height': 8,
+                         'rfilter': {'type': 'box'}},
+            },
+            'near': {'type': 'rectangle',
+                     'to_world': mi.ScalarAffineTransform4f().translate([0, 0, 2]).scale([0.25, 10, 1])},
+            'far': {'type': 'rectangle',
+                    'to_world': mi.ScalarAffineTransform4f().translate([0, 0, 5]).scale([10, 10, 1])},
+        })
+        return np.array(mi.render(scene, spp=spp, seed=0))
+
+    assert np.allclose(render(False, 1), render(False, 16))
+    assert not np.allclose(render(True, 1), render(True, 16))

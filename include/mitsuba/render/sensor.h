@@ -62,6 +62,14 @@ public:
     /// Does the sampling technique require a sample for the aperture position?
     bool needs_aperture_sample() const { return m_needs_sample_3; }
 
+    /**
+     * Should camera rays be jittered within their pixel?
+     *
+     * When this is ``false``, integrators send every ray through the pixel
+     * center.
+     */
+    bool jitter() const { return m_jitter; }
+
     /// Return the `Film` instance associated with this sensor
     Film *film() { return m_film; }
 
@@ -134,6 +142,7 @@ protected:
     ScalarFloat m_shutter_open_time;
     ref<const Texture> m_srf;
     bool m_alpha;
+    bool m_jitter;
 
     MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)
 };

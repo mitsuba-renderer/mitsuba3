@@ -159,6 +159,7 @@ MI_PY_EXPORT(Sensor) {
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
         .def_method(Sensor, needs_aperture_sample)
+        .def_method(Sensor, jitter)
         .def("film", nb::overload_cast<>(&Sensor::film, nb::const_), D(Sensor, film))
         .def("set_film", &Sensor::set_film, D(Sensor, set_film), "film"_a)
         .def("set_world_transform_scalar", &Sensor::set_world_transform_scalar,

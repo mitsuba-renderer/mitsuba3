@@ -479,7 +479,9 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     const bool has_alpha = has_flag(film->flags(), FilmFlags::Alpha);
     const bool box_filter = film->rfilter()->is_box_filter();
 
-    Vector2f sample_pos   = pos + sampler->next_2d(active),
+    bool jitter = sensor->jitter();
+    Vector2f sample_pos   = pos + (jitter ? Vector2f(sampler->next_2d(active))
+                                          : Vector2f(.5f)),
              adjusted_pos = dr::fmadd(sample_pos, scale, offset);
 
     Point2f aperture_sample(.5f);

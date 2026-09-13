@@ -9909,9 +9909,17 @@ static const char *__doc_mitsuba_Sensor_film = R"doc(Return the `Film` instance 
 
 static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the `Film` instance associated with this sensor (const))doc";
 
+static const char *__doc_mitsuba_Sensor_jitter =
+R"doc(Should camera rays be jittered within their pixel?
+
+When this is ``false``, integrators send every ray through the pixel
+center.)doc";
+
 static const char *__doc_mitsuba_Sensor_m_alpha = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_film = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_jitter = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_resolution = R"doc()doc";
 
