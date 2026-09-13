@@ -517,7 +517,7 @@ def bsdf_dict(bsdf: str):
                 return 0.0, 0.0
 
             def traverse(self, callback):
-                callback.put_parameter("tint", self.tint, mi.ParamFlags.Differentiable)
+                callback.put("tint", self.tint, mi.ParamFlags.Differentiable)
 
             def parameters_changed(self, keys):
                 print("🏝️ there is nothing to do here 🏝️")
