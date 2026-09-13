@@ -238,6 +238,12 @@ Mitsuba 3.10.0
   on both sides of a shadow ray test. The bounds are close to the hardware's
   actual needs and adapts to the scene scale and the surface orientation.
 
+- **Analytic shape fixes**. A thorough review pass over all analytic shapes
+  resolved numerical issues in ray-intersection and directional sampling
+  routines. It also addressed inconsistent handling of ray flags, mirroring
+  transformations, the ``flip_normals`` flag, and inconsistencies between
+  ray intersection and parameterization routines.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*
