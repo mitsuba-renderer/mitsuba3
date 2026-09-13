@@ -137,6 +137,29 @@ def test05_sample_direct(variant_scalar_rgb):
             assert dr.allclose(si.p, sample.p, atol=1e-5, rtol=1e-5)
 
 
+@pytest.mark.parametrize('radius', [1.0, 1e-2, 1e-3, 1e-4])
+def test05b_sample_direct_small_cone(variants_all_rgb, radius):
+    # The solid angle PDF must stay accurate when the sphere subtends a tiny
+    # cone, where '1 - cos_theta_max' cancels catastrophically in float32
+    import math
+    sphere = mi.load_dict({'type': 'sphere', 'radius': radius})
+    dist = 100.0
+    it = dr.zeros(mi.Interaction3f)
+    it.p = [0, 0, -dist]
+
+    cos_theta_max = math.sqrt(1 - (radius / dist)**2)
+    pdf_ref = 1 / (2 * math.pi * (1 - cos_theta_max))
+
+    ds = sphere.sample_direction(it, [0.3, 0.7])
+    assert dr.allclose(ds.pdf, pdf_ref, rtol=1e-4)
+    assert dr.allclose(sphere.pdf_direction(it, ds), pdf_ref, rtol=1e-4)
+
+    # The sampled direction lands on the sphere
+    si = sphere.ray_intersect(mi.Ray3f(it.p, ds.d))
+    assert dr.all(si.is_valid())
+    assert dr.allclose(si.t, ds.dist, rtol=1e-5)
+
+
 def test06_differentiable_surface_interaction_ray_forward(variants_all_ad_rgb):
     shape = mi.load_dict({'type' : 'sphere'})
 
