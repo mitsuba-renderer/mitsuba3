@@ -448,33 +448,30 @@ public:
                                   Float sample, Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
+        // Pick one of the four edges and rescale the sample to parameterize the
+        // position along it
+        UInt32 index = dr::minimum(UInt32(sample * 4.f), 3u);
+        Float sample_reuse = dr::fmsub(sample, 4.f, Float(index));
+
+        // The projection locates the edge from a UV coordinate on it. The order
+        // is left, top, right, bottom, the last two mirroring the first two.
+        Mask along_v = (index & 1u) == 0u;
+        Point2f uv = dr::select(along_v, Point2f(0.f, 0.5f), Point2f(0.5f, 1.f));
+
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
-        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
-
-        Mask range = false;
-        Float sample_reuse(0.f);
-
-        range = (sample < 0.25f);
-        si.uv[range] = Point2f(0.f, 0.5f);
-        dr::masked(sample_reuse, range) = sample * 4.f;
-
-        range = (0.25f <= sample && sample < 0.50f);
-        si.uv[range] = Point2f(0.5f, 1.f);
-        dr::masked(sample_reuse, range) = (sample - 0.25f) * 4.f;
-
-        range = (0.50f <= sample && sample < 0.75f);
-        si.uv[range] = Point2f(1.f, 0.5f);
-        dr::masked(sample_reuse, range) = (sample - 0.50f) * 4.f;
-
-        range = (0.75f <= sample);
-        si.uv[range] = Point2f(0.5f, 0.f);
-        dr::masked(sample_reuse, range) = (sample - 0.75f) * 4.f;
+        si.uv = dr::select(index >= 2u, 1.f - uv, uv);
 
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
-        ss = primitive_silhouette_projection(viewpoint, si, flags, sample_reuse,
-                                             active);
-        ss.pdf = dr::rcp(m_to_world.value().matrix(0, 0) * 4 +
-                         m_to_world.value().matrix(1, 1) * 4);
+        SilhouetteSample3f ss = primitive_silhouette_projection(
+            viewpoint, si, flags, sample_reuse, active);
+
+        // Each edge is chosen with probability 1/4 and sampled uniformly along
+        // its length, which is twice the norm of a transformed basis vector
+        const AffineTransform4f &to_world = m_to_world.value();
+        Float len = dr::select(along_v,
+                               dr::norm(to_world * Vector3f(0.f, 1.f, 0.f)),
+                               dr::norm(to_world * Vector3f(1.f, 0.f, 0.f)));
+        ss.pdf = 0.125f * dr::rcp(len);
 
         return ss;
     }
