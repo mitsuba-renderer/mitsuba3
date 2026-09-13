@@ -122,12 +122,10 @@ This makes it a good default choice for lighting new scenes.
 template <typename Float, typename Spectrum>
 class Sphere final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
+                   initialize, mark_dirty, get_children_string)
     MI_IMPORT_TYPES()
 
-    using typename Base::ScalarSize;
     using typename Base::ScalarIndex;
 
     /// Bound on the rounding error of a position on the sphere along ``n``
@@ -149,8 +147,19 @@ public:
         return sin_theta_2 / (1.f + cos_theta);
     }
 
+    /// Spherical UV parameterization of a direction in object space
+    static Point2f local_to_uv(const Vector3f &local) {
+        // The azimuth is undefined at the poles, pin it and its derivative to zero
+        Mask pole = local.x() == 0.f && local.y() == 0.f;
+        Float theta = dr::unit_angle_z(local),
+              phi   = dr::atan2(dr::select(pole, 0.f, local.y()),
+                                dr::select(pole, 1.f, local.x()));
+        dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
+        return { phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float> };
+    }
+
     Sphere(const Properties &props) : Base(props) {
-        /// Are the sphere normals pointing inwards? default: no
+        // Are the sphere normals pointing inwards? default: no
         m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if radius and center are also provided
@@ -241,12 +250,7 @@ public:
         ps.time = time;
         ps.delta = m_radius.value() == 0.f;
         ps.pdf = m_inv_surface_area;
-
-        Point2f angles = dir_to_sph(Vector3f(local));
-        Float theta = angles.x();
-        Float phi = angles.y();
-        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-        ps.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
+        ps.uv = local_to_uv(local);
 
         return ps;
     }
@@ -386,14 +390,14 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::InteriorType))
             return dr::zeros<SilhouetteSample3f>();
 
-        /// Sample a point on the shape surface
+        // Sample a point on the shape surface
         SilhouetteSample3f ss(
             sample_position(0.f, dr::tail<2>(sample), active));
 
-        /// Sample a tangential direction at the point
+        // Sample a tangential direction at the point
         ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
 
-        /// Fill other fields
+        // Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
         ss.flags = flags;
         ss.pdf *= dr::InvTwoPi<Float>;
@@ -455,26 +459,21 @@ public:
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         // O := center, V := viewpoint, Y := si.p, X := projected point
-        Float dist_OV = dr::norm(viewpoint - center);
-        Vector3f OVd = (viewpoint - center) / dist_OV,
+        Vector3f OV = viewpoint - center;
+        Float inv_dist_OV = dr::rsqrt(dr::squared_norm(OV));
+        Vector3f OVd = OV * inv_dist_OV,
                  OYd = dr::normalize(si.n - dr::dot(OVd, si.n) * OVd);
 
-        Float sin_phi = radius * dr::rcp(dist_OV);
+        // Angle at the center between the viewpoint and the silhouette point
+        Float cos_theta = radius * inv_dist_OV,
+              sin_theta = dr::safe_sqrt(dr::fnmadd(cos_theta, cos_theta, 1.f));
 
-        Vector3f OXd  = dr::normalize(
-            sin_phi * OVd +
-            dr::safe_sqrt(-dr::fmsub(sin_phi, sin_phi, 1.f)) * OYd);
+        Vector3f OXd = dr::fmadd(OVd, cos_theta, OYd * sin_theta);
 
         ss.p = dr::fmadd(OXd, radius, center);
         ss.d = dr::normalize(ss.p - viewpoint);
-        ss.n = dr::normalize(ss.p - center);
-
-        Point3f local = m_to_world.value().inverse() * ss.p;
-        Point2f angles = dir_to_sph(Vector3f(local));
-        Float theta = angles.x();
-        Float phi = angles.y();
-        dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-        ss.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
+        ss.n = OXd;
+        ss.uv = local_to_uv(m_to_world.value().inverse() * ss.p);
         ss.silhouette_d = dr::cross(ss.n, -ss.d);
 
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
@@ -501,8 +500,9 @@ public:
         const Float &radius = m_radius.value();
 
         // O := center, V := viewpoint
-        Float OV_dist = dr::norm(viewpoint - center);
-        Vector3f OV_normalized = (viewpoint - center) / OV_dist;
+        Vector3f OV = viewpoint - center;
+        Float inv_OV_dist = dr::rsqrt(dr::squared_norm(OV));
+        Vector3f OV_normalized = OV * inv_OV_dist;
         auto [dx, dy] = coordinate_system(OV_normalized);
         auto [sin_theta, cos_theta] = dr::sincos(sample2 * dr::TwoPi<Float>);
 
@@ -515,7 +515,7 @@ public:
         SilhouetteSample3f ss =
             primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
-        Float radius_ring = radius / OV_dist * dr::norm(ss.p - viewpoint);
+        Float radius_ring = radius * inv_OV_dist * dr::norm(ss.p - viewpoint);
         ss.pdf = dr::rcp(dr::TwoPi<ScalarFloat> * radius_ring);
 
         return ss;
@@ -637,14 +637,7 @@ public:
 
             Mask singularity_mask = active && (rd == 0.f);
 
-            // Avoid undefined azimuth at the poles
-            Float theta = dr::unit_angle_z(Vector3f(local)),
-                  phi   = dr::atan2(dr::select(singularity_mask, 0.f, local.y()),
-                                    dr::select(singularity_mask, 1.f, local.x()));
-
-            dr::masked(phi, phi < 0.f) += 2.f * dr::Pi<Float>;
-            si.uv = Point2f(phi * dr::InvTwoPi<Float>, theta * dr::InvPi<Float>);
-
+            si.uv = local_to_uv(local);
             si.dp_du = Vector3f(-local.y(), local.x(), 0.f);
             si.dp_dv = Vector3f(local.z() * cos_phi, local.z() * sin_phi, -rd);
 
