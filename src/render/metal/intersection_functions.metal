@@ -98,37 +98,29 @@ BoundingBoxIntersection intersection_sphere(
     float3 center = s.center_radius.xyz;
     float  radius = s.center_radius.w;
 
-    // See sphere.cuh for the perpendicular-plane projection.
+    // Shift the ray origin to the point closest to the center (see sphere.cpp)
     float3 l = origin - center;
     float3 d = direction;
-    float plane_t = dot(-l, d) / length(d);
-    float3 plane_p = origin + plane_t * d;
-
-    BoundingBoxIntersection r{false, 0.0f};
-
-    if (plane_t == 0.0f && length(plane_p - center) > radius)
-        return r;
-
-    float3 o = plane_p - center;
 
     float A = dot(d, d);
+    float t_offset = -dot(l, d) / A;
+    float3 o = fma(t_offset, d, l);
+
     float B = 2.0f * dot(o, d);
     float C = dot(o, o) - radius * radius;
 
     float near_t, far_t;
     bool ok = solve_quadratic(A, B, C, near_t, far_t);
+    near_t += t_offset;
+    far_t  += t_offset;
 
-    near_t += plane_t;
-    far_t  += plane_t;
+    bool near_ok = near_t >= min_distance && near_t <= max_distance,
+         far_ok  = far_t  >= min_distance && far_t  <= max_distance;
 
-    bool out_bounds = !(near_t <= max_distance && far_t >= 0.0f);
-    bool in_bounds  = near_t < min_distance && far_t > max_distance;
-
-    float t = (near_t < 0.0f ? far_t : near_t);
-
-    if (ok && !out_bounds && !in_bounds && t >= min_distance && t <= max_distance) {
+    BoundingBoxIntersection r{false, 0.0f};
+    if (ok && (near_ok || far_ok)) {
         r.accept   = true;
-        r.distance = t;
+        r.distance = near_ok ? near_t : far_t;
     }
     return r;
 }
