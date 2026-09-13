@@ -133,25 +133,23 @@ public:
     }
 
     void update() {
-         // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = transform_decompose(m_to_world.scalar().matrix, 25);
+        // The columns must be orthogonal, with equal lengths along X and Y
+        const ScalarAffineTransform4f &tw = m_to_world.scalar();
+        ScalarVector3f cx = tw * ScalarVector3f(1.f, 0.f, 0.f),
+                       cy = tw * ScalarVector3f(0.f, 1.f, 0.f),
+                       cz = tw * ScalarVector3f(0.f, 0.f, 1.f);
+        ScalarFloat lx = dr::norm(cx), ly = dr::norm(cy), lz = dr::norm(cz);
 
-        if (dr::abs(S[0][1]) > 1e-6f || dr::abs(S[0][2]) > 1e-6f || dr::abs(S[1][0]) > 1e-6f ||
-            dr::abs(S[1][2]) > 1e-6f || dr::abs(S[2][0]) > 1e-6f || dr::abs(S[2][1]) > 1e-6f)
+        if (dr::abs(dr::dot(cx, cy)) > 1e-4f * lx * ly ||
+            dr::abs(dr::dot(cx, cz)) > 1e-4f * lx * lz ||
+            dr::abs(dr::dot(cy, cz)) > 1e-4f * ly * lz)
             Log(Warn, "'to_world' transform shouldn't contain any shearing!");
 
-        if (!(dr::abs(S[0][0] - S[1][1]) < 1e-6f))
+        if (dr::abs(lx - ly) > 1e-4f * lx)
             Log(Warn, "'to_world' transform shouldn't contain non-uniform scaling along the X and Y axes!");
 
         m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
         m_length = dr::norm(m_to_world.value() * Vector3f(0.f, 0.f, 1.f));
-
-        if (S[0][0] <= 0.f) {
-            m_radius = dr::abs(m_radius.value());
-            m_flip_normals = !m_flip_normals;
-        }
-
-        // Compute the to_object transformation with uniform scaling and no shear
 
         m_inv_surface_area = dr::rcp(surface_area());
 
@@ -267,12 +265,11 @@ public:
         Point3f p(cos_theta, sin_theta, sample.x());
         Normal3f n(cos_theta, sin_theta, 0.f);
 
-        if (m_flip_normals)
-            n *= -1;
-
         PositionSample3f ps = dr::zeros<PositionSample3f>();
         ps.p     = to_world * p;
         ps.n     = dr::normalize(to_world * n);
+        if (m_flip_normals)
+            ps.n = -ps.n;
         ps.p_err = to_world.position_error(p, ps.n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
@@ -705,11 +702,8 @@ public:
 
         local = to_object * si.p;
 
-        Vector3f dp_du = to_world * (dr::TwoPi<Float> *
-                                     Vector3f(-local.y(), local.x(), 0.f)),
-                 dp_dv = to_world * Vector3f(0.f, 0.f, 1.f);
-
-        si.n = Normal3f(dr::normalize(dr::cross(dp_du, dp_dv)));
+        si.n = Normal3f(dr::normalize(
+            to_world * Normal3f(local.x(), local.y(), 0.f)));
 
         if (m_flip_normals)
             si.n = -si.n;
@@ -719,15 +713,16 @@ public:
             dr::masked(phi, phi < 0.f) += dr::TwoPi<Float>;
 
             si.uv         = Point2f(phi * dr::InvTwoPi<Float>, local.z());
-            si.dp_du      = dp_du;
-            si.dp_dv      = dp_dv;
+            si.dp_du      = to_world * (dr::TwoPi<Float> *
+                                        Vector3f(-local.y(), local.x(), 0.f));
+            si.dp_dv      = to_world * Vector3f(0.f, 0.f, 1.f);
             si.sh_frame.n = si.n;
-            si.sh_frame.s = dp_du;
+            si.sh_frame.s = si.dp_du;
 
             // The normal partial along 'v' vanishes, the cylinder is straight
             if (has_flag(ray_flags, RayFlags::NormalPartials))
-                si.dn_du = dp_du * ((m_flip_normals ? -1.f : 1.f) *
-                                    dr::rcp(m_radius.value()));
+                si.dn_du = si.dp_du * ((m_flip_normals ? -1.f : 1.f) *
+                                       dr::rcp(m_radius.value()));
         }
 
         si.prim_index = pi.prim_index;

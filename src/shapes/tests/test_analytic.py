@@ -10,10 +10,11 @@ import mitsuba as mi
 # Object-space normal at an object-space point of the unit-sized shape
 LOCAL_NORMAL = {
     'sphere':    lambda p: mi.Normal3f(p),
+    'cylinder':  lambda p: mi.Normal3f(p.x, p.y, 0),
 }
 
 # Surface area of the unit-sized shapes
-AREA = {'sphere': 4 * dr.pi}
+AREA = {'sphere': 4 * dr.pi, 'cylinder': 2 * dr.pi}
 
 
 def check_normals(s, shape, flipped):
@@ -30,7 +31,7 @@ def check_normals(s, shape, flipped):
     assert dr.all((dr.dot(ps.n, n) < 0) == flipped)
 
 
-@pytest.mark.parametrize('shape', ['sphere'])
+@pytest.mark.parametrize('shape', ['sphere', 'cylinder'])
 @pytest.mark.parametrize('flip', [False, True])
 @pytest.mark.parametrize('mirrored', [False, True])
 def test01_normal_orientation(variants_all_rgb, shape, flip, mirrored):
