@@ -553,47 +553,40 @@ public:
     template <typename FloatP, typename Ray3fP>
     std::pair<dr::mask_t<FloatP>, FloatP>
     intersect_impl(const Ray3fP &ray_, dr::mask_t<FloatP> active) const {
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
-        using Value2 = Vector<Value, 2>;
-        using ScalarValue = dr::scalar_t<Value>;
+        using Vector2fP = Vector<FloatP, 2>;
 
         // Object space contains the unit cylinder along the Z axis
         Ray3fP ray;
-        if constexpr (!dr::is_jit_v<Value>)
+        if constexpr (!dr::is_jit_v<FloatP>)
             ray = m_to_world.scalar().inverse() * ray_;
         else
             ray = m_to_world.value().inverse() * ray_;
 
         // Shift the ray origin to the point closest to the axis (see sphere.cpp)
-        Value2 l(Value(ray.o.x()), Value(ray.o.y())),
-               d(Value(ray.d.x()), Value(ray.d.y()));
+        Vector2fP l(ray.o.x(), ray.o.y()),
+                  d(ray.d.x(), ray.d.y());
 
-        Value A = dr::squared_norm(d),
-              t_offset = dr::select(A != ScalarValue(0),
-                                    -dr::dot(l, d) / A, ScalarValue(0));
-        Value2 o = dr::fmadd(d, t_offset, l);
+        FloatP A = dr::squared_norm(d),
+               t_offset = dr::select(A != 0.f, -dr::dot(l, d) / A, 0.f);
+        Vector2fP o = dr::fmadd(d, t_offset, l);
 
-        Value B = ScalarValue(2) * dr::dot(o, d),
-              C = dr::squared_norm(o) - ScalarValue(1);
+        FloatP B = 2.f * dr::dot(o, d),
+               C = dr::squared_norm(o) - 1.f;
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
         near_t += t_offset;
         far_t += t_offset;
 
-        Value oz = Value(ray.o.z()), dz = Value(ray.d.z()),
-              maxt = Value(ray.maxt);
-        Value z_near = dr::fmadd(dz, near_t, oz),
-              z_far  = dr::fmadd(dz, far_t,  oz);
+        FloatP z_near = dr::fmadd(ray.d.z(), near_t, ray.o.z()),
+               z_far  = dr::fmadd(ray.d.z(), far_t,  ray.o.z());
 
-        dr::mask_t<Value> near_ok = near_t >= Value(0) && near_t <= maxt &&
-                                    z_near >= Value(0) && z_near <= Value(1),
-                          far_ok  = far_t  >= Value(0) && far_t  <= maxt &&
-                                    z_far  >= Value(0) && z_far  <= Value(1);
+        dr::mask_t<FloatP> near_ok = near_t >= 0.f && near_t <= ray.maxt &&
+                                     z_near >= 0.f && z_near <= 1.f,
+                           far_ok  = far_t  >= 0.f && far_t  <= ray.maxt &&
+                                     z_far  >= 0.f && z_far  <= 1.f;
 
-        active &= dr::mask_t<FloatP>(solution_found && (near_ok || far_ok));
-        FloatP t = FloatP(dr::select(near_ok, near_t, far_t));
+        active &= solution_found && (near_ok || far_ok);
+        FloatP t = dr::select(near_ok, near_t, far_t);
 
         return { active, dr::select(active, t, dr::Infinity<FloatP>) };
     }
