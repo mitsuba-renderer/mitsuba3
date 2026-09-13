@@ -10509,8 +10509,6 @@ R"doc(Returns whether this shape contains the specified attribute.
 Args:
     name: Name of the attribute)doc";
 
-static const char *__doc_mitsuba_Shape_has_flipped_normals = R"doc(Does this shape have flipped normals?)doc";
-
 static const char *__doc_mitsuba_Shape_has_null = R"doc(Does the shape's BSDF have a `BSDFFlags.Null` component?)doc";
 
 static const char *__doc_mitsuba_Shape_initialize = R"doc()doc";

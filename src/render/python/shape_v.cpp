@@ -255,12 +255,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             [](Ptr shape) {
                 return shape->surface_area();
             },
-            D(Shape, surface_area))
-       .def("has_flipped_normals",
-            [](Ptr shape) {
-                return shape->has_flipped_normals();
-            },
-            D(Shape, has_flipped_normals));
+            D(Shape, surface_area));
 }
 
 template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {

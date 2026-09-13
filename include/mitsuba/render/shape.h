@@ -875,9 +875,6 @@ public:
      */
     virtual ScalarSize effective_primitive_count() const;
 
-    /// Does this shape have flipped normals?
-    virtual bool has_flipped_normals() const;
-
     /**
      * Describe this shape's geometry to the ray-tracing backends.
      *
@@ -1089,7 +1086,6 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Shape)
     DRJIT_CALL_GETTER(exterior_medium)
     DRJIT_CALL_GETTER(silhouette_discontinuity_types)
     DRJIT_CALL_GETTER(silhouette_sampling_weight)
-    DRJIT_CALL_GETTER(has_flipped_normals)
     DRJIT_CALL_GETTER(shape_type)
     DRJIT_CALL_GETTER(has_null)
     auto is_emitter() const { return emitter() != nullptr; }
