@@ -12,10 +12,11 @@ LOCAL_NORMAL = {
     'sphere':    lambda p: mi.Normal3f(p),
     'cylinder':  lambda p: mi.Normal3f(p.x, p.y, 0),
     'disk':      lambda p: mi.Normal3f(0, 0, 1),
+    'rectangle': lambda p: mi.Normal3f(0, 0, 1),
 }
 
 # Surface area of the unit-sized shapes
-AREA = {'sphere': 4 * dr.pi, 'cylinder': 2 * dr.pi, 'disk': dr.pi}
+AREA = {'sphere': 4 * dr.pi, 'cylinder': 2 * dr.pi, 'disk': dr.pi, 'rectangle': 4}
 
 
 def check_normals(s, shape, flipped):
@@ -32,7 +33,7 @@ def check_normals(s, shape, flipped):
     assert dr.all((dr.dot(ps.n, n) < 0) == flipped)
 
 
-@pytest.mark.parametrize('shape', ['sphere', 'cylinder', 'disk'])
+@pytest.mark.parametrize('shape', ['sphere', 'cylinder', 'disk', 'rectangle'])
 @pytest.mark.parametrize('flip', [False, True])
 @pytest.mark.parametrize('mirrored', [False, True])
 def test01_normal_orientation(variants_all_rgb, shape, flip, mirrored):

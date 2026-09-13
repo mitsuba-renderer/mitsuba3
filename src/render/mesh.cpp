@@ -1216,7 +1216,7 @@ void Mesh<Float, Spectrum>::transform(const AffineTransform4f &t) {
         });
 
     // A mirroring transform reverses the orientation of the geometry.
-    if (dr::slice(dr::det(Matrix3f(t.matrix))) < 0.f)
+    if (dr::det(dr::slice(Matrix3f(t.matrix))) < 0.f)
         flip_winding();
 
     refresh();
