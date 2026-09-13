@@ -43,54 +43,29 @@ extern "C" __global__ void __intersection__ellipsoids() {
     Matrix3f rotation = ellipsoid.rotation(prim_index);
     scale *= ellipsoid.extents[prim_index];
 
-    // Ray in instance-space
+    // Ray in instance-space, transformed such that the ellipsoid becomes
+    // the unit sphere centered at the origin
     Ray3f ray = get_ray();
-    Vector3f o = rotation.transposed_prod(ray.o - center);
+    Vector3f l = rotation.transposed_prod(ray.o - center);
     Vector3f d = rotation.transposed_prod(ray.d);
-    o /= scale;
+    l /= scale;
     d /= scale;
-    Ray3f ray_relative(o, d, ray.maxt, ray.time);
 
-    // We define a plane which is perpendicular to the ray direction and
-    // contains the ellipsoid center and intersect it. We then solve the
-    // ray-ellipsoid intersection as if the ray origin was this new
-    // intersection point. This additional step makes the whole intersection
-    // routine numerically more robust.
-
-    float plane_t = dot(-o, d) / norm(d);
-    Vector3f plane_p = ray_relative(plane_t);
-
-    // Ray is perpendicular to the origin-center segment,
-    // and intersection with plane is outside of the sphere
-    if (plane_t == 0.f && norm(plane_p) > 1.f)
-        return;
-
+    // Shift the ray origin to the point closest to the center (see sphere.cpp)
     float A = squared_norm(d);
-    float B = 2.f * dot(plane_p, d);
-    float C = squared_norm(plane_p) - 1.f;
+    float t_offset = -dot(l, d) / A;
+    Vector3f o = fmaf(t_offset, d, l);
+
+    float B = 2.f * dot(o, d);
+    float C = squared_norm(o) - 1.f;
 
     float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
 
-    // Adjust distances for plane intersection
-    near_t += plane_t;
-    far_t += plane_t;
+    // Undo the origin shift
+    near_t += t_offset;
 
-    // Ellipsoid doesn't intersect with the segment on the ray
-    bool out_bounds = !(near_t <= ray.maxt && far_t >= 0.f); // NaN-aware conditionals
-
-    // Ellipsoid fully contains the segment of the ray
-    bool in_bounds = near_t < 0.f && far_t > ray.maxt;
-
-    // Ellipsoid is backfacing
-    bool backfacing = near_t < 0.f;
-
-    bool active = solution_found && !out_bounds && !in_bounds && !backfacing;
-
-    float t = (near_t < 0.f ? far_t: near_t);
-
-    if (active) {
-        optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
-    }
+    if (solution_found && near_t >= 0.f && near_t <= ray.maxt)
+        optixReportIntersection(near_t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
 }
 #endif
