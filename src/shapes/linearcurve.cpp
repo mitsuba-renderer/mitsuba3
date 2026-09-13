@@ -121,9 +121,8 @@ points and increasing radii::
 template <typename Float, typename Spectrum>
 class LinearCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
-                   initialize, mark_dirty, get_children_string,
-                   parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type, initialize, mark_dirty,
+                   get_children_string)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;

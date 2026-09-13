@@ -131,9 +131,8 @@ points and increasing radii::
 template <typename Float, typename Spectrum>
 class BSplineCurve final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_discontinuity_types,
-                   m_shape_type, initialize, mark_dirty, get_children_string,
-                   parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
+                   initialize, mark_dirty, get_children_string)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -415,7 +414,7 @@ public:
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
-            /// Sample a point on the shape surface
+            // Sample a point on the shape surface
 
             // sample a curve
             size_t curve_count = dr::width(m_curves_prim_idx) - 1;
@@ -456,7 +455,7 @@ public:
             auto [sin_u, cos_u] = dr::sincos(local_uv.x() * dr::TwoPi<Float>);
             ss.p = c + cos_u * u_rad * radius + sin_u * u_rot * radius;
 
-            /// Sample a tangential direction at the point
+            // Sample a tangential direction at the point
             Vector3f rad_vec = ss.p - c;
             Float correction = dr::dot(rad_vec, dc_dvv);  // curvature correction
             Normal3f n = dr::normalize(
@@ -472,7 +471,7 @@ public:
                 Point2f(sample.y(), sample.z()));
             ss.d = frame.to_world(-local_d);
 
-            /// Fill other fields
+            // Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
             ss.flags = flags;
             ss.silhouette_d =
@@ -490,17 +489,17 @@ public:
             ss.pdf *= warp::square_to_uniform_hemisphere_pdf(local_d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
-            /// Sample a point on the shape surface
+            // Sample a point on the shape surface
             ss.uv = Point2f(sample.y(), sample.x()); // We use the x-axis as the cylindrical axis
             auto [dp_du, dp_dv, dn_du, dn_dv, L, M, N] = partials(ss.uv, active);
             SurfaceInteraction3f si = eval_parameterization(
                 ss.uv, RayFlags::Default | RayFlags::DetachShape, active);
             ss.p = si.p;
 
-            /// Sample a tangential direction at the point
+            // Sample a tangential direction at the point
             ss.d = warp::interval_to_tangent_direction(si.n, sample.z());
 
-            /// Fill other fields
+            // Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
             ss.flags = flags;
             ss.n = si.n;
@@ -531,7 +530,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        /// Invert perimeter type samples
+        // Invert perimeter type samples
         Point3f sample_perimeter = dr::zeros<Point3f>(dr::width(ss));
 
         size_t curve_count = dr::width(m_curves_prim_idx) - 1;
@@ -573,13 +572,13 @@ public:
         sample_perimeter.y() = warp::uniform_hemisphere_to_square(local_d).x();
         sample_perimeter.z() = warp::uniform_hemisphere_to_square(local_d).y();
 
-        /// Invert interior type samples
+        // Invert interior type samples
         Point3f sample_interior = dr::zeros<Point3f>(dr::width(ss));
         sample_interior.z() = warp::tangent_direction_to_interval(ss.n, ss.d);
         sample_interior.y() = ss.uv.x();
         sample_interior.x() = ss.uv.y();
 
-        /// Merge outputs
+        // Merge outputs
         Point3f sample = dr::zeros<Point3f>();
         Mask perimeter_samples =
             has_flag(ss.discontinuity_type, DiscontinuityFlags::PerimeterType);
@@ -706,8 +705,8 @@ public:
             std::tie(dir_rot, dir_rad) = local_frame(dc_dv_normalized);
 
             Vector3f OC = c - viewpoint;
-            Float OC_norm = dr::norm(OC);
-            OC /= OC_norm;
+            Float inv_OC_norm = dr::rsqrt(dr::squared_norm(OC));
+            OC *= inv_OC_norm;
 
             // Find a silhouette point by fixing `si.v` (along the curve) and
             // bisecting `si.u`. Only search in a half circle.
@@ -715,7 +714,7 @@ public:
                 auto [sin_u, cos_u] = dr::sincos(u * dr::TwoPi<Float>);
                 Vector3f rad = cos_u * dir_rad + sin_u * dir_rot;
                 return dc_dv_norm * (1.f - radius * dr::dot(dc_dvv_scaled, rad)) *
-                    (radius / OC_norm + dr::dot(OC, rad)) -
+                    (radius * inv_OC_norm + dr::dot(OC, rad)) -
                     dr_dv * dr::dot(OC, dc_dv_normalized);
             };
             Float u_lower = si.uv.x() - 0.25f + math::ShadowEpsilon<Float>,
@@ -1144,7 +1143,7 @@ private:
         dr::masked(tau, norm_cross_dc_dv_dc_dvv < 1e-6f) = 0.f;  // Numerical stability
         dr::masked(tau, dr::norm(dc_dvvv) < 1e-6f) = 0.f;
 
-        Vector3f frame_t = dc_dv / norm_dc_dv,
+        Vector3f frame_t = dc_dv_normalized,
                  frame_n = dr::normalize(dr::cross(cross_dc_dv_dc_dvv, dc_dv)),
                  frame_b = dr::normalize(dr::cross(frame_t, frame_n));
 
