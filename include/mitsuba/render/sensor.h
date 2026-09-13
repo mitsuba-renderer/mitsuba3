@@ -65,10 +65,19 @@ public:
     /**
      * Should camera rays be jittered within their pixel?
      *
-     * When this is ``false``, integrators send every ray through the pixel
-     * center.
+     * When this is ``false``, integrators send every ray through the pixel center.
      */
     bool jitter() const { return m_jitter; }
+
+    /**
+     * Global scale factor applied to the ray cone of camera rays
+     *
+     * Sensor implementations multiply the width and spread of the cones
+     * that they generate by this value, which is ``1`` by default. A value
+     * of ``2`` doubles the texture footprint, i.e. it biases filtered
+     * texture lookups by one MIP level.
+     */
+    ScalarFloat cone_scale() const { return m_cone_scale; }
 
     /// Return the `Film` instance associated with this sensor
     Film *film() { return m_film; }
@@ -143,6 +152,7 @@ protected:
     ref<const Texture> m_srf;
     bool m_alpha;
     bool m_jitter;
+    ScalarFloat m_cone_scale;
 
     MI_TRAVERSE_CB(Base, m_film, m_sampler, m_srf)
 };

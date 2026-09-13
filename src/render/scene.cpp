@@ -143,6 +143,8 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
             mesh->build_parameterization();
     }
 
+    update_filtered_textures();
+
     if (!m_emitters.empty()) {
         // Inform environment emitters etc. about the scene bounds
         for (Emitter *emitter: m_emitters)
@@ -320,6 +322,35 @@ MI_VARIANT void Scene<Float, Spectrum>::update_portal_data() {
     dr::make_opaque(m_portal_data.count);
 }
 
+MI_VARIANT void Scene<Float, Spectrum>::update_filtered_textures() {
+    using Texture = mitsuba::Texture<Float, Spectrum>;
+
+    // Recursively searches an object graph for a texture with filtered lookups
+    struct Scan : public TraversalCallback {
+        bool found = false;
+
+        void put_object(std::string_view, Object *obj, uint32_t) override {
+            if (found || !obj)
+                return;
+            if (Texture *texture = dynamic_cast<Texture *>(obj))
+                found = texture->filtered();
+            if (!found)
+                obj->traverse(this);
+        }
+
+        void put_value(std::string_view, void *, uint32_t,
+                       const std::type_info &) override { }
+    } scan;
+
+    for (Shape *shape : m_shapes)
+        shape->traverse(&scan);
+    for (ShapeGroup *group : m_shapegroups)
+        for (auto &shape : group->shapes())
+            const_cast<Shape *>(shape.get())->traverse(&scan);
+
+    m_has_filtered_textures = scan.found;
+}
+
 MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
     // An empty record buffer marks an instance-free scene (the instance list
     // itself is fixed at construction time)
@@ -353,6 +384,9 @@ MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
 Scene<Float, Spectrum>::compute_surface_interaction(
     const Ray3f &ray, const PreliminaryIntersection3f &pi, uint32_t ray_flags,
     Mask active) const {
+    if (!m_has_filtered_textures)
+        ray_flags &= ~(uint32_t) RayFlags::Footprint;
+
     active &= pi.is_valid();
     if (dr::none_or<false>(active)) {
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();

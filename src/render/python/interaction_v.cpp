@@ -53,6 +53,7 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def_field(SurfaceInteraction3f, dp_dv,         D(SurfaceInteraction, dp_dv))
         .def_field(SurfaceInteraction3f, dn_du,         D(SurfaceInteraction, dn_du))
         .def_field(SurfaceInteraction3f, dn_dv,         D(SurfaceInteraction, dn_dv))
+        .def_field(SurfaceInteraction3f, footprint,     D(SurfaceInteraction, footprint))
         .def_field(SurfaceInteraction3f, wi,            D(SurfaceInteraction, wi))
         .def_field(SurfaceInteraction3f, prim_index,    D(SurfaceInteraction, prim_index))
         .def_field(SurfaceInteraction3f, instance_index, D(SurfaceInteraction, instance_index))
@@ -87,11 +88,16 @@ MI_PY_EXPORT(SurfaceInteraction) {
         .def("bsdf", &SurfaceInteraction3f::bsdf, D(SurfaceInteraction, bsdf))
         .def("has_n_partials", &SurfaceInteraction3f::has_n_partials,
             D(SurfaceInteraction, has_n_partials))
+        .def("has_footprint", &SurfaceInteraction3f::has_footprint,
+            D(SurfaceInteraction, has_footprint))
+        .def("compute_footprint", &SurfaceInteraction3f::compute_footprint,
+            "ray"_a, "active"_a = true, D(SurfaceInteraction, compute_footprint))
         .def_repr(SurfaceInteraction3f);
 
     MI_PY_DRJIT_STRUCT(si, SurfaceInteraction3f, t, time, wavelengths, p, n,
                        p_err, shape, uv, sh_frame, frame_flipped, dp_du, dp_dv,
-                       dn_du, dn_dv, wi, prim_index, instance_index)
+                       dn_du, dn_dv, footprint, wi, prim_index,
+                       instance_index)
 }
 
 MI_PY_EXPORT(MediumInteraction) {

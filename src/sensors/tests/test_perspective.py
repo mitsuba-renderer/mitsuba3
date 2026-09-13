@@ -183,7 +183,32 @@ def test05_spectrum_sampling(variants_vec_spectral):
         })
 
 
-def test06_jitter(variants_all_backends_once):
+def test06_ray_cone(variants_all_backends_once):
+    import math
+
+    camera = mi.load_dict({
+        'type': 'perspective', 'fov': 90, 'fov_axis': 'x', 'near_clip': 0.5,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 50}
+    })
+
+    # On the optical axis, the cone spreads by the angle one pixel subtends.
+    # The ray starts on the near plane, where the cone already has the width
+    # that it accumulated since the pinhole.
+    ray, _ = camera.sample_ray(0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    spread = 2 * math.tan(math.radians(45)) / 100
+    assert dr.allclose(ray.cone.spread, spread, rtol=1e-5)
+    assert dr.allclose(ray.cone.width, 0.5 * spread, rtol=1e-5)
+    assert dr.allclose(ray.cone.propagate(4 - 0.5).width, 4 * spread, rtol=1e-5)
+
+    # At the edge of a 90 degree frame the pixel subtends cos(45)^1.5 less,
+    # and the near plane lies 1/cos(45) farther along the ray
+    ray, _ = camera.sample_ray(0, 0.5, [0.0, 0.5], [0.5, 0.5])
+    cos_theta = math.cos(math.radians(45))
+    assert dr.allclose(ray.cone.spread, spread * cos_theta ** 1.5, rtol=1e-4)
+    assert dr.allclose(ray.cone.width, ray.cone.spread * 0.5 / cos_theta, rtol=1e-4)
+
+
+def test07_jitter(variants_all_backends_once):
     import numpy as np
 
     # Without jitter, every ray passes through the pixel center and the

@@ -239,3 +239,22 @@ def test05_spectrum_sampling(variants_vec_spectral):
                 }
             }
         })
+
+
+def test06_ray_cone(variants_all_backends_once):
+    import math
+
+    camera = mi.load_dict({
+        'type': 'thinlens', 'fov': 90, 'fov_axis': 'x', 'near_clip': 0.5,
+        'aperture_radius': 0.1, 'focus_distance': 4,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 50}
+    })
+
+    # The cone is that of a pinhole camera at the sampled aperture position
+    # and is as wide as the pixel's footprint on the focal plane. The ray
+    # starts on the near plane, 0.5 units past the aperture.
+    ray, _ = camera.sample_ray(0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    pixel = 2 * math.tan(math.radians(45)) / 100
+    assert dr.allclose(ray.cone.spread, pixel, rtol=1e-5)
+    assert dr.allclose(ray.cone.width, 0.5 * pixel, rtol=1e-5)
+    assert dr.allclose(ray.cone.propagate(4 - 0.5).width, 4 * pixel, rtol=1e-4)

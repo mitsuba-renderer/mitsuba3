@@ -31,7 +31,7 @@ enum class RayFlags : uint32_t {
      * shading frame (`SurfaceInteraction3f.sh_frame`), and the incident
      * direction in the shading frame (`SurfaceInteraction3f.wi`).
      *
-     * This is also the default option selected by `RayFlags.Default`.
+     * Part of `RayFlags.Default`.
      */
     Shading = 0x1,
 
@@ -44,9 +44,21 @@ enum class RayFlags : uint32_t {
      */
     NormalPartials = 0x2,
 
+    /**
+     * Additionally project the ray cone (`Ray3f.cone`) onto the surface and
+     * compute its UV-space footprint (`SurfaceInteraction3f.footprint`) for
+     * filtered texture lookups.
+     *
+     * The scene automatically unsets the flag when none of the registered
+     * textures performs filtered lookups (see `Scene.has_filtered_textures()`).
+     *
+     * Depends on `RayFlags.Shading`. Part of `RayFlags.Default`.
+     */
+    Footprint = 0x4,
+
     /// The detail level requested by default, i.e. everything but
     /// `RayFlags.NormalPartials`
-    Default = Shading,
+    Default = Shading | Footprint,
 
     // =============================================================
     //               Differentiability compute flags
@@ -71,7 +83,7 @@ enum class RayFlags : uint32_t {
      * At most one of FollowShape or `RayFlags.DetachShape` can be specified.
      * The flag has no effect in non-differentiable variants.
      */
-    FollowShape = 0x4,
+    FollowShape = 0x100,
 
     /**
      * Ignore the differentiable dependence of the
@@ -86,7 +98,7 @@ enum class RayFlags : uint32_t {
      * At most one of `RayFlags.FollowShape` or DetachShape can be specified.
      * The flag has no effect in non-differentiable variants.
      */
-    DetachShape = 0x8,
+    DetachShape = 0x200,
 };
 
 MI_DECLARE_ENUM_OPERATORS(RayFlags)
@@ -350,6 +362,18 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     /// Shading normal partials wrt. the UV parameterization
     Vector3f dn_du, dn_dv;
 
+    /**
+     * UV-space footprint of the ray cone at the interaction
+     *
+     * The ray cone projects to an ellipse on the surface. The columns of this
+     * matrix store a pair of conjugate diameters of this ellipse. Their
+     * orientation about the ray is arbitrary.
+     *
+     * The field is only computed when `RayFlags.Footprint` is set and is
+     * zero otherwise. See `compute_footprint()`.
+     */
+    Matrix2f footprint;
+
     /// Incident direction in the local shading frame
     Vector3f wi;
 
@@ -378,7 +402,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                 const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n, ps.p_err), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
-          wi(0), prim_index(0) {}
+          footprint(0), wi(0), prim_index(0) {}
 
     /**
      * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
@@ -393,6 +417,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         dp_dv          = dr::zeros<Vector3f>(size);
         dn_du          = dr::zeros<Vector3f>(size);
         dn_dv          = dr::zeros<Vector3f>(size);
+        footprint      = dr::zeros<Matrix2f>(size);
         wi             = dr::zeros<Vector3f>(size);
         prim_index     = dr::zeros<Index>(size);
         instance_index = dr::zeros<Index>(size);
@@ -550,6 +575,64 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             return dr::any_nested((dn_du != 0.f) || (dn_dv != 0.f));
     }
 
+    bool has_footprint() const {
+        if constexpr (dr::is_dynamic_v<Float>)
+            return dr::width(footprint) > 0;
+        else
+            return dr::any_nested(footprint != 0.f);
+    }
+
+    /**
+     * Project the ray cone onto the surface and store its UV-space footprint
+     *
+     * The cross section of ``ray.cone`` at the hit is a disk perpendicular to
+     * the ray. Projecting it onto the tangent plane yields an ellipse. This
+     * function computes it following :cite:`AkenineMoller2021RayCones` and
+     * stores its conjugate diameters in the `footprint` field.
+     */
+    void compute_footprint(const Ray3f &ray, Mask active = true) {
+        dr::suspend_grad<Float> guard;
+
+        // Diameter of the cone at the hit point
+        Float w = dr::abs(ray.cone.propagate(t).width);
+
+        // Projection along the ray onto the tangent plane. A floor on the
+        // cosine keeps grazing hits finite.
+        Float cos_theta = dr::dot(ray.d, n),
+              inv_cos   = dr::rcp(dr::mulsign(
+                  dr::maximum(dr::abs(cos_theta), 1e-4f), cos_theta));
+        auto project = [&](const Vector3f &v) {
+            return dr::fnmadd(ray.d, dr::dot(v, n) * inv_cos, v) * w;
+        };
+
+        // Least squares projection onto the parameterization. The determinant
+        // never exceeds E*G, which makes the test scale invariant.
+        Float E   = dr::dot(dp_du, dp_du),
+              F   = dr::dot(dp_du, dp_dv),
+              G   = dr::dot(dp_dv, dp_dv),
+              EG  = E * G,
+              det = dr::fnmadd(F, F, EG);
+        Mask valid = active && (det > 1e-6f * EG);
+        Float inv_det = dr::rcp(det);
+
+        auto to_uv = [&](const Vector3f &v) {
+            Float b0 = dr::dot(dp_du, v),
+                  b1 = dr::dot(dp_dv, v);
+
+            Vector2f tmp(dr::fmsub(G, b0, F * b1),
+                         dr::fmsub(E, b1, F * b0));
+
+            return dr::select(valid, tmp * inv_det, 0.f);
+        };
+
+        auto [e1, e2] = coordinate_system(ray.d);
+        Vector2f a = to_uv(project(e1)),
+                 b = to_uv(project(e2));
+
+        footprint = Matrix2f(a.x(), b.x(),
+                             a.y(), b.y());
+    }
+
     /**
      * Attach the motion of this interaction under the requested differentiation mode
      *
@@ -646,6 +729,9 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
             sh_frame.t = dr::select(frame_flipped, -t2, t2);
 
             wi = dr::select(active, to_local(-ray.d), -ray.d);
+
+            if (has_flag(ray_flags, RayFlags::Footprint))
+                compute_footprint(ray, active);
         }
     }
 
@@ -658,8 +744,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
     // =============================================================
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, p_err, shape, uv,
-                 sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv, wi,
-                 prim_index, instance_index)
+                 sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv,
+                 footprint, wi, prim_index, instance_index)
 };
 
 // -----------------------------------------------------------------------------
@@ -861,6 +947,9 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
         if (it.has_n_partials())
             os << "  dn_du = " << string::indent(it.dn_du, 11) << "," << std::endl
                << "  dn_dv = " << string::indent(it.dn_dv, 11) << "," << std::endl;
+
+        if (it.has_footprint())
+            os << "  footprint = " << string::indent(it.footprint, 14) << "," << std::endl;
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
