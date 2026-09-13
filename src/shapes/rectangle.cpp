@@ -84,7 +84,7 @@ The following XML snippet showcases a simple example of a textured rectangle:
 template <typename Float, typename Spectrum>
 class Rectangle final : public Mesh<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Mesh, m_to_world, m_is_instance,
+    MI_IMPORT_BASE(Mesh, m_to_world,
                    m_discontinuity_types, m_shape_type, m_flip_normals,
                    m_packed_faces, m_packed_vertices, m_vertex_count,
                    m_face_count, m_position_count, m_normal_count, m_layout,
@@ -235,7 +235,7 @@ public:
         si.instance_index = 0;
         si.t        = dr::select(active, 0, dr::Infinity<Float>);
 
-        /// Zero-initialize remaining fields
+        // Zero-initialize remaining fields
         si.time        = 0.f;
         si.wavelengths = Wavelength(0.f);
         si.wi          = Vector3f(0);
@@ -266,7 +266,7 @@ public:
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
         const AffineTransform4f &to_world = m_to_world.value();
 
-        /// Sample a point on one of the edges
+        // Sample a point on one of the edges
         Mask range = false;
         Vector2f edge_dir = dr::zeros<Vector2f>();
 
@@ -298,10 +298,10 @@ public:
                        0.f);
         ss.p = to_world * Point3f(local);
 
-        /// Sample a tangential direction at the point
+        // Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(dr::tail<2>(sample)));
 
-        /// Fill other fields
+        // Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
 
@@ -487,14 +487,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
-               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
-    ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ScalarIndex /*prim_index*/,
-                                   dr::mask_t<FloatP> active) const {
-        // Note: the outputs from this function will be post-processed into a
-        // SurfaceInteraction3f by `Mesh::compute_surface_interaction()`.
-
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 3>>
+    intersect_impl(const Ray3fP &ray_, dr::mask_t<FloatP> active) const {
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
             to_object = m_to_world.scalar().inverse();
@@ -510,6 +504,21 @@ public:
                         && t <= ray.maxt
                         && dr::abs(local.x()) <= 1.f
                         && dr::abs(local.y()) <= 1.f;
+
+        return { active, t, local };
+    }
+
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ScalarIndex /*prim_index*/,
+                                   dr::mask_t<FloatP> active) const {
+        MI_MASK_ARGUMENT(active);
+
+        // Note: the outputs from this function will be post-processed into a
+        // SurfaceInteraction3f by `Mesh::compute_surface_interaction()`.
+        auto [valid, t, local] = intersect_impl<FloatP>(ray, active);
 
         // Which of the two triangles did we hit?
         FloatP local_xy = local.x() + local.y();
@@ -541,31 +550,16 @@ public:
         // We don't technically need to mask the inactive lanes, but we do it
         // nevertheless to match the behavior of `Scene::ray_intersect()`.
         // Return: pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
-        return { active, dr::select(active, t, dr::Infinity<FloatP>),
-                 prim_uv & active, ((uint32_t) -1), dr::select(active, prim_index, 0) };
+        return { valid, dr::select(valid, t, dr::Infinity<FloatP>),
+                 prim_uv & valid, ((uint32_t) -1), dr::select(valid, prim_index, 0) };
     }
 
     template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
                                      ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-
-        AffineTransform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
-        else
-            to_object = m_to_world.value().inverse();
-
-        Ray3fP ray     = to_object * ray_;
-        FloatP t       = -ray.o.z() / ray.d.z();
-        Point<FloatP, 3> local = ray(t);
-
-        // Is intersection within ray segment and rectangle?
-        return active && t >= 0.f
-                      && t <= ray.maxt
-                      && dr::abs(local.x()) <= 1.f
-                      && dr::abs(local.y()) <= 1.f;
+        return std::get<0>(intersect_impl<FloatP>(ray, active));
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
