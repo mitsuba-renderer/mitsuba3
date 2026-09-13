@@ -16,37 +16,33 @@ extern "C" __global__ void __intersection__cylinder() {
     // Ray in object-space
     ray = apply_affine_ray(cylinder->to_object, ray);
 
-    float ox = ray.o.x(),
-          oy = ray.o.y(),
-          oz = ray.o.z(),
-          dx = ray.d.x(),
-          dy = ray.d.y(),
-          dz = ray.d.z();
+    // Shift the ray origin to the point closest to the axis (see sphere.cpp)
+    float lx = ray.o.x(), ly = ray.o.y(),
+          dx = ray.d.x(), dy = ray.d.y();
 
-    float A = sqr(dx) + sqr(dy),
-          B = 2.0 * (dx * ox + dy * oy),
+    float A = sqr(dx) + sqr(dy);
+    float t_offset = A != 0.f ? -(lx * dx + ly * dy) / A : 0.f;
+    float ox = fmaf(t_offset, dx, lx),
+          oy = fmaf(t_offset, dy, ly);
+
+    float B = 2.f * (ox * dx + oy * dy),
           C = sqr(ox) + sqr(oy) - sqr(radius);
 
     float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);
+    near_t += t_offset;
+    far_t += t_offset;
 
-    // Cylinder doesn't intersect with the segment on the ray
-    bool out_bounds = !(near_t <= ray.maxt && far_t >= ray.mint); // NaN-aware conditionals
+    float z_near = fmaf(ray.d.z(), near_t, ray.o.z()),
+          z_far  = fmaf(ray.d.z(), far_t,  ray.o.z());
 
-    float z_pos_near = oz + dz * near_t,
-          z_pos_far  = oz + dz * far_t;
+    bool near_ok = near_t >= 0.f && near_t <= ray.maxt &&
+                   z_near >= 0.f && z_near <= length,
+         far_ok  = far_t  >= 0.f && far_t  <= ray.maxt &&
+                   z_far  >= 0.f && z_far  <= length;
 
-    // Cylinder fully contains the segment of the ray
-    bool in_bounds = near_t < ray.mint && far_t > ray.maxt;
-
-    bool valid_intersection =
-        solution_found && !out_bounds && !in_bounds &&
-        ((z_pos_near >= 0.f && z_pos_near <= length && near_t > ray.mint) ||
-         (z_pos_far  >= 0.f && z_pos_far  <= length && far_t < ray.maxt));
-
-    float t = (z_pos_near >= 0 && z_pos_near <= length && near_t >= 0.f ? near_t : far_t);
-
-    if (valid_intersection)
-        optixReportIntersection(t, OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
+    if (solution_found && (near_ok || far_ok))
+        optixReportIntersection(near_ok ? near_t : far_t,
+                                OPTIX_HIT_KIND_TRIANGLE_FRONT_FACE);
 }
 #endif

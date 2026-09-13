@@ -180,32 +180,34 @@ BoundingBoxIntersection intersection_cylinder(
     float3 ro = apply_affine_point(c.to_object, origin);
     float3 rd = apply_affine_vector(c.to_object, direction);
 
-    float A = rd.x * rd.x + rd.y * rd.y;
-    float B = 2.0f * (rd.x * ro.x + rd.y * ro.y);
-    float C = ro.x * ro.x + ro.y * ro.y - radius * radius;
+    // Shift the ray origin to the point closest to the axis (see sphere.cpp)
+    float2 l = ro.xy;
+    float2 d = rd.xy;
+
+    float A = dot(d, d);
+    float t_offset = A != 0.0f ? -dot(l, d) / A : 0.0f;
+    float2 o = fma(t_offset, d, l);
+
+    float B = 2.0f * dot(o, d);
+    float C = dot(o, o) - radius * radius;
 
     float near_t, far_t;
     bool ok = solve_quadratic(A, B, C, near_t, far_t);
+    near_t += t_offset;
+    far_t  += t_offset;
 
-    bool out_bounds = !(near_t <= max_distance && far_t >= min_distance);
+    float z_near = fma(rd.z, near_t, ro.z);
+    float z_far  = fma(rd.z, far_t,  ro.z);
 
-    float z_pos_near = ro.z + rd.z * near_t;
-    float z_pos_far  = ro.z + rd.z * far_t;
-
-    bool in_bounds = near_t < min_distance && far_t > max_distance;
-
-    bool valid =
-        ok && !out_bounds && !in_bounds &&
-        ((z_pos_near >= 0.0f && z_pos_near <= length && near_t > min_distance) ||
-         (z_pos_far  >= 0.0f && z_pos_far  <= length && far_t  < max_distance));
-
-    float t = (z_pos_near >= 0.0f && z_pos_near <= length && near_t >= 0.0f)
-              ? near_t : far_t;
+    bool near_ok = near_t >= min_distance && near_t <= max_distance &&
+                   z_near >= 0.0f && z_near <= length,
+         far_ok  = far_t  >= min_distance && far_t  <= max_distance &&
+                   z_far  >= 0.0f && z_far  <= length;
 
     BoundingBoxIntersection r{false, 0.0f};
-    if (valid && t >= min_distance && t <= max_distance) {
+    if (ok && (near_ok || far_ok)) {
         r.accept   = true;
-        r.distance = t;
+        r.distance = near_ok ? near_t : far_t;
     }
     return r;
 }
