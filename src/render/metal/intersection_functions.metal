@@ -231,46 +231,23 @@ BoundingBoxIntersection intersection_ellipsoids(
     EllipsoidData e = ellis[data_offset(lookup, inst_id, geo_id) + prim_id];
 
     // World -> object (unit-sphere) space ray.
-    float3 ro = apply_affine_point(e.to_object, origin);
-    float3 rd = apply_affine_vector(e.to_object, direction);
+    float3 l = apply_affine_point(e.to_object, origin);
+    float3 d = apply_affine_vector(e.to_object, direction);
 
-    BoundingBoxIntersection r{false, 0.0f};
+    // Shift the ray origin to the point closest to the center (see sphere.cpp)
+    float A = dot(d, d);
+    float t_offset = -dot(l, d) / A;
+    float3 o = fma(t_offset, d, l);
 
-    // Perpendicular-plane projection trick (matches src/shapes/optix/
-    // ellipsoids.cuh:62-72): we shift the ray origin to the foot of the
-    // perpendicular dropped from the ellipsoid center onto the ray, which
-    // significantly improves the conditioning of the discriminant for
-    // distant rays / grazing angles.
-    float plane_t  = dot(-ro, rd) / length(rd);
-    float3 plane_p = ro + plane_t * rd;
-
-    // Ray is perpendicular to the origin-center segment AND its closest
-    // point on the ray is outside the unit sphere -> definite miss.
-    if (plane_t == 0.0f && length(plane_p) > 1.0f)
-        return r;
-
-    // Ray-vs-unit-sphere using the shifted origin `plane_p`.
-    float A = dot(rd, rd);
-    float B = 2.0f * dot(plane_p, rd);
-    float C = dot(plane_p, plane_p) - 1.0f;
+    float B = 2.0f * dot(o, d);
+    float C = dot(o, o) - 1.0f;
 
     float near_t, far_t;
     bool ok = solve_quadratic(A, B, C, near_t, far_t);
+    near_t += t_offset;
 
-    // Re-anchor the parametric distances to the original ray origin.
-    near_t += plane_t;
-    far_t  += plane_t;
-
-    // Match OptiX semantics (ellipsoids.cuh:82-94):
-    //   out_bounds: ellipsoid does not intersect [0, ray.maxt]
-    //   in_bounds : ellipsoid fully contains the ray segment
-    //   backfacing: ray origin is INSIDE the ellipsoid (rejected)
-    bool out_bounds = !(near_t <= max_distance && far_t >= 0.0f);
-    bool in_bounds  = near_t < 0.0f && far_t > max_distance;
-    bool backfacing = near_t < 0.0f;
-
-    if (ok && !out_bounds && !in_bounds && !backfacing &&
-        near_t >= min_distance && near_t <= max_distance) {
+    BoundingBoxIntersection r{false, 0.0f};
+    if (ok && near_t >= min_distance && near_t <= max_distance) {
         r.accept   = true;
         r.distance = near_t;
     }

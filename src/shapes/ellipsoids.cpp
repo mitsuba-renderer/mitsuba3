@@ -295,52 +295,36 @@ public:
 
         auto rot = dr::quat_to_matrix<dr::Matrix<Value, 3>>(ellipsoid.quat);
 
-        Value maxt = Value(ray.maxt);
-
         // Transform space such that the ellipsoid is now a unit sphere centered
         // at the origin
-        Value3 o = transpose(rot) * (ray.o - ellipsoid.center);
+        Value3 l = transpose(rot) * (ray.o - ellipsoid.center);
         Value3 d = transpose(rot) * ray.d;
 
         Value3 scale_rcp = dr::rcp(ellipsoid.scale);
-        o *= scale_rcp;
+        l *= scale_rcp;
         d *= scale_rcp;
 
-        Ray3fP ray_relative(o, d);
+        // Shift the ray origin to the point closest to the center (see sphere.cpp)
+        Value A = dr::squared_norm(d),
+              t_offset = -dr::dot(l, d) / A;
+        Value3 o = dr::fmadd(d, t_offset, l);
 
-        // We define a plane which is perpendicular to the ray direction and
-        // contains the ellipsoid center and intersect it. We then solve the
-        // ray-sphere intersection as if the ray origin was this new
-        // intersection point. This additional step makes the whole intersection
-        // routine numerically more robust.
+        Value B = dr::scalar_t<Value>(2) * dr::dot(o, d),
+              C = dr::squared_norm(o) - dr::scalar_t<Value>(1);
 
-        Value plane_t = dot(-o, d) / norm(d);
-        Value3 plane_p = ray_relative(FloatP(plane_t));
-
-        Value A = dr::squared_norm(d);
-        Value B = dr::scalar_t<Value>(2.0) * dr::dot(plane_p, d);
-        Value C = dr::squared_norm(plane_p) - Value(1.0);
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
-        // Adjust distances for plane intersection
-        near_t += plane_t;
-        far_t += plane_t;
+        // Undo the origin shift
+        near_t += t_offset;
 
-        // Ellipsoid doesn't intersect with the segment on the ray
-        dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
+        // Only the nearest root counts: a ray that starts inside the
+        // ellipsoid sees its backface, which is culled
+        Value maxt = Value(ray.maxt);
+        active &= dr::mask_t<FloatP>(solution_found && near_t >= Value(0) &&
+                                     near_t <= maxt);
+        FloatP t = FloatP(near_t);
 
-        // Ellipsoid fully contains the segment of the ray
-        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
-
-        // Ellipsoid is backfacing
-        dr::mask_t<FloatP> backfacing = (near_t < Value(0.0));
-
-        active &= solution_found && !out_bounds && !in_bounds && !backfacing;
-
-        FloatP t = dr::select(near_t < Value(0.0), FloatP(far_t), FloatP(near_t));
-        t =  dr::select(active, t, dr::Infinity<FloatP>);
-
-        return { t, active };
+        return { dr::select(active, t, dr::Infinity<FloatP>), active };
     }
 
     template <typename FloatP, typename Ray3fP>
