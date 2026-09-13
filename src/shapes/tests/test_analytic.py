@@ -53,7 +53,7 @@ def test01_normal_orientation(variants_all_rgb, shape, flip, mirrored):
         assert dr.allclose(s.surface_area(), AREA[shape] * scale**2)
 
 
-@pytest.mark.parametrize('shape', ['disk', 'rectangle'])
+@pytest.mark.parametrize('shape', ['sphere', 'disk', 'rectangle'])
 @pytest.mark.parametrize('scale', [0.1, 3.0])
 @pytest.mark.parametrize('angle', [30.0, 120.0, 180.0])
 def test03_eval_param_consistency(variants_vec_rgb, shape, scale, angle):
@@ -80,7 +80,7 @@ def test03_eval_param_consistency(variants_vec_rgb, shape, scale, angle):
     assert dr.allclose(si_ray.uv, ps.uv, atol=1e-5)
 
 
-@pytest.mark.parametrize('shape', ['disk', 'rectangle'])
+@pytest.mark.parametrize('shape', ['sphere', 'disk', 'rectangle'])
 @pytest.mark.parametrize('detach', [False, True])
 def test04_eval_param_motion(variants_all_ad_rgb, shape, detach):
     """The parameterized point follows the shape unless it is detached"""

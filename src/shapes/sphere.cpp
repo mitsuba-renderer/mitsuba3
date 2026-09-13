@@ -355,23 +355,44 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Float phi = uv.x() * dr::TwoPi<Float>;
-        Float theta = uv.y() * dr::Pi<Float>;
+        MI_MASK_ARGUMENT(active);
 
-        Point3f local = sph_to_dir(theta, phi);
-        Point3f p = m_to_world.value() * local;
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
+                                                  : m_to_world.value();
+        Point3f center = detach_shape ? dr::detach(m_center.value())
+                                      : m_center.value();
+        Float radius = detach_shape ? dr::detach(m_radius.value())
+                                    : m_radius.value();
 
-        Ray3f ray(p + local, -local, 0, Wavelength(0));
+        Float phi = uv.x() * dr::TwoPi<Float>,
+              theta = uv.y() * dr::Pi<Float>;
+        auto [sin_phi, cos_phi] = dr::sincos(phi);
+        auto [sin_theta, cos_theta] = dr::sincos(theta);
+        Vector3f local(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta);
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
-        active &= pi.is_valid();
+        Vector3f n = dr::normalize(to_world * local);
 
-        if (dr::none_or<false>(active))
-            return dr::zeros<SurfaceInteraction3f>();
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.t     = dr::select(active, 0.f, dr::Infinity<Float>);
+        si.p     = dr::fmadd(n, radius, center);
+        si.p_err = position_error(n);
+        si.uv    = uv;
+        si.dp_du = to_world * Vector3f(-local.y(), local.x(), 0.f) * dr::TwoPi<Float>;
+        si.dp_dv = to_world * Vector3f(cos_theta * cos_phi, cos_theta * sin_phi,
+                                       -sin_theta) * dr::Pi<Float>;
+        si.n = m_flip_normals ? -n : n;
+        si.sh_frame.n = si.n;
+        si.sh_frame.s = si.dp_du;
+        si.initialize_sh_frame();
+        si.shape = this;
+        dr::masked(si.shape, !active) = nullptr;
 
-        SurfaceInteraction3f si =
-            compute_surface_interaction(ray, pi, ray_flags, active);
-        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+        if (has_flag(ray_flags, RayFlags::NormalPartials)) {
+            Float inv_radius = (m_flip_normals ? -1.f : 1.f) * dr::rcp(radius);
+            si.dn_du = si.dp_du * inv_radius;
+            si.dn_dv = si.dp_dv * inv_radius;
+        }
 
         return si;
     }
