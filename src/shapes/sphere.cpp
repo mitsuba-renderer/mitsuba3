@@ -156,9 +156,6 @@ public:
     }
 
     void update() {
-        // Extract center and radius from to_world matrix (25 iterations for numerical accuracy)
-        auto [S, Q, T] = dr::transform_decompose(m_to_world.scalar().matrix, 25);
-
         // A sphere must be uniformly scaled (else it is an ellipsoid)
         if (!m_to_world.scalar().is_similarity())
             Log(Warn, "'to_world' transform shouldn't contain non-uniform "
@@ -166,13 +163,6 @@ public:
 
         m_radius = dr::norm(m_to_world.value() * Vector3f(1.f, 0.f, 0.f));
         m_center = m_to_world.value() * Point3f(0.f);
-
-        if (S[0][0] <= 0.f) {
-            m_radius = dr::abs(m_radius.value());
-            m_flip_normals = !m_flip_normals;
-        }
-
-        // Compute the to_object transformation with uniform scaling and no shear
 
         m_inv_surface_area = dr::rcp(surface_area());
 
