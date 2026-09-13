@@ -220,26 +220,32 @@ public:
         Base::parameters_changed(keys);
     }
 
-    SurfaceInteraction3f eval_parameterization(const Point2f &uv, uint32_t, Mask active) const override {
-        SurfaceInteraction3f si{};
+    SurfaceInteraction3f eval_parameterization(const Point2f &uv,
+                                               uint32_t ray_flags,
+                                               Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
+                                                  : m_to_world.value();
+        Frame3f frame = detach_shape ? dr::detach(m_frame) : m_frame;
+
         Point3f local(dr::fmadd(uv.x(), 2.f, - 1.f),
                       dr::fmadd(uv.y(), 2.f, - 1.f), 0.f);
-        si.p = m_to_world.value() * local;
-        si.sh_frame  = m_frame;
-        si.n         = m_frame.n;
-        si.p_err     = m_to_world.value().position_error(local, si.n);
-        si.dp_du     = m_frame.s;
-        si.dp_dv     = m_frame.t;
-        si.uv        = uv;
-        si.shape    = this;
-        si.instance_index = 0;
-        si.t        = dr::select(active, 0, dr::Infinity<Float>);
 
-        // Zero-initialize remaining fields
-        si.time        = 0.f;
-        si.wavelengths = Wavelength(0.f);
-        si.wi          = Vector3f(0);
-        si.prim_index = 0;
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.t     = dr::select(active, 0.f, dr::Infinity<Float>);
+        si.p     = to_world * local;
+        si.n     = frame.n;
+        si.p_err = to_world.position_error(local, si.n);
+        si.uv    = uv;
+        si.dp_du = frame.s;
+        si.dp_dv = frame.t;
+        si.sh_frame.n = si.n;
+        si.sh_frame.s = si.dp_du;
+        si.initialize_sh_frame();
+        si.shape = this;
+        dr::masked(si.shape, !active) = nullptr;
 
         return si;
     }
