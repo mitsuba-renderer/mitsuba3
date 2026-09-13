@@ -617,36 +617,42 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
         wavelengths = ray.wavelengths;
 
         if (has_flag(ray_flags, RayFlags::Shading)) {
-            // Orthogonalize the tangent direction that the shape wrote to
-            // ``sh_frame.s`` against the shading normal. Shapes that leave
-            // the field at its zero initialization fall back to an
-            // arbitrary basis below.
-            Vector3f n = sh_frame.n,
-                     s = dr::fnmadd(n, dr::dot(n, sh_frame.s), sh_frame.s);
-            Float sqr_norm = dr::squared_norm(s);
-
-            auto [s2, t2] = dr::if_stmt(
-                std::make_tuple(n, s, sqr_norm), sqr_norm > 0.f,
-
-                [](Vector3f &n, Vector3f &s, Float &sqr_norm) {
-                    Vector3f s2 = s * dr::rsqrt(sqr_norm);
-                    return std::make_pair(s2, Vector3f(dr::cross(n, s2)));
-                },
-
-                // Fall back to an arbitrary basis when degenerate
-                [](Vector3f &n, Vector3f &, Float &) {
-                    return coordinate_system(n);
-                },
-
-                "SurfaceInteraction::finalize_surface_interaction()"
-            );
-
-            // The bitangent follows the orientation of the parameterization
-            sh_frame.s = s2;
-            sh_frame.t = dr::select(frame_flipped, -t2, t2);
-
+            initialize_sh_frame();
             wi = dr::select(active, to_local(-ray.d), -ray.d);
         }
+    }
+
+    /**
+     * Initialize the shading frame
+     *
+     * This function takes the normal ``sh_frame.n`` and tentative tangent
+     * ``sh_frame.s`` and completes ``sh_frame`` to an orthonormal basis. The
+     * tangent does not need to be orthogonal and can even be zero.
+     */
+    void initialize_sh_frame() {
+        Vector3f n = sh_frame.n,
+                 s = dr::fnmadd(n, dr::dot(n, sh_frame.s), sh_frame.s);
+        Float sqr_norm = dr::squared_norm(s);
+
+        auto [s2, t2] = dr::if_stmt(
+            std::make_tuple(n, s, sqr_norm), sqr_norm > 0.f,
+
+            [](Vector3f &n, Vector3f &s, Float &sqr_norm) {
+                Vector3f s2 = s * dr::rsqrt(sqr_norm);
+                return std::make_pair(s2, Vector3f(dr::cross(n, s2)));
+            },
+
+            // Fall back to an arbitrary basis when degenerate
+            [](Vector3f &n, Vector3f &, Float &) {
+                return coordinate_system(n);
+            },
+
+            "SurfaceInteraction::initialize_sh_frame()"
+        );
+
+        // The bitangent follows the orientation of the parameterization
+        sh_frame.s = s2;
+        sh_frame.t = dr::select(frame_flipped, -t2, t2);
     }
 
     /// Convenience operator for masking
