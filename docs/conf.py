@@ -20,26 +20,26 @@ def replacement(self, node):
     vr(self, node)
 HTML5Translator.visit_reference = replacement
 
-if not os.path.exists('src/quickstart/'):
+if not os.path.lexists('src/quickstart/'):
     os.symlink('../../tutorials/quickstart', 'src/quickstart', target_is_directory=True)
 
-if not os.path.exists('src/rendering'):
+if not os.path.lexists('src/rendering'):
     os.symlink('../../tutorials/rendering', 'src/rendering', target_is_directory=True)
 
-if not os.path.exists('src/inverse_rendering'):
+if not os.path.lexists('src/inverse_rendering'):
     os.symlink('../../tutorials/inverse_rendering', 'src/inverse_rendering', target_is_directory=True)
 
-if not os.path.exists('src/others'):
+if not os.path.lexists('src/others'):
     os.symlink('../../tutorials/others', 'src/others', target_is_directory=True)
 
-if not os.path.exists('src/how_to_guides/'):
+if not os.path.lexists('src/how_to_guides/'):
     os.symlink('../../tutorials/how_to_guides', 'src/how_to_guides', target_is_directory=True)
 
-if not os.path.exists('src/generated'):
+if not os.path.lexists('src/generated'):
     os.symlink('../generated', 'src/generated', target_is_directory=True)
 
 # This is necessary for the plugin doc to properly access the resources (images)
-if not os.path.exists('resources'):
+if not os.path.lexists('resources'):
     os.symlink('../resources', 'resources', target_is_directory=True)
 
 from pathlib import Path
