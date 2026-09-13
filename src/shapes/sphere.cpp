@@ -137,6 +137,18 @@ public:
         return dr::dot(dr::abs(dr::detach(n)), mag) * math::PositionEpsilon<Float>;
     }
 
+    /// Direction sampling either samples the entire sphere or the visible
+    /// cone when a reference point with squared distance ``dist2`` lies
+    /// outside. This method determines which case applies.
+    Mask is_outside(const Float &dist2) const {
+        return dist2 > dr::square(m_radius_thresh);
+    }
+
+    /// ``1 - cos_theta`` without the cancellation of the direct subtraction
+    static Float one_minus_cos(const Float &sin_theta_2, const Float &cos_theta) {
+        return sin_theta_2 / (1.f + cos_theta);
+    }
+
     Sphere(const Properties &props) : Base(props) {
         /// Are the sphere normals pointing inwards? default: no
         m_flip_normals = props.get<bool>("flip_normals", false);
@@ -166,7 +178,14 @@ public:
 
         m_inv_surface_area = dr::rcp(surface_area());
 
-        dr::make_opaque(m_radius, m_center, m_inv_surface_area);
+        // Threshold for `is_outside()` based on the rounding error of the
+        // distance computation
+        m_radius_thresh =
+            dr::fmadd(dr::norm(m_center.value()) + m_radius.value(),
+                      math::PositionEpsilon<Float>, m_radius.value());
+
+        dr::make_opaque(m_radius, m_center, m_inv_surface_area,
+                        m_radius_thresh);
         mark_dirty();
     }
 
@@ -245,23 +264,20 @@ public:
         Vector3f dc_v = m_center.value() - it.p;
         Float dc_2 = dr::squared_norm(dc_v);
 
-        Float radius_adj = m_radius.value() * (m_flip_normals ?
-                                               (1.f + math::RayEpsilon<Float>) :
-                                               (1.f - math::RayEpsilon<Float>));
-        Mask outside_mask = active && dc_2 > dr::square(radius_adj);
+        Mask outside_mask = active && is_outside(dc_2);
         if (likely(dr::any_or<true>(outside_mask))) {
             Float inv_dc            = dr::rsqrt(dc_2),
                   sin_theta_max     = m_radius.value() * inv_dc,
                   sin_theta_max_2   = dr::square(sin_theta_max),
                   inv_sin_theta_max = dr::rcp(sin_theta_max),
-                  cos_theta_max     = dr::safe_sqrt(1.f - sin_theta_max_2);
+                  cos_theta_max     = dr::safe_sqrt(1.f - sin_theta_max_2),
+                  one_minus_cos_theta_max = one_minus_cos(sin_theta_max_2, cos_theta_max);
 
-            // Fall back to a Taylor series expansion for small angles, where
-            // the standard approach suffers from severe cancellation errors
-            Float sin_theta_2 = dr::select(sin_theta_max_2 > 0.00068523f, // sin^2(1.5 deg)
-                                       1.f - dr::square(dr::fmadd(cos_theta_max - 1.f, sample.x(), 1.f)),
-                                       sin_theta_max_2 * sample.x()),
-                  cos_theta = dr::safe_sqrt(1.f - sin_theta_2);
+            // Uniformly sample cos_theta in [cos_theta_max, 1]. Working with
+            // the complement avoids cancellation when the cone is narrow.
+            Float one_minus_cos_theta = sample.x() * one_minus_cos_theta_max,
+                  cos_theta           = 1.f - one_minus_cos_theta,
+                  sin_theta_2         = one_minus_cos_theta * (2.f - one_minus_cos_theta);
 
             // Based on https://www.akalin.com/sampling-visible-sphere
             Float cos_alpha = sin_theta_2 * inv_sin_theta_max +
@@ -284,7 +300,7 @@ public:
             Float dist2 = dr::squared_norm(ds.d);
             ds.dist     = dr::sqrt(dist2);
             ds.d        = ds.d / ds.dist;
-            ds.pdf      = warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_theta_max);
+            ds.pdf      = dr::InvTwoPi<Float> / one_minus_cos_theta_max;
             dr::masked(ds.pdf, ds.dist == 0.f) = 0.f;
 
             dr::masked(result, outside_mask) = ds;
@@ -320,13 +336,14 @@ public:
                         Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        // Sine of the angle of the cone containing the sphere as seen from 'it.p'.
-        Float sin_alpha = m_radius.value() * dr::rcp(dr::norm(m_center.value() - it.p)),
-              cos_alpha = dr::safe_sqrt(1.f - sin_alpha * sin_alpha);
+        Float dc_2 = dr::squared_norm(m_center.value() - it.p);
 
-        return dr::select(sin_alpha < dr::OneMinusEpsilon<Float>,
-            // Reference point lies outside the sphere
-            warp::square_to_uniform_cone_pdf(dr::zeros<Vector3f>(), cos_alpha),
+        // Cone containing the sphere as seen from 'it.p'
+        Float sin_theta_max_2 = dr::square(m_radius.value()) / dc_2,
+              cos_theta_max   = dr::safe_sqrt(1.f - sin_theta_max_2);
+
+        return dr::select(is_outside(dc_2),
+            dr::InvTwoPi<Float> / one_minus_cos(sin_theta_max_2, cos_theta_max),
             m_inv_surface_area * dr::square(ds.dist) / dr::abs_dot(ds.d, ds.n)
         );
     }
@@ -742,9 +759,11 @@ private:
     /// Radius in world-space
     field<Float> m_radius;
     Float m_inv_surface_area;
+    Float m_radius_thresh;
     bool m_flip_normals;
 
-    MI_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area)
+    MI_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area,
+                   m_radius_thresh)
 };
 
 MI_EXPORT_PLUGIN(Sphere)
