@@ -551,114 +551,70 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
-               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
-    ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ScalarIndex /*prim_index*/,
-                                   dr::mask_t<FloatP> active) const {
-        MI_MASK_ARGUMENT(active);
-
+    std::pair<dr::mask_t<FloatP>, FloatP>
+    intersect_impl(const Ray3fP &ray_, dr::mask_t<FloatP> active) const {
         using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
                                          dr::float32_array_t<FloatP>,
                                          dr::float64_array_t<FloatP>>;
+        using Value2 = Vector<Value, 2>;
         using ScalarValue = dr::scalar_t<Value>;
 
+        // Object space contains the unit cylinder along the Z axis
         Ray3fP ray;
-        Value radius(1.0); // Constant kept for readability
-        Value length(1.0);
         if constexpr (!dr::is_jit_v<Value>)
             ray = m_to_world.scalar().inverse() * ray_;
         else
             ray = m_to_world.value().inverse() * ray_;
 
-        Value maxt = Value(ray.maxt);
+        // Shift the ray origin to the point closest to the axis (see sphere.cpp)
+        Value2 l(Value(ray.o.x()), Value(ray.o.y())),
+               d(Value(ray.d.x()), Value(ray.d.y()));
 
-        Value ox = Value(ray.o.x()),
-              oy = Value(ray.o.y()),
-              oz = Value(ray.o.z()),
-              dx = Value(ray.d.x()),
-              dy = Value(ray.d.y()),
-              dz = Value(ray.d.z());
+        Value A = dr::squared_norm(d),
+              t_offset = dr::select(A != ScalarValue(0),
+                                    -dr::dot(l, d) / A, ScalarValue(0));
+        Value2 o = dr::fmadd(d, t_offset, l);
 
-        Value A = dr::square(dx) + dr::square(dy),
-              B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = dr::square(ox) + dr::square(oy) - dr::square(radius);
+        Value B = ScalarValue(2) * dr::dot(o, d),
+              C = dr::squared_norm(o) - ScalarValue(1);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
+        near_t += t_offset;
+        far_t += t_offset;
 
-        // Cylinder doesn't intersect with the segment on the ray
-        dr::mask_t<FloatP> out_bounds =
-            !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
+        Value oz = Value(ray.o.z()), dz = Value(ray.d.z()),
+              maxt = Value(ray.maxt);
+        Value z_near = dr::fmadd(dz, near_t, oz),
+              z_far  = dr::fmadd(dz, far_t,  oz);
 
-        Value z_pos_near = oz + dz * near_t,
-              z_pos_far  = oz + dz * far_t;
+        dr::mask_t<Value> near_ok = near_t >= Value(0) && near_t <= maxt &&
+                                    z_near >= Value(0) && z_near <= Value(1),
+                          far_ok  = far_t  >= Value(0) && far_t  <= maxt &&
+                                    z_far  >= Value(0) && z_far  <= Value(1);
 
-        // Cylinder fully contains the segment of the ray
-        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
+        active &= dr::mask_t<FloatP>(solution_found && (near_ok || far_ok));
+        FloatP t = FloatP(dr::select(near_ok, near_t, far_t));
 
-        active &= solution_found && !out_bounds && !in_bounds &&
-                  ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= Value(0.0)) ||
-                   (z_pos_far  >= Value(0.0) && z_pos_far <= length  && far_t <= maxt));
-
-        FloatP t =
-            dr::select(active,
-                       dr::select(z_pos_near >= Value(0.0) && z_pos_near <= length &&
-                                      near_t >= Value(0.0),
-                                  FloatP(near_t), FloatP(far_t)),
-                       dr::Infinity<FloatP>);
-
-        return { active, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+        return { active, dr::select(active, t, dr::Infinity<FloatP>) };
     }
 
     template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ScalarIndex /*prim_index*/,
+                                   dr::mask_t<FloatP> active) const {
+        MI_MASK_ARGUMENT(active);
+        auto [valid, t] = intersect_impl<FloatP>(ray, active);
+        return { valid, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), 0 };
+    }
+
+    template <typename FloatP, typename Ray3fP>
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
                                      ScalarIndex /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
-        using ScalarValue = dr::scalar_t<Value>;
-
-        Ray3fP ray;
-        Value radius(1.0); // Constant kept for readability
-        Value length(1.0);
-        if constexpr (!dr::is_jit_v<Value>)
-            ray = m_to_world.scalar().inverse() * ray_;
-        else
-            ray = m_to_world.value().inverse() * ray_;
-
-        Value maxt = Value(ray.maxt);
-
-        Value ox = Value(ray.o.x()),
-              oy = Value(ray.o.y()),
-              oz = Value(ray.o.z()),
-              dx = Value(ray.d.x()),
-              dy = Value(ray.d.y()),
-              dz = Value(ray.d.z());
-
-        Value A = dr::square(dx) + dr::square(dy),
-              B = ScalarValue(2.f) * (dx * ox + dy * oy),
-              C = dr::square(ox) + dr::square(oy) - dr::square(radius);
-
-        auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
-
-        // Cylinder doesn't intersect with the segment on the ray
-        dr::mask_t<FloatP> out_bounds = !(near_t <= maxt && far_t >= Value(0.0)); // NaN-aware conditionals
-
-        Value z_pos_near = oz + dz * near_t,
-              z_pos_far  = oz + dz * far_t;
-
-        // Cylinder fully contains the segment of the ray
-        dr::mask_t<FloatP> in_bounds = near_t < Value(0.0) && far_t > maxt;
-
-        dr::mask_t<FloatP> valid_intersection =
-            active && solution_found && !out_bounds && !in_bounds &&
-            ((z_pos_near >= Value(0.0) && z_pos_near <= length && near_t >= Value(0.0)) ||
-             (z_pos_far  >= Value(0.0) && z_pos_far  <= length && far_t  <= maxt));
-
-        return valid_intersection;
+        return intersect_impl<FloatP>(ray, active).first;
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
