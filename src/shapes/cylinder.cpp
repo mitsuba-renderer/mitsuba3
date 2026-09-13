@@ -100,16 +100,14 @@ A simple example for instantiating a cylinder, whose interior is visible:
 template <typename Float, typename Spectrum>
 class Cylinder final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
+                   initialize, mark_dirty, get_children_string)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
-    using typename Base::ScalarSize;
 
     Cylinder(const Properties &props) : Base(props) {
-        /// Are the sphere normals pointing inwards? default: no
+        // Are the cylinder normals pointing inwards? default: no
         m_flip_normals = props.get<bool>("flip_normals", false);
 
         // Update the to_world transform if face points and radius are also provided
@@ -321,21 +319,20 @@ public:
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         if (has_flag(flags, DiscontinuityFlags::PerimeterType)) {
-            /// Sample a point on the shape surface
+            // Sample a point on the shape surface
             ss.uv = dr::select(
                 sample.x() < 0.5f,
                 Point2f(sample.x() * 2.f, 0.f),
                 Point2f(sample.x() * 2.f - 1.f, 1.f)
             );
-            Float sin_theta(0), cos_theta(0);
-            std::tie(sin_theta, cos_theta) = dr::sincos(ss.uv.x() * dr::TwoPi<Float>);
+            auto [sin_theta, cos_theta] = dr::sincos(ss.uv.x() * dr::TwoPi<Float>);
             Point3f local_p(cos_theta, sin_theta, ss.uv.y());
             ss.p = to_world * local_p;
 
-            /// Sample a tangential direction at the point
+            // Sample a tangential direction at the point
             ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
 
-            /// Fill other fields
+            // Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
             ss.flags = flags;
             ss.silhouette_d  = dr::normalize(to_world *
@@ -352,14 +349,14 @@ public:
             ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
             ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
-            /// Sample a point on the shape surface
+            // Sample a point on the shape surface
             ss = SilhouetteSample3f(
                 sample_position(0.f, dr::tail<2>(sample), active));
 
-            /// Sample a tangential direction at the point
+            // Sample a tangential direction at the point
             ss.d = warp::interval_to_tangent_direction(ss.n, sample.x());
 
-            /// Fill other fields
+            // Fill other fields
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::InteriorType;
             ss.flags = flags;
 
@@ -381,7 +378,7 @@ public:
                                      Mask active) const override {
         MI_MASK_ARGUMENT(active);
 
-        /// Invert perimeter type samples
+        // Invert perimeter type samples
         Point3f sample_perimeter = dr::zeros<Point3f>(dr::width(ss));
         sample_perimeter.x() = dr::select(ss.uv.y() < 0.5f,
                                           ss.uv.x() * 0.5f,
@@ -390,13 +387,13 @@ public:
         sample_perimeter.y() = sample_perimeter_yz.x();
         sample_perimeter.z() = sample_perimeter_yz.y();
 
-        /// Invert interior type samples
+        // Invert interior type samples
         Point3f sample_interior = dr::zeros<Point3f>(dr::width(ss));
         sample_interior.x() = warp::tangent_direction_to_interval(ss.n, ss.d);
         sample_interior.y() = ss.uv.y();
         sample_interior.z() = ss.uv.x();
 
-        /// Merge outputs
+        // Merge outputs
         Point3f sample = dr::zeros<Point3f>();
         Mask is_perimeter =
             has_flag(ss.discontinuity_type, DiscontinuityFlags::PerimeterType);
@@ -455,16 +452,16 @@ public:
             ss.n = frame_n;
             ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
+            // Squared distance of the viewpoint from the axis in object space
             Point3f local = m_to_world.value().inverse() * viewpoint;
-            local.z() = 0.f;
+            Float dist_2 = dr::square(local.x()) + dr::square(local.y());
 
-            Float norm_local_v = dr::norm(local);
             Float OV_theta = dr::atan2(local.y(), local.x());
             auto [sin_Y_pos, cos_Y_pos] = dr::sincos(OV_theta + 0.5f * dr::Pi<Float>);
             auto [sin_si, cos_si] = dr::sincos(si.uv.x() * dr::TwoPi<Float>);
             Float sign = dr::sign(cos_Y_pos * cos_si + sin_Y_pos * sin_si);
 
-            Float phi = dr::safe_asin(dr::rcp(norm_local_v));
+            Float phi = dr::safe_asin(dr::rsqrt(dist_2));
 
             Float ss_u_theta = OV_theta + (0.5f * dr::Pi<Float> - phi) * sign;
             dr::masked(ss_u_theta, ss_u_theta < 0.f) += dr::TwoPi<Float>;
@@ -482,9 +479,8 @@ public:
             ss.n = dr::normalize(to_world * local_n);
 
             // No interior boundary if the viewpoint is inside the cylinder
-            Mask succeeded = dr::select(norm_local_v > 1.f, 1u, 0u);
             ss.discontinuity_type =
-                dr::select(succeeded,
+                dr::select(dist_2 > 1.f,
                            (uint32_t) DiscontinuityFlags::InteriorType,
                            (uint32_t) DiscontinuityFlags::Empty);
         }
@@ -634,7 +630,7 @@ public:
         // Local coordinates of the hit point, re-projected onto the unit
         // cylinder to mitigate roundoff error
         Point3f local = dr::detach(to_object * ray(pi.t));
-        Float inv_r = dr::rcp(dr::norm(dr::head<2>(local)));
+        Float inv_r = dr::rsqrt(dr::square(local.x()) + dr::square(local.y()));
         local.x() *= inv_r;
         local.y() *= inv_r;
 
