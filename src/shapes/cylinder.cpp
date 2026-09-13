@@ -285,21 +285,36 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
+        MI_MASK_ARGUMENT(active);
+
+        bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
+        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
+                                                  : m_to_world.value();
+        Float radius = detach_shape ? dr::detach(m_radius.value())
+                                    : m_radius.value();
+
         auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.x());
         Point3f local(cos_phi, sin_phi, uv.y());
-        Point3f p = m_to_world.value() * local;
+        Vector3f n = dr::normalize(to_world * Normal3f(cos_phi, sin_phi, 0.f));
 
-        Ray3f ray(p + local, -local, 0, Wavelength(0));
+        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        si.t     = dr::select(active, 0.f, dr::Infinity<Float>);
+        si.p     = to_world * local;
+        si.p_err = to_world.position_error(local, n);
+        si.uv    = uv;
+        si.dp_du = to_world * Vector3f(-sin_phi, cos_phi, 0.f) * dr::TwoPi<Float>;
+        si.dp_dv = to_world * Vector3f(0.f, 0.f, 1.f);
+        si.n = m_flip_normals ? -n : n;
+        si.sh_frame.n = si.n;
+        si.sh_frame.s = si.dp_du;
+        si.initialize_sh_frame();
+        si.shape = this;
+        dr::masked(si.shape, !active) = nullptr;
 
-        PreliminaryIntersection3f pi = ray_intersect_preliminary(ray, 0, active);
-        active &= pi.is_valid();
-
-        if (dr::none_or<false>(active))
-            return dr::zeros<SurfaceInteraction3f>();
-
-        SurfaceInteraction3f si =
-            compute_surface_interaction(ray, pi, ray_flags, active);
-        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+        // The normal partial along 'v' vanishes, the cylinder is straight
+        if (has_flag(ray_flags, RayFlags::NormalPartials))
+            si.dn_du = si.dp_du * ((m_flip_normals ? -1.f : 1.f) *
+                                   dr::rcp(radius));
 
         return si;
     }
