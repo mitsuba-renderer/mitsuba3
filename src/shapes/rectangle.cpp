@@ -124,6 +124,13 @@ public:
         m_inv_surface_area = dr::rcp(surface_area());
         dr::make_opaque(m_frame, m_inv_surface_area);
 
+        // transform() below reverses the winding of mirrored geometry, which
+        // permutes the vertices that the barycentric coordinates refer to.
+        // The 'm_flipped' mirror above contributes another sign change.
+        m_reversed =
+            (dr::det(ScalarMatrix3f(m_to_world.scalar().matrix)) < 0.f) !=
+            m_flipped;
+
         // (Re-)create the unit rectangle records and map them to world
         // space. This runs again on every 'to_world' write; in
         // differentiable variants, transform() keeps the packed state
@@ -505,7 +512,7 @@ public:
                         && dr::abs(local.y()) <= 1.f;
 
         // Which of the two triangles did we hit?
-        const auto local_xy = local.x() + local.y();
+        FloatP local_xy = local.x() + local.y();
         dr::uint32_array_t<FloatP> prim_index = dr::select(local_xy <= 0.f, 0, 1);
 
         // Compute barycentric coordinates inside of the hit triangle (w.r.t. vertices 1 and 2).
@@ -527,6 +534,9 @@ public:
             Point<FloatP, 2>(local.y() + 1.f, -local_xy),
             Point<FloatP, 2>(local_xy, 1.f - local.x())
         );
+
+        if (m_reversed)
+            prim_uv.y() = 1.f - prim_uv.x() - prim_uv.y();
 
         // We don't technically need to mask the inactive lanes, but we do it
         // nevertheless to match the behavior of `Scene::ray_intersect()`.
@@ -580,6 +590,9 @@ private:
 
     /// Should the rectangle be turned inside out?
     bool m_flipped;
+
+    /// Is the winding of the two triangles reversed?
+    bool m_reversed;
 
     MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area)
 };
