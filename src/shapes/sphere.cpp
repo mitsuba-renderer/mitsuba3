@@ -530,36 +530,31 @@ public:
     template <typename FloatP, typename Ray3fP>
     std::pair<dr::mask_t<FloatP>, FloatP>
     intersect_impl(const Ray3fP &ray, dr::mask_t<FloatP> active) const {
-        using Value = std::conditional_t<dr::is_cuda_v<FloatP> || dr::is_diff_v<Float>,
-                                         dr::float32_array_t<FloatP>,
-                                         dr::float64_array_t<FloatP>>;
-        using Value3 = Vector<Value, 3>;
+        using Vector3fP    = Vector<FloatP, 3>;
+        using ScalarFloatP = dr::scalar_t<FloatP>;
 
-        using ScalarValue  = dr::scalar_t<Value>;
-        using ScalarValue3 = Vector<ScalarValue, 3>;
-
-        Value radius;
-        Value3 center;
-        if constexpr (!dr::is_jit_v<Value>) {
-            radius = (ScalarValue)  m_radius.scalar();
-            center = (ScalarValue3) m_center.scalar();
+        FloatP radius;
+        Vector3fP center;
+        if constexpr (!dr::is_jit_v<FloatP>) {
+            radius = (ScalarFloatP) m_radius.scalar();
+            center = Vector<ScalarFloatP, 3>(m_center.scalar());
         } else {
-            radius = (Value)  m_radius.value();
-            center = (Value3) m_center.value();
+            radius = (FloatP) m_radius.value();
+            center = (Vector3fP) m_center.value();
         }
 
         // Move the ray origin to the point closest to the sphere center. The
         // quadratic then has a vanishing linear coefficient, which avoids
         // cancellation in the discriminant when the origin is far away.
-        Value3 l = Value3(ray.o) - center,
-               d = Value3(ray.d);
+        Vector3fP l = Vector3fP(ray.o) - center,
+                  d = Vector3fP(ray.d);
 
-        Value A = dr::squared_norm(d),
-              t_offset = -dr::dot(l, d) / A;
-        Value3 o = dr::fmadd(d, t_offset, l);
+        FloatP A = dr::squared_norm(d),
+               t_offset = -dr::dot(l, d) / A;
+        Vector3fP o = dr::fmadd(d, t_offset, l);
 
-        Value B = ScalarValue(2) * dr::dot(o, d),
-              C = dr::squared_norm(o) - dr::square(radius);
+        FloatP B = ScalarFloatP(2) * dr::dot(o, d),
+               C = dr::squared_norm(o) - dr::square(radius);
 
         auto [solution_found, near_t, far_t] = math::solve_quadratic(A, B, C);
 
@@ -567,12 +562,11 @@ public:
         near_t += t_offset;
         far_t += t_offset;
 
-        Value maxt = Value(ray.maxt);
-        dr::mask_t<Value> near_ok = near_t >= Value(0) && near_t <= maxt,
-                          far_ok  = far_t  >= Value(0) && far_t  <= maxt;
+        dr::mask_t<FloatP> near_ok = near_t >= 0.f && near_t <= ray.maxt,
+                           far_ok  = far_t  >= 0.f && far_t  <= ray.maxt;
 
-        active &= dr::mask_t<FloatP>(solution_found && (near_ok || far_ok));
-        FloatP t = FloatP(dr::select(near_ok, near_t, far_t));
+        active &= solution_found && (near_ok || far_ok);
+        FloatP t = dr::select(near_ok, near_t, far_t);
 
         return { active, dr::select(active, t, dr::Infinity<FloatP>) };
     }
