@@ -91,13 +91,18 @@ The following XML snippet instantiates an example of a textured disk shape:
 template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_is_instance,
-                   m_discontinuity_types, m_shape_type, initialize, mark_dirty,
-                   get_children_string, parameters_grad_enabled)
+    MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
+                   initialize, mark_dirty, get_children_string)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
-    using typename Base::ScalarSize;
+
+    /// UV parameterization (radius, azimuth) of a point in the unit disk
+    static Point2f local_to_uv(const Point2f &p, const Float &r) {
+        Float v = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Float>;
+        dr::masked(v, v < 0.f) += 1.f;
+        return { r, v };
+    }
 
     Disk(const Properties &props) : Base(props) {
         m_flip_normals = props.get<bool>("flip_normals", false);
@@ -184,11 +189,7 @@ public:
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
-
-        Float r = dr::norm(p);
-        Float v = dr::atan2(p.y(), p.x()) * dr::InvTwoPi<Float>;
-        dr::masked(v, v < 0.f) += 1.f;
-        ps.uv = Point2f(r, v);
+        ps.uv    = local_to_uv(p, dr::norm(p));
 
         return ps;
     }
@@ -239,34 +240,31 @@ public:
         const AffineTransform4f& to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
-        /// Sample a point on the shape surface
+        // Sample a point on the shape surface
         ss.uv = Point2f(1.f, sample.x());
-        Float theta = sample.x() * dr::TwoPi<Float>;
-        Float sin_theta, cos_theta;
-        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
-        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
-        ss.p = to_world * Point3f(local_p.x(), local_p.y(), 0.f);
+        auto [sin_theta, cos_theta] = dr::sincos(sample.x() * dr::TwoPi<Float>);
+        Point3f local_p(cos_theta, sin_theta, 0.f);
+        ss.p = to_world * local_p;
 
-        /// Sample a tangential direction at the point
+        // Sample a tangential direction at the point
         ss.d = warp::square_to_uniform_sphere(Point2f(sample.y(), sample.z()));
 
-        /// Fill other fields
+        // Fill other fields
         ss.discontinuity_type = (uint32_t) DiscontinuityFlags::PerimeterType;
         ss.flags = flags;
-        ss.silhouette_d  = dr::normalize(to_world *
-            Vector3f(local_p.y(), -local_p.x(), 0.f));
+
+        Vector3f edge = to_world * Vector3f(local_p.y(), -local_p.x(), 0.f);
+        Float inv_edge_len = dr::rsqrt(dr::squared_norm(edge));
+        ss.silhouette_d = edge * inv_edge_len;
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
         // Normal direction `ss.n` must point outwards
-        Vector3f inward_dir = -local_p;
-        inward_dir = to_world * inward_dir;
+        Vector3f inward_dir = to_world * Vector3f(-local_p);
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
         // Arc-length ratio
-        ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(to_world *
-                     Vector3f(local_p.y(), -local_p.x(), 0.f)));
+        ss.pdf = dr::InvTwoPi<Float> * inv_edge_len;
         ss.pdf *= warp::square_to_uniform_sphere_pdf(ss.d);
         ss.foreshortening = dr::norm(dr::cross(ss.d, ss.silhouette_d));
         ss.shape = this;
@@ -297,9 +295,7 @@ public:
         } else {
             Point2f uv = dr::detach(si.uv);
 
-            Float theta = uv.y() * dr::TwoPi<Float>;
-            Float sin_theta, cos_theta;
-            std::tie(sin_theta, cos_theta) = dr::sincos(theta);
+            auto [sin_theta, cos_theta] = dr::sincos(uv.y() * dr::TwoPi<Float>);
             Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
             Point3f p_diff = m_to_world.value() * local;
 
@@ -322,11 +318,8 @@ public:
 
         ss.uv = Point2f(1.f, si.uv.y());
 
-        Float theta = ss.uv.y() * dr::TwoPi<Float>;
-        Float sin_theta, cos_theta;
-        std::tie(sin_theta, cos_theta) = dr::sincos(theta);
-
-        Point3f local_p = Point3f(cos_theta, sin_theta, 0.f);
+        auto [sin_theta, cos_theta] = dr::sincos(ss.uv.y() * dr::TwoPi<Float>);
+        Point3f local_p(cos_theta, sin_theta, 0.f);
 
         ss.p = to_world * local_p;
         ss.d = dr::normalize(ss.p - viewpoint);
@@ -335,8 +328,7 @@ public:
             Vector3f(local_p.y(), -local_p.x(), 0.f));
         Normal3f frame_n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
 
-        Vector3f inward_dir = -local_p;
-        inward_dir = to_world * inward_dir;
+        Vector3f inward_dir = to_world * Vector3f(-local_p);
         dr::masked(frame_n, dr::dot(inward_dir, frame_n) > 0.f) *= -1.f;
         ss.n = frame_n;
 
@@ -371,10 +363,10 @@ public:
         uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
         SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
-        Point3f local_p = m_to_world.value().inverse() * ss.p;
         // Arc-length ratio
+        Point3f local_p = m_to_world.value().inverse() * ss.p;
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rcp(dr::norm(m_to_world.value() *
+                 dr::rsqrt(dr::squared_norm(m_to_world.value() *
                      Vector3f(local_p.y(), -local_p.x(), 0.f)));
 
         return ss;
@@ -387,35 +379,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
-               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
-    ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ScalarIndex /*prim_index*/,
-                                   dr::mask_t<FloatP> active) const {
-        AffineTransform<Point<FloatP, 4>> to_object;
-        if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = m_to_world.scalar().inverse();
-        else
-            to_object = m_to_world.value().inverse();
-
-        Ray3fP ray = to_object * ray_;
-        FloatP t = -ray.o.z() / ray.d.z();
-        Point<FloatP, 3> local = ray(t);
-
-        // Is intersection within ray segment and disk?
-        active = active && t >= 0.f && t <= ray.maxt
-                        && local.x() * local.x() + local.y() * local.y() <= 1.f;
-
-        return { active, dr::select(active, t, dr::Infinity<FloatP>),
-                 Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
-    }
-
-    template <typename FloatP, typename Ray3fP>
-    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     ScalarIndex /*prim_index*/,
-                                     dr::mask_t<FloatP> active) const {
-        MI_MASK_ARGUMENT(active);
-
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 3>>
+    intersect_impl(const Ray3fP &ray_, dr::mask_t<FloatP> active) const {
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
             to_object = m_to_world.scalar().inverse();
@@ -426,9 +391,31 @@ public:
         FloatP t   = -ray.o.z() / ray.d.z();
         Point<FloatP, 3> local = ray(t);
 
-        // Is intersection within ray segment and rectangle?
-        return active && t >= 0.f && t <= ray.maxt
-                      && local.x() * local.x() + local.y() * local.y() <= 1.f;
+        // Is intersection within ray segment and disk?
+        active = active && t >= 0.f && t <= ray.maxt
+                        && dr::square(local.x()) + dr::square(local.y()) <= 1.f;
+
+        return { active, t, local };
+    }
+
+    template <typename FloatP, typename Ray3fP>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
+    ray_intersect_preliminary_impl(const Ray3fP &ray,
+                                   ScalarIndex /*prim_index*/,
+                                   dr::mask_t<FloatP> active) const {
+        MI_MASK_ARGUMENT(active);
+        auto [valid, t, local] = intersect_impl<FloatP>(ray, active);
+        return { valid, dr::select(valid, t, dr::Infinity<FloatP>),
+                 Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
+    }
+
+    template <typename FloatP, typename Ray3fP>
+    dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
+                                     ScalarIndex /*prim_index*/,
+                                     dr::mask_t<FloatP> active) const {
+        MI_MASK_ARGUMENT(active);
+        return std::get<0>(intersect_impl<FloatP>(ray, active));
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
@@ -474,9 +461,7 @@ public:
                   inv_r = dr::select(r_2 != 0.f, dr::rsqrt(r_2), 0.f),
                   r     = r_2 * inv_r;
 
-            Float v = dr::atan2(prim_uv.y(), prim_uv.x()) * dr::InvTwoPi<Float>;
-            dr::masked(v, v < 0.f) += 1.f;
-            si.uv = Point2f(r, v);
+            si.uv = local_to_uv(prim_uv, r);
 
             Float cos_phi = prim_uv.x() * inv_r,
                   sin_phi = prim_uv.y() * inv_r;
