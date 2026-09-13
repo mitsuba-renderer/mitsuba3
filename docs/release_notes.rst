@@ -159,7 +159,6 @@ Mitsuba 3.10.0
     ``build_directed_edges()``                   ``dedge()``
     ``opposite_dedge(e)``                        ``dedge_opposite(e)``
     ``edge_indices(f, i)``                       ``dedge_indices(3 * f + i)``
-    ``mesh.has_flipped_normals()``               *removed, see above*
     ============================================ ==============================
 
 - **Ray visibility and null surfaces**. Shapes and emitters accept a
