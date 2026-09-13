@@ -8,11 +8,60 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
+ * Ray cone modeling the spatial and angular extent of a bundle of rays
+ *
+ * A ray cone :cite:`Amanatides1984Cones` bounds the rays surrounding a
+ * traced ray by a circular cross section whose diameter (``width``) grows
+ * linearly with distance (``spread``). Mitsuba initializes the cone of each
+ * camera ray with the size of a pixel, propagates it to surface hits, and
+ * projects it onto the surface to obtain UV-space footprints for filtered
+ * texture lookups :cite:`AkenineMoller2019RayCones`.
+ *
+ * A negative spread describes a converging beam, whose width passes through
+ * zero at a focal point and grows again beyond it. A default-constructed
+ * `RayCone` describes an infinitely thin ray.
+ */
+template <typename Float_> struct RayCone {
+    using Float = Float_;
+    using ScalarFloat = dr::scalar_t<Float>;
+
+    /// Diameter of the cone at the ray origin
+    Float width = (ScalarFloat) 0.f;
+
+    /// Change of the diameter per unit distance along the ray
+    Float spread = (ScalarFloat) 0.f;
+
+    /// Construct a cone with the given width and spread
+    RayCone(const Float &width, const Float &spread)
+        : width(width), spread(spread) { }
+
+    /// Return the cone at distance ``t`` along the ray
+    RayCone propagate(const Float &t) const {
+        return RayCone(dr::fmadd(spread, t, width), spread);
+    }
+
+    /// Return a cone whose width and spread are scaled by ``s``
+    RayCone scale(const Float &s) const {
+        return RayCone(width * s, spread * s);
+    }
+
+    DRJIT_STRUCT(RayCone, width, spread)
+};
+
+/// Return a string representation of the ray cone
+template <typename Float>
+std::ostream &operator<<(std::ostream &os, const RayCone<Float> &c) {
+    os << "RayCone[width=" << c.width << ", spread=" << c.spread << "]";
+    return os;
+}
+
+/**
  * Simple n-dimensional ray segment data structure
  *
  * Along with the ray origin and direction, this data structure additionally
- * stores a maximum ray position ``maxt``, a time value ``time`` as well as the
- * wavelength information associated with the ray.
+ * stores a maximum ray position ``maxt``, a time value ``time``, the
+ * wavelength information associated with the ray, and the ray cone
+ * ``cone`` (see `RayCone`).
  */
 template <typename Point_, typename Spectrum_> struct Ray {
     static constexpr size_t Size = dr::size_v<Point_>;
@@ -38,6 +87,8 @@ template <typename Point_, typename Spectrum_> struct Ray {
     Float time = (ScalarFloat) 0.f;
     /// Wavelength associated with the ray
     Wavelength wavelengths;
+    /// Ray cone bounding the neighboring rays of a pixel-sized image region
+    RayCone<Float> cone;
 
     /// Construct a new ray (o, d) at time ``time``
     Ray(const Point &o, const Vector &d, Float time,
@@ -56,7 +107,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
     /// Copy a ray, but change the maxt value
     Ray(const Ray &r, Float maxt)
         : o(r.o), d(r.d), maxt(maxt),
-          time(r.time), wavelengths(r.wavelengths) { }
+          time(r.time), wavelengths(r.wavelengths), cone(r.cone) { }
 
     /// Return the position of a point along the ray
     Point operator() (Float t) const { return dr::fmadd(d, t, o); }
@@ -69,10 +120,11 @@ template <typename Point_, typename Spectrum_> struct Ray {
         result.maxt        = maxt;
         result.time        = time;
         result.wavelengths = wavelengths;
+        result.cone        = RayCone<Float>(cone.width, -cone.spread);
         return result;
     }
 
-    DRJIT_STRUCT(Ray, o, d, maxt, time, wavelengths)
+    DRJIT_STRUCT(Ray, o, d, maxt, time, wavelengths, cone)
 };
 
 /// Return a string representation of the ray
@@ -84,8 +136,9 @@ std::ostream &operator<<(std::ostream &os, const Ray<Point, Spectrum> &r) {
        << "  maxt = " << r.maxt << "," << std::endl
        << "  time = " << r.time << "," << std::endl;
     if (r.wavelengths.size() > 0)
-        os << "  wavelengths = " << string::indent(r.wavelengths, 16) << std::endl;
-    os << "]";
+        os << "  wavelengths = " << string::indent(r.wavelengths, 16) << "," << std::endl;
+    os << "  cone = " << r.cone << std::endl
+       << "]";
     return os;
 }
 

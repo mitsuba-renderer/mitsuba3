@@ -305,6 +305,11 @@ class ADIntegrator(mi.CppADIntegrator):
                 sample3=aperture_sample
             )
 
+        # With N jittered samples per pixel, each ray only needs to filter 1/N
+        # of the pixel area, i.e. 1/sqrt(N) of its linear extent
+        if jitter:
+            ray.cone = ray.cone.scale(dr.rsqrt(spp))
+
         # With box filter, ignore random offset to prevent numerical instabilities
         splatting_pos = mi.Vector2f(pos) if rfilter.is_box_filter() else pos_f
 

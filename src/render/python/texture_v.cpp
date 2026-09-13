@@ -87,6 +87,10 @@ public:
         NB_OVERRIDE(is_spatially_varying);
     }
 
+    bool filtered() const override {
+        NB_OVERRIDE(filtered);
+    }
+
     std::string to_string() const override {
         NB_OVERRIDE_NAME("__repr__", to_string);
     }
@@ -153,7 +157,10 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
              D(Texture, max))
         .def("is_spatially_varying",
              [](Ptr texture) { return texture->is_spatially_varying(); },
-             D(Texture, is_spatially_varying));
+             D(Texture, is_spatially_varying))
+        .def("filtered",
+             [](Ptr texture) { return texture->filtered(); },
+             D(Texture, filtered));
 }
 
 MI_PY_EXPORT(Texture) {

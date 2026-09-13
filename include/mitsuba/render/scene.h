@@ -669,6 +669,14 @@ public:
     bool has_null_shapes() const { return m_has_null_shapes; }
 
     /**
+     * Does any texture in the scene perform filtered lookups?
+     *
+     * When this is ``false``, the scene ignores `RayFlags.Footprint` since
+     * nothing consumes the resulting UV-space footprint.
+     */
+    bool has_filtered_textures() const { return m_has_filtered_textures; }
+
+    /**
      * \brief Should the BVH builder compact the acceleration data structure?
      *
      * BVH Compaction can significantly reduce memory usage but also requires
@@ -731,6 +739,9 @@ protected:
     /// Build the light portal records from ``m_portals``
     void update_portal_data();
 
+    /// Set ``m_has_filtered_textures`` by scanning the shapes' object graphs
+    void update_filtered_textures();
+
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
     /// Updates the discrete distribution used to select an emitter
@@ -782,6 +793,8 @@ protected:
     bool m_compact_accel_auto;
     /// Does the scene contain shapes with 'null' BSDFs?
     bool m_has_null_shapes = false;
+    /// Does any texture perform filtered lookups?
+    bool m_has_filtered_textures = false;
 
     /// Instances in order of appearance in ``m_shapes``.
     std::vector<const Shape *> m_instances;

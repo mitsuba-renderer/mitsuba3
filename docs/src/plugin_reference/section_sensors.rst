@@ -66,6 +66,15 @@ sensors accept a boolean :monosp:`jitter` parameter (default:
 :monosp:`true`) that disables this behavior and sends every ray through the
 pixel center instead.
 
+**Ray cone scale**. Every camera ray carries a *ray cone* that describes the
+extent of its pixel. Textures with filtered lookups (see the
+:monosp:`trilinear` and :monosp:`anisotropic` modes of the :ref:`bitmap
+texture <texture-bitmap>`) use the cone to estimate the size of the pixel's
+footprint on the surface and select a matching level of detail. All sensors
+accept a :monosp:`cone_scale` parameter (default: :monosp:`1`) that scales this
+cone. A value of :monosp:`2` doubles the footprint, which blurs textures by one
+MIP level, while smaller values sharpen them at the risk of aliasing.
+
 .. _explanation_srf_sensor:
 
 **Spectral sensitivity**. Furthermore, sensors can define a custom sensor

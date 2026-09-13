@@ -499,6 +499,11 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     auto [ray, ray_weight] = sensor->sample_ray(
         time, wavelength_sample, adjusted_pos, aperture_sample);
 
+    // With N jittered samples per pixel, each ray only needs to filter 1/N
+    // of the pixel area, i.e. 1/sqrt(N) of its linear extent
+    if (jitter)
+        ray.cone = ray.cone.scale(dr::rsqrt((ScalarFloat) sampler->sample_count()));
+
     const Medium *medium = sensor->medium();
 
     auto [spec, valid] = sample(scene, sampler, ray, medium,

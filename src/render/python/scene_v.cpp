@@ -88,6 +88,7 @@ MI_PY_EXPORT(Scene) {
              "ray_mask"_a = +RayMask::Secondary, "active"_a = true,
              D(Scene, ray_intersect_tr))
         .def_method(Scene, has_null_shapes)
+        .def_method(Scene, has_filtered_textures)
 #if !defined(MI_ENABLE_EMBREE)
         .def("ray_intersect_naive",
             &Scene::ray_intersect_naive,

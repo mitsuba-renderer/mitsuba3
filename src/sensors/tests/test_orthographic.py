@@ -104,3 +104,16 @@ def test03_sample_ray(variants_vec_spectral, origin, direction):
     # that points in the camera direction
     ray_center, _ = camera.sample_ray(0, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray_center.d, direction)
+
+
+def test04_ray_cone(variants_all_backends_once):
+    # The camera space image plane spans [-1, 1] horizontally, so a pixel of
+    # this 100 pixel wide film is 0.02 units wide before the 10x scaling
+    camera = mi.load_dict({
+        'type': 'orthographic',
+        'to_world': mi.ScalarAffineTransform4f().scale([10, 10, 1]),
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 50}
+    })
+    ray, _ = camera.sample_ray(0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    assert dr.allclose(ray.cone.width, 0.2, rtol=1e-5)
+    assert dr.allclose(ray.cone.spread, 0)

@@ -41,13 +41,28 @@ Bitmap texture (:monosp:`bitmap`)
 
  * - filter_type
    - |string|
-   - Specifies how pixel values are interpolated and filtered when queried over larger
-     UV regions. The following options are currently available:
+   - Specifies how pixel values are interpolated and filtered when queried over
+     larger UV regions. The following options are currently available:
 
      - ``bilinear`` (default): perform bilinear interpolation, but no filtering.
 
-     - ``nearest``: disable filtering and interpolation. In this mode, the plugin
-       performs nearest neighbor lookups of texture values.
+     - ``nearest``: disable filtering and interpolation. In this mode, the
+       plugin performs nearest neighbor lookups of texture values.
+
+     - ``trilinear``: build a MIP pyramid and blend the two levels that
+       match the size of the lookup's footprint. See the discussion of
+       texture filtering below.
+
+     - ``anisotropic``: like ``trilinear``, but with additional taps along
+       the major axis of the footprint, up to :paramtype:`max_anisotropy`.
+
+     The two filtered modes are unsupported for color textures in spectral
+     variants and fall back to ``bilinear`` there.
+
+ * - max_anisotropy
+   - |int|
+   - Upper bound on the number of taps used by ``anisotropic`` filtering, in
+     the range :math:`[1, 16]`. (Default: 8)
 
  * - wrap_mode
    - |string|
@@ -69,8 +84,9 @@ Bitmap texture (:monosp:`bitmap`)
          per channel for 8-bit images, half precision for 16-bit images, and
          otherwise the native floating point representation of the Mitsuba
          variant. For variants using a spectral color representation this option
-         is the same as `variant`. Note that 8-bit storage is not differentiable;
-         request ``float16`` or ``variant`` to optimize such textures.
+         is the same as `variant`. Note that 8-bit storage is not
+         differentiable; request ``float16`` or ``variant`` to optimize such
+         textures.
 
      - ``variant``: Use the corresponding native floating point representation
          of the Mitsuba variant
@@ -87,7 +103,8 @@ Bitmap texture (:monosp:`bitmap`)
    - |bool|
    - Should the transformation to the stored color data (e.g. sRGB to linear,
      spectral upsampling) be disabled? You will want to enable this when working
-     with bitmaps storing normal maps that use a linear encoding. (Default: false)
+     with bitmaps storing normal maps that use a linear encoding.
+     (Default: false)
 
  * - to_uv
    - |transform|
@@ -105,18 +122,39 @@ Bitmap texture (:monosp:`bitmap`)
 This plugin provides a bitmap texture that performs interpolated lookups given
 a JPEG, PNG, OpenEXR, RGBE, TGA, or BMP input file.
 
-When loading the plugin, the data is first converted into a usable color representation
-for the renderer:
+When loading the plugin, the data is first converted into a usable color
+representation for the renderer:
 
 * In :monosp:`rgb` modes, sRGB textures are converted into a linear color space.
-* In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to plausible
-  smooth spectra :cite:`Jakob2019Spectral` and stored an intermediate representation
-  that enables efficient queries at render time.
+* In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to
+  plausible smooth spectra :cite:`Jakob2019Spectral` and stored an intermediate
+  representation that enables efficient queries at render time.
 * In :monosp:`monochrome` modes, sRGB textures are converted to grayscale.
 
 These conversions can alternatively be disabled with the :paramtype:`raw` flag,
 e.g. when textured data is already in linear space or does not represent colors
 at all.
+
+**Texture filtering.** A distant or obliquely viewed texture covers many
+texels per pixel, which can introduce significant variance and aliasing,
+especially at low sampling rates. Mitsuba can optionally use *ray cones*
+:cite:`AkenineMoller2019RayCones` to track the elliptical texture region
+visible within a pixel and perform filtered texture lookups that average
+over this footprint. Set :paramtype:`filter_type` to ``trilinear`` or
+``anisotropic`` to enable this behavior. The trilinear filter reduces the
+footprint to a single level of detail, while the anisotropic filter takes
+several taps along its major axis, which is slower but produces better
+quality. Filtering currently only affects directly visible surfaces, and the
+:monosp:`cone_scale` sensor parameter adjusts the footprint size.
+
+.. figure:: ../../resources/data/docs/images/textures/bitmap_filtering.svg
+   :width: 100%
+
+   Single-sample renderings of a checkerboard plane with the ``bilinear``,
+   ``trilinear``, and ``anisotropic`` filter modes, each next to a converged
+   reference. Unfiltered lookups alias near the horizon, trilinear filtering
+   removes the aliasing but blurs the grazing view, and anisotropic filtering
+   preserves most detail.
 
 .. tabs::
     .. code-tab:: xml
@@ -182,13 +220,26 @@ public:
         // Filter mode
         {
             std::string_view filter_mode_str = props.get<std::string_view>("filter_type", "bilinear");
-            if (filter_mode_str == "nearest")
+            int max_aniso = props.get<int>("max_anisotropy", 8);
+            if (max_aniso < 1 || max_aniso > 16)
+                Throw("Invalid \"max_anisotropy\" value %i, must be in "
+                      "the range [1, 16]!", max_aniso);
+
+            m_filter_mode = dr::FilterMode::Linear;
+            m_mip_filter = dr::MipFilter::Disabled;
+            m_max_aniso = 1;
+            if (filter_mode_str == "nearest") {
                 m_filter_mode = dr::FilterMode::Nearest;
-            else if (filter_mode_str == "bilinear")
-                m_filter_mode = dr::FilterMode::Linear;
-            else
-                Throw("Invalid filter type \"%s\", must be one of: \"nearest\", or "
-                      "\"bilinear\"!", filter_mode_str);
+            } else if (filter_mode_str == "trilinear") {
+                m_mip_filter = dr::MipFilter::Linear;
+            } else if (filter_mode_str == "anisotropic") {
+                m_mip_filter = dr::MipFilter::Linear;
+                m_max_aniso = (uint32_t) max_aniso;
+            } else if (filter_mode_str != "bilinear") {
+                Throw("Invalid filter type \"%s\", must be one of: \"nearest\", "
+                      "\"bilinear\", \"trilinear\", or \"anisotropic\"!",
+                      filter_mode_str);
+            }
         }
 
         // Wrap mode
@@ -392,10 +443,26 @@ protected:
     /// Construct the concrete `BitmapTextureImpl` for the chosen storage type
     template <typename StoredType, typename Tensor>
     Object *instantiate(Tensor &&tensor, bool srgb) const {
+        dr::MipFilter mip_filter = m_mip_filter;
+        uint32_t max_aniso = m_max_aniso;
+
+        // Spectral upsampling coefficients don't MIP map style linear averaging
+        if constexpr (is_spectral_v<Spectrum>) {
+            if (!m_raw && tensor.shape()[2] == 3 &&
+                mip_filter != dr::MipFilter::Disabled) {
+                Log(Warn, "Bitmap texture \"%s\": filtered lookups are "
+                          "unsupported for color textures in spectral "
+                          "variants, falling back to \"bilinear\".", m_name);
+                mip_filter = dr::MipFilter::Disabled;
+                max_aniso = 1;
+            }
+        }
+
         Properties props;
         return new BitmapTextureImpl<Float, Spectrum, StoredType>(
-            props, m_name, m_transform, m_filter_mode, m_wrap_mode, m_raw,
-            m_accel, srgb, std::forward<Tensor>(tensor));
+            props, m_name, m_transform, m_filter_mode, m_wrap_mode,
+            mip_filter, max_aniso, m_raw, m_accel, srgb,
+            std::forward<Tensor>(tensor));
     }
 
 private:
@@ -422,6 +489,8 @@ private:
     std::string m_name;
     dr::FilterMode m_filter_mode;
     dr::WrapMode m_wrap_mode;
+    dr::MipFilter m_mip_filter;
+    uint32_t m_max_aniso;
     mutable ref<Bitmap> m_bitmap;
     TensorXf m_tensor;
 
@@ -445,6 +514,8 @@ public:
                       const ScalarAffineTransform3f& transform,
                       dr::FilterMode filter_mode,
                       dr::WrapMode wrap_mode,
+                      dr::MipFilter mip_filter,
+                      uint32_t max_aniso,
                       bool raw,
                       bool accel,
                       bool srgb,
@@ -459,7 +530,8 @@ public:
         rebuild_internals(tensor, false, true);
 
         m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel,
-                                    filter_mode, wrap_mode, srgb);
+                                    filter_mode, wrap_mode, srgb, mip_filter,
+                                    max_aniso);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -777,6 +849,18 @@ protected:
         return { i, w0, w1 };
     }
 
+    /// Does the texture have a MIP pyramid for filtered lookups?
+    bool filtered() const override { return m_texture.mip_levels() > 1; }
+
+    /// Columns of the ray cone's UV footprint in the texture's own
+    /// parameterization, in the form that ``eval_filtered()`` expects
+    MI_INLINE std::pair<Vector2f, Vector2f>
+    footprint(const SurfaceInteraction3f &si) const {
+        const Matrix2f &m = si.footprint;
+        return { m_transform * Vector2f(m(0, 0), m(1, 0)),
+                 m_transform * Vector2f(m(0, 1), m(1, 1)) };
+    }
+
     /**
      * Evaluates the texture at the given surface interaction using
      * spectral upsampling
@@ -828,6 +912,10 @@ protected:
         Point2f uv = m_transform * si.uv;
 
         using Data1 = dr::Array<Float, 1>;
+        if (filtered()) {
+            auto [ddx, ddy] = footprint(si);
+            return m_texture.template eval_filtered<Data1>(uv, ddx, ddy, active).x();
+        }
         return m_texture.template eval<Data1>(uv, active).x();
     }
 
@@ -843,6 +931,10 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
+        if (filtered()) {
+            auto [ddx, ddy] = footprint(si);
+            return m_texture.template eval_filtered<Color3f>(uv, ddx, ddy, active);
+        }
         return m_texture.template eval<Color3f>(uv, active);
     }
 

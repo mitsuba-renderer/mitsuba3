@@ -114,7 +114,6 @@ public:
                                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        // The camera mask hides emitters marked as invisible
         SurfaceInteraction3f si = scene->ray_intersect(
             ray, +RayFlags::Default, /* coherent = */ true, +RayMask::Primary,
             active);

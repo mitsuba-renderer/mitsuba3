@@ -8649,8 +8649,51 @@ static const char *__doc_mitsuba_Ray =
 R"doc(Simple n-dimensional ray segment data structure
 
 Along with the ray origin and direction, this data structure additionally
-stores a maximum ray position ``maxt``, a time value ``time`` as well as the
-wavelength information associated with the ray.)doc";
+stores a maximum ray position ``maxt``, a time value ``time``, the
+wavelength information associated with the ray, and the ray cone
+``cone`` (see `RayCone`).)doc";
+
+static const char *__doc_mitsuba_RayCone =
+R"doc(Ray cone modeling the spatial and angular extent of a bundle of rays
+
+A ray cone :cite:`Amanatides1984Cones` bounds the rays surrounding a
+traced ray by a circular cross section whose diameter (``width``) grows
+linearly with distance (``spread``). Mitsuba initializes the cone of each
+camera ray with the size of a pixel, propagates it to surface hits, and
+projects it onto the surface to obtain UV-space footprints for filtered
+texture lookups :cite:`AkenineMoller2019RayCones`.
+
+A negative spread describes a converging beam, whose width passes through
+zero at a focal point and grows again beyond it. A default-constructed
+`RayCone` describes an infinitely thin ray.)doc";
+
+static const char *__doc_mitsuba_RayCone_RayCone = R"doc(Construct a cone with the given width and spread)doc";
+
+static const char *__doc_mitsuba_RayCone_RayCone_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_RayCone_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_RayCone_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_fields = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_fields_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_labels = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_name = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_operator_assign_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_RayCone_propagate = R"doc(Return the cone at distance ``t`` along the ray)doc";
+
+static const char *__doc_mitsuba_RayCone_scale = R"doc(Return a cone whose width and spread are scaled by ``s``)doc";
+
+static const char *__doc_mitsuba_RayCone_spread = R"doc(Change of the diameter per unit distance along the ray)doc";
+
+static const char *__doc_mitsuba_RayCone_width = R"doc(Diameter of the cone at the ray origin)doc";
 
 static const char *__doc_mitsuba_RayFlags =
 R"doc(Flags to determine which members of `SurfaceInteraction3f` should be computed
@@ -8695,6 +8738,15 @@ infinitesimal changes of the ray. This is the same quantity that
 At most one of FollowShape or `RayFlags.DetachShape` can be specified.
 The flag has no effect in non-differentiable variants.)doc";
 
+static const char *__doc_mitsuba_RayFlags_Footprint =
+R"doc(Additionally project the ray cone (`Ray3f.cone`) onto the surface and
+compute its UV-space footprint (`SurfaceInteraction3f.footprint`) for
+filtered texture lookups. The scene automatically unsets the flag when
+none of the registered textures performs filtered lookups (see
+`Scene.has_filtered_textures()`).
+
+Depends on `RayFlags.Shading`. Part of `RayFlags.Default`.)doc";
+
 static const char *__doc_mitsuba_RayFlags_Minimal = R"doc(Compute the distance, position and geometric normal (cannot be disabled))doc";
 
 static const char *__doc_mitsuba_RayFlags_NormalPartials =
@@ -8711,7 +8763,7 @@ R"doc(Additionally compute the UV coordinates
 shading frame (`SurfaceInteraction3f.sh_frame`), and the incident
 direction in the shading frame (`SurfaceInteraction3f.wi`).
 
-This is also the default option selected by `RayFlags.Default`.)doc";
+Part of `RayFlags.Default`.)doc";
 
 static const char *__doc_mitsuba_RayMask =
 R"doc(Per-ray visibility mask
@@ -8758,6 +8810,8 @@ static const char *__doc_mitsuba_Ray_Ray_5 = R"doc()doc";
 static const char *__doc_mitsuba_Ray_Ray_6 = R"doc()doc";
 
 static const char *__doc_mitsuba_Ray_Ray_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_Ray_cone = R"doc(Ray cone bounding the neighboring rays of a pixel-sized image region)doc";
 
 static const char *__doc_mitsuba_Ray_d = R"doc(Ray direction)doc";
 
@@ -9344,6 +9398,12 @@ Returns:
     The incident radiance and discrete or solid angle density of the
     sample.)doc";
 
+static const char *__doc_mitsuba_Scene_has_filtered_textures =
+R"doc(Does any texture in the scene perform filtered lookups?
+
+When this is ``false``, the scene ignores `RayFlags.Footprint` since
+nothing consumes the resulting UV-space footprint.)doc";
+
 static const char *__doc_mitsuba_Scene_has_null_shapes = R"doc(Does the scene contain shapes of the `RayMask.Null` classes?)doc";
 
 static const char *__doc_mitsuba_Scene_instance = R"doc(Return the ``instance`` shape with the given index.)doc";
@@ -9387,6 +9447,8 @@ static const char *__doc_mitsuba_Scene_m_emitters = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_emitters_dr = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_has_filtered_textures = R"doc(Does any texture perform filtered lookups?)doc";
 
 static const char *__doc_mitsuba_Scene_m_has_null_shapes = R"doc(Does the scene contain shapes with 'null' BSDFs?)doc";
 
@@ -9905,6 +9967,14 @@ static const char *__doc_mitsuba_Sensor_Sensor = R"doc(This is both a class and 
 
 static const char *__doc_mitsuba_Sensor_class_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
+static const char *__doc_mitsuba_Sensor_cone_scale =
+R"doc(Global scale factor applied to the ray cone of camera rays
+
+Sensor implementations multiply the width and spread of the cones
+that they generate by this value, which is ``1`` by default. A value
+of ``2`` doubles the texture footprint, i.e. it biases filtered
+texture lookups by one MIP level.)doc";
+
 static const char *__doc_mitsuba_Sensor_film = R"doc(Return the `Film` instance associated with this sensor)doc";
 
 static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the `Film` instance associated with this sensor (const))doc";
@@ -9913,9 +9983,12 @@ static const char *__doc_mitsuba_Sensor_jitter =
 R"doc(Should camera rays be jittered within their pixel?
 
 When this is ``false``, integrators send every ray through the pixel
-center.)doc";
+center and the ray cone covers the whole pixel regardless of the
+sample count.)doc";
 
 static const char *__doc_mitsuba_Sensor_m_alpha = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_m_cone_scale = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_m_film = R"doc()doc";
 
@@ -11320,6 +11393,25 @@ Args:
 
 static const char *__doc_mitsuba_SurfaceInteraction_bsdf = R"doc(Returns the `BSDF` of the intersected shape)doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_compute_footprint =
+R"doc(Project the ray cone onto the surface and store its UV-space footprint
+
+The cross section of ``ray.cone`` at the hit point is a disk
+perpendicular to the ray. Projecting it along the ray onto the tangent
+plane yields an ellipse (Section 5 of :cite:`AkenineMoller2021RayCones`)
+that is stretched by the inverse cosine of the angle of incidence
+within the plane of incidence. The function projects two perpendicular
+diameters of the disk, expresses them in the UV parameterization via a
+least squares projection onto ``dp_du`` and ``dp_dv``, and stores them
+as the columns of ``footprint``.
+
+The footprint only selects a texture filter and is therefore detached
+from the AD graph. It is zero for inactive lanes and for surfaces with
+a degenerate parameterization.
+
+Args:
+    ray: The ray that produced this interaction)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_dn_du = R"doc(Shading normal partials wrt. the UV parameterization)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_dn_dv = R"doc(Shading normal partials wrt. the UV parameterization)doc";
@@ -11354,6 +11446,21 @@ Args:
 
     ray_flags: Flags specifying which information should be computed)doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_footprint =
+R"doc(UV-space footprint of the ray cone at the interaction
+
+The circular cross section of the ray cone projects to an ellipse on
+the surface. The columns of this matrix are the UV-space images of two
+perpendicular diameters of that cross section, i.e. a pair of
+conjugate diameters of the ellipse. Their orientation about the ray is
+arbitrary (any rotation of the columns describes the same ellipse),
+they are generally not its principal axes, and their lengths measure
+the full footprint width like screen space derivatives do. Filtered
+texture lookups use the ellipse to select a level of detail.
+
+The field is only computed when `RayFlags.Footprint` is set and is
+zero otherwise. See `compute_footprint()`.)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_frame_flipped =
 R"doc(Is the shading frame left-handed?
 
@@ -11362,6 +11469,8 @@ frame, e.g., on meshes with inverted UVs or instances with mirror
 transformation. This is important to correctly interpret normal maps.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_has_footprint = R"doc()doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance_index = R"doc(Instance index. The value 0 encodes that the shape is not instanced.)doc";
 
@@ -11980,6 +12089,13 @@ Args:
 
 Returns:
     A trichromatic intensity or reflectance value)doc";
+
+static const char *__doc_mitsuba_Texture_filtered =
+R"doc(Does this texture perform filtered lookups?
+
+Filtered lookups depend on the UV-space footprint of the ray cone
+(`SurfaceInteraction3f.footprint`). The scene skips the footprint
+computation when no texture returns ``true``.)doc";
 
 static const char *__doc_mitsuba_Texture_is_spatially_varying = R"doc(Does this texture evaluation depend on the UV coordinates)doc";
 
@@ -13888,11 +14004,11 @@ static const char *__doc_mitsuba_operator_lshift_5 = R"doc(Prints the canonical 
 
 static const char *__doc_mitsuba_operator_lshift_6 = R"doc(Prints the canonical string representation of an object instance)doc";
 
-static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the ray)doc";
+static const char *__doc_mitsuba_operator_lshift_7 = R"doc(Return a string representation of the ray cone)doc";
 
-static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of SGGXPhaseFunction parameters)doc";
+static const char *__doc_mitsuba_operator_lshift_8 = R"doc(Return a string representation of the ray)doc";
 
-static const char *__doc_mitsuba_operator_lshift_9 = R"doc()doc";
+static const char *__doc_mitsuba_operator_lshift_9 = R"doc(Return a string representation of SGGXPhaseFunction parameters)doc";
 
 static const char *__doc_mitsuba_operator_lshift_10 = R"doc()doc";
 
@@ -13941,6 +14057,8 @@ static const char *__doc_mitsuba_operator_lshift_31 = R"doc()doc";
 static const char *__doc_mitsuba_operator_lshift_32 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_lshift_33 = R"doc()doc";
+
+static const char *__doc_mitsuba_operator_lshift_34 = R"doc()doc";
 
 static const char *__doc_mitsuba_operator_sub = R"doc(Subtracting two points should always yield a vector)doc";
 
@@ -15160,17 +15278,28 @@ static const char *__doc_mitsuba_string_tokenize = R"doc(Chop up the string give
 static const char *__doc_mitsuba_string_trim = R"doc(Remove leading and trailing characters)doc";
 
 static const char *__doc_mitsuba_triangle_position_error =
-R"doc(Bound on the rounding error of a position on the triangle ``(p0, p1,
-p2)`` along the unit vector ``n``, in units of ``eps``
+R"doc(Bound the position error of a ray-triangle intersection along the normal
 
-The bound must cover the rounding of the barycentric interpolation that
-produces the position, and the rounding of the intersection test that a
-ray spawned from it undergoes against the same triangle. The first part
-scales with the largest vertex magnitude per axis. The second part scales
-with the two edges that the intersection routine forms from one of the
-vertices, and its cross products mix all of their coordinates into every
-axis. Which vertex the ray tracing backend picks is unknown, hence the sum
-of the two largest edges covers every choice.)doc";
+This function computes the ``p_err`` bound used to offset spawned rays
+and avoid self-intersections. It covers two sources of rounding errors:
+
+1. The interpolation that produces a hit position interpolates three
+   vertices with barycentric weights. Rounding error is proportional to
+   the maximum vertex magnitude projected onto ``n``. This term vanishes
+   for a triangle in a coordinate plane through the origin.
+
+2. Intersection tests typically express the vertices relative to the ray
+   origin, and then form a cross product of the edges or edge functions
+   that are parameterized by them. A spawned ray starts on the triangle,
+   so these relative vertices are at most an edge long, and the terms of
+   the resulting expressions are bounded by the Euclidean lengths of the
+   edges. We do not know which vertex the backend will use as base
+   vertex, hence the calculation sums the largest two edge lengths to be
+   conservative.
+
+``eps`` is used to provide an appropriate floating point epsilon such as
+``mi.math.PositionEpsilon``, which is the variant-dependent unit roundoff
+times a safety factor.)doc";
 
 static const char *__doc_mitsuba_tuple_hasher = R"doc()doc";
 

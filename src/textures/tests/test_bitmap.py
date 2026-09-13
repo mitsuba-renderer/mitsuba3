@@ -380,3 +380,36 @@ def test12_eval_grad_anisotropic(variant_scalar_rgb, channels):
             grad = tex.eval_1_grad(si)
             assert dr.all(dr.abs(grad) > 1e-2), (transform, uv)
             assert dr.allclose(grad, fd, rtol=1e-3, atol=1e-3)
+
+
+@pytest.mark.parametrize('filter_type', ['trilinear', 'anisotropic'])
+def test13_filtered_lookup(variants_all_backends_once, filter_type):
+    import numpy as np
+    rng = np.random.default_rng(0)
+    values = rng.random((64, 64, 3), dtype=np.float32)
+
+    def load(filter_type):
+        return mi.load_dict({'type': 'bitmap', 'raw': True, 'wrap_mode': 'clamp',
+                             'filter_type': filter_type, 'bitmap': mi.Bitmap(values)})
+
+    tex, ref = load(filter_type), load('bilinear')
+    si = dr.zeros(mi.SurfaceInteraction3f)
+
+    # Without a footprint, the lookup samples the finest level
+    si.uv = mi.Point2f(0.3, 0.7)
+    assert dr.allclose(tex.eval_3(si), ref.eval_3(si), atol=1e-5)
+
+    # A footprint of 1/8 selects the 8x8 level, i.e. the mean of a block
+    si.uv = mi.Point2f(2.5 / 8, 5.5 / 8)
+    si.footprint = mi.Matrix2f([[1 / 8, 0], [0, 1 / 8]])
+    block = values[40:48, 16:24].mean(axis=(0, 1))
+    assert dr.allclose(tex.eval_3(si), mi.Color3f(block), atol=1e-4)
+    assert dr.allclose(tex.eval_1(si), mi.luminance(mi.Color3f(block)), atol=1e-4)
+
+    # A footprint covering the whole texture yields its mean
+    si.footprint = mi.Matrix2f([[2, 0], [0, 2]])
+    assert dr.allclose(tex.eval_3(si), mi.Color3f(values.mean(axis=(0, 1))), atol=1e-4)
+
+    with pytest.raises(RuntimeError, match='max_anisotropy'):
+        mi.load_dict({'type': 'bitmap', 'raw': True, 'filter_type': 'anisotropic',
+                      'max_anisotropy': 32, 'bitmap': mi.Bitmap(values)})

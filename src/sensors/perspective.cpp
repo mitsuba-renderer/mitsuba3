@@ -134,7 +134,7 @@ public:
     MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                    m_film, m_sampler, m_resolution, m_shutter_open,
                    m_shutter_open_time, m_near_clip, m_far_clip,
-                   sample_wavelengths)
+                   m_cone_scale, sample_wavelengths)
     MI_IMPORT_TYPES()
 
     PerspectiveCamera(const Properties &props) : Base(props) {
@@ -186,6 +186,9 @@ public:
         m_normalization = 1.f / m_image_rect.volume();
         m_needs_sample_3 = false;
 
+        // Angle subtended by a pixel on the optical axis
+        m_pixel_spread = m_image_rect.extents().x() / m_resolution.x() * m_cone_scale;
+
         // Principal point offset expressed in crop window coordinates
         m_scaled_principal_point_offset =
             m_principal_point_offset *
@@ -193,7 +196,7 @@ public:
                      ScalarVector2f(m_film->crop_size()));
 
         dr::make_opaque(m_sample_to_camera, m_x_fov, m_image_rect,
-                        m_normalization, m_principal_point_offset,
+                        m_normalization, m_pixel_spread, m_principal_point_offset,
                         m_scaled_principal_point_offset);
     }
 
@@ -228,6 +231,14 @@ public:
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
         ray.maxt = far_t - near_t;
+
+        // The cone opens at the pinhole with the angle subtended by the pixel.
+        // Off-axis pixels are both farther away (1/cos) and foreshortened (cos),
+        // which shrinks their angular size by cos^2 radially and by cos
+        // tangentially. The factor cos^1.5 is the geometric mean and gives a
+        // circular cone of equal area.
+        ray.cone.spread = m_pixel_spread * d.z() * dr::sqrt(d.z());
+        ray.cone.width  = ray.cone.spread * near_t;
 
         return { ray, wav_weight };
     }
@@ -365,10 +376,11 @@ private:
     BoundingBox2f m_image_rect;
     Float m_normalization;
     Float m_x_fov;
+    Float m_pixel_spread;
     Vector2f m_principal_point_offset, m_scaled_principal_point_offset;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect,
-                   m_normalization, m_x_fov, m_principal_point_offset,
+                   m_normalization, m_x_fov, m_pixel_spread, m_principal_point_offset,
                    m_scaled_principal_point_offset)
 };
 

@@ -146,7 +146,8 @@ class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time, m_near_clip,
-                    m_far_clip, m_focus_distance, sample_wavelengths)
+                    m_far_clip, m_focus_distance, m_cone_scale,
+                    sample_wavelengths)
     MI_IMPORT_TYPES()
 
     ThinLensCamera(const Properties &props) : Base(props) {
@@ -202,8 +203,11 @@ public:
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
 
+        // Angle subtended by a pixel on the optical axis (see sample_ray())
+        m_pixel_spread = m_image_rect.extents().x() / m_resolution.x() * m_cone_scale;
+
         dr::make_opaque(m_sample_to_camera, m_x_fov, m_image_rect,
-                        m_normalization);
+                        m_normalization, m_pixel_spread);
     }
 
     ProjectiveTransform4f projection_transform() const override {
@@ -246,6 +250,13 @@ public:
               far_t  = m_far_clip * inv_z;
         ray.o += ray.d * near_t;
         ray.maxt = far_t - near_t;
+
+        // The cone is that of a pinhole camera placed at the sampled aperture
+        // position: it ignores the aperture and is exact on the focal plane.
+        // See the perspective camera for the off-axis cosine term and the
+        // initial width at the near plane.
+        ray.cone.spread = m_pixel_spread * d.z() * dr::sqrt(d.z());
+        ray.cone.width  = ray.cone.spread * near_t;
 
         return { ray, wav_weight };
     }
@@ -329,9 +340,10 @@ private:
     Float m_aperture_radius;
     Float m_normalization;
     Float m_x_fov;
+    Float m_pixel_spread;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_aperture_radius,
-                   m_normalization, m_x_fov)
+                   m_normalization, m_x_fov, m_pixel_spread)
 };
 
 MI_EXPORT_PLUGIN(ThinLensCamera)

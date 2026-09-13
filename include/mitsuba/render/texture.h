@@ -199,6 +199,15 @@ public:
     /// Does this texture evaluation depend on the UV coordinates
     virtual bool is_spatially_varying() const { return false; }
 
+    /**
+     * Does this texture perform filtered lookups?
+     *
+     * Filtered lookups depend on the UV-space footprint of the ray cone
+     * (`SurfaceInteraction3f.footprint`). The scene skips the footprint
+     * computation when no texture returns ``true``.
+     */
+    virtual bool filtered() const { return false; }
+
     /// Convenience function returning the standard D65 illuminant
     static ref<Texture> D65(ScalarFloat scale = 1.f);
 
@@ -233,4 +242,5 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
 
     DRJIT_CALL_GETTER(max)
     DRJIT_CALL_GETTER(is_spatially_varying)
+    DRJIT_CALL_GETTER(filtered)
 DRJIT_CALL_END()

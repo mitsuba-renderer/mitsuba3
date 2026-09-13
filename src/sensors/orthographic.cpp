@@ -81,7 +81,7 @@ public:
     MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
-                    sample_wavelengths)
+                    m_cone_scale, sample_wavelengths)
     MI_IMPORT_TYPES()
 
     OrthographicCamera(const Properties &props) : Base(props) {
@@ -105,7 +105,17 @@ public:
             Float(m_near_clip), Float(m_far_clip)).inverse();
 
         m_normalization = 1.f / m_image_rect.volume();
-        dr::make_opaque(m_sample_to_camera, m_normalization);
+
+        // Compute the world-space (geometric) mean width of a pixel
+        // which is used to initialize the ray cone 'width' field
+        AffineTransform4f to_world = m_to_world.value();
+        Vector3f dx = to_world * (m_sample_to_camera *
+                                  Vector3f(1.f / m_resolution.x(), 0.f, 0.f)),
+                 dy = to_world * (m_sample_to_camera *
+                                  Vector3f(0.f, 1.f / m_resolution.y(), 0.f));
+        m_pixel_width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
+
+        dr::make_opaque(m_sample_to_camera, m_normalization, m_pixel_width);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -129,6 +139,7 @@ public:
         ray.o = m_to_world.value() * near_p;
         ray.d = dr::normalize(m_to_world.value() * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
+        ray.cone.width = m_pixel_width;
 
         return { ray, wav_weight };
     }
@@ -165,8 +176,10 @@ private:
     AffineTransform4f m_sample_to_camera;
     BoundingBox2f m_image_rect;
     Float m_normalization;
+    Float m_pixel_width;
 
-    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization)
+    MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_normalization,
+                   m_pixel_width)
 };
 
 MI_EXPORT_PLUGIN(OrthographicCamera)
