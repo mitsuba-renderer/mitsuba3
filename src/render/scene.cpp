@@ -703,21 +703,23 @@ Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
 
     struct LoopState {
         Ray3f ray;                    //< Input ray, possibly attached, never modified
-        Float t;                      //< Distance from 'ray.o' to the next query origin
+        Point3f o;                    //< Detached origin of the next query
+        Float t;                      //< Distance along 'ray' to 'o'
         Spectrum tr;                  //< Detached transmittance product
         UnpolarizedSpectrum rel;      //< Relative derivative of 'tr' (Dr.Jit sum loop)
         PreliminaryIntersection3f pi; //< Last query result, 't' measured from 'ray.o'
         UInt32 mask;                  //< Ray mask of the queries
         Mask active;                  //< Lanes that are still walking
-        DRJIT_STRUCT(LoopState, ray, t, tr, rel, pi, mask, active)
-    } ls = { ray, 0.f, Spectrum(1.f), UnpolarizedSpectrum(0.f),
-             dr::zeros<PreliminaryIntersection3f>(), ray_mask, active };
+        DRJIT_STRUCT(LoopState, ray, o, t, tr, rel, pi, mask, active)
+    } ls = { ray, dr::detach(ray.o), 0.f, Spectrum(1.f),
+             UnpolarizedSpectrum(0.f), dr::zeros<PreliminaryIntersection3f>(),
+             ray_mask, active };
 
     dr::tie(ls) = dr::while_loop(dr::make_tuple(ls),
         [](const LoopState &ls) { return ls.active; },
         [this, flags, stop_at_surface](LoopState &ls) {
             Ray3f query = dr::detach(ls.ray);
-            query.o = query(ls.t);
+            query.o = ls.o;
             query.maxt -= ls.t;
 
             ls.pi = ray_intersect_preliminary(query, false, ls.mask, ls.active);
@@ -751,14 +753,18 @@ Scene<Float, Spectrum>::null_walk(const Ray3f &ray, uint32_t ray_flags,
             if constexpr (dr::is_diff_v<Float>)
                 ls.rel += relative_grad(unpolarized_spectrum(value)) - 1.f;
 
-            // A crossed shape is not the result of the query. Continue past
-            // it by the error bound of the crossing, measured along the ray
-            // as in spawn_ray().
+            // Continue from the crossing offset by 'p_err' along the normal,
+            // as in spawn_ray(). Far from the origin, the rounding of ray(t)
+            // exceeds 'p_err', so the origin cannot be derived from 't'.
+            // Instead, 't' tracks the projection of 'o' onto the ray.
             dr::masked(ls.pi.valid, ls.active) = false;
 
-            Float cos_theta = dr::maximum(
-                dr::abs_dot(dr::detach(si.n), query.d), 1e-2f);
-            ls.t = ls.pi.t + dr::detach(si.p_err) / cos_theta;
+            Normal3f n  = dr::detach(si.n);
+            Float p_err = dr::detach(si.p_err),
+                  cos_n = dr::dot(n, query.d);
+
+            ls.o = dr::fmadd(n, dr::mulsign(p_err, cos_n), dr::detach(si.p));
+            ls.t = dr::fmadd(p_err, dr::abs(cos_n), ls.pi.t);
 
             ls.active &= ls.t < dr::detach(ls.ray.maxt) &&
                          dr::any(unpolarized_spectrum(ls.tr) != 0.f);

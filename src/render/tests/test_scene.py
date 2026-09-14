@@ -584,3 +584,29 @@ def test21_visibility_errors(variants_all_rgb, shapes, message):
     intersect, and with an unknown value."""
     with pytest.raises(RuntimeError, match=message):
         mi.load_dict({'type': 'scene', **shapes})
+
+
+def test22_null_walk_far_origin(variants_vec_rgb):
+    """Rays that start far away from a small mask sheet cross it exactly once,
+    although the rounding of the distance travelled exceeds the error bound
+    of the crossing. The transparent sheet keeps the transmittance at 1, so
+    repeated crossings cannot end the walk through underflow."""
+    T = mi.ScalarTransform4f().rotate([1, 1, 0], 37).scale(0.5)
+
+    def scene(opacity):
+        bsdf = {'type': 'mask', 'opacity': opacity, 'material': DIFFUSE}
+        return mi.load_dict({'type': 'scene', 'pane': dict(
+            type='rectangle', to_world=T, bsdf=bsdf)})
+
+    # 64 rays towards random points on the sheet with cosines in [0.2, 1]
+    rng = mi.PCG32(64)
+    u = [rng.next_float32() for _ in range(4)]
+    target = mi.Transform4f(T) @ mi.Point3f(u[0] * 1.2 - 0.6, u[1] * 1.2 - 0.6, 0)
+    cos = 0.2 + 0.8 * u[2]
+    sin, phi = dr.sqrt(1 - cos * cos), u[3] * dr.two_pi
+    d = dr.normalize(mi.Transform4f(T) @ mi.Vector3f(sin * dr.cos(phi), sin * dr.sin(phi), cos))
+    o = target - 1e5 * d
+    ray = mi.Ray3f(o, dr.normalize(target - o), 2e5, 0.0, [])
+
+    assert dr.all(scene(0.0).ray_test_tr(ray)[0] == 1)
+    assert dr.allclose(scene(0.5).ray_test_tr(ray)[0], 0.5, atol=1e-4)
