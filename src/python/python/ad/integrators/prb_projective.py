@@ -165,9 +165,9 @@ class PathProjectiveIntegrator(PSIntegrator):
         depth_init = mi.UInt32(depth)                 # Initial depth
         pi = dr.zeros(mi.PreliminaryIntersection3f)   # Current interaction
 
-        # Mask of the current ray. Camera rays hide emitters marked as
-        # invisible. Null crossings do not change the mask.
-        ray_mask = mi.UInt32(dr.select(depth_init == 0, mi.RayMask.Primary,
+        # Ray mask indicating what geometry to intersect
+        ray_mask = mi.UInt32(dr.select(depth_init == 0,
+                                       mi.RayMask.Primary,
                                        mi.RayMask.Secondary))
 
         if dr.hint(ignore_ray, mode='scalar'):
@@ -341,7 +341,9 @@ class PathProjectiveIntegrator(PSIntegrator):
             ray_prev[scattered]        = ray
             bsdf_pdf_prev[scattered]   = bsdf_sample.pdf
             bsdf_delta_prev[scattered] = bsdf_sample.is_delta()
-            ray_mask[scattered]        = mi.RayMask.Secondary
+            # A specular event leaves the visibility class unchanged
+            ray_mask[scattered & ~bsdf_sample.is_delta()] = \
+                mi.RayMask.Secondary
             depth[scattered]          += 1
             active_next &= depth_ok | ~scattered
 

@@ -194,11 +194,12 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # Construct the BSDF sampled ray
         ray_bsdf = si.spawn_ray(si.to_world(sample_bsdf.wo))
 
-        # A ray that leaves through a null lobe remains a camera ray. The null
-        # tests fold to literals in scenes without null shapes.
+        # A ray that leaves through a specular lobe, including a null one,
+        # remains a camera ray.
         has_null = scene.has_null_shapes()
         null = sample_bsdf.is_null() if has_null else mi.Bool(False)
-        ray_mask = dr.select(null, mi.RayMask.Primary, mi.RayMask.Secondary)
+        ray_mask = dr.select(delta_bsdf, mi.RayMask.Primary,
+                             mi.RayMask.Secondary)
 
         with dr.resume_grad(when=not primal):
             # Trace the BSDF sampled ray. Like shadow rays, it passes through

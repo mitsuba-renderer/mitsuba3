@@ -177,9 +177,8 @@ public:
 
             Mask active_b = active && dr::any(unpolarized_spectrum(bsdf_val) != 0.f);
 
-            // A ray that leaves through a null lobe remains a camera ray
-            Mask null = has_null ? bs.is_null() : Mask(false);
-            UInt32 ray_mask = dr::select(null, +RayMask::Primary,
+            // Specular events leave the ray mask unchanged
+            UInt32 ray_mask = dr::select(bs.is_delta(), +RayMask::Primary,
                                          +RayMask::Secondary);
 
             Ray3f ray_b = si.spawn_ray(si.to_world(bs.wo));
@@ -187,6 +186,7 @@ public:
             // Differentiation requires a detached sample direction and a
             // re-evaluation of the BSDF, as explained in the path tracer. A
             // null crossing keeps the attached weight of the null lobe.
+            Mask null = has_null ? bs.is_null() : Mask(false);
             if (dr::grad_enabled(ray_b)) {
                 ray_b = dr::detach(ray_b);
                 Vector3f wo_2 = si.to_local(ray_b.d);

@@ -130,6 +130,7 @@ class PRBVolpathIntegrator(RBIntegrator):
         depth = mi.UInt32(0)
         valid_ray = mi.Bool(False)
         specular_chain = mi.Bool(True)
+        ray_mask = mi.UInt32(mi.RayMask.Primary)
 
         if mi.is_rgb:
             # Sample a color channel to sample free-flight distances
@@ -146,11 +147,6 @@ class PRBVolpathIntegrator(RBIntegrator):
             perform_rr = (depth > self.rr_depth)
             active &= (sampler.next_1d(active) < q) | ~perform_rr
             throughput[perform_rr] = throughput * dr.rcp(q)
-
-            # Ray mask of the current path segment. Depth-0 segments use the
-            # camera mask, which hides emitters marked as invisible.
-            ray_mask = dr.select(depth == 0, mi.RayMask.Primary,
-                                 mi.RayMask.Secondary)
 
             active_medium = active & (medium != None)
             active_surface = active & ~active_medium
@@ -303,6 +299,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 ray[act_medium_scatter] = mei.spawn_ray(wo)
                 needs_intersection |= act_medium_scatter
                 last_scatter_direction_pdf[act_medium_scatter] = phase_pdf
+                ray_mask[act_medium_scatter] = mi.RayMask.Secondary
 
                 # ------------------------ BSDF sampling -----------------------
 
@@ -331,6 +328,9 @@ class PRBVolpathIntegrator(RBIntegrator):
                 null = bs.is_null() if has_null else mi.Bool(False)
                 non_null_bsdf = active_surface & ~null
                 depth[non_null_bsdf] += 1
+
+                # A specular event leaves the visibility class unchanged
+                ray_mask[non_null_bsdf & ~bs.is_delta()] = mi.RayMask.Secondary
 
                 # update the last scatter PDF event if we encountered a non-null scatter event
                 last_scatter_event[non_null_bsdf] = si

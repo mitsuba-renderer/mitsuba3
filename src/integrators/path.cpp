@@ -291,7 +291,9 @@ public:
                 Interaction3f(si), bsdf_sample.pdf,
                 bsdf_sample.is_delta(),
                 ls.vertex.depth + 1,
-                +RayMask::Secondary };
+                // A specular event leaves the visibility class unchanged
+                dr::select(bsdf_sample.is_delta(), ls.vertex.ray_mask,
+                           +RayMask::Secondary) };
 
             // -------------------- Stopping criterion ---------------------
 

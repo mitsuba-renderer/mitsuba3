@@ -148,7 +148,9 @@ class BasicPRBIntegrator(RBIntegrator):
             scattered = si.is_valid() & ~null
             pi_prev[scattered]  = pi
             ray_prev[scattered] = ray
-            ray_mask[scattered] = mi.RayMask.Secondary
+            # A specular event leaves the visibility class unchanged
+            ray_mask[scattered & ~bsdf_sample.is_delta()] = \
+                mi.RayMask.Secondary
             depth[scattered]   += 1
             active_next &= depth_ok | ~scattered
 

@@ -211,7 +211,9 @@ class PRBIntegrator(RBIntegrator):
             ray_prev[scattered]        = ray
             bsdf_pdf_prev[scattered]   = bsdf_sample.pdf
             bsdf_delta_prev[scattered] = bsdf_sample.is_delta()
-            ray_mask[scattered]        = mi.RayMask.Secondary
+            # A specular event leaves the visibility class unchanged
+            ray_mask[scattered & ~bsdf_sample.is_delta()] = \
+                mi.RayMask.Secondary
             depth[scattered]          += 1
             active_next &= depth_ok | ~scattered
 

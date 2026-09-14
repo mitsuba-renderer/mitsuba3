@@ -106,6 +106,7 @@ public:
         MediumInteraction3f mei = dr::zeros<MediumInteraction3f>();
         Mask specular_chain = active;
         UInt32 depth = 0;
+        UInt32 ray_mask = +RayMask::Primary;
 
         // Null tests fold to literals in scenes without null shapes
         bool has_null = scene->has_null_shapes();
@@ -139,12 +140,13 @@ public:
             Mask needs_intersection;
             Mask specular_chain;
             Mask valid_ray;
+            UInt32 ray_mask;
             Sampler* sampler;
 
             DRJIT_STRUCT(LoopState, active, depth, ray, throughput, result, \
                 si, mei, medium, eta, last_scatter_event, \
                 last_scatter_direction_pdf, needs_intersection, \
-                specular_chain, valid_ray, sampler)
+                specular_chain, valid_ray, ray_mask, sampler)
         } ls = {
             active,
             depth,
@@ -160,6 +162,7 @@ public:
             needs_intersection,
             specular_chain,
             valid_ray,
+            ray_mask,
             sampler
         };
 
@@ -181,6 +184,7 @@ public:
             Mask& needs_intersection = ls.needs_intersection;
             Mask& specular_chain = ls.specular_chain;
             Mask& valid_ray = ls.valid_ray;
+            UInt32& ray_mask = ls.ray_mask;
             Sampler* sampler = ls.sampler;
 
             // ----------------- Handle termination of paths ------------------
@@ -196,11 +200,6 @@ public:
             active &= depth < (uint32_t) m_max_depth;
             if (dr::none_or<false>(active))
                 return;
-
-            // Ray mask of the current path segment. Depth-0 segments use the
-            // camera mask, which hides emitters marked as invisible.
-            UInt32 ray_mask = dr::select(depth == 0u, +RayMask::Primary,
-                                         +RayMask::Secondary);
 
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && (medium != nullptr);
@@ -296,6 +295,7 @@ public:
                 needs_intersection |= act_medium_scatter;
                 dr::masked(last_scatter_direction_pdf, act_medium_scatter) = phase_pdf;
                 dr::masked(throughput, act_medium_scatter) *= phase_weight;
+                dr::masked(ray_mask, act_medium_scatter) = +RayMask::Secondary;
             }
 
             // --------------------- Surface Interactions ---------------------
@@ -366,6 +366,10 @@ public:
                 Mask null = has_null ? bs.is_null() : Mask(false),
                      non_null_bsdf = active_surface && !null;
                 dr::masked(depth, non_null_bsdf) += 1;
+
+                // A specular event leaves the visibility class unchanged
+                dr::masked(ray_mask, non_null_bsdf && !bs.is_delta()) =
+                    +RayMask::Secondary;
 
                 // update the last scatter PDF event if we encountered a non-null scatter event
                 dr::masked(last_scatter_event, non_null_bsdf) = si;

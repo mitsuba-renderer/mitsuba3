@@ -143,6 +143,7 @@ public:
         Mask specular_chain = active;
         UInt32 depth = 0;
         WeightMatrix p_over_f = dr::full<WeightMatrix>(1.f);
+        UInt32 ray_mask = +RayMask::Primary;
 
         // Null tests fold to literals in scenes without null shapes
         bool has_null = scene->has_null_shapes();
@@ -175,12 +176,13 @@ public:
             Mask needs_intersection;
             Mask specular_chain;
             Mask valid_ray;
+            UInt32 ray_mask;
             Sampler* sampler;
 
             DRJIT_STRUCT(LoopState, active, depth, ray, p_over_f, \
                 p_over_f_nee, result, si, mei, medium, eta, last_scatter_event, \
                 last_event_was_null, needs_intersection, specular_chain, \
-                valid_ray, sampler)
+                valid_ray, ray_mask, sampler)
         } ls = {
             active,
             depth,
@@ -197,6 +199,7 @@ public:
             needs_intersection,
             specular_chain,
             valid_ray,
+            ray_mask,
             sampler
         };
 
@@ -222,6 +225,7 @@ public:
             Mask& needs_intersection = ls.needs_intersection;
             Mask& specular_chain = ls.specular_chain;
             Mask& valid_ray = ls.valid_ray;
+            UInt32& ray_mask = ls.ray_mask;
             Sampler* sampler = ls.sampler;
 
             // ----------------- Handle termination of paths ------------------
@@ -241,11 +245,6 @@ public:
             active &= dr::any(unpolarized_spectrum(mis_weight(p_over_f)) != 0.f);
             if (dr::none_or<false>(active))
                 return;
-
-            // Ray mask of the current path segment. Depth-0 segments use the
-            // camera mask, which hides emitters marked as invisible.
-            UInt32 ray_mask = dr::select(depth == 0u, +RayMask::Primary,
-                                         +RayMask::Secondary);
 
             // ----------------------- Sampling the RTE -----------------------
             Mask active_medium  = active && (medium != nullptr);
@@ -352,6 +351,7 @@ public:
 
                     update_weights(p_over_f, phase_pdf, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
                     update_weights(p_over_f_nee, 1.f, unpolarized_spectrum(phase_weight * phase_pdf), channel, act_medium_scatter);
+                    dr::masked(ray_mask, act_medium_scatter) = +RayMask::Secondary;
                 }
             }
 
@@ -422,6 +422,10 @@ public:
                 specular_chain &= !(active_surface && has_flag(bs.sampled_type, BSDFFlags::Smooth));
                 dr::masked(depth, non_null_bsdf) += 1;
                 dr::masked(last_scatter_event, non_null_bsdf) = si;
+
+                // A specular event leaves the visibility class unchanged
+                dr::masked(ray_mask, non_null_bsdf && !bs.is_delta()) =
+                    +RayMask::Secondary;
 
                 // Update NEE weights only if the BSDF is not null
                 dr::masked(p_over_f_nee, non_null_bsdf) = p_over_f;

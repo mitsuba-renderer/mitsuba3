@@ -301,3 +301,63 @@ def test08_direct_null_traversal(variants_all_rgb):
     assert abs(estimate(dict(floor=floor), spp=4096, **kwargs) - 0.5) < 0.025
     assert abs(estimate(dict(floor=floor, sheet=sheet), spp=4096, **kwargs)
                - 0.25) < 0.0125
+
+
+# ---------------------------------------------------------------------------
+# Visibility classes across specular events
+# ---------------------------------------------------------------------------
+
+def pane_scene(bsdf, integrator, slab=False):
+    """Red and blue radiance seen by a camera at z=-1 that looks along +z at
+    a pane of primary visibility at z=1, or at a slab with an exit face at
+    z=1.2. Primary-only red backdrops face the camera from z=3 and z=-2, and
+    secondary-only blue lights sit in front of them at z=2 and z=-1.5."""
+    T = mi.ScalarTransform4f
+    integ = dict(type=integrator)
+    if not integrator.startswith('direct'):
+        integ['max_depth'] = 3
+    d = dict(type='scene', integrator=integ, sensor=dict(
+        type='perspective', fov=5,
+        to_world=T().look_at([0, 0, -1], [0, 0, 0], [0, 1, 0]),
+        film=dict(type='hdrfilm', width=1, height=1, rfilter=dict(type='box')),
+        sampler=dict(type='independent', sample_count=32)))
+    d['entry'] = rect_at(1, bsdf, flip=True, visibility='primary')
+    if slab:
+        d['exit'] = rect_at(1.2, bsdf, visibility='primary')
+    black = dict(type='diffuse', reflectance=0.0)
+    for i, (z, visibility, color) in enumerate([
+            (3, 'primary', [1, 0, 0]), (2, 'secondary', [0, 0, 1]),
+            (-1.5, 'secondary', [0, 0, 1]), (-2, 'primary', [1, 0, 0])]):
+        d['emitter_%i' % i] = rect_at(
+            z, black, flip=z > 0, scale=4, visibility=visibility,
+            emitter=dict(type='area', radiance=dict(type='rgb', value=color)))
+    return np.array(mi.render(mi.load_dict(d)))[0, 0, [0, 2]]
+
+
+@pytest.mark.parametrize('integrator', [
+    'path', 'direct', 'volpath', 'volpathmis', 'prb', 'prb_basic',
+    'prb_projective', 'prbvolpath', 'direct_projective'])
+def test10_specular_visibility_class(variants_all_rgb, integrator):
+    """Refraction through glass and reflection off a mirror keep the camera
+    ray primary, so it sees only the red backdrops. This also holds across
+    both faces of a slab, whose exit face only primary rays can hit. A rough
+    or diffuse pane turns the path into a secondary ray that sees only the
+    blue lights. The direct integrators cannot reach past the exit face."""
+    if integrator in PYTHON_INTEGRATORS and '_ad_' not in mi.variant():
+        pytest.skip('Python integrators require an AD variant')
+    if integrator in UNPOLARIZED_INTEGRATORS and mi.is_polarized:
+        pytest.skip('Integrator does not support polarized variants')
+
+    glass = dict(type='dielectric')
+    cases = [
+        (glass, False, True),
+        (dict(type='conductor', material='none'), False, True),
+        (dict(type='roughdielectric', alpha=0.01), False, False),
+        (dict(type='diffuse', reflectance=0.5), False, False),
+    ]
+    if not integrator.startswith('direct'):
+        cases.append((glass, True, True))
+
+    for bsdf, slab, primary in cases:
+        red, blue = pane_scene(bsdf, integrator, slab)
+        assert (red > 0, blue > 0) == (primary, not primary), (bsdf, slab)
