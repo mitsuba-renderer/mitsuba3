@@ -7,6 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/core/fstream.h>
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
 #include <mutex>
@@ -24,7 +25,12 @@ Bitmap texture (:monosp:`bitmap`)
 
  * - filename
    - |string|
-   - Filename of the bitmap to be loaded
+   - Filename of the bitmap to be loaded. A ``.packed`` file selects a
+     packed texture container (see below).
+
+ * - index
+   - |int|
+   - Index of the texture to load from a ``.packed`` container. (Default: 0)
 
  * - bitmap
    - :monosp:`Bitmap object`
@@ -156,6 +162,21 @@ quality. Filtering currently only affects directly visible surfaces, and the
    removes the aliasing but blurs the grazing view, and anisotropic filtering
    preserves most detail.
 
+**Block-compressed textures.** The plugin supports block-compressed texture
+formats (BC4, BC5, and BC7), which greatly reduce memory usage when rendering
+large textured assets on a GPU. The Metal and CUDA backends decode such
+textures in hardware, while the LLVM backend unpacks them into regular
+textures. Block-compressed textures use 8 bits per channel, are not
+differentiable, and ignore the :paramtype:`format` parameter. The
+``trilinear`` and ``anisotropic`` filters require a container entry with a
+complete MIP chain and otherwise fall back to ``bilinear``.
+
+To use this feature, run ``python -m mitsuba.pack_tex <scene.xml>``, which
+packs the textures of a scene into a ``.packed`` container (see the :ref:`file
+format description <sec-pack-format>`) and writes an updated scene referencing
+it. The bitmap textures of that scene specify the container as
+:paramtype:`filename` and select an entry via :paramtype:`index`.
+
 .. tabs::
     .. code-tab:: xml
         :name: bitmap-texture
@@ -194,6 +215,24 @@ constexpr const char *bitmap_class_name() {
     else
         return "BitmapTextureImpl[?]";
 }
+
+/// Record of a texture in a packed texture container
+struct BCTextureEntry {
+    uint8_t format = 0, srgb = 0, n_levels = 0;
+    uint32_t width = 0, height = 0, channels = 0;
+    uint64_t offset = 0, file_size = 0;
+
+    /// Bytes of the compressed representation of MIP level ``level``
+    size_t level_bytes(uint32_t level) const {
+        size_t w = std::max(width >> level, 1u), h = std::max(height >> level, 1u);
+        return ((w + 3) / 4) * ((h + 3) / 4) * (format == 4 ? 8 : 16);
+    }
+
+    /// Number of levels of a complete MIP chain
+    uint32_t full_mip_levels() const {
+        return 1 + dr::log2i(std::max(width, height));
+    }
+};
 NAMESPACE_END(detail)
 
 template <typename Float, typename Spectrum>
@@ -297,7 +336,10 @@ public:
                 fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
                 m_name = file_path.filename().string();
                 Log(Debug, "Loading bitmap texture from \"%s\" ..", m_name);
-                m_bitmap = new Bitmap(file_path);
+                if (file_path.extension() == ".packed")
+                    load_container(props, file_path);
+                else
+                    m_bitmap = new Bitmap(file_path);
             } else if (props.has_property("data")) {
                 m_tensor = std::move(const_cast<TensorXf&>(props.get_any<TensorXf>("data")));
                 if (m_tensor.ndim() != 3)
@@ -320,6 +362,9 @@ public:
 
 protected:
     Object *expand_impl() const {
+        if (m_bc_levels)
+            return load_blocks();
+
         // The `data` tensor path: native float storage, already linear
         if (!m_bitmap)
             return instantiate<Float>(std::move(m_tensor), /* srgb = */ false);
@@ -440,6 +485,119 @@ protected:
         }
     }
 
+    /// Read the selected entry of a packed texture container
+    void load_container(const Properties &props, const fs::path &file_path) {
+        if constexpr (is_spectral_v<Spectrum>)
+            Throw("Block-compressed textures are not supported in spectral "
+                  "variants (8-bit storage cannot hold spectral upsampling "
+                  "coefficients).");
+
+        int index = props.get<int>("index", 0);
+        m_name = tfm::format("%s[%i]", m_name, index);
+
+        auto fail = [&](const char *descr) {
+            Throw("Error while loading texture \"%s\": %s!", m_name, descr);
+        };
+
+        ref<FileStream> stream = new FileStream(file_path);
+        if (stream->size() < 28)
+            fail("file is too short");
+
+        char magic[12];
+        uint32_t version, count;
+        uint64_t table_offset;
+        stream->read(magic, 12);
+        stream->read(version);
+        if (memcmp(magic, "MIPACK.TEX\0\0", 12) != 0 || version != 1)
+            fail("invalid file signature or version");
+
+        stream->seek(stream->size() - 12);
+        stream->read(table_offset);
+        stream->read(count);
+        if (index < 0 || (uint32_t) index >= count)
+            fail("entry index is out of range");
+        if (table_offset + 44 * (uint64_t) count + 12 > stream->size())
+            fail("invalid table offset");
+
+        // Seek to the fixed-size record of the entry
+        detail::BCTextureEntry &e = m_bc_entry;
+        uint8_t reserved;
+        uint32_t name_length;
+        stream->seek(table_offset + 44 * (uint64_t) index);
+        stream->read(e.format);
+        stream->read(e.srgb);
+        stream->read(e.n_levels);
+        stream->read(reserved);
+        stream->read(e.width);
+        stream->read(e.height);
+        stream->read(e.channels);
+        stream->read(name_length);
+        stream->read(e.offset);
+        stream->read(e.file_size);
+
+        bool valid_format = (e.format == 4 && e.channels == 1) ||
+                            (e.format == 5 && e.channels == 2) ||
+                            (e.format == 7 && (e.channels == 3 || e.channels == 4));
+        if (!valid_format || e.width == 0 || e.height == 0 ||
+            e.n_levels == 0 || e.n_levels > e.full_mip_levels() ||
+            e.offset + e.file_size > table_offset)
+            fail("invalid entry header");
+
+        // A filtered lookup needs the complete MIP chain from the container.
+        // Only the levels that will be used are decompressed.
+        m_bc_levels = 1;
+        if (m_mip_filter != dr::MipFilter::Disabled) {
+            if (e.n_levels == e.full_mip_levels())
+                m_bc_levels = e.n_levels;
+            else
+                Log(Warn, "Bitmap texture \"%s\": the texture container stores "
+                          "no MIP chain, falling back to \"bilinear\" filtering.",
+                          m_name);
+        }
+        size_t size = 0;
+        for (uint32_t l = 0; l < m_bc_levels; ++l)
+            size += e.level_bytes(l);
+
+        std::unique_ptr<uint8_t[]> packed = std::make_unique<uint8_t[]>(e.file_size);
+        stream->seek(e.offset);
+        stream->read(packed.get(), e.file_size);
+
+        // Decompress straight into the array handed to the texture. On the
+        // GPU backends, this is a pinned host buffer that the texture upload
+        // reads directly.
+        if constexpr (dr::is_jit_v<Float>) {
+            uint8_t *ptr = (uint8_t *) jit_malloc(dr::backend_v<Float>, size,
+                                                  /* shared = */ true);
+            jit_lz4_decompress(packed.get(), e.file_size, ptr, size);
+            m_bc_blocks = BlockStorage::map_(ptr, size, /* free = */ true);
+        } else {
+            m_bc_blocks = dr::empty<BlockStorage>(size);
+            jit_lz4_decompress(packed.get(), e.file_size, m_bc_blocks.data(), size);
+        }
+    }
+
+    /// Build the implementation object from a container entry
+    Object *load_blocks() const {
+        using StoredType = dr::replace_scalar_t<Float, uint8_t>;
+        using StoredTexture2f = dr::Texture<StoredType, 2>;
+        const detail::BCTextureEntry &e = m_bc_entry;
+
+        bool filtered = m_bc_levels > 1;
+        // Color data keeps its sRGB encoding, which the texture decodes on lookup
+        bool srgb = e.srgb && !m_raw;
+        size_t shape[2] = { e.height, e.width },
+               channels = e.channels == 4 ? 3 : e.channels;
+
+        StoredTexture2f texture(
+            shape, channels, (dr::BlockFormat) e.format, m_bc_blocks,
+            m_bc_levels, m_accel, m_filter_mode, m_wrap_mode, srgb,
+            filtered ? m_mip_filter : dr::MipFilter::Disabled,
+            filtered ? m_max_aniso : 1);
+
+        return new BitmapTextureImpl<Float, Spectrum, StoredType>(
+            Properties(), m_name, m_transform, m_raw, srgb, std::move(texture));
+    }
+
     /// Construct the concrete `BitmapTextureImpl` for the chosen storage type
     template <typename StoredType, typename Tensor>
     Object *instantiate(Tensor &&tensor, bool srgb) const {
@@ -494,6 +652,12 @@ private:
     mutable ref<Bitmap> m_bitmap;
     TensorXf m_tensor;
 
+    // Block-compressed data from a packed texture container
+    using BlockStorage = DynamicBuffer<dr::replace_scalar_t<Float, uint8_t>>;
+    detail::BCTextureEntry m_bc_entry;
+    BlockStorage m_bc_blocks;
+    uint32_t m_bc_levels = 0;
+
     MI_TRAVERSE_CB(Texture, m_bitmap, m_tensor)
 };
 
@@ -534,6 +698,23 @@ public:
                                     max_aniso);
     }
 
+    /// Wrap an existing (block-compressed, hence 8-bit) texture
+    BitmapTextureImpl(const Properties &props,
+                      const std::string& name,
+                      const ScalarAffineTransform3f& transform,
+                      bool raw,
+                      bool srgb,
+                      StoredTexture2f &&texture) :
+        Texture(props),
+        m_name(name),
+        m_transform(transform),
+        m_raw(raw),
+        m_srgb(srgb),
+        m_texture(std::move(texture)) {
+        if (m_transform != ScalarAffineTransform3f())
+            dr::make_opaque(m_transform);
+    }
+
     void traverse(TraversalCallback *cb) override {
         // 8-bit textures store integers and are therefore not differentiable
         cb->put("data", m_texture.tensor(),
@@ -545,10 +726,10 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
             const size_t channels = m_texture.channel_count();
-            if (channels != 1 && channels != 3)
+            if (channels != 1 && channels != 2 && channels != 3)
                 Throw("parameters_changed(): The bitmap texture \"%s\" was changed "
-                      "to have %d channels, only textures with 1 or 3 channels "
-                      "are supported!",
+                      "to have %d channels, only textures with 1, 2, or 3 "
+                      "channels are supported!",
                       m_name, channels);
             else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
                 Throw("parameters_changed(): The bitmap texture \"%s\" was changed,"
@@ -606,7 +787,7 @@ public:
 
         if (channels == 1)
             return interpolate_1(si, active);
-        else // 3 channels
+        else // 2 or 3 channels
             return luminance(interpolate_3(si, active));
     }
 
@@ -641,6 +822,13 @@ public:
                 m_texture.template eval_fetch<Data1>(uv, active);
             f00 = c[0].x(); f10 = c[1].x();
             f01 = c[2].x(); f11 = c[3].x();
+        } else if (channels == 2) {
+            dr::Array<Vector2f, 4> c =
+                m_texture.template eval_fetch<Vector2f>(uv, active);
+            f00 = luminance(reconstruct_normal(c[0]));
+            f10 = luminance(reconstruct_normal(c[1]));
+            f01 = luminance(reconstruct_normal(c[2]));
+            f11 = luminance(reconstruct_normal(c[3]));
         } else { // 3 channels
             dr::Array<Color3f, 4> c =
                 m_texture.template eval_fetch<Color3f>(uv, active);
@@ -675,7 +863,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.channel_count();
-        if (channels != 3)
+        if (channels == 1)
             Throw("eval_3(): The bitmap texture \"%s\" was queried for a RGB "
                   "value, but it is monochromatic!",
                   m_name);
@@ -922,7 +1110,9 @@ protected:
     /**
      * Evaluates the texture at the given surface interaction
      *
-     * Should only be used when the texture has exactly 3 channels.
+     * Should only be used when the texture has 2 or 3 channels. A two-channel
+     * texture stores the *x* and *y* components of a tangent-space normal map
+     * (see \ref reconstruct_normal()).
      */
     MI_INLINE Color3f interpolate_3(const SurfaceInteraction3f &si,
                                      Mask active) const {
@@ -931,11 +1121,36 @@ protected:
 
         Point2f uv = m_transform * si.uv;
 
+        if (m_texture.channel_count() == 2) {
+            Vector2f xy;
+            if (filtered()) {
+                auto [ddx, ddy] = footprint(si);
+                xy = m_texture.template eval_filtered<Vector2f>(uv, ddx, ddy, active);
+            } else {
+                xy = m_texture.template eval<Vector2f>(uv, active);
+            }
+            return reconstruct_normal(xy);
+        }
+
         if (filtered()) {
             auto [ddx, ddy] = footprint(si);
             return m_texture.template eval_filtered<Color3f>(uv, ddx, ddy, active);
         }
         return m_texture.template eval<Color3f>(uv, active);
+    }
+
+    /**
+     * Complete a two-channel normal map lookup
+     *
+     * The stored values encode the *x* and *y* components of a unit normal as
+     * ``(n + 1) / 2``. The function derives the (positive) *z* component and
+     * returns all three in the same encoding, so that the result matches the
+     * lookup of a regular three-channel normal map.
+     */
+    MI_INLINE Color3f reconstruct_normal(const Vector2f &xy) const {
+        Vector2f n = dr::fmadd(xy, 2.f, -1.f);
+        Float z = dr::safe_sqrt(1.f - dr::squared_norm(n));
+        return Color3f(xy.x(), xy.y(), dr::fmadd(z, .5f, .5f));
     }
 
     /**
@@ -976,6 +1191,10 @@ protected:
         const dr::vector<size_t> &shape = tensor.shape();
         size_t pixel_count = shape[0] * shape[1],
                channels    = shape[2];
+
+        if (channels == 2)
+            Throw("Bitmap texture \"%s\": position sampling is not supported "
+                  "for two-channel normal map textures.", m_name);
 
         bool range_issue = false;
         using FloatStorage = DynamicBuffer<Float>;
