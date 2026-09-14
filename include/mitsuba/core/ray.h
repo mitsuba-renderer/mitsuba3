@@ -31,27 +31,32 @@ template <typename Float_> struct RayCone {
     /// Change of the diameter per unit distance along the ray
     Float spread = (ScalarFloat) 0.f;
 
+    /// Keeps track of extra scale factors applied to the cone
+    Float scale_factor = (ScalarFloat) 1.f;
+
     /// Construct a cone with the given width and spread
-    RayCone(const Float &width, const Float &spread)
-        : width(width), spread(spread) { }
+    RayCone(const Float &width, const Float &spread,
+            const Float &scale_factor = (ScalarFloat) 1.f)
+        : width(width), spread(spread), scale_factor(scale_factor) { }
 
     /// Return the cone at distance ``t`` along the ray
     RayCone propagate(const Float &t) const {
-        return RayCone(dr::fmadd(spread, t, width), spread);
+        return RayCone(dr::fmadd(spread, t, width), spread, scale_factor);
     }
 
     /// Return a cone whose width and spread are scaled by ``s``
     RayCone scale(const Float &s) const {
-        return RayCone(width * s, spread * s);
+        return RayCone(width * s, spread * s, scale_factor * s);
     }
 
-    DRJIT_STRUCT(RayCone, width, spread)
+    DRJIT_STRUCT(RayCone, width, spread, scale_factor)
 };
 
 /// Return a string representation of the ray cone
 template <typename Float>
 std::ostream &operator<<(std::ostream &os, const RayCone<Float> &c) {
-    os << "RayCone[width=" << c.width << ", spread=" << c.spread << "]";
+    os << "RayCone[width=" << c.width << ", spread=" << c.spread
+       << ", scale_factor=" << c.scale_factor << "]";
     return os;
 }
 
@@ -120,7 +125,7 @@ template <typename Point_, typename Spectrum_> struct Ray {
         result.maxt        = maxt;
         result.time        = time;
         result.wavelengths = wavelengths;
-        result.cone        = RayCone<Float>(cone.width, -cone.spread);
+        result.cone        = RayCone<Float>(cone.width, -cone.spread, cone.scale_factor);
         return result;
     }
 

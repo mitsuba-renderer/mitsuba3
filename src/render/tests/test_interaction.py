@@ -31,6 +31,7 @@ def test02_intersection_construction(variant_scalar_rgb):
     si.dn_du = [18, 19, 20]
     si.dn_dv = [21, 22, 23]
     si.footprint = mi.Matrix2f([[24, 25], [26, 27]])
+    si.footprint_scale = 28
     si.wi = [31, 32, 33]
     si.prim_index = 34
     si.instance_index = 0
@@ -57,6 +58,7 @@ def test02_intersection_construction(variant_scalar_rgb):
   dn_dv=[21, 22, 23],
   footprint=[[24, 25],
              [26, 27]],
+  footprint_scale=28,
   wi=[31, 32, 33],
   prim_index=34,
   instance_index=0
@@ -177,6 +179,13 @@ def test06_footprint(variants_all_backends_once):
     ray.cone = mi.RayCone(0.03, 0)
     si = scene.ray_intersect(ray, mi.RayFlags.Default, coherent=True)
     assert np.allclose(axes(si), [0.015, 0.015], atol=1e-7)
+    assert dr.allclose(si.footprint_scale, 1)
+
+    # A narrowed cone yields a smaller footprint and reports its scale factor
+    ray.cone = mi.RayCone(0.03, 0).scale(0.25)
+    si = scene.ray_intersect(ray, mi.RayFlags.Default, coherent=True)
+    assert np.allclose(axes(si), [0.00375, 0.00375], atol=1e-7)
+    assert dr.allclose(si.footprint_scale, 0.25)
 
     # A scene without filtered textures skips the footprint computation
     scene = make_scene('bilinear')

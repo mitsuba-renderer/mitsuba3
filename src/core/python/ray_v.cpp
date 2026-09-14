@@ -18,10 +18,11 @@ void bind_ray_cone(nb::module_ &m, const char *name) {
             .def("scale", &RayCone::scale, "s"_a, D(RayCone, scale))
             .def_field(RayCone, width,  D(RayCone, width))
             .def_field(RayCone, spread, D(RayCone, spread))
+            .def_field(RayCone, scale_factor, D(RayCone, scale_factor))
             .def_repr(RayCone);
 
         if constexpr (dr::is_jit_v<Float>) {
-            MI_PY_DRJIT_STRUCT(cone, RayCone, width, spread);
+            MI_PY_DRJIT_STRUCT(cone, RayCone, width, spread, scale_factor);
         }
     }
 }

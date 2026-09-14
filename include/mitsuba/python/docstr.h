@@ -8691,6 +8691,13 @@ static const char *__doc_mitsuba_RayCone_propagate = R"doc(Return the cone at di
 
 static const char *__doc_mitsuba_RayCone_scale = R"doc(Return a cone whose width and spread are scaled by ``s``)doc";
 
+static const char *__doc_mitsuba_RayCone_scale_factor =
+R"doc(Product of the factors passed to `scale()`
+
+Integrators narrow the cone of jittered camera rays by 1/sqrt(spp) so
+that each sample filters its share of the pixel. Dividing by this
+value recovers the cone of the full pixel.)doc";
+
 static const char *__doc_mitsuba_RayCone_spread = R"doc(Change of the diameter per unit distance along the ray)doc";
 
 static const char *__doc_mitsuba_RayCone_width = R"doc(Diameter of the cone at the ray origin)doc";
@@ -11443,6 +11450,14 @@ Args:
     ray: Ray associated with the ray intersection
 
     ray_flags: Flags specifying which information should be computed)doc";
+
+static const char *__doc_mitsuba_SurfaceInteraction_footprint_scale =
+R"doc(Scale factor of the ray cone that produced `footprint`
+
+This is `RayCone.scale_factor` of the traced ray, e.g. 1/sqrt(spp) for
+jittered camera rays. Dividing `footprint` by it yields the footprint
+of the full pixel, which consumers with a nonlinear response (e.g. bump
+maps) may prefer over the per-sample footprint.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_footprint =
 R"doc(UV-space footprint of the ray cone at the interaction

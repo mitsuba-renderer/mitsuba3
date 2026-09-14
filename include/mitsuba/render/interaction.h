@@ -374,6 +374,16 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     Matrix2f footprint;
 
+    /**
+     * Scale factor of the ray cone that produced `footprint`
+     *
+     * This is `RayCone.scale_factor` of the traced ray, e.g. 1/sqrt(spp) for
+     * jittered camera rays. Dividing `footprint` by it yields the footprint
+     * of the full pixel, which consumers with a nonlinear response (e.g. bump
+     * maps) may prefer over the per-sample footprint.
+     */
+    Float footprint_scale;
+
     /// Incident direction in the local shading frame
     Vector3f wi;
 
@@ -402,7 +412,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
                                 const Wavelength &wavelengths)
         : Base(0.f, ps.time, wavelengths, ps.p, ps.n, ps.p_err), uv(ps.uv),
           sh_frame(Frame3f(ps.n)), dp_du(0), dp_dv(0), dn_du(0), dn_dv(0),
-          footprint(0), wi(0), prim_index(0) {}
+          footprint(0), footprint_scale(1), wi(0), prim_index(0) {}
 
     /**
      * This callback method is invoked by dr::zeros<>, and takes care of fields that deviate
@@ -410,18 +420,19 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      */
     void zero_(size_t size = 1) override {
         Interaction<Float_, Spectrum_>::zero_(size);
-        uv             = dr::zeros<Point2f>(size);
-        sh_frame       = dr::zeros<Frame3f>(size);
-        frame_flipped  = dr::zeros<Bool>(size);
-        dp_du          = dr::zeros<Vector3f>(size);
-        dp_dv          = dr::zeros<Vector3f>(size);
-        dn_du          = dr::zeros<Vector3f>(size);
-        dn_dv          = dr::zeros<Vector3f>(size);
-        footprint      = dr::zeros<Matrix2f>(size);
-        wi             = dr::zeros<Vector3f>(size);
-        prim_index     = dr::zeros<Index>(size);
-        instance_index = dr::zeros<Index>(size);
-        shape          = dr::zeros<ShapePtr>(size);
+        uv              = dr::zeros<Point2f>(size);
+        sh_frame        = dr::zeros<Frame3f>(size);
+        frame_flipped   = dr::zeros<Bool>(size);
+        dp_du           = dr::zeros<Vector3f>(size);
+        dp_dv           = dr::zeros<Vector3f>(size);
+        dn_du           = dr::zeros<Vector3f>(size);
+        dn_dv           = dr::zeros<Vector3f>(size);
+        footprint       = dr::zeros<Matrix2f>(size);
+        footprint_scale = dr::full<Float>(1, size);
+        wi              = dr::zeros<Vector3f>(size);
+        prim_index      = dr::zeros<Index>(size);
+        instance_index  = dr::zeros<Index>(size);
+        shape           = dr::zeros<ShapePtr>(size);
     }
 
     /// Convert a local shading-space vector into world space
@@ -588,7 +599,8 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
      * The cross section of ``ray.cone`` at the hit is a disk perpendicular to
      * the ray. Projecting it onto the tangent plane yields an ellipse. This
      * function computes it following :cite:`AkenineMoller2021RayCones` and
-     * stores its conjugate diameters in the `footprint` field.
+     * stores its conjugate diameters in the `footprint` field, along with the
+     * cone's scale factor in `footprint_scale`.
      */
     void compute_footprint(const Ray3f &ray, Mask active = true) {
         dr::suspend_grad<Float> guard;
@@ -631,6 +643,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
         footprint = Matrix2f(a.x(), b.x(),
                              a.y(), b.y());
+        footprint_scale = ray.cone.scale_factor;
     }
 
     /**
@@ -751,7 +764,7 @@ struct SurfaceInteraction : Interaction<Float_, Spectrum_> {
 
     DRJIT_STRUCT(SurfaceInteraction, t, time, wavelengths, p, n, p_err, shape, uv,
                  sh_frame, frame_flipped, dp_du, dp_dv, dn_du, dn_dv,
-                 footprint, wi, prim_index, instance_index)
+                 footprint, footprint_scale, wi, prim_index, instance_index)
 };
 
 // -----------------------------------------------------------------------------
@@ -955,7 +968,8 @@ std::ostream &operator<<(std::ostream &os, const SurfaceInteraction<Float, Spect
                << "  dn_dv = " << string::indent(it.dn_dv, 11) << "," << std::endl;
 
         if (it.has_footprint())
-            os << "  footprint = " << string::indent(it.footprint, 14) << "," << std::endl;
+            os << "  footprint = " << string::indent(it.footprint, 14) << "," << std::endl
+               << "  footprint_scale = " << it.footprint_scale << "," << std::endl;
 
         os << "  wi = " << string::indent(it.wi, 7) << "," << std::endl
            << "  prim_index = " << it.prim_index << "," << std::endl
