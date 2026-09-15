@@ -757,14 +757,14 @@ public:
         UInt32 last_segment_idx =
             dr::gather<UInt32>(m_curves_prim_idx, curve_idx + 1, active) - 1;
 
-        sample2 = sample2 * (curve_count) - curve_idx;
-        Bool use_first = sample2 < 0.5f;
+        Float sample_rim = sample2 * curve_count - curve_idx;
+        Bool use_first = sample_rim < 0.5f;
 
         // Avoid numerical issues on `v` by having too close to 0 or 1
         Point2f local_uv = dr::select(
             use_first,
-            Point2f(sample2 * 2.f, 0.1f),
-            Point2f(sample2 * 2.f - 1.f, 0.9f)
+            Point2f(sample_rim * 2.f, 0.1f),
+            Point2f(sample_rim * 2.f - 1.f, 0.9f)
         );
 
         si.prim_index =
