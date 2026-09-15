@@ -27,6 +27,21 @@ static const char *__doc_EmptySbtRecord = R"doc()doc";
 
 static const char *__doc_EmptySbtRecord_header = R"doc()doc";
 
+static const char *__doc_JitIsectBinding =
+R"doc(\brief Record read by a generated intersection callback
+
+On the LLVM backend, the record's address is the Embree geometry user
+pointer, and the thunk installed by the application calls
+<tt>((void (*)(const void *, int)) code)(args, mode)</tt> with the Embree
+callback arguments and mode 0 (intersect) or 1 (occluded).
+
+On the CUDA backend, the intersection program reads its data block through
+the second field of the hit record data, which must be laid out as
+<tt>{ uint32_t application_id; void *data; }</tt>. Dr.Jit writes both the
+record header and that second field before each launch of a kernel that
+contains the function (see \ref jit_isect_bind()). Hits are reported with
+hit kind 0 and the two attributes.)doc";
+
 static const char *__doc_OptixAccelBufferSizes = R"doc()doc";
 
 static const char *__doc_OptixAccelBufferSizes_outputSizeInBytes = R"doc()doc";
@@ -331,7 +346,7 @@ static const char *__doc_OptixDisplacementMicromapUsageCount_subdivisionLevel = 
 
 static const char *__doc_OptixHitGroupData = R"doc(Stores information about a `Shape` on the Optix side)doc";
 
-static const char *__doc_OptixHitGroupData_data = R"doc(Pointer to the memory region of `Shape` data (e.g. ``shapedata::SphereData``))doc";
+static const char *__doc_OptixHitGroupData_data = R"doc(Data block of the shape's recorded intersection routine (see jit_isect_bind()))doc";
 
 static const char *__doc_OptixHitGroupData_shape_registry_id = R"doc(Shape id in Dr.Jit's pointer registry)doc";
 
@@ -553,7 +568,7 @@ static const char *__doc_OptixShaderBindingTable_missRecordStrideInBytes = R"doc
 
 static const char *__doc_OptixShaderBindingTable_raygenRecord = R"doc()doc";
 
-static const char *__doc_RTCSceneTy = R"doc(Forward-declare Embree's opaque scene type.)doc";
+static const char *__doc_RTCSceneTy = R"doc(Forward-declare Embree's opaque scene type and Dr.Jit's binding record.)doc";
 
 static const char *__doc_SbtRecord = R"doc()doc";
 
@@ -564,16 +579,6 @@ static const char *__doc_SbtRecord_data = R"doc()doc";
 static const char *__doc_SbtRecord_header = R"doc()doc";
 
 static const char *__doc_drjit_operator_lshift = R"doc(Prints the canonical representation of a ``PCG32`` object.)doc";
-
-static const char *__doc_mi_float4 = R"doc()doc";
-
-static const char *__doc_mi_float4_w = R"doc()doc";
-
-static const char *__doc_mi_float4_x = R"doc()doc";
-
-static const char *__doc_mi_float4_y = R"doc()doc";
-
-static const char *__doc_mi_float4_z = R"doc()doc";
 
 static const char *__doc_mitsuba_AdjointIntegrator =
 R"doc(Abstract adjoint integrator that performs Monte Carlo sampling
@@ -3598,9 +3603,21 @@ static const char *__doc_mitsuba_EmbreeAccel_rebuild = R"doc()doc";
 
 static const char *__doc_mitsuba_EmbreeAccel_release = R"doc()doc";
 
+static const char *__doc_mitsuba_EmbreeAccel_state = R"doc(Bindings and the scene's deferred release (JIT variants only))doc";
+
 static const char *__doc_mitsuba_EmbreeAccel_static_initialization = R"doc()doc";
 
 static const char *__doc_mitsuba_EmbreeAccel_static_shutdown = R"doc()doc";
+
+static const char *__doc_mitsuba_EmbreeSceneState =
+R"doc(Native state of a JIT variant's Embree scene. It outlives the accel object:
+ray tracing calls that were recorded but not yet launched keep the scene
+handle alive, and the state is released through the handle's free callback
+(see ``EmbreeAccel::release()``).)doc";
+
+static const char *__doc_mitsuba_EmbreeSceneState_isect_bindings = R"doc(Recorded intersection function bindings of the custom shapes)doc";
+
+static const char *__doc_mitsuba_EmbreeSceneState_scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
@@ -5200,6 +5217,22 @@ static const char *__doc_mitsuba_IrregularContinuousDistribution_size = R"doc(Re
 static const char *__doc_mitsuba_IrregularContinuousDistribution_traverse_cb = R"doc()doc";
 
 static const char *__doc_mitsuba_IrregularContinuousDistribution_update = R"doc(Update the internal state. Must be invoked when changing the pdf or range.)doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle = R"doc(Owning, move-only handle of a function recorded via ``jit_isect_end()``)doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_IsectFuncHandle = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_IsectFuncHandle_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_IsectFuncHandle_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_IsectFuncHandle_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_index = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_operator_assign = R"doc()doc";
+
+static const char *__doc_mitsuba_IsectFuncHandle_operator_bool = R"doc()doc";
 
 static const char *__doc_mitsuba_JitObject =
 R"doc(CRTP base class for JIT-registered objects
@@ -9380,9 +9413,8 @@ static const char *__doc_mitsuba_SceneIRBuilder_build =
 R"doc(Walk the ``scene`` once and lower it to a ``SceneIR``.
 
 1. Visit top-level shapes first, then ShapeGroup children. Describe each
-   shape exactly once and assign it a stable ``data_slot`` in that order.
-   Backends use the slot as the persistent index for per-shape storage
-   such as custom primitive data buffers.
+   shape exactly once and, in JIT variants, record the intersection
+   routine of each custom shape (``ShapeIR::isect_func``).
 
 2. Partition non-instance geometry by ``ShapeIR.Kind`` and visibility
    mask. Each non-empty bucket becomes one ``BlasEntry``. Emit top-level
@@ -9398,6 +9430,11 @@ static const char *__doc_mitsuba_SceneIR_group_blases =
 R"doc(BLAS indices generated for each ShapeGroup's children, indexed in the
 same order as ``scene->shapegroups()``. Backends use entry ``i`` to
 rebuild the scene's i-th ShapeGroup.)doc";
+
+static const char *__doc_mitsuba_SceneIR_instance_shapes =
+R"doc(The scene's ``Instance`` shapes in order of appearance, for backends
+that instance nested scenes directly (Embree). ``instances`` derives
+from these.)doc";
 
 static const char *__doc_mitsuba_SceneIR_instances = R"doc(Flattened TLAS/IAS instances referencing entries in ``blases``.)doc";
 
@@ -10322,23 +10359,11 @@ static const char *__doc_mitsuba_ShapeIR_cp_count = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeIR_cp_ptr = R"doc(Interleaved (x, y, z, radius) control points and uint32 segment indices.)doc";
 
-static const char *__doc_mitsuba_ShapeIR_ctx = R"doc(Opaque context passed to the fill callbacks (the owning `Shape`).)doc";
-
-static const char *__doc_mitsuba_ShapeIR_data_size =
-R"doc(Total per-shape POD size in bytes. 0 means ``prim_count * pdata_size``.
-Set explicitly for custom layouts that deviate (e.g. SDFGrid, Ellipsoids).)doc";
-
-static const char *__doc_mitsuba_ShapeIR_data_size_bytes = R"doc(Resolved per-shape POD byte count (see ``data_size``).)doc";
-
-static const char *__doc_mitsuba_ShapeIR_data_slot =
-R"doc(Stable per-shape storage index assigned by ``SceneIRBuilder`` (OptiX
-only; Metal uses its own per-BLAS lookup table).)doc";
+static const char *__doc_mitsuba_ShapeIR_ctx = R"doc(Opaque context passed to ``fill_aabbs`` (the owning `Shape`).)doc";
 
 static const char *__doc_mitsuba_ShapeIR_face_count = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeIR_fill_aabbs = R"doc(Writes ``prim_count * 6`` floats (min/max interleaved) to ``out``.)doc";
-
-static const char *__doc_mitsuba_ShapeIR_fill_data = R"doc(Writes ``data_size`` bytes of primitive data to ``out``.)doc";
 
 static const char *__doc_mitsuba_ShapeIR_group_id = R"doc(BLAS-set cache key (shared by all instances of one ShapeGroup).)doc";
 
@@ -10349,9 +10374,11 @@ R"doc(Distance between consecutive face records in bytes; the three vertex
 indices occupy the first three words of each record. Metal inputs
 must be tightly packed (12 bytes).)doc";
 
-static const char *__doc_mitsuba_ShapeIR_kind = R"doc()doc";
+static const char *__doc_mitsuba_ShapeIR_isect_func =
+R"doc(Intersection function recorded from ``Shape::ray_intersect_preliminary()``
+by ``SceneIRBuilder`` (JIT variants). The backend binds it to the geometry.)doc";
 
-static const char *__doc_mitsuba_ShapeIR_pdata_size = R"doc(Per-primitive POD size in bytes (0 if the shape writes none).)doc";
+static const char *__doc_mitsuba_ShapeIR_kind = R"doc()doc";
 
 static const char *__doc_mitsuba_ShapeIR_prim_count = R"doc(Number of AABBs / primitives this shape contributes.)doc";
 
@@ -10511,6 +10538,10 @@ static const char *__doc_mitsuba_Shape_bbox_2 =
 R"doc(Return an axis aligned box that bounds a single shape primitive
 (including any transformations that may have been applied to it)
 
+The box must be conservative: the ray tracing backends only invoke
+`ray_intersect_preliminary()` for rays that enter it, so a hit outside
+the box is missed.
+
 Note:
     The default implementation simply calls `bbox()`)doc";
 
@@ -10562,10 +10593,6 @@ once per shape at build/update time.
 
 The default implementation describes a single-primitive custom
 (bounding-box) shape whose AABB is the shape's bounding box.)doc";
-
-static const char *__doc_mitsuba_Shape_describe_with_data =
-R"doc(Describe a custom shape and register a ``fill_data`` callback that emits
-one ``PodT`` per primitive via ``Derived::gpu_fill_data()``.)doc";
 
 static const char *__doc_mitsuba_Shape_differential_motion =
 R"doc(Return the attached (AD) point on the shape's surface
@@ -10873,13 +10900,12 @@ Args:
 
     prim_index: Index of the primitive to be intersected. This index is ignored by a
         shape that contains a single primitive. Otherwise, if no index is provided,
-        the ray intersection will be performed on the shape's first primitive at index 0.)doc";
+        the ray intersection will be performed on the shape's first primitive at index 0.
 
-static const char *__doc_mitsuba_Shape_ray_intersect_preliminary_packet = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_ray_intersect_preliminary_packet_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_ray_intersect_preliminary_packet_3 = R"doc()doc";
+In JIT variants, the ray tracing backends invoke this routine of a
+custom shape through code that Dr.Jit generates from a symbolic
+recording (see ``SceneIRBuilder``), which is why such shapes must
+implement it without side effects, evaluation, or ray tracing.)doc";
 
 static const char *__doc_mitsuba_Shape_ray_intersect_preliminary_scalar =
 R"doc(Scalar test for an intersection and return detailed information
@@ -10906,12 +10932,6 @@ the shape actually contains a nested kd-tree, some optimizations are possible.
 
 Args:
     ray: The ray to be tested for an intersection)doc";
-
-static const char *__doc_mitsuba_Shape_ray_test_packet = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_ray_test_packet_2 = R"doc()doc";
-
-static const char *__doc_mitsuba_Shape_ray_test_packet_3 = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_ray_test_scalar = R"doc()doc";
 
@@ -15614,28 +15634,6 @@ static const char *__doc_mitsuba_warp_von_mises_fisher_to_square = R"doc(Inverse
 static const char *__doc_mitsuba_xyz_to_srgb = R"doc(Convert XYZ tristimulus values to ITU-R Rec. BT.709 linear RGB)doc";
 
 static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
-
-static const char *__doc_shapedata_CylinderData = R"doc(Per-primitive data for a cylinder (object space: z-axis, [0,length], radius).)doc";
-
-static const char *__doc_shapedata_CylinderData_params = R"doc(x = length, y = radius (z, w unused).)doc";
-
-static const char *__doc_shapedata_CylinderData_to_object = R"doc(Affine world -> object transformation)doc";
-
-static const char *__doc_shapedata_DiskData = R"doc(Per-primitive data for a disk (object space: z=0 plane, unit radius).)doc";
-
-static const char *__doc_shapedata_DiskData_to_object = R"doc(Affine world -> object transformation)doc";
-
-static const char *__doc_shapedata_EllipsoidData = R"doc(Per-primitive data for an ellipsoid (object space: unit sphere).)doc";
-
-static const char *__doc_shapedata_EllipsoidData_to_object = R"doc(Affine world -> object (unit-sphere) transformation)doc";
-
-static const char *__doc_shapedata_SphereData = R"doc(Per-primitive data for a sphere (world space).)doc";
-
-static const char *__doc_shapedata_SphereData_center_radius = R"doc(xyz = center, w = radius)doc";
-
-static const char *__doc_shapedata_fill_affine3x4 =
-R"doc(Host-side helper: pack the upper three rows of an affine matrix into the
-``mi_float4[3]`` layout the GPU intersection functions read.)doc";
 
 static const char *__doc_struct_jit_type_id = R"doc(Teach struct-jit's compile-time type trait about Dr.Jit's half type)doc";
 

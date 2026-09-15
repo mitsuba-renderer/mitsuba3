@@ -460,6 +460,7 @@ def test14_packed_container(variants_all_rgb, tmp_path, filter_type):
         mi.load_dict({'type': 'bitmap', 'filename': fname, 'name': 'second'})
 
     # A complete MIP chain is used by the trilinear filter
+    fname = str(tmp_path / 'chain.packed')
     bc4_constant_texture(fname, 'chain', 102, 8, 4, 4)
     tex = mi.load_dict({'type': 'bitmap', 'filename': fname, 'raw': True,
                         'name': 'chain', 'filter_type': filter_type})

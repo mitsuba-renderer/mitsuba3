@@ -18,9 +18,6 @@
 #include <embree3/rtcore.h>
 #endif
 
-#if defined(MI_ENABLE_METAL)
-#include "../render/metal/shapes.h"
-#endif
 
 NAMESPACE_BEGIN(mitsuba)
 

@@ -98,18 +98,19 @@ MI_VARIANT Float Shape<Float, Spectrum>::pdf_position(const PositionSample3f & /
 MI_VARIANT void
 Shape<Float, Spectrum>::describe(ShapeIR &g) const {
     g.kind = ShapeIR::Kind::Custom;
-    g.type = m_shape_type;
     g.prim_count = primitive_count();
     g.ctx = this;
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    // Default custom shape: one AABB equal to the shape bounds.
     g.fill_aabbs = [](const void *ctx, void *out) {
-        ScalarBoundingBox3f b = static_cast<const Shape *>(ctx)->bbox();
+        const Shape *shape = static_cast<const Shape *>(ctx);
         float *d = (float *) out;
-        d[0] = (float) b.min.x(); d[1] = (float) b.min.y(); d[2] = (float) b.min.z();
-        d[3] = (float) b.max.x(); d[4] = (float) b.max.y(); d[5] = (float) b.max.z();
+        for (ScalarSize i = 0, n = shape->primitive_count(); i < n; ++i, d += 6) {
+            ScalarBoundingBox3f b = shape->bbox(i);
+            for (int k = 0; k < 3; ++k) {
+                d[k] = (float) b.min[k];
+                d[3 + k] = (float) b.max[k];
+            }
+        }
     };
-#endif
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::DirectionSample3f
@@ -199,7 +200,7 @@ Shape<Float, Spectrum>::sample_precomputed_silhouette(
 
 MI_VARIANT typename Shape<Float, Spectrum>::PreliminaryIntersection3f
 Shape<Float, Spectrum>::ray_intersect_preliminary(const Ray3f & /*ray*/,
-                                                  uint32_t /*prim_index*/, Mask /*active*/) const {
+                                                  UInt32 /*prim_index*/, Mask /*active*/) const {
     NotImplementedError("ray_intersect_preliminary");
 }
 
@@ -213,30 +214,8 @@ Shape<Float, Spectrum>::ray_intersect_preliminary_scalar(const ScalarRay3f & /*r
     NotImplementedError("ray_intersect_preliminary_scalar");
 }
 
-#define MI_DEFAULT_RAY_INTERSECT_PACKET(N)                                                          \
-    MI_VARIANT std::tuple<typename Shape<Float, Spectrum>::MaskP##N,                                \
-                           typename Shape<Float, Spectrum>::FloatP##N,                              \
-                           typename Shape<Float, Spectrum>::Point2fP##N,                            \
-                           typename Shape<Float, Spectrum>::UInt32P##N,                             \
-                           typename Shape<Float, Spectrum>::UInt32P##N>                             \
-    Shape<Float, Spectrum>::ray_intersect_preliminary_packet(                                       \
-        const Ray3fP##N & /*ray*/, uint32_t /*prim_index*/, MaskP##N /*active*/) const {            \
-        NotImplementedError("ray_intersect_preliminary_packet");                                    \
-    }                                                                                               \
-    MI_VARIANT typename Shape<Float, Spectrum>::MaskP##N                                            \
-    Shape<Float, Spectrum>::ray_test_packet(const Ray3fP##N &ray,                                   \
-                                            uint32_t prim_index,                                    \
-                                            MaskP##N active) const {                                \
-        auto res = ray_intersect_preliminary_packet(ray, prim_index, active);                       \
-        return std::get<0>(res);                                                                    \
-    }
-
-MI_DEFAULT_RAY_INTERSECT_PACKET(4)
-MI_DEFAULT_RAY_INTERSECT_PACKET(8)
-MI_DEFAULT_RAY_INTERSECT_PACKET(16)
-
 MI_VARIANT typename Shape<Float, Spectrum>::Mask
-Shape<Float, Spectrum>::ray_test(const Ray3f &ray, uint32_t prim_index, Mask active) const {
+Shape<Float, Spectrum>::ray_test(const Ray3f &ray, UInt32 prim_index, Mask active) const {
     MI_MASK_ARGUMENT(active);
     return ray_intersect_preliminary(ray, prim_index, active).is_valid();
 }
@@ -361,8 +340,8 @@ Shape<Float, Spectrum>::bbox(ScalarIndex) const {
 }
 
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
-Shape<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
-    ScalarBoundingBox3f result = bbox(index);
+Shape<Float, Spectrum>::bbox(ScalarIndex prim_index, const ScalarBoundingBox3f &clip) const {
+    ScalarBoundingBox3f result = bbox(prim_index);
     result.clip(clip);
     return result;
 }

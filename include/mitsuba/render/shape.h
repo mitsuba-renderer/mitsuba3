@@ -12,10 +12,6 @@
 #include <drjit/packet.h>
 #include <map>
 
-#if defined(MI_ENABLE_CUDA)
-#  include <mitsuba/render/optix/common.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**
@@ -501,6 +497,11 @@ public:
      * origin), detailed intersection information can later be obtained via the
      * `compute_surface_interaction()` method.
      *
+     * A reported intersection must lie within the ray's interval, i.e.
+     * ``0 <= t <= ray.maxt``. The ray tracing backends do not check this,
+     * and an intersection beyond ``ray.maxt`` would replace a closer one
+     * that they found earlier.
+     *
      * Args:
      *     ray: The ray to be tested for an intersection
      *
@@ -509,7 +510,7 @@ public:
      *         the ray intersection will be performed on the shape's first primitive at index 0.
      */
     virtual PreliminaryIntersection3f ray_intersect_preliminary(const Ray3f &ray,
-                                                                ScalarIndex prim_index = 0,
+                                                                UInt32 prim_index = 0,
                                                                 Mask active = true) const;
     /**
      * Fast ray shadow test
@@ -524,7 +525,7 @@ public:
      * Args:
      *     ray: The ray to be tested for an intersection
      */
-    virtual Mask ray_test(const Ray3f &ray, ScalarIndex prim_index = 0, Mask active = true) const;
+    virtual Mask ray_test(const Ray3f &ray, UInt32 prim_index = 0, Mask active = true) const;
 
     /**
      * Compute and return detailed information related to a surface interaction
@@ -590,27 +591,6 @@ public:
     ray_intersect_preliminary_scalar(const ScalarRay3f &ray) const;
     virtual bool ray_test_scalar(const ScalarRay3f &ray) const;
 
-    /// Macro to declare packet versions of the scalar routine above
-    #define MI_DECLARE_RAY_INTERSECT_PACKET(N)                                  \
-        using FloatP##N   = dr::Packet<dr::scalar_t<Float>, N>;                 \
-        using UInt32P##N  = dr::uint32_array_t<FloatP##N>;                      \
-        using MaskP##N    = dr::mask_t<FloatP##N>;                              \
-        using Point2fP##N = Point<FloatP##N, 2>;                                \
-        using Point3fP##N = Point<FloatP##N, 3>;                                \
-        using Ray3fP##N   = Ray<Point3fP##N, Spectrum>;                         \
-        virtual std::tuple<MaskP##N, FloatP##N, Point2fP##N,                    \
-                           UInt32P##N, UInt32P##N>                              \
-        ray_intersect_preliminary_packet(const Ray3fP##N &ray,                  \
-                                         ScalarIndex prim_index = 0,            \
-                                         MaskP##N active = true) const;         \
-        virtual MaskP##N ray_test_packet(const Ray3fP##N &ray,                  \
-                                         ScalarIndex prim_index = 0,            \
-                                         MaskP##N active = true) const;
-
-    MI_DECLARE_RAY_INTERSECT_PACKET(4)
-    MI_DECLARE_RAY_INTERSECT_PACKET(8)
-    MI_DECLARE_RAY_INTERSECT_PACKET(16)
-
     // =============================================================
 
     // =============================================================
@@ -627,10 +607,13 @@ public:
      * Return an axis aligned box that bounds a single shape primitive
      * (including any transformations that may have been applied to it)
      *
+     * The box must be conservative and include all positions for which
+     * `ray_intersect_preliminary()` may report a hit.
+     *
      * Note:
      *     The default implementation simply calls `bbox()`
      */
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index) const;
+    virtual ScalarBoundingBox3f bbox(ScalarIndex prim_index) const;
 
     /**
      * Return an axis aligned box that bounds a single shape primitive
@@ -640,7 +623,7 @@ public:
      * default implementation just takes the bounding box returned by
      * `Shape.bbox` and clips it to ``clip``.
      */
-    virtual ScalarBoundingBox3f bbox(ScalarIndex index,
+    virtual ScalarBoundingBox3f bbox(ScalarIndex prim_index,
                                      const ScalarBoundingBox3f &clip) const;
 
     /**
@@ -887,17 +870,6 @@ public:
      */
     virtual void describe(ShapeIR &g) const;
 
-    /// Describe a custom shape and register a ``fill_data`` callback that emits
-    /// one ``PodT`` per primitive via ``Derived::gpu_fill_data()``.
-    template <typename Derived, typename PodT>
-    void describe_with_data(ShapeIR &g) const {
-        Shape::describe(g);
-        g.pdata_size = sizeof(PodT);
-        g.fill_data = [](const void *ctx, void *out) {
-            static_cast<const Derived *>(ctx)->gpu_fill_data(out);
-        };
-    }
-
     /// Invalidate hits whose geometric normal faces along the ray, enforcing the
     /// single-sided contract on backends (Metal) that report both faces.
     void cull_backface(SurfaceInteraction3f &si, const Ray3f &ray, Mask active) const {
@@ -1002,35 +974,10 @@ std::ostream &operator<<(std::ostream &os,
 MI_EXTERN_CLASS(Shape)
 NAMESPACE_END(mitsuba)
 
-#define MI_IMPLEMENT_RAY_INTERSECT_PACKET(N)                                                \
-    using typename Base::FloatP##N;                                                         \
-    using typename Base::UInt32P##N;                                                        \
-    using typename Base::MaskP##N;                                                          \
-    using typename Base::Point2fP##N;                                                       \
-    using typename Base::Point3fP##N;                                                       \
-    using typename Base::Ray3fP##N;                                                         \
-    std::tuple<MaskP##N, FloatP##N, Point2fP##N, UInt32P##N, UInt32P##N>                    \
-    ray_intersect_preliminary_packet(                                                       \
-        const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) const override {     \
-        (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
-            return ray_intersect_preliminary_impl<FloatP##N>(ray, prim_index, active);      \
-        else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
-    }                                                                                       \
-    MaskP##N ray_test_packet(const Ray3fP##N &ray, ScalarIndex prim_index, MaskP##N active) \
-        const override {                                                                    \
-        (void) ray; (void) prim_index; (void) active;                                       \
-        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>)                      \
-            return ray_test_impl<FloatP##N>(ray, prim_index, active);                       \
-        else                                                                                \
-            Throw("ray_intersect_preliminary_packet() CUDA/Metal not supported");           \
-    }
-
 // Macro to define ray intersection methods given an *_impl() templated implementation
 #define MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()                                             \
     PreliminaryIntersection3f ray_intersect_preliminary(                                    \
-        const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {             \
+        const Ray3f &ray, UInt32 prim_index, Mask active) const override {                  \
         MI_MASK_ARGUMENT(active);                                                           \
         PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();              \
         std::tie(pi.valid, pi.t, pi.prim_uv, std::ignore, pi.prim_index) =                  \
@@ -1038,7 +985,7 @@ NAMESPACE_END(mitsuba)
         pi.shape = this;                                                                    \
         return pi;                                                                          \
     }                                                                                       \
-    Mask ray_test(const Ray3f &ray, ScalarIndex prim_index, Mask active) const override {   \
+    Mask ray_test(const Ray3f &ray, UInt32 prim_index, Mask active) const override {        \
         MI_MASK_ARGUMENT(active);                                                           \
         return ray_test_impl<Float>(ray, prim_index, active);                               \
     }                                                                                       \
@@ -1049,10 +996,7 @@ NAMESPACE_END(mitsuba)
     }                                                                                       \
     ScalarMask ray_test_scalar(const ScalarRay3f &ray) const override {                     \
         return ray_test_impl<ScalarFloat>(ray, 0, true);                                    \
-    }                                                                                       \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(4)                                                    \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(8)                                                    \
-    MI_IMPLEMENT_RAY_INTERSECT_PACKET(16)
+    }
 
 // -----------------------------------------------------------------------
 // Enables vectorized method calls on Dr.Jit arrays of shapes

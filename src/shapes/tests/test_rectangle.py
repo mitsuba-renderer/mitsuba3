@@ -61,14 +61,14 @@ def check_direct_ray_intersect(rectangle, ray, its_found, si):
         elif k in ('shape', 'instance') or dr.is_mask_v(expected):
             assert dr.all(expected == actual), \
                     f"Surface interaction mismatch for field \"{k}\"."
-        elif k == 'prim_index':
-            # For invalid surface interactions, the value of prim_index is
+        elif k in ('prim_index', 'footprint_scale'):
+            # For invalid surface interactions, the values of these fields are
             # not always predictable when using `Scene.ray_intersect()`, so
-            # we don't check it.
+            # we don't check them.
             if dr.is_jit_v(expected):
                 cond = ~its_found | (expected == actual)
             else:
-                cond = its_found or (expected == actual)
+                cond = not its_found or (expected == actual)
             assert dr.all(cond), \
                     f"Surface interaction mismatch for field \"{k}\"."
         else:

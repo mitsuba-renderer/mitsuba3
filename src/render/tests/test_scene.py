@@ -608,5 +608,6 @@ def test22_null_walk_far_origin(variants_vec_rgb):
     o = target - 1e5 * d
     ray = mi.Ray3f(o, dr.normalize(target - o), 2e5, 0.0, [])
 
-    assert dr.all(scene(0.0).ray_test_tr(ray)[0] == 1)
-    assert dr.allclose(scene(0.5).ray_test_tr(ray)[0], 0.5, atol=1e-4)
+    tr = lambda opacity: mi.unpolarized_spectrum(scene(opacity).ray_test_tr(ray))[0]
+    assert dr.all(tr(0.0) == 1)
+    assert dr.allclose(tr(0.5), 0.5, atol=1e-4)

@@ -302,6 +302,7 @@ def test09_packed_to_world(variants_all_rgb, tmp_path, scale):
     # frames, which a rotation must decode, transform, and re-encode
     m.set_bsdf(anisotropic_bsdf())
     assert m.packs_tangent()
+    fname = str(tmp_path / "mesh_aniso.packed")
     m.write_packed(fname)
     m4 = mi.load_dict({'type': 'packed', 'filename': fname,
                        'to_world': mi.ScalarTransform4f().rotate([0, 0, 1], 90),

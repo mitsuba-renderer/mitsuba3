@@ -939,9 +939,9 @@ public:
 
     ScalarBoundingBox3f bbox() const override;
 
-    ScalarBoundingBox3f bbox(ScalarIndex index) const override;
+    ScalarBoundingBox3f bbox(ScalarIndex prim_index) const override;
 
-    ScalarBoundingBox3f bbox(ScalarIndex index,
+    ScalarBoundingBox3f bbox(ScalarIndex prim_index,
                              const ScalarBoundingBox3f &clip) const override;
 
     ScalarSize primitive_count() const override;

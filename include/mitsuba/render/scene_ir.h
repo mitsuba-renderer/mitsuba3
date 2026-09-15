@@ -5,6 +5,7 @@
 #pragma once
 
 #include <mitsuba/render/fwd.h>
+#include <drjit-core/jit.h>
 #include <cstddef>
 #include <cstdint>
 #include <vector>
@@ -48,7 +49,6 @@ struct ShapeIR {
     };
 
     Kind kind = Kind::Custom;
-    ShapeType type{};
 
     /// Visibility mask (see ``accel_mask()``), filled in by
     /// ``SceneIRBuilder``. Backends with per-instance masks (OptiX, Metal)
@@ -60,29 +60,20 @@ struct ShapeIR {
     /// Number of AABBs / primitives this shape contributes.
     size_t prim_count = 1;
 
-    /// Per-primitive POD size in bytes (0 if the shape writes none).
-    size_t pdata_size = 0;
-
-    /// Total per-shape POD size in bytes. 0 means ``prim_count * pdata_size``.
-    /// Set explicitly for custom layouts that deviate (e.g. SDFGrid, Ellipsoids).
-    size_t data_size = 0;
-
-    /// Writes ``prim_count * 6`` floats (min/max interleaved) to ``out``.
+    /// Writes ``prim_count`` boxes of six floats (min xyz, max xyz) to ``out``.
     void (*fill_aabbs)(const void *ctx, void *out) = nullptr;
 
-    /// Writes ``data_size`` bytes of primitive data to ``out``.
-    void (*fill_data)(const void *ctx, void *out) = nullptr;
-
-    /// Precomputed device AABB buffer for zero-copy builds (OptiX only; Metal
-    /// always copies via ``fill_aabbs``).
+    /// Device buffer holding the boxes in the same layout. The GPU backends
+    /// build from it directly and only call ``fill_aabbs`` when it is null.
     const void *aabb_buffer = nullptr;
 
-    /// Opaque context passed to the fill callbacks (the owning `Shape`).
+    /// Opaque context passed to ``fill_aabbs`` (the owning `Shape`).
     const void *ctx = nullptr;
 
-    /// Stable per-shape storage index assigned by ``SceneIRBuilder`` (OptiX
-    /// only; Metal uses its own per-BLAS lookup table).
-    uint32_t data_slot = (uint32_t) -1;
+    /// Intersection function recorded from ``Shape::ray_intersect_preliminary()``
+    /// by ``SceneIRBuilder`` (JIT variants), which the backend binds to the
+    /// geometry. ``SceneIR::isect_funcs`` owns the handle.
+    uint32_t isect_func = 0;
 
     // --- Triangles (mesh, ellipsoidsmesh) ---
 
@@ -117,11 +108,6 @@ struct ShapeIR {
 
     /// BLAS-set cache key (shared by all instances of one ShapeGroup).
     const void *group_id = nullptr;
-
-    /// Resolved per-shape POD byte count (see ``data_size``).
-    size_t data_size_bytes() const {
-        return data_size ? data_size : prim_count * pdata_size;
-    }
 };
 
 /// Number of geometry kinds and the bucket-array size for BLAS partitioning.
@@ -161,6 +147,11 @@ struct SceneIR {
     /// Flattened TLAS/IAS instances referencing entries in ``blases``.
     std::vector<InstanceEntry> instances;
 
+    /// The scene's ``Instance`` shapes in order of appearance, for backends
+    /// that instance nested scenes directly (Embree). ``instances`` derives
+    /// from these.
+    std::vector<ShapeIR> instance_shapes;
+
     /// Indices in ``blases`` that belong to top-level scene geometry.
     std::vector<uint32_t>      top_blases;
 
@@ -168,6 +159,21 @@ struct SceneIR {
     /// same order as ``scene->shapegroups()``. Backends use entry ``i`` to
     /// rebuild the scene's i-th ShapeGroup.
     std::vector<std::vector<uint32_t>> group_blases;
+
+    /// Handle variables of the recorded intersection functions (see
+    /// ``ShapeIR::isect_func``), released with the IR. Bindings retain
+    /// their own reference.
+    std::vector<uint32_t> isect_funcs;
+
+    SceneIR() = default;
+    SceneIR(SceneIR &&) = default;
+    SceneIR(const SceneIR &) = delete;
+    SceneIR &operator=(const SceneIR &) = delete;
+    SceneIR &operator=(SceneIR &&) = delete;
+    ~SceneIR() {
+        for (uint32_t index : isect_funcs)
+            jit_var_dec_ref(index);
+    }
 };
 
 /// Lower variant-specific scenes to backend-neutral ``SceneIR``.
@@ -177,9 +183,8 @@ struct MI_EXPORT_LIB SceneIRBuilder {
      * Walk the ``scene`` once and lower it to a ``SceneIR``.
      *
      * 1. Visit top-level shapes first, then ShapeGroup children. Describe each
-     *    shape exactly once and assign it a stable ``data_slot`` in that order.
-     *    Backends use the slot as the persistent index for per-shape storage
-     *    such as custom primitive data buffers.
+     *    shape exactly once and, in JIT variants, record the intersection
+     *    routine of each custom shape (``ShapeIR::isect_func``).
      *
      * 2. Partition non-instance geometry by ``ShapeIR.Kind`` and visibility
      *    mask. Each non-empty bucket becomes one ``BlasEntry``. Emit top-level

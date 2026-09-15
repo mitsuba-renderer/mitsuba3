@@ -1,5 +1,11 @@
 /*
     embree.h -- Embree user-geometry callbacks for Mitsuba custom shapes.
+
+    Scalar variants intersect custom shapes by calling the shape's C++
+    implementation from the callback. JIT variants instead let Dr.Jit compile
+    the routine recorded by SceneIRBuilder (see jit_isect_bind()). Their
+    geometry user pointer is a binding record, and the thunks below forward
+    the callback to the code pointer stored in it.
 */
 
 #pragma once
@@ -10,18 +16,34 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-template <typename Float, typename Spectrum>
-void embree_bbox(const struct RTCBoundsFunctionArguments* args) {
-    MI_IMPORT_TYPES(Shape)
-    const Shape* shape = (const Shape*) args->geometryUserPtr;
-    ScalarBoundingBox3f bbox = shape->bbox(args->primID);
-    RTCBounds* bounds_o = args->bounds_o;
+template <typename ScalarBoundingBox3f>
+void embree_store_bounds(const RTCBoundsFunctionArguments *args,
+                         const ScalarBoundingBox3f &bbox) {
+    RTCBounds *bounds_o = args->bounds_o;
     bounds_o->lower_x = (float) bbox.min.x();
     bounds_o->lower_y = (float) bbox.min.y();
     bounds_o->lower_z = (float) bbox.min.z();
     bounds_o->upper_x = (float) bbox.max.x();
     bounds_o->upper_y = (float) bbox.max.y();
     bounds_o->upper_z = (float) bbox.max.z();
+}
+
+/// Bounds callback of scalar variants: the geometry user pointer is the shape
+template <typename Float, typename Spectrum>
+void embree_bbox(const RTCBoundsFunctionArguments *args) {
+    MI_IMPORT_TYPES(Shape)
+    const Shape *shape = (const Shape *) args->geometryUserPtr;
+    embree_store_bounds(args, shape->bbox(args->primID));
+}
+
+/// Bounds callback of JIT variants: the geometry user pointer is the
+/// intersection binding record, which stores the shape in its user field
+template <typename Float, typename Spectrum>
+void embree_bbox_jit(const RTCBoundsFunctionArguments *args) {
+    MI_IMPORT_TYPES(Shape)
+    const Shape *shape = (const Shape *)
+        ((const JitIsectBinding *) args->geometryUserPtr)->user;
+    embree_store_bounds(args, shape->bbox(args->primID));
 }
 
 /**
@@ -83,144 +105,86 @@ void embree_intersect_scalar(int* valid,
     }
 }
 
-template <typename Float, typename Spectrum, size_t N, typename RTCRay_,
-          typename RTCHit_>
-static void embree_intersect_packet(int *valid, void *geometryUserPtr,
-                                    unsigned int geomID,
-                                    unsigned int instID,
-                                    unsigned int primID,
-                                    RTCRay_ *rtc_ray,
-                                    RTCHit_ *rtc_hit) {
-    MI_IMPORT_TYPES(Shape)
-
-    using FloatP   = dr::Packet<dr::scalar_t<Float>, N>;
-    using MaskP    = dr::mask_t<FloatP>;
-    using Point2fP = Point<FloatP, 2>;
-    using Point3fP = Point<FloatP, 3>;
-    using Ray3fP   = Ray<Point<FloatP, 3>, Spectrum>;
-    using UInt32P  = dr::uint32_array_t<FloatP>;
-    using Float32P = dr::Packet<dr::scalar_t<Float32>, N>;
-
-    const Shape* shape = (const Shape*) geometryUserPtr;
-
-    MaskP active = dr::load_aligned<UInt32P>(valid) != 0;
-    if (dr::none(active))
-        return;
-
-    Ray3fP ray;
-    ray.o.x() = dr::load_aligned<Float32P>(rtc_ray->org_x);
-    ray.o.y() = dr::load_aligned<Float32P>(rtc_ray->org_y);
-    ray.o.z() = dr::load_aligned<Float32P>(rtc_ray->org_z);
-    ray.d.x() = dr::load_aligned<Float32P>(rtc_ray->dir_x);
-    ray.d.y() = dr::load_aligned<Float32P>(rtc_ray->dir_y);
-    ray.d.z() = dr::load_aligned<Float32P>(rtc_ray->dir_z);
-    ray.time  = dr::load_aligned<Float32P>(rtc_ray->time);
-
-    Float32P tnear = dr::load_aligned<Float32P>(rtc_ray->tnear),
-             tfar  = dr::load_aligned<Float32P>(rtc_ray->tfar);
-    ray.o += ray.d * tnear;
-    ray.maxt = tfar - tnear;
-
-    if (rtc_hit) {
-        auto [hit_mask, t, prim_uv, s_idx, p_idx] =
-            shape->ray_intersect_preliminary_packet(ray, primID, active);
-        active &= hit_mask;
-        dr::store_aligned(rtc_ray->tfar,      Float32P(dr::select(active, t,           ray.maxt)));
-        dr::store_aligned(rtc_hit->u,         Float32P(dr::select(active, prim_uv.x(), dr::load_aligned<Float32P>(rtc_hit->u))));
-        dr::store_aligned(rtc_hit->v,         Float32P(dr::select(active, prim_uv.y(), dr::load_aligned<Float32P>(rtc_hit->v))));
-        dr::store_aligned(rtc_hit->geomID,    dr::select(active, UInt32P(geomID), dr::load_aligned<UInt32P>(rtc_hit->geomID)));
-        dr::store_aligned(rtc_hit->primID,    dr::select(active, UInt32P(primID), dr::load_aligned<UInt32P>(rtc_hit->primID)));
-        dr::store_aligned(rtc_hit->instID[0], dr::select(active, UInt32P(instID), dr::load_aligned<UInt32P>(rtc_hit->instID[0])));
-    } else {
-        active &= shape->ray_test_packet(ray, primID, active);
-        UInt32P flags = dr::load_aligned<UInt32P>(rtc_ray->flags);
-        MaskP skip = active && (flags & (uint32_t) CPURayFlags::SkipNull) != 0u;
-        if (dr::any(skip) && shape->has_null()) {
-            dr::store_aligned(rtc_ray->flags,
-                              dr::select(skip, flags | (uint32_t) CPURayFlags::HasNull, flags));
-            active &= !skip;
-        }
-        dr::store_aligned(rtc_ray->tfar, Float32P(dr::select(active, -dr::Infinity<Float>, tfar)));
-    }
-}
-
 template <typename Float, typename Spectrum>
 void embree_intersect(const RTCIntersectFunctionNArguments* args) {
-    switch (args->N) {
-        case 1:
-            embree_intersect_scalar<Float, Spectrum>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit *) args->rayhit)->ray,
-                &((RTCRayHit *) args->rayhit)->hit);
-            break;
+    if (args->N != 1)
+        Throw("embree_intersect(): unsupported packet size!");
 
-        case 4:
-            embree_intersect_packet<Float, Spectrum, 4>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit4 *) args->rayhit)->ray,
-                &((RTCRayHit4 *) args->rayhit)->hit);
-            break;
-
-        case 8:
-            embree_intersect_packet<Float, Spectrum, 8>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit8 *) args->rayhit)->ray,
-                &((RTCRayHit8 *) args->rayhit)->hit);
-            break;
-
-        case 16:
-            embree_intersect_packet<Float, Spectrum, 16>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                &((RTCRayHit16 *) args->rayhit)->ray,
-                &((RTCRayHit16 *) args->rayhit)->hit);
-            break;
-
-        default:
-            Throw("embree_intersect(): unsupported packet size!");
-    }
+    embree_intersect_scalar<Float, Spectrum>(
+        args->valid, args->geometryUserPtr, args->geomID,
+        args->context->instID[0], args->primID,
+        &((RTCRayHit *) args->rayhit)->ray,
+        &((RTCRayHit *) args->rayhit)->hit);
 }
 
 template <typename Float, typename Spectrum>
 void embree_occluded(const RTCOccludedFunctionNArguments* args) {
-    switch (args->N) {
-        case 1:
-            embree_intersect_scalar<Float, Spectrum>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay *) args->ray,
-                (RTCHit *) nullptr);
-            break;
+    if (args->N != 1)
+        Throw("embree_occluded(): unsupported packet size!");
 
-        case 4:
-            embree_intersect_packet<Float, Spectrum, 4>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay4 *) args->ray,
-                (RTCHit4 *) nullptr);
-            break;
+    embree_intersect_scalar<Float, Spectrum>(
+        args->valid, args->geometryUserPtr, args->geomID,
+        args->context->instID[0], args->primID,
+        (RTCRay *) args->ray,
+        (RTCHit *) nullptr);
+}
 
-        case 8:
-            embree_intersect_packet<Float, Spectrum, 8>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay8 *) args->ray,
-                (RTCHit8 *) nullptr);
-            break;
+/**
+ * JIT variants: forward the callback to the intersection function compiled by
+ * Dr.Jit. The code pointer is resolved when a kernel that traces the scene is
+ * launched, hence it is null only if Embree runs ahead of that (a frozen
+ * function replayed against a scene with shapes it never recorded).
+ */
+inline void embree_isect_jit(const JitIsectBinding *binding, const void *args,
+                             unsigned int N, int mode) {
+#if !defined(NDEBUG)
+    if (N != jit_llvm_vector_width())
+        Throw("embree_isect_jit(): packet size %u does not match the "
+              "Dr.Jit vector width %u!", N, jit_llvm_vector_width());
+#else
+    (void) N;
+#endif
+    if (unlikely(!binding->code))
+        Throw("Embree invoked the intersection callback of a custom shape "
+              "whose intersection routine has not been compiled for the "
+              "running kernel. This can happen when a frozen function is "
+              "replayed with a scene containing shape types that it did not "
+              "contain during recording.");
 
-        case 16:
-            embree_intersect_packet<Float, Spectrum, 16>(
-                args->valid, args->geometryUserPtr, args->geomID,
-                args->context->instID[0], args->primID,
-                (RTCRay16 *) args->ray,
-                (RTCHit16 *) nullptr);
-            break;
+    ((void (*)(const void *, int)) binding->code)(args, mode);
+}
 
-        default:
-            Throw("embree_occluded(): unsupported packet size!");
+inline void embree_intersect_jit(const RTCIntersectFunctionNArguments *args) {
+    embree_isect_jit((const JitIsectBinding *) args->geometryUserPtr, args,
+                     args->N, 0);
+}
+
+/// The generated code blocks every hit by setting the ray's far distance to -inf
+inline void embree_occluded_jit(const RTCOccludedFunctionNArguments *args) {
+    embree_isect_jit((const JitIsectBinding *) args->geometryUserPtr, args,
+                     args->N, 1);
+}
+
+/**
+ * Occlusion callback of shapes with null transmission. Shadow rays with
+ * SkipNull pass through them and record the encounter in the ray's flags word.
+ */
+inline void embree_occluded_null_jit(const RTCOccludedFunctionNArguments *args) {
+    const JitIsectBinding *binding =
+        (const JitIsectBinding *) args->geometryUserPtr;
+    unsigned int N = args->N;
+
+    float *tfar = &RTCRayN_tfar(args->ray, N, 0), tfar_prev[16];
+    unsigned int *flags = &RTCRayN_flags(args->ray, N, 0);
+    memcpy(tfar_prev, tfar, N * sizeof(float));
+
+    embree_isect_jit(binding, args, N, 1);
+
+    for (unsigned int i = 0; i < N; ++i) {
+        if (tfar[i] == tfar_prev[i] || !(flags[i] & CPURayFlags::SkipNull))
+            continue;
+        tfar[i] = tfar_prev[i];
+        flags[i] |= CPURayFlags::HasNull;
     }
 }
 

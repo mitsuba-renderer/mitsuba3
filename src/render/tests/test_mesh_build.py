@@ -346,8 +346,9 @@ def test09_bounds(variant_scalar_rgb):
 
     # Face 0 is the lower right half of the quad, so clipping it to the
     # upper left quadrant cuts the corner off its bounds
-    dr.assert_allclose(m.bbox(0).min, [0, 0, 0])
-    clipped = m.bbox(0, mi.ScalarBoundingBox3f([0, 0.5, -1], [0.5, 1, 1]))
+    dr.assert_allclose(m.bbox(prim_index=0).min, [0, 0, 0])
+    clipped = m.bbox(prim_index=0,
+                     clip=mi.ScalarBoundingBox3f([0, 0.5, -1], [0.5, 1, 1]))
     dr.assert_allclose(clipped.min, [0.5, 0.5, 0])
     dr.assert_allclose(clipped.max, [0.5, 0.5, 0])
 

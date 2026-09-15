@@ -17,3 +17,4 @@ than rendering and inverse rendering.
     others/bsdf_deep_dive
     others/granular_phase_function
     others/custom_plugin
+    others/custom_shape

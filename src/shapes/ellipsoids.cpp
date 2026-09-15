@@ -16,14 +16,6 @@
 
 #include "ellipsoids.h"
 
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/ellipsoids.cuh"
-#endif
-
-#if defined(MI_ENABLE_METAL)
-    #include "../render/metal/shapes.h"
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -124,22 +116,6 @@ It is designed for use with volumetric primitive integrators, as detailed in
         }
  */
 
-#if defined(MI_ENABLE_METAL)
-// Center, effective scale (s) and object->world rotation (R) of one ellipsoid
-// from its 10 floats (center, scale, quaternion).
-static void ellipsoid_frame(const float *e10, float ext,
-                            float R[3][3], float c[3], float s[3]) {
-    c[0] = e10[0]; c[1] = e10[1]; c[2] = e10[2];
-    s[0] = e10[3]*ext; s[1] = e10[4]*ext; s[2] = e10[5]*ext;
-    float qx = e10[6], qy = e10[7], qz = e10[8], qw = e10[9];
-    float xx = qx*qx, yy = qy*qy, zz = qz*qz, xy = qx*qy, xz = qx*qz,
-          yz = qy*qz, xw = qx*qw, yw = qy*qw, zw = qz*qw;
-    R[0][0] = 1 - 2*(yy + zz); R[0][1] = 2*(xy - zw);     R[0][2] = 2*(xz + yw);
-    R[1][0] = 2*(xy + zw);     R[1][1] = 1 - 2*(xx + zz); R[1][2] = 2*(yz - xw);
-    R[2][0] = 2*(xz - yw);     R[2][1] = 2*(yz + xw);     R[2][2] = 1 - 2*(xx + yy);
-}
-#endif
-
 template <typename Float, typename Spectrum>
 class Ellipsoids final : public Shape<Float, Spectrum> {
 public:
@@ -153,14 +129,13 @@ public:
     using BoolStorage   = DynamicBuffer<Mask>;
     using UInt32Storage = DynamicBuffer<UInt32>;
     using ArrayXf       = dr::DynamicArray<Float>;
-    #if defined(MI_ENABLE_CUDA)
-        using BoundingBoxType =
-            typename std::conditional<dr::is_cuda_v<Float>,
-                                      optix::BoundingBox3f,
-                                      ScalarBoundingBox3f>::type;
-    #else
-            using BoundingBoxType = ScalarBoundingBox3f;
-    #endif
+
+    /// Box layout of the GPU acceleration structure builders
+    struct PackedBoundingBox { float min[3], max[3]; };
+
+    static constexpr bool IsGPU = dr::is_cuda_v<Float> || dr::is_metal_v<Float>;
+    using BoundingBoxType =
+        std::conditional_t<IsGPU, PackedBoundingBox, ScalarBoundingBox3f>;
 
     Ellipsoids(const Properties &props) : Base(props) {
         m_shape_type = ShapeType::Ellipsoids;
@@ -181,8 +156,7 @@ public:
     }
 
     ~Ellipsoids() {
-        if constexpr (dr::is_cuda_v<Float>)
-            jit_free(m_device_bboxes);
+        jit_free(m_device_bboxes);
         jit_free(m_host_bboxes);
     }
 
@@ -205,11 +179,11 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return m_bbox; }
 
-    ScalarBoundingBox3f bbox(ScalarIndex index) const override {
-        if constexpr (dr::is_cuda_v<Float>)
-            Throw("bbox(ScalarIndex) is not available in CUDA mode!");
-        Assert(index <= primitive_count());
-        auto bbox = ((BoundingBoxType*) m_host_bboxes)[index];
+    ScalarBoundingBox3f bbox(ScalarIndex prim_index) const override {
+        if constexpr (IsGPU)
+            Throw("bbox(ScalarIndex) is not available on the GPU backends!");
+        Assert(prim_index <= primitive_count());
+        auto bbox = ((BoundingBoxType*) m_host_bboxes)[prim_index];
 
         return ScalarBoundingBox3f(
             ScalarPoint3f(bbox.min[0], bbox.min[1], bbox.min[2]),
@@ -331,28 +305,22 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex prim_index,
+                                   dr::uint32_array_t<FloatP> prim_index,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         using Value = dr::float32_array_t<FloatP>;
-        using ScalarValue = dr::scalar_t<Value>;
-        auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
-        ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
+        auto ellipsoid = m_ellipsoids.template get_ellipsoid<Value>(prim_index, active);
+        ellipsoid.scale *= m_ellipsoids.template extents<Value>(prim_index, active);
         auto [t, valid] = ray_ellipsoid_intersection<FloatP, Ray3fP>(ray, ellipsoid, active);
         return { valid, t, dr::zeros<Point<FloatP, 2>>(), ((uint32_t) -1), prim_index };
     }
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex prim_index,
+                                     dr::uint32_array_t<FloatP> prim_index,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
-        using Value = dr::float32_array_t<FloatP>;
-        using ScalarValue = dr::scalar_t<Value>;
-        auto ellipsoid = m_ellipsoids.template get_ellipsoid<ScalarValue>(prim_index, active);
-        ellipsoid.scale *= m_ellipsoids.template extents<ScalarValue>(prim_index);
-        auto [t, valid] = ray_ellipsoid_intersection<FloatP>(ray, ellipsoid, active);
-        return valid;
+        return std::get<0>(ray_intersect_preliminary_impl<FloatP>(ray, prim_index, active));
     }
 
     MI_SHAPE_DEFINE_RAY_INTERSECT_METHODS()
@@ -402,91 +370,10 @@ public:
         return si;
     }
 
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    // Multi-primitive shape: one AABB + one per-ellipsoid data record.
     void describe(ShapeIR &g) const override {
         Base::describe(g);
-#if defined(MI_ENABLE_METAL)
-        if constexpr (dr::is_metal_v<Float>) {
-            g.pdata_size = sizeof(shapedata::EllipsoidData);
-            g.fill_aabbs = [](const void *ctx, void *out) {
-                static_cast<const Ellipsoids *>(ctx)->gpu_fill_aabbs(out);
-            };
-            g.fill_data = [](const void *ctx, void *out) {
-                static_cast<const Ellipsoids *>(ctx)->gpu_fill_data(out);
-            };
-        }
-#endif
-#if defined(MI_ENABLE_CUDA)
-        if constexpr (dr::is_cuda_v<Float>) {
-            // OptiX zero-copy: the AABBs are precomputed on the device, and the
-            // SBT data is just two device pointers into the ellipsoid arrays.
-            g.data_size = sizeof(OptixEllipsoidsData);
-            g.aabb_buffer = m_device_bboxes;
-            g.fill_data = [](const void *ctx, void *out) {
-                auto *self = const_cast<Ellipsoids *>(
-                    static_cast<const Ellipsoids *>(ctx));
-                *static_cast<OptixEllipsoidsData *>(out) = OptixEllipsoidsData{
-                    self->m_ellipsoids.extents_data().data(),
-                    self->m_ellipsoids.data().data()
-                };
-            };
-        }
-#endif
+        g.aabb_buffer = m_device_bboxes;
     }
-#endif
-
-#if defined(MI_ENABLE_METAL)
-    /// Migrate the ellipsoid arrays to the host and invoke ``f`` with the
-    /// world-space frame (rotation ``R``, center ``c``, scale ``s``) of each.
-    template <typename Func>
-    void gpu_for_each_frame(Func &&f) const {
-        size_t n = (size_t) m_ellipsoids.count();
-        auto data = dr::migrate(m_ellipsoids.data(), JitBackend::None);
-        auto ext  = dr::migrate(m_ellipsoids.extents_data(), JitBackend::None);
-        dr::sync_thread();
-        const float *data_p = data.data(), *ext_p = ext.data();
-        for (size_t i = 0; i < n; ++i) {
-            float R[3][3], c[3], s[3];
-            ellipsoid_frame(data_p + i * 10, ext_p[i], R, c, s);
-            f(i, R, c, s);
-        }
-    }
-
-    void gpu_fill_aabbs(void *out) const {
-        if constexpr (dr::is_metal_v<Float>) {
-            float *dst = (float *) out;
-            gpu_for_each_frame([&](size_t i, float R[3][3], float c[3], float s[3]) {
-                float d[3];
-                for (int r = 0; r < 3; ++r)
-                    d[r] = std::sqrt(R[r][0]*R[r][0]*s[0]*s[0] +
-                                     R[r][1]*R[r][1]*s[1]*s[1] +
-                                     R[r][2]*R[r][2]*s[2]*s[2]);
-                dst[i*6+0] = c[0]-d[0]; dst[i*6+1] = c[1]-d[1]; dst[i*6+2] = c[2]-d[2];
-                dst[i*6+3] = c[0]+d[0]; dst[i*6+4] = c[1]+d[1]; dst[i*6+5] = c[2]+d[2];
-            });
-        } else {
-            (void) out;
-        }
-    }
-
-    void gpu_fill_data(void *out) const {
-        if constexpr (dr::is_metal_v<Float>) {
-            shapedata::EllipsoidData *dst = (shapedata::EllipsoidData *) out;
-            gpu_for_each_frame([&](size_t i, float R[3][3], float c[3], float s[3]) {
-                // Row-major world->object affine: diag(1/s) * R^T * translate(-c).
-                for (int row = 0; row < 3; ++row) {
-                    float inv = 1.f / s[row];
-                    float t = R[0][row]*c[0] + R[1][row]*c[1] + R[2][row]*c[2];
-                    dst[i].to_object[row] = { R[0][row]*inv, R[1][row]*inv,
-                                              R[2][row]*inv, -inv*t };
-                }
-            });
-        } else {
-            (void) out;
-        }
-    }
-#endif
 
     // =============================================================
 
@@ -555,10 +442,11 @@ private:
                 dr::scatter(data, bbox.max[i], idx * size + i + stride, true, ReduceMode::NoConflicts);
             }
 
-            if constexpr (dr::is_cuda_v<Float>) {
+            if constexpr (IsGPU) {
+                constexpr JitBackend backend = dr::backend_v<Float>;
                 jit_free(m_device_bboxes);
-                m_device_bboxes = jit_malloc(JitBackend::CUDA, sizeof(BoundingBoxType) * ellipsoid_count);
-                jit_memcpy(JitBackend::CUDA, m_device_bboxes, data.data(),
+                m_device_bboxes = jit_malloc(backend, sizeof(BoundingBoxType) * ellipsoid_count);
+                jit_memcpy(backend, m_device_bboxes, data.data(),
                            sizeof(BoundingBoxType) * ellipsoid_count);
             }
 
@@ -626,7 +514,8 @@ private:
     /// The bounding box of the overall shape
     ScalarBoundingBox3f m_bbox;
 
-    /// The pointer to the bounding box data above (used in Embree and OptiX)
+    /// Per-ellipsoid boxes on the host (CPU backends) or the device (GPU
+    /// backends, see describe())
     void *m_host_bboxes   = nullptr;
     void *m_device_bboxes = nullptr;
 };

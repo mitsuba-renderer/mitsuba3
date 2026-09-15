@@ -927,13 +927,13 @@ Mesh<Float, Spectrum>::bbox() const {
 }
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
-Mesh<Float, Spectrum>::bbox(ScalarIndex index) const {
+Mesh<Float, Spectrum>::bbox(ScalarIndex prim_index) const {
     if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
         Throw("bbox(ScalarIndex) is not available in GPU mode!");
 
-    Assert(index <= m_face_count);
+    Assert(prim_index <= m_face_count);
 
-    ScalarVector3u fi = face_indices(index);
+    ScalarVector3u fi = face_indices(prim_index);
 
     Assert(fi[0] < m_vertex_count &&
            fi[1] < m_vertex_count &&
@@ -1119,8 +1119,8 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_packed(PackedFile *file,
 
     using NamedAttribute = std::pair<std::string, MeshAttribute>;
     std::vector<NamedAttribute> attributes;
-    for (const auto &[name, attribute] : m_mesh_attributes)
-        attributes.push_back({ name, attribute.migrate(JitBackend::None) });
+    for (const auto &[attr_name, attribute] : m_mesh_attributes)
+        attributes.push_back({ attr_name, attribute.migrate(JitBackend::None) });
     std::sort(attributes.begin(), attributes.end(),
               [](const NamedAttribute &a, const NamedAttribute &b) {
                   return a.first < b.first;
@@ -2757,16 +2757,16 @@ size_t sutherland_hodgman(Point3d *input, size_t in_count, Point3d *output, int 
 }  // end namespace
 
 MI_VARIANT typename Mesh<Float, Spectrum>::ScalarBoundingBox3f
-Mesh<Float, Spectrum>::bbox(ScalarIndex index, const ScalarBoundingBox3f &clip) const {
+Mesh<Float, Spectrum>::bbox(ScalarIndex prim_index, const ScalarBoundingBox3f &clip) const {
     using ScalarPoint3d = mitsuba::Point<double, 3>;
 
     // Reserve room for some additional vertices
     ScalarPoint3d vertices1[max_vertices], vertices2[max_vertices];
     size_t n_vertices = 3;
 
-    Assert(index <= m_face_count);
+    Assert(prim_index <= m_face_count);
 
-    ScalarVector3u fi = face_indices(index);
+    ScalarVector3u fi = face_indices(prim_index);
     Assert(fi[0] < m_vertex_count);
     Assert(fi[1] < m_vertex_count);
     Assert(fi[2] < m_vertex_count);
@@ -2866,7 +2866,6 @@ MI_VARIANT size_t Mesh<Float, Spectrum>::face_data_bytes() const {
 MI_VARIANT void
 Mesh<Float, Spectrum>::describe(ShapeIR &g) const {
     g.kind = ShapeIR::Kind::Triangles;
-    g.type = m_shape_type;
     g.ctx = this;
     g.vertex_count = m_vertex_count;
     g.face_count = m_face_count;
