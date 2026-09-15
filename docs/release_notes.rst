@@ -168,7 +168,7 @@ Mitsuba 3.10.0
   <shape-packed>` shape plugin store and load meshes in their internal
   representation, which is considerably faster than the other mesh formats.
   The :ref:`bitmap <texture-bitmap>` texture plugin loads BC4, BC5, and BC7
-  block-compressed textures from containers produced by the ``bc_pack.py``
+  block-compressed textures from containers produced by the ``mitsuba.pack_tex``
   script, which the ``cuda`` and ``metal`` variants sample directly using the
   hardware texture units. This shrinks the GPU memory footprint of 8-bit
   textures by a factor of 4 to 8. The :py:class:`mitsuba.PackedFile` class implements the

@@ -198,7 +198,9 @@ A texture entry holds a texture in the BC4, BC5, or BC7 block compression
 formats, which encode each 4x4 block of texels in 8 or 16 bytes. The ``cuda``
 and ``metal`` variants sample such textures directly using the hardware
 texture units. Other variants decode the blocks when loading the scene. The
-``bc_pack.py`` script converts images into texture entries.
+``mitsuba.pack_tex`` script (``python -m mitsuba.pack_tex <scene.xml>``) packs
+all existing textures of a Mitsuba scene into a joint container and writes an
+updated scene referencing it.
 
 .. list-table::
     :widths: 10 15 15 15 15 30
