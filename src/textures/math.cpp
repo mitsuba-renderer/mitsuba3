@@ -22,11 +22,11 @@ Math expression texture (:monosp:`math`)
    - |string|
    - Expression to evaluate using the simple language described below.
 
- * - (Nested plugin)
-   - |texture|
-   - Input textures. The expression refers to them as ``in[0]``, ``in[1]``,
-     etc., numbered in the order of declaration. In the scene parameter API,
-     they are exposed as differentiable parameters named ``in0``, ``in1``, ...
+ * - in0, in1, ...
+   - |texture| or |spectrum|
+   - Inputs, which the expression refers to as ``in[0]``, ``in[1]``, etc.
+     Each is either a nested texture or a constant color. They must be
+     numbered consecutively starting from zero.
    - |exposed|, |differentiable|
 
 This texture evaluates a mathematical expression involving an arbitrary number
@@ -94,18 +94,18 @@ evaluation cost matches that of directly written arithmetic.
 
         <texture type="math">
             <string name="expr" value="in[0] * (1 - in[1])"/>
-            <texture type="bitmap">
+            <texture type="bitmap" name="in0">
                 <string name="filename" value="texture.png"/>
             </texture>
-            <texture type="checkerboard"/>
+            <rgb name="in1" value="0.2 0.5 0.8"/>
         </texture>
 
     .. code-tab:: python
 
         'type': 'math',
         'expr': 'in[0] * (1 - in[1])',
-        'input_0': { 'type': 'bitmap', 'filename': 'texture.png' },
-        'input_1': { 'type': 'checkerboard' }
+        'in0': { 'type': 'bitmap', 'filename': 'texture.png' },
+        'in1': { 'type': 'rgb', 'value': [0.2, 0.5, 0.8] }
 
  */
 
@@ -517,10 +517,8 @@ public:
     MI_IMPORT_TYPES(Texture)
 
     MathTexture(const Properties &props) : Texture(props) {
-        for (const auto &prop : props.objects()) {
-            if (Texture *texture = prop.try_get<Texture>())
-                m_inputs.push_back(texture);
-        }
+        for (size_t i = 0; props.has_property("in" + std::to_string(i)); ++i)
+            m_inputs.push_back(props.get_texture<Texture>("in" + std::to_string(i)));
 
         m_expression = props.get<std::string>("expr");
         MathParser parser(m_expression.c_str(), m_inputs.size());

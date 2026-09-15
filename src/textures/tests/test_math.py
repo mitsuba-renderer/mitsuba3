@@ -15,9 +15,7 @@ def make(expr, *inputs):
     """Instantiate a math texture; numeric inputs turn into uniform textures"""
     d = { 'type': 'math', 'expr': expr }
     for i, value in enumerate(inputs):
-        if not isinstance(value, dict):
-            value = { 'type': 'uniform', 'value': value }
-        d[f'input_{i}'] = value
+        d[f'in{i}'] = value
     return mi.load_dict(d)
 
 
