@@ -1,7 +1,7 @@
 """
-Tests of mesh file I/O: the OBJ, PLY and serialized loaders (including
-legacy format versions and to_world transforms) and the PLY/serialized
-writers.
+Tests of mesh file I/O: the OBJ, PLY, packed and serialized loaders
+(including legacy format versions and to_world transforms) and the
+PLY/packed writers.
 """
 
 import struct
@@ -220,11 +220,11 @@ def test07_write_ply_tangent_packed(variants_all_rgb, tmp_path):
 
 
 # -------------------------------------------------------------------
-# Serialized (v5) output
+# Packed output
 # -------------------------------------------------------------------
 
-def test08_write_serialized_roundtrip(variants_all_rgb, tmp_path):
-    """A round trip to the serialized format preserves every level of the
+def test08_write_packed_roundtrip(variants_all_rgb, tmp_path):
+    """A round trip to the packed format preserves every level of the
     representation exactly. Generated normals remain regenerable."""
     positions, corner_vertex, uv = quad_corners(seam=True)
     col = np.arange(18, dtype=np.float32).reshape(6, 3)
@@ -233,9 +233,9 @@ def test08_write_serialized_roundtrip(variants_all_rgb, tmp_path):
                    texcoords=uv, attrs={"vertex_color": col})
     m.add_attribute("face_id", [[3], [7]])
 
-    fname = str(tmp_path / "mesh.serialized")
-    m.write_serialized(fname)
-    m2 = mi.load_dict({'type': 'serialized', 'filename': fname})
+    fname = str(tmp_path / "mesh.packed")
+    m.write_packed(fname)
+    m2 = mi.load_dict({'type': 'packed', 'filename': fname})
 
     assert m2.vertex_count() == m.vertex_count()
     assert m2.position_count() == m.position_count()
@@ -260,13 +260,13 @@ def test08_write_serialized_roundtrip(variants_all_rgb, tmp_path):
 
 
 @pytest.mark.parametrize('scale', [[1, 1, 1], [1, 2, 4]])
-def test09_serialized_to_world(variants_all_rgb, tmp_path, scale):
+def test09_packed_to_world(variants_all_rgb, tmp_path, scale):
     """A to_world transforms the stored positions/normals/tangents: the
     positions through the matrix, the normals through its inverse
     transpose."""
     positions, corner_vertex, uv = quad_corners(seam=True)
     positions[:, 2] = positions[:, 0] * positions[:, 1]  # bend the quad
-    fname = str(tmp_path / "mesh.serialized")
+    fname = str(tmp_path / "mesh.packed")
     T = mi.ScalarTransform4f().translate([1, 2, 3]).scale(scale)
 
     def build(p, **kwargs):
@@ -276,8 +276,8 @@ def test09_serialized_to_world(variants_all_rgb, tmp_path, scale):
         return m
 
     m = build(positions)
-    m.write_serialized(fname)
-    m2 = mi.load_dict({'type': 'serialized', 'filename': fname,
+    m.write_packed(fname)
+    m2 = mi.load_dict({'type': 'packed', 'filename': fname,
                        'to_world': T})
     assert np.array_equal(np.array(m2.position_index()),
                           np.array(m.position_index()))
@@ -302,8 +302,8 @@ def test09_serialized_to_world(variants_all_rgb, tmp_path, scale):
     # frames, which a rotation must decode, transform, and re-encode
     m.set_bsdf(anisotropic_bsdf())
     assert m.packs_tangent()
-    m.write_serialized(fname)
-    m4 = mi.load_dict({'type': 'serialized', 'filename': fname,
+    m.write_packed(fname)
+    m4 = mi.load_dict({'type': 'packed', 'filename': fname,
                        'to_world': mi.ScalarTransform4f().rotate([0, 0, 1], 90),
                        'bsdf': ANISOTROPIC_BSDF})
     def rot_z(a):
@@ -315,9 +315,9 @@ def test09_serialized_to_world(variants_all_rgb, tmp_path, scale):
                        atol=1e-5)
 
 
-def test10_write_serialized_multiple(variant_scalar_rgb, tmp_path):
-    """Multiple serialized meshes concatenate into one file addressed
-    through shape_index."""
+def test10_write_packed_multiple(variant_scalar_rgb, tmp_path):
+    """Several meshes share one container and are addressed by index or by
+    name, which the loaded mesh adopts as its label."""
     positions, corner_vertex, uv = quad_corners()
     m0 = mi.Mesh("first")
     m0.from_corners(positions=positions, corner_vertex=corner_vertex)
@@ -325,26 +325,29 @@ def test10_write_serialized_multiple(variant_scalar_rgb, tmp_path):
     m1.from_corners(positions=positions + 1, corner_vertex=corner_vertex,
                   texcoords=uv)
 
-    fname = str(tmp_path / "multi.serialized")
-    stream = mi.FileStream(fname, mi.FileStream.EMode.ETruncReadWrite)
-    offsets = []
-    for m in (m0, m1):
-        offsets.append(stream.tell())
-        m.write_serialized(stream)
-    for o in offsets:
-        stream.write_uint64(o)
-    stream.write_uint32(len(offsets))
-    stream.close()
+    fname = str(tmp_path / "multi.packed")
+    pf = mi.PackedFile(fname)
+    m0.write_packed(pf)
+    m1.write_packed(pf, "renamed")
+    pf.close()
+
+    pf = mi.PackedFile.open(fname)
+    assert pf.entry_count() == 2
+    assert pf.entry_name(0) == "first" and pf.entry_name(1) == "renamed"
 
     for i, m in enumerate((m0, m1)):
-        m2 = mi.load_dict({'type': 'serialized', 'filename': fname,
-                           'shape_index': i})
+        m2 = mi.load_dict({'type': 'packed', 'filename': fname, 'index': i})
         assert np.array_equal(vertex_positions(m2), vertex_positions(m))
         assert m2.has_texcoords() == m.has_texcoords()
 
+    m2 = mi.load_dict({'type': 'packed', 'filename': fname, 'name': 'renamed'})
+    assert 'filename = "renamed"' in str(m2)
+    assert np.array_equal(vertex_positions(m2), vertex_positions(m1))
+
     with pytest.raises(Exception, match='out of range'):
-        mi.load_dict({'type': 'serialized', 'filename': fname,
-                      'shape_index': len(offsets)})
+        mi.load_dict({'type': 'packed', 'filename': fname, 'index': 2})
+    with pytest.raises(Exception, match='no entry named'):
+        mi.load_dict({'type': 'packed', 'filename': fname, 'name': 'third'})
 
 
 # -------------------------------------------------------------------
@@ -392,7 +395,7 @@ def _write_legacy_serialized(path, version, double_precision, positions,
 @pytest.mark.parametrize('colors', [False, True])
 def test11_serialized_legacy_versions(variants_all_rgb, tmp_path, version,
                                       double_precision, colors):
-    """Legazy serialized files remain readable. The single-indexed data loads
+    """Legacy serialized files remain readable. The single-indexed data loads
     with every vertex forming its own surface point."""
     positions = np.float64([[0, 0, 0], [1, 0, 0], [1, 1, 0.5], [0, 1, 0]])
     normals = np.float64([[0, 0, 1], [0, 0, 1], [0, 1, 1], [0, 0, 1]])

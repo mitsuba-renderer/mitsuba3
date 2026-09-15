@@ -802,30 +802,31 @@ public:
     void write_ply(Stream *stream) const;
 
     /**
-     * Write the mesh to a ``.serialized`` file
+     * Write the mesh as the only entry of a new ``.packed`` container
      *
-     * This function writes the packed mesh state to an efficient
-     * compressed file representation.
+     * The entry stores the packed mesh state in a compressed form that the
+     * :monosp:`packed` shape plugin loads directly. See the "File formats"
+     * section of the documentation for the encoding.
      *
      * Args:
      *     filename: Target file path on disk
      */
-    void write_serialized(const fs::path &filename) const;
+    void write_packed(const fs::path &filename) const;
 
     /**
-     * Write the mesh in ``.serialized`` encoding to a stream
+     * Append the mesh to a ``.packed`` container that is being written
      *
-     * Appends a single self-contained mesh segment at the current stream
-     * position, without the trailing dictionary that indexes multiple
-     * meshes within one file; `write_serialized()`
-     * adds it. Segments of several meshes may be concatenated by calling
-     * this method repeatedly, recording the byte offsets, and appending
-     * one ``uint64`` offset per mesh followed by a ``uint32`` mesh count.
+     * Adds one entry holding the mesh, so that a container can gather the
+     * meshes of a whole scene. The :monosp:`packed` plugin then selects an
+     * entry by its index or name.
      *
      * Args:
-     *     stream: Target stream that will receive the encoded output
+     *     file: Container opened for writing
+     *
+     *     name: Name of the entry, which the loaded mesh adopts as its
+     *         label. The mesh's own name is used when empty.
      */
-    void write_serialized(Stream *stream) const;
+    void write_packed(PackedFile *file, std::string_view name = "") const;
 
     // =========================================================================
 

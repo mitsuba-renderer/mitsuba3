@@ -3638,7 +3638,7 @@ static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is att
 
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
-static const char *__doc_mitsuba_Emitter_class_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+static const char *__doc_mitsuba_Emitter_class_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_dirty = R"doc(Return whether the emitter parameters have changed)doc";
 
@@ -3666,9 +3666,9 @@ static const char *__doc_mitsuba_Emitter_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_traverse_cb = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_type = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+static const char *__doc_mitsuba_Emitter_type = R"doc()doc";
 
-static const char *__doc_mitsuba_Emitter_variant_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+static const char *__doc_mitsuba_Emitter_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_visibility = R"doc(Ray categories that can see this emitter)doc";
 
@@ -6615,6 +6615,29 @@ variants of `ray_intersect_triangle()` pass a ``dr::Packet``.)doc";
 
 static const char *__doc_mitsuba_Mesh_vertex_texcoord = R"doc(Returns the UV texture coordinates of the vertex with index ``index``)doc";
 
+static const char *__doc_mitsuba_Mesh_write_packed =
+R"doc(Write the mesh as the only entry of a new ``.packed`` container
+
+The entry stores the packed mesh state in a compressed form that the
+:monosp:`packed` shape plugin loads directly. See the "File formats"
+section of the documentation for the encoding.
+
+Args:
+    filename: Target file path on disk)doc";
+
+static const char *__doc_mitsuba_Mesh_write_packed_2 =
+R"doc(Append the mesh to a ``.packed`` container that is being written
+
+Adds one entry holding the mesh, so that a container can gather the
+meshes of a whole scene. The :monosp:`packed` plugin then selects an
+entry by its index or name.
+
+Args:
+    file: Container opened for writing
+
+    name: Name of the entry, which the loaded mesh adopts as its
+        label. The mesh's own name is used when empty.)doc";
+
 static const char *__doc_mitsuba_Mesh_write_ply =
 R"doc(Write the mesh to a binary PLY file
 
@@ -6623,28 +6646,6 @@ Args:
 
 static const char *__doc_mitsuba_Mesh_write_ply_2 =
 R"doc(Write the mesh encoded in binary PLY format to a stream
-
-Args:
-    stream: Target stream that will receive the encoded output)doc";
-
-static const char *__doc_mitsuba_Mesh_write_serialized =
-R"doc(Write the mesh to a ``.serialized`` file
-
-This function writes the packed mesh state to an efficient
-compressed file representation.
-
-Args:
-    filename: Target file path on disk)doc";
-
-static const char *__doc_mitsuba_Mesh_write_serialized_2 =
-R"doc(Write the mesh in ``.serialized`` encoding to a stream
-
-Appends a single self-contained mesh segment at the current stream
-position, without the trailing dictionary that indexes multiple
-meshes within one file; `write_serialized()`
-adds it. Segments of several meshes may be concatenated by calling
-this method repeatedly, recording the byte offsets, and appending
-one ``uint64`` offset per mesh followed by a ``uint32`` mesh count.
 
 Args:
     stream: Target stream that will receive the encoded output)doc";
@@ -7303,6 +7304,140 @@ static const char *__doc_mitsuba_PCG32Sampler_seed = R"doc()doc";
 
 static const char *__doc_mitsuba_PCG32Sampler_traverse_cb = R"doc()doc";
 
+static const char *__doc_mitsuba_PackedFile =
+R"doc(Container that stores several files (*entries*) in one ``.packed`` file
+
+The container is written in a streaming fashion: `begin()` starts a new
+entry, whose bytes then go through `stream()` and `write_array()`, and
+`close()` appends the dictionary that lists the position, size, and name
+of every entry. The "File formats" section of the documentation
+describes the resulting layout.
+
+Readers memory-map the container via `open()` and access entries through
+`entry()`, which returns a cursor over the mapped bytes. Opened containers
+are cached by filename so that a scene that references the same container
+from many plugins shares one memory map. A cached container is remapped
+when the file changes on disk, and `clear_cache()` releases all mappings.
+
+Bulk data within an entry consists of *compressed arrays*: sequences of
+LZ4-HC blocks that `Entry::read_array()` decompresses straight into the
+destination buffer of the caller (e.g. staging memory that a GPU upload
+reads directly).)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry =
+R"doc(Cursor over the bytes of one container entry
+
+The cursor reads little-endian scalars, length-prefixed strings, and
+compressed arrays in sequence, checking that every read stays within
+the entry. It refers to the memory map of the container and must not
+outlive it.)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_Entry = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_advance = R"doc(Advance the cursor and return the prior position)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_data = R"doc(Pointer to the current position)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_fail = R"doc(Raise an error that mentions the entry)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_index = R"doc(Index of the entry within the container)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_begin = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_end = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_filename = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_index = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_name = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_m_ptr = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_name = R"doc(Name of the entry (empty when none was stored))doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_read = R"doc(Read a little-endian scalar)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_read_array =
+R"doc(Decompress an array into ``dst``
+
+The stored uncompressed size must equal ``size``, which is the
+number of bytes that the caller expects (and allocated).)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_read_string = R"doc(Read a string prefixed by its ``uint32`` length)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_remaining = R"doc(Number of bytes that remain to be read)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_size = R"doc(Size of the entry in bytes)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_skip = R"doc(Skip ``size`` bytes)doc";
+
+static const char *__doc_mitsuba_PackedFile_Entry_skip_array = R"doc(Skip a compressed array)doc";
+
+static const char *__doc_mitsuba_PackedFile_PackedFile = R"doc(Create a new container at ``filename`` for writing)doc";
+
+static const char *__doc_mitsuba_PackedFile_PackedFile_2 = R"doc(Map an existing container)doc";
+
+static const char *__doc_mitsuba_PackedFile_Record = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Record_name_length = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Record_name_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Record_offset = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_Record_size = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_begin = R"doc(Start a new entry with the given name, finishing the previous one)doc";
+
+static const char *__doc_mitsuba_PackedFile_can_write = R"doc(Is this container being written?)doc";
+
+static const char *__doc_mitsuba_PackedFile_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_clear_cache = R"doc(Release the memory maps of all cached containers)doc";
+
+static const char *__doc_mitsuba_PackedFile_close = R"doc(Finish the container by writing its dictionary, then close the file)doc";
+
+static const char *__doc_mitsuba_PackedFile_entry = R"doc(Return a cursor over the entry with the given index)doc";
+
+static const char *__doc_mitsuba_PackedFile_entry_count = R"doc(Number of entries)doc";
+
+static const char *__doc_mitsuba_PackedFile_entry_name = R"doc(Name of the entry with the given index)doc";
+
+static const char *__doc_mitsuba_PackedFile_filename = R"doc(Return the filename of the container)doc";
+
+static const char *__doc_mitsuba_PackedFile_find = R"doc(Index of the entry with the given name, or ``entry_count()`` if absent)doc";
+
+static const char *__doc_mitsuba_PackedFile_finish_entry = R"doc(Record the size of the entry being written)doc";
+
+static const char *__doc_mitsuba_PackedFile_m_filename = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_index = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_mmap = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_name_table = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_names = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_records = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_m_stream = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedFile_open =
+R"doc(Open the container ``filename`` for reading
+
+The file is memory-mapped, and the result is shared with other
+callers that open the same file.)doc";
+
+static const char *__doc_mitsuba_PackedFile_stream = R"doc(Stream that receives the bytes of the current entry)doc";
+
+static const char *__doc_mitsuba_PackedFile_to_string = R"doc(@})doc";
+
+static const char *__doc_mitsuba_PackedFile_write_array = R"doc(Append ``size`` bytes at ``data`` to the current entry as a compressed array)doc";
+
+static const char *__doc_mitsuba_PackedFile_write_array_2 = R"doc(Encode ``size`` bytes at ``data`` as a compressed array and write it to ``stream``)doc";
+
 static const char *__doc_mitsuba_PackedMesh =
 R"doc(Helper data structure to efficiently construct and upload
 the internal `Mesh` data structure.
@@ -7318,6 +7453,14 @@ copy per buffer, or an in-place adoption on CPU backends.
 
 When ``position_count`` / ``normal_count`` are nonzero, they indicate the
 size of the ``*_index`` maps (see `Mesh` for details).)doc";
+
+static const char *__doc_mitsuba_PackedMeshFlags =
+R"doc(Flag word of a packed mesh entry. The low bits store the `Layout` of
+the vertex records verbatim.)doc";
+
+static const char *__doc_mitsuba_PackedMeshFlags_FaceNormals = R"doc()doc";
+
+static const char *__doc_mitsuba_PackedMeshFlags_LayoutMask = R"doc()doc";
 
 static const char *__doc_mitsuba_PackedMesh_Attribute = R"doc(Custom mesh attribute (see `Mesh.add_attribute()`).)doc";
 
@@ -8748,9 +8891,10 @@ The flag has no effect in non-differentiable variants.)doc";
 static const char *__doc_mitsuba_RayFlags_Footprint =
 R"doc(Additionally project the ray cone (`Ray3f.cone`) onto the surface and
 compute its UV-space footprint (`SurfaceInteraction3f.footprint`) for
-filtered texture lookups. The scene automatically unsets the flag when
-none of the registered textures performs filtered lookups (see
-`Scene.has_filtered_textures()`).
+filtered texture lookups.
+
+The scene automatically unsets the flag when none of the registered
+textures performs filtered lookups (see `Scene.has_filtered_textures()`).
 
 Depends on `RayFlags.Shading`. Part of `RayFlags.Default`.)doc";
 
@@ -9419,6 +9563,8 @@ static const char *__doc_mitsuba_Scene_integrator = R"doc(Return the scene's `In
 
 static const char *__doc_mitsuba_Scene_integrator_2 = R"doc(Return the scene's `Integrator`)doc";
 
+static const char *__doc_mitsuba_Scene_intersect_implicit_shapes = R"doc(Intersect the implicit shapes and replace ``pi`` when one is closer)doc";
+
 static const char *__doc_mitsuba_Scene_invert_silhouette_sample =
 R"doc(Map a silhouette segment to a point in boundary sample space
 
@@ -9458,6 +9604,8 @@ static const char *__doc_mitsuba_Scene_m_environment = R"doc()doc";
 static const char *__doc_mitsuba_Scene_m_has_filtered_textures = R"doc(Does any texture perform filtered lookups?)doc";
 
 static const char *__doc_mitsuba_Scene_m_has_null_shapes = R"doc(Does the scene contain shapes with 'null' BSDFs?)doc";
+
+static const char *__doc_mitsuba_Scene_m_implicit_shapes = R"doc(Shapes intersected outside of the acceleration data structures)doc";
 
 static const char *__doc_mitsuba_Scene_m_instance_transforms =
 R"doc(Flattened sequence of instance ``to_world`` matrices and their
@@ -9925,6 +10073,8 @@ static const char *__doc_mitsuba_Scene_type = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_update_emitter_sampling_distribution = R"doc(Updates the discrete distribution used to select an emitter)doc";
 
+static const char *__doc_mitsuba_Scene_update_filtered_textures = R"doc(Set ``m_has_filtered_textures`` by scanning the shapes' object graphs)doc";
+
 static const char *__doc_mitsuba_Scene_update_instance_transforms = R"doc(Repack the per-instance transform records (see below))doc";
 
 static const char *__doc_mitsuba_Scene_update_portal_data = R"doc(Build the light portal records from ``m_portals``)doc";
@@ -9972,7 +10122,7 @@ static const char *__doc_mitsuba_Sensor_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_Sensor = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
-static const char *__doc_mitsuba_Sensor_class_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+static const char *__doc_mitsuba_Sensor_class_name = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_cone_scale =
 R"doc(Global scale factor applied to the ray cone of camera rays
@@ -9989,9 +10139,7 @@ static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the `Film` instanc
 static const char *__doc_mitsuba_Sensor_jitter =
 R"doc(Should camera rays be jittered within their pixel?
 
-When this is ``false``, integrators send every ray through the pixel
-center and the ray cone covers the whole pixel regardless of the
-sample count.)doc";
+When this is ``false``, integrators send every ray through the pixel center.)doc";
 
 static const char *__doc_mitsuba_Sensor_m_alpha = R"doc()doc";
 
@@ -10066,19 +10214,9 @@ static const char *__doc_mitsuba_Sensor_traverse = R"doc()doc";
 
 static const char *__doc_mitsuba_Sensor_traverse_cb = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_type = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+static const char *__doc_mitsuba_Sensor_type = R"doc()doc";
 
-static const char *__doc_mitsuba_Sensor_variant_name = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
-
-static const char *__doc_mitsuba_SerializedFlags =
-R"doc(Flag word of a ``.serialized`` file. The low bits store the
-`Layout` of the vertex records verbatim.)doc";
-
-static const char *__doc_mitsuba_SerializedFlags_FaceNormals = R"doc()doc";
-
-static const char *__doc_mitsuba_SerializedFlags_LayoutMask = R"doc()doc";
-
-static const char *__doc_mitsuba_SerializedFlags_SinglePrecision = R"doc()doc";
+static const char *__doc_mitsuba_Sensor_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_ShadowTest =
 R"doc(Result of a backend shadow ray test (``*Accel::ray_test()``)
@@ -11401,21 +11539,11 @@ static const char *__doc_mitsuba_SurfaceInteraction_bsdf = R"doc(Returns the `BS
 static const char *__doc_mitsuba_SurfaceInteraction_compute_footprint =
 R"doc(Project the ray cone onto the surface and store its UV-space footprint
 
-The cross section of ``ray.cone`` at the hit point is a disk
-perpendicular to the ray. Projecting it along the ray onto the tangent
-plane yields an ellipse (Section 5 of :cite:`AkenineMoller2021RayCones`)
-that is stretched by the inverse cosine of the angle of incidence
-within the plane of incidence. The function projects two perpendicular
-diameters of the disk, expresses them in the UV parameterization via a
-least squares projection onto ``dp_du`` and ``dp_dv``, and stores them
-as the columns of ``footprint``.
-
-The footprint only selects a texture filter and is therefore detached
-from the AD graph. It is zero for inactive lanes and for surfaces with
-a degenerate parameterization.
-
-Args:
-    ray: The ray that produced this interaction)doc";
+The cross section of ``ray.cone`` at the hit is a disk perpendicular to
+the ray. Projecting it onto the tangent plane yields an ellipse. This
+function computes it following :cite:`AkenineMoller2021RayCones` and
+stores its conjugate diameters in the `footprint` field, along with the
+cone's scale factor in `footprint_scale`.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_dn_du = R"doc(Shading normal partials wrt. the UV parameterization)doc";
 
@@ -11451,6 +11579,16 @@ Args:
 
     ray_flags: Flags specifying which information should be computed)doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_footprint =
+R"doc(UV-space footprint of the ray cone at the interaction
+
+The ray cone projects to an ellipse on the surface. The columns of this
+matrix store a pair of conjugate diameters of this ellipse. Their
+orientation about the ray is arbitrary.
+
+The field is only computed when `RayFlags.Footprint` is set and is
+zero otherwise. See `compute_footprint()`.)doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_footprint_scale =
 R"doc(Scale factor of the ray cone that produced `footprint`
 
@@ -11459,21 +11597,6 @@ jittered camera rays. Dividing `footprint` by it yields the footprint
 of the full pixel, which consumers with a nonlinear response (e.g. bump
 maps) may prefer over the per-sample footprint.)doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_footprint =
-R"doc(UV-space footprint of the ray cone at the interaction
-
-The circular cross section of the ray cone projects to an ellipse on
-the surface. The columns of this matrix are the UV-space images of two
-perpendicular diameters of that cross section, i.e. a pair of
-conjugate diameters of the ellipse. Their orientation about the ray is
-arbitrary (any rotation of the columns describes the same ellipse),
-they are generally not its principal axes, and their lengths measure
-the full footprint width like screen space derivatives do. Filtered
-texture lookups use the ellipse to select a level of detail.
-
-The field is only computed when `RayFlags.Footprint` is set and is
-zero otherwise. See `compute_footprint()`.)doc";
-
 static const char *__doc_mitsuba_SurfaceInteraction_frame_flipped =
 R"doc(Is the shading frame left-handed?
 
@@ -11481,9 +11604,16 @@ This bit denotes when a shape wants to set up a left-handed shading
 frame, e.g., on meshes with inverted UVs or instances with mirror
 transformation. This is important to correctly interpret normal maps.)doc";
 
+static const char *__doc_mitsuba_SurfaceInteraction_has_footprint = R"doc()doc";
+
 static const char *__doc_mitsuba_SurfaceInteraction_has_n_partials = R"doc()doc";
 
-static const char *__doc_mitsuba_SurfaceInteraction_has_footprint = R"doc()doc";
+static const char *__doc_mitsuba_SurfaceInteraction_initialize_sh_frame =
+R"doc(Initialize the shading frame
+
+This function takes the normal ``sh_frame.n`` and tentative tangent
+``sh_frame.s`` and completes ``sh_frame`` to an orthonormal basis. The
+tangent does not need to be orthogonal and can even be zero.)doc";
 
 static const char *__doc_mitsuba_SurfaceInteraction_instance_index = R"doc(Instance index. The value 0 encodes that the shape is not instanced.)doc";
 

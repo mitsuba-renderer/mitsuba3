@@ -32,7 +32,7 @@ Mitsuba 3.10.0
     surface, and the ``flip_normals`` and ``to_world`` properties are baked
     into the records once when the shape is built, instead of being reapplied
     to the result of every query. A flipped mesh written back out via
-    ``write_ply()`` or ``write_serialized()`` therefore carries the flip, and
+    ``write_ply()`` or ``write_packed()`` therefore carries the flip, and
     reloading it does not require the scene description to repeat it.
 
   - The directed edge adjacency data structure moved into a standalone
@@ -160,6 +160,21 @@ Mitsuba 3.10.0
     ``opposite_dedge(e)``                        ``dedge_opposite(e)``
     ``edge_indices(f, i)``                       ``dedge_indices(3 * f + i)``
     ============================================ ==============================
+
+- **Packed containers**. The new ``.packed`` :ref:`file format
+  <sec-packed-format>` bundles the meshes and textures of a scene in a
+  container that is memory-mapped and decompressed straight into the memory
+  used by the renderer. :py:meth:`mitsuba.Mesh.write_packed` and the new :ref:`packed
+  <shape-packed>` shape plugin store and load meshes in their internal
+  representation, which is considerably faster than the other mesh formats.
+  The :ref:`bitmap <texture-bitmap>` texture plugin loads BC4, BC5, and BC7
+  block-compressed textures from containers produced by the ``bc_pack.py``
+  script, which the ``cuda`` and ``metal`` variants sample directly using the
+  hardware texture units. This shrinks the GPU memory footprint of 8-bit
+  textures by a factor of 4 to 8. The :py:class:`mitsuba.PackedFile` class implements the
+  container. The ``serialized`` plugin continues to read the legacy
+  ``.serialized`` format, but ``write_serialized()`` was
+  replaced by ``write_packed()``.
 
 - **Ray visibility and null surfaces**. Shapes and emitters accept a
   ``visibility`` property with the following possible values and

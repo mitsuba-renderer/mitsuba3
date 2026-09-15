@@ -471,22 +471,20 @@ corner_to_packed_mesh(JitBackend backend, const CornerMesh &desc,
                       const PackedMesh::ScalarAffineTransform4f &to_world = {});
 
 /**
- * Magic number and current version of the ``.serialized`` mesh encoding,
- * whose reader and writer are ``SerializedMesh::load_v5()`` and
- * ``Mesh::write_serialized(Stream*)``. Keep the two in step.
+ * Version of the mesh entries of a ``.packed`` container, whose writer and
+ * reader are ``Mesh::write_packed()`` and the ``packed`` shape plugin. Keep
+ * the two in step. Every entry starts with the four bytes ``MESH``.
  *
  * The face records are stored verbatim. Their fourth word is derived data
  * that the loader regenerates.
  */
-constexpr uint16_t SerializedMagic   = 0x041C;
-constexpr uint16_t SerializedVersion = 0x0005;
+constexpr uint32_t PackedMeshVersion = 1;
 
-/// Flag word of a ``.serialized`` file. The low bits store the
-/// `Layout` of the vertex records verbatim.
-enum class SerializedFlags : uint32_t {
-    LayoutMask      = 0x000F,
-    FaceNormals     = 0x0010,
-    SinglePrecision = 0x1000,
+/// Flag word of a packed mesh entry. The low bits store the `Layout` of
+/// the vertex records verbatim.
+enum class PackedMeshFlags : uint32_t {
+    LayoutMask  = 0x000F,
+    FaceNormals = 0x0010
 };
 
 NAMESPACE_END(mitsuba)

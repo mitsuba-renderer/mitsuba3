@@ -98,8 +98,8 @@ more complex example:
 
         <!-- Add another mesh, this time, stored using Mitsuba's own
              (compact) binary representation -->
-        <shape type="serialized">
-            <string name="filename" value="lightsource.serialized"/>
+        <shape type="packed">
+            <string name="filename" value="lightsource.packed"/>
             <transform name="to_world">
                 <translate x="5" y="-3" z="1"/>
             </transform>
@@ -156,7 +156,7 @@ the available object types:
           - `perspective`, `orthogonal`
         * - `shape`
           - Shape puglins define surfaces that mark transitions between different types of materials
-          - `obj`, `ply`, `serialized`
+          - `obj`, `ply`, `packed`
         * - `texture`
           - Texture plugins represent spatially varying signals on surfaces
           - `bitmap`, `checkerboard`
@@ -533,7 +533,7 @@ constructed objects instead of nesting dictionaries:
     })
 
 Color/spectra
-*************
+-------------
 
 For convenience, a nested dictionary can be provided with a ``"type"`` entry
 equal to ``"rgb"`` or ``"spectrum"``. Similarly to the XML parser, the
@@ -614,7 +614,7 @@ The following example constructs a Mitsuba complete scene using
     })
 
 References
-**********
+----------
 
 Like in the XML parser, it is possible to declare scene objects once and then
 reference them elsewhere.
@@ -681,7 +681,7 @@ For example, in the snippet below, the objects receive the following implicit ID
   references are fully supported.
 
 Search paths
-************
+------------
 
 As in the XML scene description, it is possible to add a path to the list of
 search paths. In the following example, the texture file can be found in the

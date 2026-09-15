@@ -1,5 +1,6 @@
 #include <nanobind/nanobind.h> // Needs to be first, to get `ref<T>` caster
 #include <mitsuba/core/stream.h>
+#include <mitsuba/core/packed.h>
 #include <mitsuba/core/struct.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/bsdf.h>
@@ -523,13 +524,14 @@ MI_PY_EXPORT(Shape) {
         .def("write_ply",
              nb::overload_cast<Stream *>(&Mesh::write_ply, nb::const_),
              "stream"_a, D(Mesh, write_ply, 2))
-        .def("write_serialized",
-             nb::overload_cast<const fs::path &>(&Mesh::write_serialized,
+        .def("write_packed",
+             nb::overload_cast<const fs::path &>(&Mesh::write_packed,
                                                  nb::const_),
-             "filename"_a, D(Mesh, write_serialized))
-        .def("write_serialized",
-             nb::overload_cast<Stream *>(&Mesh::write_serialized, nb::const_),
-             "stream"_a, D(Mesh, write_serialized, 2))
+             "filename"_a, D(Mesh, write_packed))
+        .def("write_packed",
+             nb::overload_cast<PackedFile *, std::string_view>(
+                 &Mesh::write_packed, nb::const_),
+             "file"_a, "name"_a = "", D(Mesh, write_packed, 2))
         .def_static("merge", &Mesh::merge, "shapes"_a, D(Mesh, merge))
         .def("parts", &Mesh::parts, D(Mesh, parts))
         .def("find_part",

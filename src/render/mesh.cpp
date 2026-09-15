@@ -1,8 +1,8 @@
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/fstream.h>
+#include <mitsuba/core/packed.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/zstream.h>
 #include <mitsuba/core/timer.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/util.h>
@@ -1093,24 +1093,25 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_ply(Stream *stream) const {
     }
 }
 
-MI_VARIANT void Mesh<Float, Spectrum>::write_serialized(const fs::path &filename) const {
-    ref<FileStream> stream =
-        new FileStream(filename, FileStream::ETruncReadWrite);
+MI_VARIANT void Mesh<Float, Spectrum>::write_packed(const fs::path &filename) const {
+    ref<PackedFile> file = new PackedFile(filename);
 
     Timer timer;
     Log(Info, "Writing mesh to \"%s\" ..", filename);
-    write_serialized(stream);
-
-    // Trailing dictionary indexing the single mesh in this file
-    stream->write((uint64_t) 0);
-    stream->write((uint32_t) 1);
+    write_packed(file);
+    file->close();
 
     Log(Info, "\"%s\": wrote %i faces, %i vertices (in %s)", filename,
         m_face_count, m_vertex_count,
         util::time_string((float) timer.value()));
 }
 
-MI_VARIANT void Mesh<Float, Spectrum>::write_serialized(Stream *stream) const {
+MI_VARIANT void Mesh<Float, Spectrum>::write_packed(PackedFile *file,
+                                                    std::string_view name) const {
+    if (!file->can_write())
+        Throw("write_packed(): \"%s\" is not open for writing!",
+              file->filename().string());
+
     const FloatBuffer &vertices_host = dr::migrate(m_packed_vertices, JitBackend::None);
     const IndexBuffer &faces_host    = dr::migrate(m_packed_faces, JitBackend::None);
     const IndexBuffer &pidx_host     = dr::migrate(m_position_index, JitBackend::None);
@@ -1129,48 +1130,46 @@ MI_VARIANT void Mesh<Float, Spectrum>::write_serialized(Stream *stream) const {
         dr::sync_thread();
 
     // The low flag bits carry the record layout verbatim
-    uint32_t flags = (uint32_t) SerializedFlags::SinglePrecision |
-                     (uint32_t) m_layout;
+    uint32_t flags = (uint32_t) m_layout;
     if (has_face_normals())
-        flags |= (uint32_t) SerializedFlags::FaceNormals;
+        flags |= (uint32_t) PackedMeshFlags::FaceNormals;
 
     bool pmap = m_position_index.size() != 0,
          nmap = has_normals() && m_normal_index.size() != 0;
 
-    stream->set_byte_order(Stream::ELittleEndian);
-    stream->write(SerializedMagic);
-    stream->write(SerializedVersion);
+    file->begin(name.empty() ? std::string_view(m_filename) : name);
+    Stream *s = file->stream();
+    s->write("MESH", 4);
+    s->write(PackedMeshVersion);
+    s->write(flags);
+    s->write((uint32_t) m_vertex_count);
+    s->write((uint32_t) m_face_count);
+    s->write((uint32_t) (pmap ? m_position_count : 0));
+    s->write((uint32_t) (nmap ? m_normal_count : 0));
 
-    ref<ZStream> z = new ZStream(stream);
-    z->set_byte_order(Stream::ELittleEndian);
-    z->write(flags);
-    z->write(m_filename);
-    z->write((uint64_t) m_vertex_count);
-    z->write((uint64_t) m_face_count);
-    z->write((uint64_t) (pmap ? m_position_count : 0));
-    z->write((uint64_t) (nmap ? m_normal_count : 0));
-
-    z->write_array(vertices_host.data(),
-                   (size_t) m_vertex_count * MeshVertexStride);
-    z->write_array(faces_host.data(),
-                   (size_t) m_face_count * MeshFaceStride);
-    if (pmap)
-        z->write_array(pidx_host.data(), m_vertex_count);
-    if (nmap)
-        z->write_array(nidx_host.data(), m_vertex_count);
-
-    z->write((uint32_t) attributes.size());
-    for (const auto &[name, attribute] : attributes) {
-        z->write(name);
-        z->write((uint8_t) (holds_rgb2spec_coeffs(name, attribute.dim) ? 1
-                                                                      : 0));
-        z->write((uint32_t) attribute.dim);
-        size_t rows = is_vertex_attribute(name) ? m_vertex_count
-                                                : m_face_count;
-        z->write_array(attribute.data.array().data(), rows * attribute.dim);
+    s->write((uint32_t) attributes.size());
+    for (const auto &[attr_name, attribute] : attributes) {
+        s->write(attr_name);
+        s->write((uint8_t) (holds_rgb2spec_coeffs(attr_name, attribute.dim) ? 1
+                                                                           : 0));
+        s->write((uint8_t) attribute.dim);
     }
 
-    z->close();
+    file->write_array(vertices_host.data(),
+                      (size_t) m_vertex_count * MeshVertexStride * sizeof(float));
+    file->write_array(faces_host.data(),
+                      (size_t) m_face_count * MeshFaceStride * sizeof(uint32_t));
+    if (pmap)
+        file->write_array(pidx_host.data(), (size_t) m_vertex_count * sizeof(uint32_t));
+    if (nmap)
+        file->write_array(nidx_host.data(), (size_t) m_vertex_count * sizeof(uint32_t));
+
+    for (const auto &[attr_name, attribute] : attributes) {
+        size_t rows = is_vertex_attribute(attr_name) ? m_vertex_count
+                                                     : m_face_count;
+        file->write_array(attribute.data.array().data(),
+                          rows * attribute.dim * sizeof(float));
+    }
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::recompute_normals() {

@@ -136,8 +136,8 @@ Mesh parameters
 ---------------
 
 Mitsuba provides several plugins that represent their geometry as a triangle
-mesh: :ref:`obj <shape-obj>`, :ref:`ply <shape-ply>`, and :ref:`serialized
-<shape-serialized>` load meshes from the file format of the same name, and
+mesh: :ref:`obj <shape-obj>`, :ref:`ply <shape-ply>`, and :ref:`packed
+<shape-packed>` load meshes from the file format of the same name, and
 :ref:`cube <shape-cube>` provides a built-in box primitive. All of them are
 instances of the same underlying mesh class and therefore expose an identical
 set of scene parameters through :monosp:`mi.traverse()`.

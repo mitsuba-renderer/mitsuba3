@@ -74,7 +74,7 @@ Loading an ordinary OBJ file is as simple as writing:
           amounts of memory and processing power. What's worse is that the
           internally stored data is often truncated, causing a loss of
           precision. If possible, use the :ref:`ply <shape-ply>` or
-          :ref:`serialized <shape-serialized>` plugins instead.
+          :ref:`packed <shape-packed>` plugins instead.
 
  */
 

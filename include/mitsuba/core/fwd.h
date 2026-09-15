@@ -35,6 +35,7 @@ class FileStream;
 class Formatter;
 class Logger;
 class MemoryStream;
+class PackedFile;
 class Mutex;
 class PluginManager;
 class Properties;

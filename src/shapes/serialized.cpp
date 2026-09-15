@@ -1,6 +1,5 @@
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/core/fstream.h>
-#include <mitsuba/core/string.h>
 #include <mitsuba/core/zstream.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
@@ -9,190 +8,20 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
-/**!
-
-.. _shape-serialized:
-
-Serialized mesh loader (:monosp:`serialized`)
----------------------------------------------
-
-.. pluginparameters::
-
- * - filename
-   - |string|
-   - Filename of the serialized file that should be loaded
-
- * - shape_index
-   - |int|
-   - A :monosp:`.serialized` file may contain several separate meshes. This parameter
-     specifies which one should be loaded. (Default: 0, i.e. the first one)
-
- * - face_normals
-   - |bool|
-   - When set to |true|, any existing or computed vertex normals are
-     discarded and \emph{face normals} will instead be used during rendering.
-     This gives the rendered object a faceted appearance. (Default: |false|)
-
- * - flip_normals
-   - |bool|
-   - Is the mesh inverted, i.e. should the normal vectors be flipped? (Default:|false|, i.e.
-     the normals point outside)
-
- * - to_world
-   - |transform|
-   - Specifies an optional linear object-to-world transformation.
-     (Default: none, i.e. object space = world space)
-
-In addition, this plugin exposes the standard mesh state parameters
-documented in :ref:`sec-shape-mesh-parameters`.
-
-The serialized mesh format represents the most space and time-efficient way
-of getting geometry information into Mitsuba 3. It stores indexed triangle meshes
-in a lossless gzip-based encoding that (after decompression) nicely matches up
-with the internally used data structures. Loading such files is considerably
-faster than the :ref:`ply <shape-ply>` plugin and orders of magnitude faster than
-the :ref:`obj <shape-obj>` plugin.
-
-Format description
-******************
-
-The :monosp:`serialized` file format uses the little endian encoding, hence
-all fields below should be interpreted accordingly. The contents of a
-version 5 file are structured as follows:
-
-.. figtable::
-    :label: table-serialized-format
-
-    .. list-table::
-        :widths: 20 80
-        :header-rows: 1
-
-        * - Type
-          - Content
-        * - :monosp:`uint16`
-          - File format identifier: :code:`0x041C`
-        * - :monosp:`uint16`
-          - File version identifier. Currently set to :code:`0x0005`
-        * - :math:`\rightarrow`
-          - From this point on, the stream is compressed by the :monosp:`DEFLATE` algorithm.
-        * - :math:`\rightarrow`
-          - The used encoding is that of the :monosp:`zlib` library.
-        * - :monosp:`uint32`
-          - An 32-bit integer whose bits can be used to specify the following flags:
-
-            - :code:`0x0007`: The low bits store the vertex record layout: :code:`0x1`
-              denotes stored shading normals, :code:`0x2` shading tangents, and
-              :code:`0x4` texture coordinates. Tangents occupy no lanes of their own:
-              the frame lanes then hold the whole encoded shading frame instead of
-              just the normal
-            - :code:`0x0010`: Use face normals instead of smoothly interpolated vertex normals.
-              Equivalent to specifying :monosp:`face_normals=true` to the plugin.
-            - :code:`0x0020`: The stored shading normals were supplied by the user, rather
-              than generated from the positions (in which case a position edit through the
-              parameter interface recomputes them)
-            - :code:`0x1000`: The subsequent content is represented in single precision
-              (always set; version 5 files are single precision)
-        * - :monosp:`string`
-          - The name of the shape: a :monosp:`uint32` length followed by that many
-            utf-8 bytes.
-        * - :monosp:`uint64`
-          - Number of vertices ``V`` in the mesh
-        * - :monosp:`uint64`
-          - Number of triangles ``F`` in the mesh
-        * - :monosp:`uint64`
-          - Number of distinct surface points ``P``, or 0 when the vertex-to-surface-point
-            map is the identity and not stored
-        * - :monosp:`uint64`
-          - Number of normal groups ``N``, or 0 when the vertex-to-normal-group map is
-            the identity and not stored
-        * - :monosp:`array`
-          - ``8 V`` single precision floats: the packed vertex records (position in lanes
-            0-2, the shading normal or, with stored tangents, the encoded shading frame
-            in lanes 3-5, texture coordinates in lanes 6-7; unused lanes are zero)
-        * - :monosp:`array`
-          - ``4 F`` :monosp:`uint32` face records: three vertex indices and the per-face
-            BSDF index
-        * - :monosp:`array`
-          - ``V`` :monosp:`uint32` vertex-to-surface-point indices in ``[0, P)``. Omitted
-            when ``P`` is 0.
-        * - :monosp:`array`
-          - ``V`` :monosp:`uint32` vertex-to-normal-group indices in ``[0, N)``. Omitted
-            when ``N`` is 0.
-        * - :monosp:`uint32`
-          - Number of custom mesh attributes
-        * - :monosp:`attribute`
-          - Per attribute: a length-prefixed name whose ``vertex_`` or ``face_`` prefix
-            selects the domain, a :monosp:`uint8` flag byte (bit 0: the values are
-            sRGB-to-spectrum upsampling coefficients written by a spectral variant rather
-            than raw values), a :monosp:`uint32` channel count ``dim`` in [1, 4], and
-            ``V dim`` (or ``F dim``) single precision floats of attribute data
-
-Version 3 and 4 files instead store a single-indexed triangle mesh: the flag
-word (with :code:`0x0001` denoting normals, :code:`0x0002` texture
-coordinates, :code:`0x0008` vertex colors and :code:`0x2000` double
-precision data), the null-terminated shape name (version 4 only), the vertex and triangle
-counts ``V`` and ``F``, and arrays of per-vertex positions, normals,
-texture coordinates and colors, followed by ``3 F`` :monosp:`uint32` face
-indices.
-
-Multiple shapes
-***************
-
-It is possible to store multiple meshes in a single :monosp:`.serialized`
-file. This is done by simply concatenating their data streams,
-where every one is structured according to the above description.
-Hence, after each mesh, the stream briefly reverts back to an
-uncompressed format, followed by an uncompressed header, and so on.
-This is necessary for efficient read access to arbitrary sub-meshes.
-
-End-of-file dictionary
-**********************
-In addition to the previous table, a :monosp:`.serialized` file also concludes with a brief summary
-at the end of the file, which specifies the starting position of each sub-mesh:
-
-.. figtable::
-    :label: table-serialized-end-of-file
-
-    .. list-table::
-        :widths: 20 80
-        :header-rows: 1
-
-        * - Type
-          - Content
-        * - :monosp:`uint64`
-          - File offset of the first mesh (in bytes)---this is always zero.
-        * - :monosp:`uint64`
-          - File offset of the second mesh
-        * - :math:`\cdots`
-          - :math:`\cdots`
-        * - :monosp:`uint64`
-          - File offset of the last sub-shape
-        * - :monosp:`uint32`
-          - Total number of meshes in the :monosp:`.serialized` file
-
-.. tabs::
-    .. code-tab:: xml
-        :name: serialized
-
-        <shape type="serialized">
-            <string name="filename" value="shape.serialized"/>
-            <bsdf type='diffuse'/>
-        </shape>
-
-    .. code-tab:: python
-
-        'type': 'serialized',
-        'filename': 'shape.serialized',
-        'material': {
-            'type': 'diffuse',
-        }
+/*
+ * Serialized mesh loader (legacy). Reads the ``.serialized`` format of
+ * earlier Mitsuba versions, which stores single-indexed triangle meshes in
+ * a gzip-based encoding. New files should use the ``packed`` format.
+ *
+ * Parameters: filename, shape_index (default 0), face_normals,
+ * flip_normals, to_world.
  */
 
-/// Legacy format versions; the current one is `SerializedVersion`
+#define MI_FILEFORMAT_HEADER     0x041C
 #define MI_FILEFORMAT_VERSION_V3 0x0003
 #define MI_FILEFORMAT_VERSION_V4 0x0004
 
-/// Flag word of the legacy (version 3 and 4) encoding
+/// Flag word of the encoding
 enum class TriMeshFlags : uint32_t {
     HasNormals      = 0x0001,
     HasTexcoords    = 0x0002,
@@ -205,7 +34,7 @@ enum class TriMeshFlags : uint32_t {
 
 MI_DECLARE_ENUM_OPERATORS(TriMeshFlags)
 
-/// Read a null-terminated UTF-8 string, as used by the legacy encoding
+/// Read a null-terminated UTF-8 string
 static std::string read_cstring(Stream *stream) {
     std::string result;
     char ch = 0;
@@ -256,12 +85,11 @@ public:
         stream->read(format);
         stream->read(version);
 
-        if (format != SerializedMagic)
+        if (format != MI_FILEFORMAT_HEADER)
             fail("encountered an invalid file format!");
 
         if (version != MI_FILEFORMAT_VERSION_V3 &&
-            version != MI_FILEFORMAT_VERSION_V4 &&
-            version != SerializedVersion)
+            version != MI_FILEFORMAT_VERSION_V4)
             fail("encountered an incompatible file version!");
 
         if (shape_index != 0) {
@@ -298,10 +126,7 @@ public:
             stream->skip(sizeof(short) * 2); // Skip the header
         }
 
-        if (version == SerializedVersion)
-            load_v5(stream, props);
-        else
-            load_legacy(stream, version);
+        load(stream, version);
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (in %s)",
             m_filename, m_face_count, m_vertex_count,
@@ -310,7 +135,7 @@ public:
 
     /// Load a version 3 or 4 mesh, which stores one tight array per
     /// quantity. Every vertex forms its own surface point.
-    void load_legacy(Stream *stream_, short version) {
+    void load(Stream *stream_, short version) {
         ref<Stream> stream = new ZStream(stream_);
         stream->set_byte_order(Stream::ELittleEndian);
 
@@ -385,95 +210,6 @@ public:
                              faces[3 * i + 2] });
 
         stream_->close();
-        from_packed(std::move(pm));
-    }
-
-    /**
-     * Load a version 5 mesh, which stores the packed representation
-     * verbatim: vertex and face records, the vertex -> surface point /
-     * normal group maps, and custom attributes stream directly into the
-     * staging storage. `Mesh::write_serialized()` is the writer.
-     */
-    void load_v5(Stream *stream_, const Properties &props) {
-        ref<Stream> stream = new ZStream(stream_);
-        stream->set_byte_order(Stream::ELittleEndian);
-
-        uint32_t flags = 0;
-        stream->read(flags);
-
-        // A mesh that was written without a name keeps the "<file>@<index>"
-        // label that the constructor derived from the scene description
-        std::string name;
-        stream->read(name);
-        if (!name.empty())
-            m_filename = std::move(name);
-
-        if (!(flags & (uint32_t) SerializedFlags::SinglePrecision))
-            Throw("\"%s\": version 5 serialized meshes are stored in single "
-                  "precision.", m_filename);
-
-        Layout layout =
-            (Layout) (flags & (uint32_t) SerializedFlags::LayoutMask);
-        bool normals = has_flag(layout, Layout::Normals);
-
-        uint64_t vertex_count, face_count, position_count, normal_count;
-        stream->read(vertex_count);
-        stream->read(face_count);
-        stream->read(position_count);
-        stream->read(normal_count);
-
-        if (position_count > vertex_count ||
-            normal_count > vertex_count ||
-            (has_flag(layout, Layout::Tangents) && !normals))
-            Throw("\"%s\": invalid serialized mesh header.", m_filename);
-
-        PackedMesh pm(dr::backend_v<Float>, vertex_count, face_count,
-                      layout, position_count, normal_count);
-
-        stream->read_array(pm.vertices.data(),
-                           vertex_count * MeshVertexStride);
-        stream->read_array(pm.faces.data(), face_count * MeshFaceStride);
-        if (position_count)
-            stream->read_array(pm.position_index.data(), vertex_count);
-        if (normal_count)
-            stream->read_array(pm.normal_index.data(), vertex_count);
-
-        // Custom attributes stream directly into the staging storage
-        uint32_t attr_count = 0;
-        stream->read(attr_count);
-        for (uint32_t i = 0; i < attr_count; ++i) {
-            std::string attr_name;
-            stream->read(attr_name);
-            uint8_t aflags = 0;
-            stream->read(aflags);
-            bool coeffs = (aflags & 1) != 0;
-            uint32_t dim = 0;
-            stream->read(dim);
-            if (coeffs && !is_spectral_v<Spectrum>)
-                Log(Warn, "\"%s\": attribute \"%s\" stores spectral "
-                    "upsampling coefficients; a non-spectral variant "
-                    "cannot reproduce the original colors.",
-                    m_filename, attr_name);
-            float *dst = pm.add_attribute(attr_name, dim,
-                                          /* upsample_srgb */ !coeffs);
-            stream->read_array(dst, (string::starts_with(attr_name, "face_")
-                                         ? face_count : vertex_count) * dim);
-        }
-
-        stream_->close();
-
-        // The records arrived in bulk, so they are transformed after the fact
-        pm.set_transform(m_to_world.scalar(), m_flip_normals);
-        m_flip_normals = false;
-        m_to_world = ScalarAffineTransform4f();
-        pm.transform_records();
-
-        // The stored FaceNormals flag applies when the scene description
-        // leaves the property unset
-        if ((flags & (uint32_t) SerializedFlags::FaceNormals) &&
-            !props.has_property("face_normals"))
-            m_face_normals = true;
-
         from_packed(std::move(pm));
     }
 

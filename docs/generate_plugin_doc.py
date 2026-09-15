@@ -11,7 +11,7 @@ import importlib
 SHAPE_ORDERING = [
     'obj',
     'ply',
-    'serialized',
+    'packed',
     'cube',
     'sphere',
     'rectangle',

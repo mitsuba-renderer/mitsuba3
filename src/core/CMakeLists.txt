@@ -32,6 +32,7 @@ add_library(mitsuba-core OBJECT
   fstream.cpp       ${INC_DIR}/fstream.h
   logger.cpp        ${INC_DIR}/logger.h
   mmap.cpp          ${INC_DIR}/mmap.h
+  packed.cpp        ${INC_DIR}/packed.h
   tensor.cpp        ${INC_DIR}/tensor.h
   mstream.cpp       ${INC_DIR}/mstream.h
   object.cpp        ${INC_DIR}/object.h

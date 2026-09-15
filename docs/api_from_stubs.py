@@ -48,6 +48,7 @@ CORE_SECTIONS: dict[str, list[str]] = {
                                  'TraversalCallback', 'ParamFlags',
                                  r'register_\w+'],
     'Files and streams': [r'\w*Stream', 'MemoryMappedFile', 'TensorFile',
+                          'PackedFile',
                           'FileResolver', 'file_resolver', 'set_file_resolver',
                           r'Struct\w*'],
     'Bitmaps and image processing': [r'Bitmap\w*', 'Resampler',

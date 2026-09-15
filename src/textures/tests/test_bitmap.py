@@ -413,3 +413,54 @@ def test13_filtered_lookup(variants_all_backends_once, filter_type):
     with pytest.raises(RuntimeError, match='max_anisotropy'):
         mi.load_dict({'type': 'bitmap', 'raw': True, 'filter_type': 'anisotropic',
                       'max_anisotropy': 32, 'bitmap': mi.Bitmap(values)})
+
+
+def bc4_constant_texture(path, name, value, width, height, levels):
+    """Write a BC4 texture whose texels all equal ``value`` (0-255) to a
+    packed container. A BC4 block with both endpoints equal to ``value`` and
+    zero indices decodes to that value everywhere."""
+    pf = mi.PackedFile(path)
+    pf.begin(name)
+    s = pf.stream()
+    s.write(b'BTEX')
+    s.write_uint32(1)
+    s.write_uint8(4)       # format
+    s.write_uint8(0)       # sRGB
+    s.write_uint8(levels)
+    s.write_uint8(1)       # channels
+    s.write_uint32(width)
+    s.write_uint32(height)
+    block = bytes([value, value, 0, 0, 0, 0, 0, 0])
+    w, h = width, height
+    for _ in range(levels):
+        pf.write_array(block * (((w + 3) // 4) * ((h + 3) // 4)))
+        w, h = max(w // 2, 1), max(h // 2, 1)
+    pf.close()
+
+
+@pytest.mark.parametrize('filter_type', ['bilinear', 'trilinear'])
+def test14_packed_container(variants_all_rgb, tmp_path, filter_type):
+    """Block-compressed textures load from a packed container, selected by
+    index or name, and decode to the stored values"""
+    fname = str(tmp_path / 'textures.packed')
+    pf = mi.PackedFile(fname)
+    pf.close()
+    bc4_constant_texture(fname, 'first', 51, 8, 8, 1)
+
+    tex = mi.load_dict({'type': 'bitmap', 'filename': fname, 'raw': True,
+                        'filter_type': filter_type})
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.3, 0.6]
+    assert dr.allclose(tex.eval_1(si), 51 / 255, atol=1e-3)
+    assert dr.all(tex.resolution() == mi.ScalarVector2i(8, 8))
+
+    with pytest.raises(Exception, match='out of range'):
+        mi.load_dict({'type': 'bitmap', 'filename': fname, 'index': 1})
+    with pytest.raises(Exception, match='no entry named'):
+        mi.load_dict({'type': 'bitmap', 'filename': fname, 'name': 'second'})
+
+    # A complete MIP chain is used by the trilinear filter
+    bc4_constant_texture(fname, 'chain', 102, 8, 4, 4)
+    tex = mi.load_dict({'type': 'bitmap', 'filename': fname, 'raw': True,
+                        'name': 'chain', 'filter_type': filter_type})
+    assert dr.allclose(tex.eval_1(si), 102 / 255, atol=1e-3)

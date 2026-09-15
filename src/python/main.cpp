@@ -3,6 +3,7 @@
 #include <mitsuba/core/util.h>
 #include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/profiler.h>
+#include <mitsuba/core/packed.h>
 #include <mitsuba/python/python.h>
 
 
@@ -18,6 +19,7 @@ MI_PY_DECLARE(Formatter);
 MI_PY_DECLARE(FileResolver);
 MI_PY_DECLARE(Logger);
 MI_PY_DECLARE(MemoryMappedFile);
+MI_PY_DECLARE(PackedFile);
 MI_PY_DECLARE(Stream);
 MI_PY_DECLARE(DummyStream);
 MI_PY_DECLARE(FileStream);
@@ -144,6 +146,7 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(FileResolver);
     MI_PY_IMPORT(Logger);
     MI_PY_IMPORT(MemoryMappedFile);
+    MI_PY_IMPORT(PackedFile);
     MI_PY_IMPORT(DummyStream);
     MI_PY_IMPORT(FileStream);
     MI_PY_IMPORT(MemoryStream);
@@ -180,6 +183,7 @@ NB_MODULE(mitsuba_ext, m) {
         PluginManager::instance()->release_all();
 
         struct_jit::clear_cache();
+        PackedFile::clear_cache();
         Profiler::static_shutdown();
         Bitmap::static_shutdown();
         Logger::static_shutdown();

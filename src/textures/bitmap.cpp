@@ -7,7 +7,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/srgb.h>
-#include <mitsuba/core/fstream.h>
+#include <mitsuba/core/packed.h>
 #include <drjit/tensor.h>
 #include <drjit/texture.h>
 #include <mutex>
@@ -26,11 +26,16 @@ Bitmap texture (:monosp:`bitmap`)
  * - filename
    - |string|
    - Filename of the bitmap to be loaded. A ``.packed`` file selects a
-     packed texture container (see below).
+     container of block-compressed textures (see below).
 
  * - index
    - |int|
    - Index of the texture to load from a ``.packed`` container. (Default: 0)
+
+ * - name
+   - |string|
+   - Alternatively, the name of the texture to load from a ``.packed``
+     container.
 
  * - bitmap
    - :monosp:`Bitmap object`
@@ -173,9 +178,10 @@ complete MIP chain and otherwise fall back to ``bilinear``.
 
 To use this feature, run ``python -m mitsuba.pack_tex <scene.xml>``, which
 packs the textures of a scene into a ``.packed`` container (see the :ref:`file
-format description <sec-pack-format>`) and writes an updated scene referencing
-it. The bitmap textures of that scene specify the container as
-:paramtype:`filename` and select an entry via :paramtype:`index`.
+format description <sec-pack-format>`, which also explains the role of the
+different BC variants) and writes an updated scene referencing it. The bitmap
+textures of that scene specify the container as :paramtype:`filename` and select
+an entry via :paramtype:`index`.
 
 .. tabs::
     .. code-tab:: xml
@@ -216,11 +222,10 @@ constexpr const char *bitmap_class_name() {
         return "BitmapTextureImpl[?]";
 }
 
-/// Record of a texture in a packed texture container
+/// Header of a block-compressed texture entry in a ``.packed`` container
 struct BCTextureEntry {
-    uint8_t format = 0, srgb = 0, n_levels = 0;
-    uint32_t width = 0, height = 0, channels = 0;
-    uint64_t offset = 0, file_size = 0;
+    uint8_t format = 0, srgb = 0, n_levels = 0, channels = 0;
+    uint32_t width = 0, height = 0;
 
     /// Bytes of the compressed representation of MIP level ``level``
     size_t level_bytes(uint32_t level) const {
@@ -485,63 +490,62 @@ protected:
         }
     }
 
-    /// Read the selected entry of a packed texture container
+    /// Read the selected entry of a ``.packed`` texture container
     void load_container(const Properties &props, const fs::path &file_path) {
         if constexpr (is_spectral_v<Spectrum>)
             Throw("Block-compressed textures are not supported in spectral "
                   "variants (8-bit storage cannot hold spectral upsampling "
                   "coefficients).");
 
-        int index = props.get<int>("index", 0);
-        m_name = tfm::format("%s[%i]", m_name, index);
+        ref<PackedFile> file = PackedFile::open(file_path);
+
+        size_t index;
+        if (props.has_property("name")) {
+            std::string_view name = props.get<std::string_view>("name");
+            index = file->find(name);
+            if (index == file->entry_count())
+                Throw("Error while loading texture \"%s\": the container has "
+                      "no entry named \"%s\"!", m_name, name);
+        } else {
+            int index_prop = props.get<int>("index", 0);
+            if (index_prop < 0 || (size_t) index_prop >= file->entry_count())
+                Throw("Error while loading texture \"%s\": entry index %i is "
+                      "out of range (the container has %zu entries)!",
+                      m_name, index_prop, file->entry_count());
+            index = (size_t) index_prop;
+        }
+
+        PackedFile::Entry entry = file->entry(index);
+        m_name = entry.name().empty()
+            ? tfm::format("%s[%zu]", m_name, index)
+            : tfm::format("%s[%s]", m_name, entry.name());
 
         auto fail = [&](const char *descr) {
             Throw("Error while loading texture \"%s\": %s!", m_name, descr);
         };
 
-        ref<FileStream> stream = new FileStream(file_path);
-        if (stream->size() < 28)
-            fail("file is too short");
+        char tag[4];
+        memcpy(tag, entry.data(), 4);
+        entry.skip(4);
+        if (memcmp(tag, "BTEX", 4) != 0)
+            fail("the container entry does not hold a texture");
+        if (entry.read<uint32_t>() != 1)
+            fail("unsupported texture entry version");
 
-        char magic[12];
-        uint32_t version, count;
-        uint64_t table_offset;
-        stream->read(magic, 12);
-        stream->read(version);
-        if (memcmp(magic, "MIPACK.TEX\0\0", 12) != 0 || version != 1)
-            fail("invalid file signature or version");
-
-        stream->seek(stream->size() - 12);
-        stream->read(table_offset);
-        stream->read(count);
-        if (index < 0 || (uint32_t) index >= count)
-            fail("entry index is out of range");
-        if (table_offset + 44 * (uint64_t) count + 12 > stream->size())
-            fail("invalid table offset");
-
-        // Seek to the fixed-size record of the entry
         detail::BCTextureEntry &e = m_bc_entry;
-        uint8_t reserved;
-        uint32_t name_length;
-        stream->seek(table_offset + 44 * (uint64_t) index);
-        stream->read(e.format);
-        stream->read(e.srgb);
-        stream->read(e.n_levels);
-        stream->read(reserved);
-        stream->read(e.width);
-        stream->read(e.height);
-        stream->read(e.channels);
-        stream->read(name_length);
-        stream->read(e.offset);
-        stream->read(e.file_size);
+        e.format   = entry.read<uint8_t>();
+        e.srgb     = entry.read<uint8_t>();
+        e.n_levels = entry.read<uint8_t>();
+        e.channels = entry.read<uint8_t>();
+        e.width    = entry.read<uint32_t>();
+        e.height   = entry.read<uint32_t>();
 
         bool valid_format = (e.format == 4 && e.channels == 1) ||
                             (e.format == 5 && e.channels == 2) ||
                             (e.format == 7 && (e.channels == 3 || e.channels == 4));
         if (!valid_format || e.width == 0 || e.height == 0 ||
-            e.n_levels == 0 || e.n_levels > e.full_mip_levels() ||
-            e.offset + e.file_size > table_offset)
-            fail("invalid entry header");
+            e.n_levels == 0 || e.n_levels > e.full_mip_levels())
+            fail("invalid texture entry header");
 
         // A filtered lookup needs the complete MIP chain from the container.
         // Only the levels that will be used are decompressed.
@@ -558,22 +562,31 @@ protected:
         for (uint32_t l = 0; l < m_bc_levels; ++l)
             size += e.level_bytes(l);
 
-        std::unique_ptr<uint8_t[]> packed = std::make_unique<uint8_t[]>(e.file_size);
-        stream->seek(e.offset);
-        stream->read(packed.get(), e.file_size);
-
         // Decompress straight into the array handed to the texture. On the
         // GPU backends, this is a pinned host buffer that the texture upload
         // reads directly.
-        if constexpr (dr::is_jit_v<Float>) {
-            uint8_t *ptr = (uint8_t *) jit_malloc(dr::backend_v<Float>, size,
-                                                  /* shared = */ true);
-            jit_lz4_decompress(packed.get(), e.file_size, ptr, size);
-            m_bc_blocks = BlockStorage::map_(ptr, size, /* free = */ true);
-        } else {
+        uint8_t *ptr = nullptr;
+        if constexpr (dr::is_jit_v<Float>)
+            ptr = (uint8_t *) jit_malloc(dr::backend_v<Float>, size,
+                                         /* shared = */ true);
+        else
             m_bc_blocks = dr::empty<BlockStorage>(size);
-            jit_lz4_decompress(packed.get(), e.file_size, m_bc_blocks.data(), size);
+
+        try {
+            uint8_t *dst = dr::is_jit_v<Float> ? ptr : m_bc_blocks.data();
+            for (uint32_t l = 0; l < m_bc_levels; ++l) {
+                size_t level_size = e.level_bytes(l);
+                entry.read_array(dst, level_size);
+                dst += level_size;
+            }
+        } catch (...) {
+            if constexpr (dr::is_jit_v<Float>)
+                jit_free(ptr);
+            throw;
         }
+
+        if constexpr (dr::is_jit_v<Float>)
+            m_bc_blocks = BlockStorage::map_(ptr, size, /* free = */ true);
     }
 
     /// Build the implementation object from a container entry
