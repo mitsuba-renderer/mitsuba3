@@ -10,14 +10,6 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/scene_ir.h>
 
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/disk.cuh"
-#endif
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    #include <mitsuba/render/shapedata.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -413,7 +405,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex /*prim_index*/,
+                                   dr::uint32_array_t<FloatP> /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         auto [valid, t, local] = intersect_impl<FloatP>(ray, active);
@@ -423,7 +415,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex /*prim_index*/,
+                                     dr::uint32_array_t<FloatP> /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         return std::get<0>(intersect_impl<FloatP>(ray, active));
@@ -496,18 +488,6 @@ public:
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_to_world.value());
     }
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    void gpu_fill_data(void *out) const {
-        shapedata::DiskData &d = *(shapedata::DiskData *) out;
-        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
-                                  d.to_object);
-    }
-
-    void describe(ShapeIR &g) const override {
-        Base::template describe_with_data<Disk, shapedata::DiskData>(g);
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

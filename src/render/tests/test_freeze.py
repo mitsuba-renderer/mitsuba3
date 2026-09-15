@@ -960,6 +960,11 @@ def test09_shape(variants_vec_rgb, tmp_path, shape, auto_opaque):
     if shape == "bsplinecurve" or shape == "linearcurve":
         def update(i, params):
             params["shape.control_points"][0] = i * 0.1
+    elif shape == "sphere":
+        # Moves the sphere, which re-records and rebinds its intersection
+        # routine with a new data block
+        def update(i, params):
+            params["shape.to_world"] = mi.Transform4f().translate([0.1 * i, 0, 0])
 
     scene = load_scene()
     assert_render(scene, n, update, tmp_path=tmp_path, auto_opaque=auto_opaque)

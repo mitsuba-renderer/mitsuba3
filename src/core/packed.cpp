@@ -58,6 +58,12 @@ static tsl::robin_map<std::string, CachedFile> *cache =
 // -----------------------------------------------------------------------------
 
 PackedFile::PackedFile(const fs::path &filename) : m_filename(filename) {
+    // Windows cannot truncate a file while a mapping of it exists
+    if (fs::exists(filename)) {
+        std::lock_guard<std::mutex> guard(*cache_mutex);
+        cache->erase(fs::absolute(filename).string());
+    }
+
     m_stream = new FileStream(filename, FileStream::ETruncReadWrite);
     m_stream->set_byte_order(Stream::ELittleEndian);
     m_stream->write("MIPACKED", 8);

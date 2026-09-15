@@ -59,6 +59,70 @@ MI_PY_EXPORT(SilhouetteSample) {
                        foreshortening, offset)
 }
 
+/// Trampoline for custom shapes implemented in Python
+MI_VARIANT class PyShape : public Shape<Float, Spectrum> {
+public:
+    MI_IMPORT_TYPES(Shape)
+    NB_TRAMPOLINE(Shape);
+
+    PyShape(const Properties &props) : Shape(props) { }
+
+    ScalarBoundingBox3f bbox() const override {
+        NB_OVERRIDE_PURE(bbox);
+    }
+
+    ScalarBoundingBox3f bbox(uint32_t prim_index) const override {
+        NB_OVERRIDE(bbox, prim_index);
+    }
+
+    uint32_t primitive_count() const override {
+        NB_OVERRIDE(primitive_count);
+    }
+
+    Float surface_area() const override {
+        NB_OVERRIDE(surface_area);
+    }
+
+    PositionSample3f sample_position(Float time, const Point2f &sample,
+                                     Mask active) const override {
+        NB_OVERRIDE(sample_position, time, sample, active);
+    }
+
+    Float pdf_position(const PositionSample3f &ps, Mask active) const override {
+        NB_OVERRIDE(pdf_position, ps, active);
+    }
+
+    PreliminaryIntersection3f
+    ray_intersect_preliminary(const Ray3f &ray, UInt32 prim_index,
+                              Mask active) const override {
+        NB_OVERRIDE(ray_intersect_preliminary, ray, prim_index, active);
+    }
+
+    Mask ray_test(const Ray3f &ray, UInt32 prim_index,
+                  Mask active) const override {
+        NB_OVERRIDE(ray_test, ray, prim_index, active);
+    }
+
+    SurfaceInteraction3f
+    compute_surface_interaction(const Ray3f &ray,
+                                const PreliminaryIntersection3f &pi,
+                                uint32_t ray_flags, Mask active) const override {
+        NB_OVERRIDE(compute_surface_interaction, ray, pi, ray_flags, active);
+    }
+
+    std::string to_string() const override {
+        NB_OVERRIDE(to_string);
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+};
+
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMesh : public Mesh<Float, Spectrum> {
 public:
@@ -166,7 +230,7 @@ template <typename Ptr, typename Cls> void bind_shape_generic(Cls &cls) {
             },
             "name"_a, "si"_a, "active"_a = true, D(Shape, eval_attribute_x))
        .def("ray_intersect_preliminary",
-            [](Ptr shape, const Ray3f &ray, uint32_t prim_index, const Mask &active) {
+            [](Ptr shape, const Ray3f &ray, UInt32 prim_index, const Mask &active) {
                 return shape->ray_intersect_preliminary(ray, prim_index, active);
             },
             "ray"_a, "prim_index"_a = 0, "active"_a = true, D(Shape, ray_intersect_preliminary))
@@ -465,17 +529,19 @@ static void mesh_from_corners(Mesh &mesh, NdPoints positions,
 
 MI_PY_EXPORT(Shape) {
     MI_PY_IMPORT_TYPES(Shape, Mesh)
+    using PyShape = PyShape<Float, Spectrum>;
 
-    auto shape = MI_PY_CLASS(Shape, Object)
+    auto shape = MI_PY_TRAMPOLINE_CLASS(PyShape, Shape, Object)
+        .def(nb::init<const Properties &>(), "props"_a)
         .def("to_world", &Shape::to_world, D(Shape, to_world))
         .def("to_world_scalar", &Shape::to_world_scalar,
              D(Shape, to_world_scalar))
         .def("bbox", nb::overload_cast<>(
             &Shape::bbox, nb::const_), D(Shape, bbox))
         .def("bbox", nb::overload_cast<ScalarUInt32>(
-            &Shape::bbox, nb::const_), D(Shape, bbox, 2), "index"_a)
+            &Shape::bbox, nb::const_), D(Shape, bbox, 2), "prim_index"_a)
         .def("bbox", nb::overload_cast<ScalarUInt32, const ScalarBoundingBox3f &>(
-            &Shape::bbox, nb::const_), D(Shape, bbox, 3), "index"_a, "clip"_a)
+            &Shape::bbox, nb::const_), D(Shape, bbox, 3), "prim_index"_a, "clip"_a)
         .def_method(Shape, add_texture_attribute, "name"_a, "texture"_a)
         .def("texture_attribute", nb::overload_cast<std::string_view>(
             &Shape::texture_attribute), D(Shape, texture_attribute), "name"_a)

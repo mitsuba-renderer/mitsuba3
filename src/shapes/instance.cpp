@@ -125,7 +125,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex /*prim_index*/,
+                                   dr::uint32_array_t<FloatP> /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
@@ -137,7 +137,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex /*prim_index*/,
+                                     dr::uint32_array_t<FloatP> /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -167,7 +167,6 @@ public:
 
     void describe(ShapeIR &g) const override {
         g.kind = ShapeIR::Kind::Instance;
-        g.type = m_shape_type;
         g.ctx = this;
         // Column-major 3x4 affine (to_world[col*3 + row]). Each backend repacks
         // into its instance-descriptor convention.

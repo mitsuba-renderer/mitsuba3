@@ -515,7 +515,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex /*prim_index*/,
+                                   dr::uint32_array_t<FloatP> /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
@@ -559,7 +559,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex /*prim_index*/,
+                                     dr::uint32_array_t<FloatP> /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         return std::get<0>(intersect_impl<FloatP>(ray, active));

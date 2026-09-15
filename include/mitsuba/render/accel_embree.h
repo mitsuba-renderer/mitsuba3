@@ -12,10 +12,19 @@
 #include <tsl/robin_map.h>
 #include <vector>
 
-/// Forward-declare Embree's opaque scene type.
+/// Forward-declare Embree's opaque scene type and Dr.Jit's binding record.
 struct RTCSceneTy;
+struct JitIsectBinding;
 
 NAMESPACE_BEGIN(mitsuba)
+
+// Native state of a JIT variant's Embree scene
+struct EmbreeSceneState {
+    RTCSceneTy *scene = nullptr;
+
+    /// Recorded intersection function bindings of the custom shapes
+    std::vector<JitIsectBinding *> isect_bindings;
+};
 
 /// Vectorized CPU ray tracing acceleration via Embree
 template <typename Float, typename Spectrum>
@@ -55,6 +64,9 @@ struct EmbreeAccel {
 
     /// Native Embree scene, lifetime tied to ``accel_handle`` in JIT variants
     RTCSceneTy *accel = nullptr;
+
+    /// Bindings and the scene's deferred release (JIT variants only)
+    EmbreeSceneState *state = nullptr;
 
     /// Geometry IDs currently attached to ``accel`` (detached on rebuild)
     std::vector<unsigned int> geometries;

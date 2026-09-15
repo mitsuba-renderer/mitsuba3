@@ -20,67 +20,22 @@ MiOptixAccelData::~MiOptixAccelData() {
             jit_free(h.buffer);
 }
 
-/// Allocate (once) ``g``'s custom-primitive SBT data buffer in ``data_buffers``
-/// (indexed by the stable ``g.data_slot``) and return its stable device
-/// pointer, without writing its contents. Triangles, curves, and shape groups
-/// carry no SBT data here and return ``nullptr``. The SBT only needs the stable
-/// pointer at pack time; `optix_refresh_shape_data()` writes the data.
-static void *optix_shape_data_ptr(const ShapeIR &g,
-                                  ShapeDataBuffers &data_buffers) {
-    if (g.type == ShapeType::ShapeGroup ||
-        g.kind != ShapeIR::Kind::Custom)
-        return nullptr;
-    size_t data_size = g.data_size_bytes();
-    if (!data_size || !g.fill_data || g.data_slot == (uint32_t) -1)
-        return nullptr;
-
-    // Stable per-shape device buffer (allocated once, refilled in place).
-    if (g.data_slot >= data_buffers.size())
-        data_buffers.resize(g.data_slot + 1, nullptr);
-    void *&buf = data_buffers[g.data_slot];
-    if (!buf)
-        buf = jit_malloc(JitBackend::CUDA, data_size);
-    return buf;
-}
-
-void optix_refresh_shape_data(const SceneIR &sd,
-                              ShapeDataBuffers &data_buffers) {
-    // Refill every custom shape's SBT data buffer in place (allocating it on
-    // first use). The SBT records keep pointing at the same buffers, so updated
-    // per-primitive values reach the device without rebuilding the SBT. Order
-    // does not matter: each custom shape's buffer is independent.
-    for (const BlasEntry &b : sd.blases)
-        for (const ShapeIR &g : b.geoms) {
-            void *buf = optix_shape_data_ptr(g, data_buffers);
-            if (!buf)
-                continue;
-
-            // Fill host-visible shared scratch directly, upload it with an
-            // async queue-ordered copy.
-            size_t data_size = g.data_size_bytes();
-            void *shared = jit_malloc(JitBackend::CUDA, data_size, /* shared = */ 1);
-            g.fill_data(g.ctx, shared);
-            jit_memcpy_async(JitBackend::CUDA, buf, shared, data_size);
-            jit_free(shared);
-        }
-}
-
 void fill_hitgroup_records(const std::vector<BlasEntry> &blases,
                            HitGroupSbtRecord *out,
                            const OptixProgramGroup *pg,
-                           const OptixProgramGroupMapping &pg_mapping,
-                           ShapeDataBuffers &data_buffers) {
+                           const uint32_t *pg_index) {
     // The BLAS list is already in canonical (kind, slot) order, so packing one
     // record per geom in BLAS order produces the contiguous-per-BLAS SBT layout
     // whose base offsets prepare_ias() assigns to the IAS instances. Each record
     // carries the hit shape's registry id (jit_registry_id(g.ctx)), recovered as
-    // pi.shape on the device, plus the program group for the shape's type.
+    // pi.shape on the device. Custom shapes leave the header and data pointer
+    // to Dr.Jit, which writes them for the bound intersection routine.
     for (const BlasEntry &b : blases) {
         for (const ShapeIR &g : b.geoms) {
-            void *data = optix_shape_data_ptr(g, data_buffers);
-            HitGroupSbtRecord rec{ { jit_registry_id(g.ctx), data } };
-            uint32_t pg_index = pg_mapping.at(g.type);
-            jit_optix_check(optixSbtRecordPackHeader(pg[pg_index], &rec));
+            HitGroupSbtRecord rec{ { jit_registry_id(g.ctx), nullptr } };
+            if (!g.isect_func)
+                jit_optix_check(optixSbtRecordPackHeader(
+                    pg[pg_index[optix_pg_slot(g.kind)]], &rec));
             *out++ = rec;
         }
     }
@@ -101,7 +56,6 @@ static void optix_fill_build_input(OptixBuildInput &build_input,
                                    void *ptr_storage[2]) {
     static const uint32_t flags_disable_anyhit[1] =
         { OPTIX_GEOMETRY_FLAG_DISABLE_ANYHIT };
-    static const uint32_t flags_none[1] = { OPTIX_GEOMETRY_FLAG_NONE };
 
     switch (g.kind) {
         case ShapeIR::Kind::Triangles:
@@ -152,9 +106,7 @@ static void optix_fill_build_input(OptixBuildInput &build_input,
             build_input.customPrimitiveArray.aabbBuffers   = (CUdeviceptr *) &ptr_storage[0];
             build_input.customPrimitiveArray.numPrimitives = (unsigned int) g.prim_count;
             build_input.customPrimitiveArray.strideInBytes = 6 * sizeof(float);
-            build_input.customPrimitiveArray.flags         =
-                g.type == ShapeType::Ellipsoids ? flags_none
-                                                : flags_disable_anyhit;
+            build_input.customPrimitiveArray.flags         = flags_disable_anyhit;
             build_input.customPrimitiveArray.numSbtRecords = 1;
             break;
 

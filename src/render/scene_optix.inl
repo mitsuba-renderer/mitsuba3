@@ -8,24 +8,16 @@
 
 #include <nanothread/nanothread.h>
 
-#include <mitsuba/render/optix/common.h>
+#include "optix/common.h"
 #include <mitsuba/render/optix_api.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/scene_ir.h>
 #include <tsl/robin_map.h>
 
 #include "optix/accel.h"
-#include "librender_ptx.h"
 
 NAMESPACE_BEGIN(mitsuba)
 
-// -----------------------------------------------------------------------
-//  The scene is lowered once into the backend-neutral SceneIR
-//  (SceneIRBuilder::build(), scene_ir.h) -- the only templated build step, since
-//  it calls the virtual Shape::describe() and resolves ShapeGroups. Everything
-//  downstream consumes the non-templated SceneIR and is implemented in
-//  src/render/optix/accel.cpp.
-// -----------------------------------------------------------------------
 
 // Per scene OptiX state data structure (the by-value OptixAccel::state pimpl)
 struct MiOptixSceneState {
@@ -36,8 +28,8 @@ struct MiOptixSceneState {
         void* buffer = nullptr;  // Device-visible storage for IAS
         void* inputs = nullptr;  // Device-visible storage for OptixInstance array
     } ias_data;
-    /// Per-shape SBT data buffers, owned here; refreshed on rebuild().
-    ShapeDataBuffers shape_data;
+    /// Intersection function bindings of the custom shapes
+    std::vector<JitIsectBinding *> isect_bindings;
     /// Per-ShapeGroup GAS, index-aligned with scene->m_shapegroups (sized once;
     /// only dirty groups rebuild, keeping the freeze-visible handles stable).
     std::vector<MiOptixAccelData> group_accel;
@@ -49,8 +41,6 @@ struct MiOptixSceneState {
     /// State of the host scene whose record table a nested scene shares
     /// (see init()). The host outlives its nested scenes.
     MiOptixSceneState *host = nullptr;
-    /// Shapes in hit record order, to skip redundant record writes
-    std::vector<const void *> sbt_order;
 
     /// Copies of MiOptixConfig fields, cached to avoid a hash lookup + mutex lock.
     uint32_t config_key;
@@ -58,8 +48,8 @@ struct MiOptixSceneState {
     uint32_t pipeline_jit_index;
 };
 
-/// Maximum number of OptiX program groups that can be instantiated by any kernel
-#define MI_MAX_PROGRAM_GROUPS  8
+/// Program groups of a configuration: triangle meshes and the two curve types
+#define MI_MAX_PROGRAM_GROUPS  3
 
 
 /// Pipeline components (modules, program groups) for one set of shape-type
@@ -68,11 +58,11 @@ struct MiOptixSceneState {
 struct MiOptixConfig {
     OptixDeviceContext context;
     OptixPipelineCompileOptions pipeline_compile_options;
-    OptixModule main_module;
     OptixModule bspline_curve_module; /// Built-in module for B-spline curves
     OptixModule linear_curve_module; /// Built-in module for linear curves
     OptixProgramGroup pg[MI_MAX_PROGRAM_GROUPS];
-    OptixProgramGroupMapping pg_mapping;
+    /// Index into ``pg`` per geometry kind, see ``optix_pg_slot()``
+    uint32_t pg_index[MI_MAX_PROGRAM_GROUPS];
     uint32_t pipeline_jit_index;
     uint32_t key;
 };
@@ -81,19 +71,36 @@ struct MiOptixConfig {
 static tsl::robin_map<uint32_t, MiOptixConfig> optix_configs;
 static std::mutex optix_configs_lock;
 
-const MiOptixConfig &init_optix_config(uint32_t shape_types) {
-    // Instances/groups are handled by IAS traversal, not by intersection
-    // programs. Mask the bits so they don't spuriously add the CUSTOM flag
-    shape_types &= ~((uint32_t) ShapeType::Instance |
-                     (uint32_t) ShapeType::ShapeGroup);
-
-    uint32_t key = shape_types;
-    if ((key & +ShapeType::Rectangle) == +ShapeType::Rectangle) {
-        key &= ~ShapeType::Rectangle; // Rectangles are actually meshes
-        key |= +ShapeType::Mesh;
+/// Determine what kinds of shapes the scene contains
+static unsigned int optix_prim_flags(const SceneIR &sd) {
+    unsigned int prim_flags = 0;
+    for (const BlasEntry &b : sd.blases) {
+        for (const ShapeIR &g : b.geoms) {
+            switch (g.kind) {
+                case ShapeIR::Kind::Triangles:
+                case ShapeIR::Kind::TrianglesCulled:
+                    prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
+                    break;
+                case ShapeIR::Kind::BSplineCurve:
+                    prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE;
+                    break;
+                case ShapeIR::Kind::LinearCurve:
+                    prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
+                    break;
+                case ShapeIR::Kind::Custom:
+                    prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
+                    break;
+                default:
+                    break;
+            }
+        }
     }
+    return prim_flags;
+}
 
-    // Use flags as config index in optix_configs
+const MiOptixConfig &init_optix_config(unsigned int prim_flags) {
+    // Use the primitive flags as config index in optix_configs
+    uint32_t key = prim_flags;
     auto [it, success] = optix_configs.try_emplace(key);
     if (!success)
         return it->second;
@@ -133,27 +140,6 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     else
         config.pipeline_compile_options.exceptionFlags =
             OPTIX_EXCEPTION_FLAG_NONE;
-
-    // Compute flags informing OptiX of the present shape types
-    unsigned int prim_flags = 0, st = shape_types;
-    if (st & ShapeType::Mesh) {
-        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_TRIANGLE;
-        st &= ~(ShapeType::Mesh | ShapeType::Rectangle);
-    }
-
-    if (st & ShapeType::BSplineCurve) {
-        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE;
-        st &= ~ShapeType::BSplineCurve;
-    }
-
-    if (st & ShapeType::LinearCurve) {
-        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR;
-        st &= ~ShapeType::LinearCurve;
-
-    }
-
-    if (st)
-        prim_flags |= OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM;
 
     unsigned int accel_build_flags = OPTIX_BUILD_FLAG_PREFER_FAST_TRACE |
                                      OPTIX_BUILD_FLAG_ALLOW_COMPACTION;
@@ -204,50 +190,6 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
                                     &options, &config.linear_curve_module));
     }
 
-    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_CUSTOM) {
-        OptixTask task;
-        check_log(optixModuleCreateWithTasks(
-            config.context,
-            &module_compile_options,
-            &config.pipeline_compile_options,
-            (const char *)optix_rt_ptx,
-            optix_rt_ptx_size,
-            optix_log,
-            &optix_log_size,
-            &config.main_module,
-            &task
-        ));
-
-        std::function<void(OptixTask)> execute_task = [&](OptixTask task) {
-            unsigned int max_new_tasks = std::max(pool_size(), 1u);
-
-            std::unique_ptr<OptixTask[]> new_tasks =
-                std::make_unique<OptixTask[]>(max_new_tasks);
-            unsigned int new_task_count = 0;
-            optixTaskExecute(task, new_tasks.get(), max_new_tasks,
-                             &new_task_count);
-
-            parallel_for(
-                drjit::blocked_range<size_t>(0, new_task_count, 1),
-                [&](const drjit::blocked_range<size_t> &range) {
-                    for (auto i = range.begin(); i != range.end(); ++i) {
-                        OptixTask new_task = new_tasks[i];
-                        execute_task(new_task);
-                    }
-                }
-            );
-        };
-        execute_task(task);
-
-        int compilation_state = 0;
-        check_log(
-            optixModuleGetCompilationState(config.main_module, &compilation_state));
-        if (compilation_state != OPTIX_MODULE_COMPILE_STATE_COMPLETED)
-            Throw("Optix configuration initialization failed! The OptiX module "
-                  "compilation did not complete successfully. The module's "
-                  "compilation state is: %#06x", compilation_state);
-    }
-
     // =====================================================
     // Generate program groups
     // =====================================================
@@ -260,57 +202,19 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     // First hitgroup is for triangle meshes. We always create it, as
     // empty pipelines cause linker errors.
     pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-    config.pg_mapping[ShapeType::Mesh] = pg_count++;
+    config.pg_index[optix_pg_slot(ShapeIR::Kind::Triangles)] = pg_count++;
 
-    if (shape_types & (uint32_t) ShapeType::BSplineCurve) {
+    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_CUBIC_BSPLINE) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.moduleIS = config.bspline_curve_module;
-        config.pg_mapping[ShapeType::BSplineCurve] = pg_count++;
+        config.pg_index[optix_pg_slot(ShapeIR::Kind::BSplineCurve)] = pg_count++;
     }
 
-    if (shape_types & (uint32_t) ShapeType::LinearCurve) {
+    if (prim_flags & OPTIX_PRIMITIVE_TYPE_FLAGS_ROUND_LINEAR) {
         pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
         pgd[pg_count].hitgroup.moduleIS = config.linear_curve_module;
-        config.pg_mapping[ShapeType::LinearCurve] = pg_count++;
+        config.pg_index[optix_pg_slot(ShapeIR::Kind::LinearCurve)] = pg_count++;
     }
-
-    if (shape_types & (uint32_t) ShapeType::Sphere) {
-        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sphere";
-        pgd[pg_count].hitgroup.moduleIS = config.main_module;
-        config.pg_mapping[ShapeType::Sphere] = pg_count++;
-    }
-
-    if (shape_types & (uint32_t) ShapeType::Disk) {
-        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__disk";
-        pgd[pg_count].hitgroup.moduleIS = config.main_module;
-        config.pg_mapping[ShapeType::Disk] = pg_count++;
-    }
-
-    if (shape_types & (uint32_t) ShapeType::Cylinder) {
-        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__cylinder";
-        pgd[pg_count].hitgroup.moduleIS = config.main_module;
-        config.pg_mapping[ShapeType::Cylinder] = pg_count++;
-    }
-
-    if (shape_types & (uint32_t) ShapeType::SDFGrid) {
-        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__sdfgrid";
-        pgd[pg_count].hitgroup.moduleIS = config.main_module;
-        config.pg_mapping[ShapeType::SDFGrid] = pg_count++;
-    }
-
-    if (shape_types & (uint32_t) ShapeType::Ellipsoids) {
-        pgd[pg_count].kind = OPTIX_PROGRAM_GROUP_KIND_HITGROUP;
-        pgd[pg_count].hitgroup.entryFunctionNameIS = "__intersection__ellipsoids";
-        pgd[pg_count].hitgroup.moduleIS = config.main_module;
-        config.pg_mapping[ShapeType::Ellipsoids] = pg_count++;
-    }
-
-    // Note: adding further hit groups will likely require bumping
-    // MI_MAX_PROGRAM_GROUPS
 
     optix_log_size = sizeof(optix_log);
     check_log(optixProgramGroupCreate(
@@ -329,7 +233,7 @@ const MiOptixConfig &init_optix_config(uint32_t shape_types) {
     jit_set_scope(JitBackend::CUDA, 0);
     config.pipeline_jit_index = jit_optix_configure_pipeline(
         &config.pipeline_compile_options,
-        config.main_module,
+        nullptr,
         config.pg,
         pg_count
     );
@@ -351,23 +255,28 @@ static size_t optix_record_count(const SceneIR &sd) {
 /// ``sbt_record_base``. The table is the host scene's when ``s`` is nested.
 static void optix_write_sbt_records(MiOptixSceneState &s, const SceneIR &sd,
                                     const MiOptixConfig &config) {
-    std::vector<const void *> order;
-    for (const BlasEntry &blas : sd.blases)
-        for (const ShapeIR &g : blas.geoms)
-            order.push_back(g.ctx);
-    if (order == s.sbt_order)
-        return;
-    s.sbt_order = std::move(order);
-
-    size_t size = s.sbt_order.size() * sizeof(HitGroupSbtRecord);
+    size_t size = optix_record_count(sd) * sizeof(HitGroupSbtRecord);
     auto *staging = (HitGroupSbtRecord *) jit_malloc(JitBackend::CUDA, size,
                                                      /* shared = */ 1);
-    fill_hitgroup_records(sd.blases, staging, config.pg, config.pg_mapping,
-                          s.shape_data);
+    fill_hitgroup_records(sd.blases, staging, config.pg, config.pg_index);
+
+    for (JitIsectBinding *binding : s.isect_bindings)
+        jit_isect_unbind(binding);
+    s.isect_bindings.clear();
+
+    uint32_t record_index = s.sbt_record_base;
+    for (const BlasEntry &b : sd.blases) {
+        for (const ShapeIR &g : b.geoms) {
+            if (g.isect_func)
+                s.isect_bindings.push_back(jit_isect_bind(
+                    g.isect_func, s.sbt_jit_index, record_index, nullptr));
+            record_index++;
+        }
+    }
 
     const OptixShaderBindingTable &sbt = s.host ? s.host->sbt : s.sbt;
-    auto *table = (HitGroupSbtRecord *) sbt.hitgroupRecordBase;
-    jit_memcpy_async(JitBackend::CUDA, table + s.sbt_record_base, staging, size);
+    auto *table = (HitGroupSbtRecord *) sbt.hitgroupRecordBase + s.sbt_record_base;
+    jit_memcpy_async(JitBackend::CUDA, table, staging, size);
     jit_free(staging);
 }
 
@@ -389,11 +298,6 @@ static void optix_rebuild_accel(
 
     if (!scene->shapes().empty()) {
         scoped_optix_context guard;
-
-        // Refresh custom-shape SBT data in place: the SBT keeps pointing at the
-        // same per-shape buffers, so updated per-primitive values reach the
-        // device without rebuilding it.
-        optix_refresh_shape_data(sd, s.shape_data);
 
         // Build one GAS per top-level BLAS, then per ShapeGroup. The group GAS
         // lives in the scene state (sized once, index-aligned with
@@ -504,8 +408,8 @@ static void optix_rebuild_accel(
                 auto *s = (MiOptixSceneState *) payload;
                 jit_free(s->ias_data.buffer);
                 jit_free(s->ias_data.inputs);
-                for (void *buf : s->shape_data)
-                    jit_free(buf);
+                for (JitIsectBinding *binding : s->isect_bindings)
+                    jit_isect_unbind(binding);
                 delete s;
             }
         },
@@ -568,10 +472,9 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 
         s.host = &s2;
         s.sbt_record_base = (uint32_t) prev_count;
-        optix_write_sbt_records(s, sd, config);
-
         s.sbt_jit_index = s2.sbt_jit_index;
         jit_var_inc_ref(s.sbt_jit_index);
+        optix_write_sbt_records(s, sd, config);
 
         s.config_key = s2.config_key;
         s.context = s2.context;
@@ -582,7 +485,7 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         // =====================================================
 
         const MiOptixConfig &config =
-            init_optix_config(scene->shape_types());
+            init_optix_config(optix_prim_flags(sd));
 
         // =====================================================
         //  Shader Binding Table generation
@@ -603,9 +506,10 @@ void OptixAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         s.sbt.hitgroupRecordCount = (unsigned int) count;
         s.sbt.hitgroupRecordBase = jit_malloc(
             JitBackend::CUDA, count * sizeof(HitGroupSbtRecord));
-        optix_write_sbt_records(s, sd, config);
 
+        // The records reference the SBT variable as their scene key
         s.sbt_jit_index = jit_optix_configure_sbt(&s.sbt, config.pipeline_jit_index);
+        optix_write_sbt_records(s, sd, config);
         s.config_key = config.key;
         s.context = config.context;
         s.pipeline_jit_index = config.pipeline_jit_index;

@@ -10,7 +10,6 @@
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/scene_ir.h>
 #include "metal/accel.h"
-#include "metal/shapes.h"
 
 NAMESPACE_BEGIN(mitsuba)
 

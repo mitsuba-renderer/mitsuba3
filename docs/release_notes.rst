@@ -259,6 +259,37 @@ Mitsuba 3.10.0
   transformations, the ``flip_normals`` flag, and inconsistencies between
   ray intersection and parameterization routines.
 
+- **Custom shapes**. Mitsuba and Dr.Jit now implement custom shapes by tracing
+  the underlying ``ray_intersect_preliminary()`` routine symbolically. As a
+  consequence, users can subclass ``mi.Shape`` and easily introduce custom
+  shapes. Mitsuba's ray tracing backends no longer need to ship hand-written
+  OptiX/Metal intersection shaders for the analytic shapes (``sphere``,
+  ``disk``, ``cylinder``, ``ellipsoids``, ``sdfgrid``). See the
+  :ref:`custom shape tutorial <sec-other-tutos>` for an example.
+
+- **Custom shapes**. Custom shapes can now be implemented entirely in Python by
+  subclassing :py:class:`mi.Shape <mitsuba.Shape>`. Dr.Jit symbolically traces
+  the underlying :py:func:`ray_intersect_preliminary()
+  <mitsuba.Shape.ray_intersect_preliminary>` function and generates efficient
+  CPU/GPU code targeting OptiX, Metal, and Embree/LLVM.
+
+  Shapes were previously an awkward special case in Mitsuba's otherwise
+  extensible plugin system that required backend-specific native
+  implementations. This change removes that long-standing limitation. A
+  :ref:`companion Jupyter notebook <sec-other-tutos>` demonstrates the new
+  feature with a Mandelbulb fractal implemented in a few lines of Python.
+
+  A shape may represent a single geometric primitive or an aggregate containing
+  many sub-primitives. All Mitsuba shapes with custom intersection routines
+  (``sphere``, ``disk``, ``cylinder``, ``ellipsoids``, and ``sdfgrid``) were
+  migrated to the new interface as part of this change.
+
+  This unification removes roughly 3.3K lines of code from Mitsuba. Previously,
+  shapes had to provide four versions of each intersection routine: a C++
+  template, an Embree packet implementation, OptiX shaders with precompiled
+  PTX, and MSL libraries with precompiled binaries. They additionally required
+  backend-specific POD layouts and data-transfer logic.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

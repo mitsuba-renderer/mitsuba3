@@ -113,3 +113,111 @@ def test03_shape_set_bsdf(variants_all_backends_once):
     custom_shape.set_bsdf(new_bsdf)
     assert mi.has_flag(custom_shape.bsdf().flags(), mi.BSDFFlags.DeltaReflection)
     assert custom_shape.called
+
+
+def make_python_spheres():
+    """A row of spheres implemented as one Python shape with several
+    primitives. The JIT variants intersect it through the recording of its
+    ``ray_intersect_preliminary()``, which receives the primitive index."""
+    class PySpheres(mi.Shape):
+        def __init__(self, props):
+            super().__init__(props)
+            self.count = props.get('count', 1)
+            self.radius_s = props.get('radius', 1.0)
+
+            # Opaque parameters are captured by the recording instead of
+            # being baked into the compiled intersection code
+            self.radius = mi.Float(self.radius_s)
+            dr.make_opaque(self.radius)
+
+        def primitive_count(self):
+            return self.count
+
+        def bbox(self, prim_index=None):
+            lo = 0 if prim_index is None else 2 * prim_index
+            hi = 2 * (self.count - 1) if prim_index is None else lo
+            r = self.radius_s
+            return mi.ScalarBoundingBox3f([lo - r, -r, -r], [hi + r, r, r])
+
+        def center(self, prim_index):
+            return mi.Point3f(2 * mi.Float(prim_index), 0, 0)
+
+        def ray_intersect_preliminary(self, ray, prim_index=0, active=True):
+            o = ray.o - self.center(prim_index)
+            a = dr.squared_norm(ray.d)
+            b = 2 * dr.dot(o, ray.d)
+            c = dr.squared_norm(o) - self.radius**2
+            disc = b*b - 4*a*c
+            sq = dr.sqrt(dr.maximum(disc, 0))
+            t0, t1 = (-b - sq) / (2*a), (-b + sq) / (2*a)
+            t = dr.select(t0 >= 0, t0, t1)
+
+            pi = dr.zeros(mi.PreliminaryIntersection3f)
+            pi.valid = active & (disc >= 0) & (t >= 0) & (t <= ray.maxt)
+            pi.t = dr.select(pi.valid, t, dr.inf)
+            pi.prim_index = prim_index
+            return pi
+
+        def compute_surface_interaction(self, ray, pi, ray_flags, active):
+            si = dr.zeros(mi.SurfaceInteraction3f)
+            si.t = dr.select(active, pi.t, dr.inf)
+            si.p = ray(si.t)
+            si.n = si.sh_frame.n = dr.normalize(si.p - self.center(pi.prim_index))
+            si.prim_index = pi.prim_index
+            si.shape = pi.shape
+            return si
+
+    mi.register_shape('pyspheres', PySpheres)
+
+
+def test04_python_shape(variants_vec_rgb):
+    """The backend intersects each primitive of a Python shape"""
+    make_python_spheres()
+    r = 0.7
+    scene = mi.load_dict({'type': 'scene', 'shape': {
+        'type': 'pyspheres', 'count': 3, 'radius': r}})
+
+    shape = scene.shapes()[0]
+    bounds = mi.Shape.bbox(shape, prim_index=1)
+    assert dr.allclose(bounds.min, [2 - r, -r, -r])
+    assert dr.allclose(bounds.max, [2 + r, r, r])
+    clip = mi.ScalarBoundingBox3f([2, 0, 0], [3, 1, 1])
+    clipped = mi.Shape.bbox(shape, prim_index=1, clip=clip)
+    assert dr.allclose(clipped.min, [2, 0, 0])
+    assert dr.allclose(clipped.max, [2 + r, r, r])
+
+    # Rays along +z past the spheres at x = 0, 2, 4
+    x = dr.linspace(mi.Float, -1, 5, 61)
+    ray = mi.Ray3f(mi.Point3f(x, 0.2, -5), mi.Vector3f(0, 0, 1))
+    index = dr.clip(dr.round(x / 2), 0, 2)
+    d = dr.sqrt((x - 2 * index)**2 + 0.2**2)
+    hit = d < r
+    t_ref = 5 - dr.safe_sqrt(r**2 - d**2)
+
+    # The second round runs after the compiled callbacks were dropped
+    for i in range(2):
+        si = scene.ray_intersect(ray)
+        assert dr.all(si.is_valid() == hit)
+        assert dr.allclose(dr.select(hit, si.t, t_ref), t_ref)
+        assert dr.all(dr.select(hit, si.prim_index, mi.UInt32(index)) == mi.UInt32(index))
+        assert dr.all(scene.ray_test(ray) == hit)
+        dr.flush_kernel_cache()
+
+
+def test05_python_shape_side_effect(variants_vec_backends_once_rgb):
+    """The recorded intersection routine must not scatter"""
+    class BadShape(mi.Shape):
+        def __init__(self, props):
+            super().__init__(props)
+            self.buf = dr.zeros(mi.Float, 1)
+
+        def bbox(self, *args):
+            return mi.ScalarBoundingBox3f([-1, -1, -1], [1, 1, 1])
+
+        def ray_intersect_preliminary(self, ray, prim_index=0, active=True):
+            dr.scatter(self.buf, ray.maxt, 0)
+            return dr.zeros(mi.PreliminaryIntersection3f)
+
+    mi.register_shape('badshape', BadShape)
+    with pytest.raises(RuntimeError, match='side effect'):
+        mi.load_dict({'type': 'scene', 'shape': {'type': 'badshape'}})

@@ -19,67 +19,6 @@ static void embree_error_callback(void * /*user_ptr */, RTCError code, const cha
     Log(Warn, "Embree device error %i: %s.", (int) code, str);
 }
 
-/// Wraps rtcOccluded16 when Dr.Jit operates on vectors of length 32
-void rtcOccluded32(const int *valid, RTCScene scene,
-                   RTCIntersectContext *context, uint32_t *in) {
-    constexpr size_t N = 16, M = 2;
-
-    RTC_ALIGN(N * 4) uint32_t tmp[N * 12];
-
-    for (size_t i = 0; i < M; ++i) {
-        uint32_t *ptr_in  = in + N * i,
-                 *ptr_tmp = tmp;
-
-        for (size_t j = 0; j < 12; ++j) {
-            memcpy(ptr_tmp, ptr_in, N * sizeof(uint32_t));
-            ptr_in += N * M;
-            ptr_tmp += N;
-        }
-
-        static_assert(sizeof(tmp) == sizeof(RTCRay16));
-        rtcOccluded16(valid + N * i, scene, context, (RTCRay16 *) tmp);
-
-        // Copy back 'tfar' and the user flags word
-        memcpy(in + N * (i + M * 8), tmp + N * 8, N * sizeof(uint32_t));
-        memcpy(in + N * (i + M * 11), tmp + N * 11, N * sizeof(uint32_t));
-    }
-}
-
-/// Wraps rtcIntersect16 when Dr.Jit operates on vectors of length 32
-void rtcIntersect32(const int *valid, RTCScene scene,
-                    RTCIntersectContext *context, uint32_t *in) {
-    constexpr size_t N = 16, M = 2;
-
-    RTC_ALIGN(N * 4) uint32_t tmp[N * 20];
-
-    for (size_t i = 0; i < M; ++i) {
-        uint32_t *ptr_in  = in + N * i,
-                 *ptr_tmp = tmp;
-
-        for (size_t j = 0; j < 20; ++j) {
-            memcpy(ptr_tmp, ptr_in, N * sizeof(uint32_t));
-            ptr_in += N * M;
-            ptr_tmp += N;
-        }
-
-        memcpy(tmp + N * 17, in + N * (i + M * 17), N * sizeof(uint32_t));
-
-        static_assert(sizeof(tmp) == sizeof(RTCRayHit16));
-        rtcIntersect16(valid + N * i, scene, context, (RTCRayHit16 *) tmp);
-
-        memcpy(in + N * (i + M * 8), tmp + N * 8, N * sizeof(uint32_t));
-
-        ptr_in  = in + N * (i + M * 12);
-        ptr_tmp = tmp + N * 12;
-
-        for (int j = 0; j < 8; ++j) {
-            memcpy(ptr_in, ptr_tmp, N * sizeof(uint32_t));
-            ptr_in += N * 2;
-            ptr_tmp += N;
-        }
-    }
-}
-
 // EllipsoidsMesh: drop back-facing triangle hits (d·Ng > 0).
 template <size_t N, typename RTCRay_, typename RTCHit_>
 static void embree_backface_cull_packet(const RTCFilterFunctionNArguments *args,
@@ -156,27 +95,69 @@ static void embree_backface_cull_null(const RTCFilterFunctionNArguments *args) {
     embree_null_filter(args);
 }
 
+/// Embree entry points and device property for a Dr.Jit vector width
+struct EmbreeWidthInfo {
+    RTCDeviceProperty native;
+    void *intersect, *occluded;
+};
+
+static bool embree_width_info(uint32_t width, EmbreeWidthInfo &info) {
+    switch (width) {
+        case 4:  info = { RTC_DEVICE_PROPERTY_NATIVE_RAY4_SUPPORTED,  (void *) rtcIntersect4,  (void *) rtcOccluded4 };  return true;
+        case 8:  info = { RTC_DEVICE_PROPERTY_NATIVE_RAY8_SUPPORTED,  (void *) rtcIntersect8,  (void *) rtcOccluded8 };  return true;
+        case 16: info = { RTC_DEVICE_PROPERTY_NATIVE_RAY16_SUPPORTED, (void *) rtcIntersect16, (void *) rtcOccluded16 }; return true;
+        default: return false;
+    }
+}
+
+/// Release the bindings of a JIT variant's scene, then the scene itself once
+/// the ray tracing kernels in flight have completed
+static void embree_release_state(EmbreeSceneState *s) {
+    for (JitIsectBinding *binding : s->isect_bindings)
+        jit_isect_unbind(binding);
+    s->isect_bindings.clear();
+
+    jit_enqueue_host_func(
+        JitBackend::LLVM,
+        [](void *p) {
+            auto *s = (EmbreeSceneState *) p;
+            rtcReleaseScene(s->scene);
+            delete s;
+        },
+        s);
+}
+
 /// Build one Embree geometry from a `ShapeIR`.
 template <typename Float, typename Spectrum>
 static RTCGeometry
-embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
-                     const tsl::robin_map<const void *, RTCSceneTy *,
-                                          PointerHasher> &group_scenes) {
-    ShapeIR g;
-    shape->describe(g);
-
+embree_make_geometry(RTCDevice device, const ShapeIR &g,
+                     EmbreeAccel<Float, Spectrum> &accel) {
+    using Shape = Shape<Float, Spectrum>;
+    const Shape *shape = (const Shape *) g.ctx;
     bool null = shape->has_null();
-    uint32_t visibility_mask = accel_mask(shape->visibility(), null);
 
     switch (g.kind) {
         case ShapeIR::Kind::Custom: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_USER);
-            rtcSetGeometryMask(geom, visibility_mask);
+            rtcSetGeometryMask(geom, g.visibility_mask);
             rtcSetGeometryUserPrimitiveCount(geom, (unsigned int) g.prim_count);
-            rtcSetGeometryUserData(geom, (void *) shape);
-            rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
-            rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
-            rtcSetGeometryOccludedFunction(geom, embree_occluded<Float, Spectrum>);
+            if constexpr (dr::is_llvm_v<Float>) {
+                // Dr.Jit compiles the shape's recorded intersection routine.
+                JitIsectBinding *binding = jit_isect_bind(
+                    g.isect_func, (uintptr_t) accel.accel, 0, (void *) shape);
+                accel.state->isect_bindings.push_back(binding);
+
+                rtcSetGeometryUserData(geom, binding);
+                rtcSetGeometryBoundsFunction(geom, embree_bbox_jit<Float, Spectrum>, nullptr);
+                rtcSetGeometryIntersectFunction(geom, embree_intersect_jit);
+                rtcSetGeometryOccludedFunction(
+                    geom, null ? embree_occluded_null_jit : embree_occluded_jit);
+            } else {
+                rtcSetGeometryUserData(geom, (void *) shape);
+                rtcSetGeometryBoundsFunction(geom, embree_bbox<Float, Spectrum>, nullptr);
+                rtcSetGeometryIntersectFunction(geom, embree_intersect<Float, Spectrum>);
+                rtcSetGeometryOccludedFunction(geom, embree_occluded<Float, Spectrum>);
+            }
             rtcCommitGeometry(geom);
             return geom;
         }
@@ -184,7 +165,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
         case ShapeIR::Kind::Triangles:
         case ShapeIR::Kind::TrianglesCulled: {
             RTCGeometry geom = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_TRIANGLE);
-            rtcSetGeometryMask(geom, visibility_mask);
+            rtcSetGeometryMask(geom, g.visibility_mask);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT3, g.vertex_ptr, 0,
                                        g.vertex_stride, g.vertex_count);
@@ -210,7 +191,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 device, g.kind == ShapeIR::Kind::BSplineCurve
                             ? RTC_GEOMETRY_TYPE_ROUND_BSPLINE_CURVE
                             : RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE);
-            rtcSetGeometryMask(geom, visibility_mask);
+            rtcSetGeometryMask(geom, g.visibility_mask);
             rtcSetSharedGeometryBuffer(geom, RTC_BUFFER_TYPE_VERTEX, 0,
                                        RTC_FORMAT_FLOAT4, g.cp_ptr, 0,
                                        4 * sizeof(float), g.cp_count);
@@ -225,7 +206,7 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
         }
 
         case ShapeIR::Kind::Instance: {
-            RTCScene nested = group_scenes.at(g.group_id);
+            RTCScene nested = accel.group_scenes.at(g.group_id);
 
             RTCGeometry inst = rtcNewGeometry(device, RTC_GEOMETRY_TYPE_INSTANCE);
             rtcSetGeometryInstancedScene(inst, nested);
@@ -238,8 +219,8 @@ embree_make_geometry(RTCDevice device, const Shape<Float, Spectrum> *shape,
                 M[col * 4 + 3] = (col == 3) ? 1.f : 0.f;
             }
             rtcSetGeometryTransform(inst, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, M);
-            // Scalar-mode hits resolve nested geometry through the group
-            rtcSetGeometryUserData(inst, (void *) g.group_id);
+            // Scalar-mode hits resolve nested geometry through this scene
+            rtcSetGeometryUserData(inst, (void *) nested);
             rtcCommitGeometry(inst);
             return inst;
         }
@@ -268,6 +249,21 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
         rtcSetDeviceErrorFunction(embree_device, embree_error_callback, nullptr);
     }
 
+    if constexpr (dr::is_llvm_v<Float>) {
+        uint32_t width = jit_llvm_vector_width();
+        EmbreeWidthInfo info;
+        if (!embree_width_info(width, info))
+            Throw("EmbreeAccel::init(): Dr.Jit is configured for vectors "
+                  "of width %u, but Embree only supports widths 4, 8, "
+                  "and 16!", width);
+        if (!rtcGetDeviceProperty(embree_device, info.native))
+            Throw("EmbreeAccel::init(): Dr.Jit is configured for vectors of "
+                  "width %u, but Embree was built without native support "
+                  "for %u-wide ray packets on this machine!", width, width);
+        func_ptr = info.intersect;
+        occlude_func_ptr = info.occluded;
+    }
+
     Timer timer;
 
     // A nested scene may be built while its host scene renders, which
@@ -279,6 +275,24 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
     bool use_robust = props.get<bool>("embree_use_robust_intersections", false);
     rtcSetSceneFlags(accel, use_robust ? RTC_SCENE_FLAG_ROBUST : RTC_SCENE_FLAG_NONE);
 
+    // The RTCScene pointer and entry points stay stable across rebuilds, so
+    // the handles are initialized once. The cleanup callback releases the
+    // state (bindings and native scene) once no pending ray tracing call
+    // references the scene anymore.
+    if constexpr (dr::is_llvm_v<Float>) {
+        state = new EmbreeSceneState();
+        state->scene = accel;
+        init_mapped_handle(
+            accel_handle, (void *) accel,
+            [](uint32_t /* index */, int free, void *payload) {
+                if (free)
+                    embree_release_state((EmbreeSceneState *) payload);
+            },
+            (void *) state);
+        map_func_handles(func_handle, occlude_handle, func_ptr,
+                         occlude_func_ptr);
+    }
+
     ScopedPhase phase(ProfilerPhase::InitAccel);
     rebuild(scene);
 
@@ -289,8 +303,18 @@ void EmbreeAccel<Float, Spectrum>::init(Scene<Float, Spectrum> *scene,
 template <typename Float, typename Spectrum>
 void EmbreeAccel<Float, Spectrum>::rebuild(
     Scene<Float, Spectrum> *scene) {
-    if constexpr (dr::is_llvm_v<Float>)
+    // Lower the scene once. Embree only needs the per-shape records, not the
+    // BLAS partitioning, and keeps the instance records for its own instances
+    SceneIR sd = SceneIRBuilder<Float, Spectrum>::build(scene);
+
+    if constexpr (dr::is_llvm_v<Float>) {
         dr::sync_thread();
+
+        // The bindings belong to the geometries detached below
+        for (JitIsectBinding *binding : state->isect_bindings)
+            jit_isect_unbind(binding);
+        state->isect_bindings.clear();
+    }
 
     for (unsigned int geo : geometries)
         rtcDetachGeometry(accel, geo);
@@ -302,49 +326,53 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
         rtcReleaseScene(kv.second);
     group_scenes.clear();
 
+    const auto &groups = scene->shapegroups();
     std::vector<RTCScene> nested_scenes;
-    nested_scenes.reserve(scene->m_shapegroups.size());
-    for (auto &group : scene->m_shapegroups) {
+    nested_scenes.reserve(groups.size());
+    for (size_t i = 0; i < groups.size(); ++i) {
         RTCScene nested = rtcNewScene(embree_device);
-        for (const ref<Shape> &child : group->shapes()) {
-            RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
-                embree_device, child.get(), group_scenes);
-            if constexpr (dr::is_llvm_v<Float>)
-                // The child's registry id doubles as its geometry ID, so a
-                // nested hit directly reports the child shape
-                rtcAttachGeometryByID(nested, cg,
-                                      jit_registry_id(child.get()));
-            else
-                rtcAttachGeometry(nested, cg);
-            rtcReleaseGeometry(cg);
+        for (uint32_t bi : sd.group_blases[i]) {
+            for (const ShapeIR &g : sd.blases[bi].geoms) {
+                RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
+                    embree_device, g, *this);
+                if constexpr (dr::is_llvm_v<Float>)
+                    // The child's registry id doubles as its geometry ID, so a
+                    // nested hit directly reports the child shape
+                    rtcAttachGeometryByID(nested, cg, jit_registry_id(g.ctx));
+                else
+                    rtcAttachGeometry(nested, cg);
+                rtcReleaseGeometry(cg);
+            }
         }
         // Publish the uncommitted nested scene for top-level Instances.
-        group_scenes[(const void *) group.get()] = nested;
+        group_scenes[(const void *) groups[i].get()] = nested;
         nested_scenes.push_back(nested);
     }
 
     // Attach top-level geometry using the explicit ID scheme described in
     // accel_embree.h
-    instance_count = 0;
-    for (Shape *shape : scene->m_shapes)
-        instance_count += shape->is_instance() ? 1 : 0;
-
-    uint32_t instance_index = 0, scalar_id = instance_count;
-    for (Shape *shape : scene->m_shapes) {
+    auto attach = [&](const ShapeIR &g, unsigned int id) {
         RTCGeometry geom = embree_make_geometry<Float, Spectrum>(
-            embree_device, shape, group_scenes);
-        unsigned int id;
-        if (shape->is_instance()) {
-            id = instance_index++;
-        } else {
-            if constexpr (dr::is_llvm_v<Float>)
-                id = instance_count + jit_registry_id(shape);
-            else
-                id = scalar_id++;
-        }
+            embree_device, g, *this);
         rtcAttachGeometryByID(accel, geom, id);
         geometries.push_back(id);
         rtcReleaseGeometry(geom);
+    };
+
+    instance_count = (uint32_t) sd.instance_shapes.size();
+    for (uint32_t i = 0; i < instance_count; ++i)
+        attach(sd.instance_shapes[i], i);
+
+    uint32_t scalar_id = instance_count;
+    for (uint32_t bi : sd.top_blases) {
+        for (const ShapeIR &g : sd.blases[bi].geoms) {
+            unsigned int id;
+            if constexpr (dr::is_llvm_v<Float>)
+                id = instance_count + jit_registry_id(g.ctx);
+            else
+                id = scalar_id++;
+            attach(g, id);
+        }
     }
 
     // One sync for the whole rebuild: all geometry (nested + top-level) is now
@@ -369,40 +397,6 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
         );
     }
 
-    // The RTCScene pointer and entry points stay stable across rebuilds, so
-    // initialize the handles only once. The cleanup callback keeps the native
-    // scene alive until pending ray-tracing kernels finish.
-    if constexpr (dr::is_llvm_v<Float>) {
-        if (!accel_handle.index()) {
-            init_mapped_handle(
-                accel_handle, (void *) accel,
-                [](uint32_t /* index */, int free, void *payload) {
-                    if (free)
-                        jit_enqueue_host_func(
-                            JitBackend::LLVM,
-                            [](void *p) { rtcReleaseScene((RTCScene) p); },
-                            payload);
-                },
-                (void *) accel);
-
-            // The LLVM vector width is fixed over the scene's lifetime.
-            uint32_t jit_width = jit_llvm_vector_width();
-            switch (jit_width) {
-                case 1:  func_ptr = (void *) rtcIntersect1;  occlude_func_ptr = (void *) rtcOccluded1;  break;
-                case 4:  func_ptr = (void *) rtcIntersect4;  occlude_func_ptr = (void *) rtcOccluded4;  break;
-                case 8:  func_ptr = (void *) rtcIntersect8;  occlude_func_ptr = (void *) rtcOccluded8;  break;
-                case 16: func_ptr = (void *) rtcIntersect16; occlude_func_ptr = (void *) rtcOccluded16; break;
-                case 32: func_ptr = (void *) rtcIntersect32; occlude_func_ptr = (void *) rtcOccluded32; break;
-                default:
-                    Throw("EmbreeAccel::rebuild(): Dr.Jit is configured for "
-                          "vectors of width %u, which is not supported by "
-                          "Embree!", jit_width);
-            }
-
-            map_func_handles(func_handle, occlude_handle, func_ptr,
-                             occlude_func_ptr);
-        }
-    }
 }
 
 template <typename Float, typename Spectrum>
@@ -414,10 +408,11 @@ void EmbreeAccel<Float, Spectrum>::release() {
         // scene.
         dr::sync_thread();
 
-        // Drop the reference count of the handle variable. This will trigger
-        // the deferred release of the Embree scene if no ray tracing calls are
-        // pending.
+        // Drop the reference count of the handle variable. Its callback
+        // releases the state (bindings and native scene) once no ray tracing
+        // call referencing the scene is pending anymore.
         accel_handle = 0;
+        state = nullptr;
     } else {
         // Immediately release Embree structures in scalar mode.
         rtcReleaseScene(accel);
@@ -479,12 +474,12 @@ EmbreeAccel<Float, Spectrum>::ray_intersect_preliminary(
             uint32_t inst_index = rh.hit.instID[0];
 
             if (inst_index != RTC_INVALID_GEOMETRY_ID) {
-                // Instanced hit: the top-level ID is the instance index, and
-                // the nested geometry ID identifies the leaf child within the
-                // shape group (positional attachment order)
-                const auto *group = (const ShapeGroup<Float, Spectrum> *)
-                    rtcGetGeometryUserData(rtcGetGeometry(accel, inst_index));
-                pi.shape = group->shapes()[geom_id].get();
+                // Instanced hit: the top-level ID is the instance index, whose
+                // geometry stores the nested scene that reports the leaf shape
+                RTCScene nested = (RTCScene) rtcGetGeometryUserData(
+                    rtcGetGeometry(accel, inst_index));
+                pi.shape = (const Shape *) rtcGetGeometryUserData(
+                    rtcGetGeometry(nested, geom_id));
                 pi.instance_index = inst_index + 1;
             } else {
                 pi.shape = (const Shape *) rtcGetGeometryUserData(

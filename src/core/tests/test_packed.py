@@ -101,10 +101,21 @@ def test04_cache(variant_scalar_rgb, tmp_path):
     pf2 = mi.PackedFile.open(fname)
     assert pf1 is pf2
 
+    # Windows cannot truncate a file while a mapping of it exists
+    del pf1, pf2
     write_container(fname, {'a': (b'1', b''), 'b': (b'2', b'')})
     pf3 = mi.PackedFile.open(fname)
-    assert pf3 is not pf1
-    assert pf3.entry_count() == 2 and pf1.entry_count() == 1
+    assert pf3.entry_count() == 2
+
+    # A change made by another writer while the file is mapped
+    if os.name != 'nt':
+        fname2 = str(tmp_path / 'cache2.packed')
+        write_container(fname2, {'a': (b'1', b''), 'b': (b'2', b''), 'c': (b'3', b'')})
+        with open(fname2, 'rb') as f2, open(fname, 'wb') as f:
+            f.write(f2.read())
+        pf4 = mi.PackedFile.open(fname)
+        assert pf4 is not pf3
+        assert pf4.entry_count() == 3 and pf3.entry_count() == 2
 
     mi.PackedFile.clear_cache()
     assert mi.PackedFile.open(fname) is not pf3

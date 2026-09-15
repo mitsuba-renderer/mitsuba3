@@ -12,11 +12,10 @@
 
 #if defined(MI_ENABLE_CUDA)
 
-#include <mitsuba/render/optix/common.h>
+#include "common.h"
 #include <mitsuba/render/scene_ir.h>
 #include <mitsuba/core/logger.h>
 
-#include <drjit/array_router.h> // dr::tzcnt
 #include <vector>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -37,60 +36,34 @@ struct MiOptixAccelData {
     ~MiOptixAccelData();
 };
 
-/// Per-shape SBT data buffers (device), indexed by `ShapeIR::data_slot`.
-/// Allocated once, refilled in place so the SBT records stay valid.
-using ShapeDataBuffers = std::vector<void *>;
-
-/// Number of ShapeType bit positions (the highest, ShapeGroup, is bit 11), which
-/// sizes the lookup table below. Only geometry types are ever stored or queried.
-#define MI_SHAPE_TYPE_NUM_BITS 12
-
-/// Map a `ShapeType` to an OptiX program group index, keyed by the type's
-/// lowest set bit.
-struct OptixProgramGroupMapping {
-    uint32_t mapping[MI_SHAPE_TYPE_NUM_BITS];
-
-    OptixProgramGroupMapping() {
-        for (uint32_t i = 0; i < MI_SHAPE_TYPE_NUM_BITS; ++i)
-            mapping[i] = (uint32_t) -1;
+/// Slot of a geometry kind's program group index: triangles, then the two
+/// curve types. Custom shapes bring their own program groups (see below).
+inline uint32_t optix_pg_slot(ShapeIR::Kind kind) {
+    switch (kind) {
+        case ShapeIR::Kind::Triangles:
+        case ShapeIR::Kind::TrianglesCulled: return 0;
+        case ShapeIR::Kind::BSplineCurve:    return 1;
+        case ShapeIR::Kind::LinearCurve:     return 2;
+        default: Throw("optix_pg_slot(): geometry kind has no program group!");
     }
+}
 
-    uint32_t index(ShapeType type) const {
-        uint32_t index = dr::tzcnt((uint32_t) type);
-        if (index >= MI_SHAPE_TYPE_NUM_BITS)
-            Throw("OptixProgramGroupMapping: invalid shape type!");
-        return index;
-    }
-
-    const uint32_t &operator[](ShapeType type) const { return mapping[index(type)]; }
-    uint32_t &operator[](ShapeType type) { return mapping[index(type)]; }
-
-    uint32_t at(ShapeType type) const {
-        uint32_t value = operator[](type);
-        if (value == (uint32_t) -1)
-            Throw("OptixProgramGroupMapping: shape type not mapped!");
-        return value;
-    }
-};
-
-/// Packs the HitGroupSbtRecords for every geom of every BLAS in ``blases`` into
-/// ``out``. The BLAS list is already in canonical (kind, slot) order, so the
-/// resulting SBT layout is contiguous per BLAS and matches the offsets
-/// `prepare_ias()` assigns. Allocates the referenced custom-primitive data
-/// buffers in ``data_buffers`` (without filling them: the records only need
-/// the stable pointer); `optix_refresh_shape_data()` writes their contents.
+/**
+ * Packs the HitGroupSbtRecords for every geom of every BLAS in ``blases`` into
+ * ``out``. The BLAS list is already in canonical (kind, slot) order, so the
+ * resulting SBT layout is contiguous per BLAS and matches the offsets
+ * `prepare_ias()` assigns. ``pg_index`` maps the slots of ``optix_pg_slot()``
+ * to entries of ``pg``.
+ *
+ * The records of custom shapes (those with a ``ShapeIR::isect_func``) only
+ * receive their registry id: Dr.Jit writes their header and data pointer for
+ * the bound intersection routine before each launch (see jit_isect_bind()).
+ */
 extern MI_EXPORT_LIB void
 fill_hitgroup_records(const std::vector<BlasEntry> &blases,
                       HitGroupSbtRecord *out,
                       const OptixProgramGroup *pg,
-                      const OptixProgramGroupMapping &pg_mapping,
-                      ShapeDataBuffers &data_buffers);
-
-/// Refill every custom shape's SBT data buffer in place (used when parameters
-/// change: the SBT keeps pointing at the same buffers, so updated per-primitive
-/// values reach the device without rebuilding the SBT).
-extern MI_EXPORT_LIB void
-optix_refresh_shape_data(const SceneIR &sd, ShapeDataBuffers &data_buffers);
+                      const uint32_t *pg_index);
 
 /**
  * Build one OptiX geometry acceleration structure (GAS) per BLAS, storing

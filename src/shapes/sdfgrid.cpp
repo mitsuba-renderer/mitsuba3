@@ -10,6 +10,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/scene_ir.h>
+#include <drjit/while_loop.h>
 #include <mitsuba/render/volumegrid.h>
 
 #include <drjit/tensor.h>
@@ -17,14 +18,6 @@
 
 #if defined(MI_ENABLE_EMBREE)
 #  include <embree3/rtcore.h>
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-#  include "optix/sdfgrid.cuh"
-#endif
-
-#if defined(MI_ENABLE_METAL)
-#  include "../render/metal/shapes.h"
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -271,11 +264,11 @@ public:
         return bbox;
     }
 
-    ScalarBoundingBox3f bbox(ScalarIndex index) const override {
-        if constexpr (dr::is_cuda_v<Float>)
-            NotImplementedError("bbox(ScalarIndex index)");
+    ScalarBoundingBox3f bbox(ScalarIndex prim_index) const override {
+        if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
+            NotImplementedError("bbox(ScalarIndex prim_index)");
 
-        return reinterpret_cast<InputScalarBoundingBox3f*>(m_bboxes_ptr)[index];
+        return reinterpret_cast<InputScalarBoundingBox3f*>(m_bboxes_ptr)[prim_index];
     }
 
     Float surface_area() const override {
@@ -321,7 +314,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
-                                   ScalarIndex prim_index,
+                                   dr::uint32_array_t<FloatP> prim_index,
                                    dr::mask_t<FloatP> active) const {
         return ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index,
                                                             active);
@@ -329,7 +322,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray_,
-                                     ScalarIndex prim_index,
+                                     dr::uint32_array_t<FloatP> prim_index,
                                      dr::mask_t<FloatP> active) const {
         auto [hit, t, uv, shape_index, p] =
             ray_intersect_preliminary_common_impl<FloatP>(ray_, prim_index, active);
@@ -506,123 +499,12 @@ public:
         return dr::grad_enabled(m_to_world);
     }
 
-#if defined(MI_ENABLE_METAL)
-    // Layout of the buffer bound at MSL [[buffer(4)]] for SDFGrid:
-    //   header (80 bytes): res(3)+n_voxels(1) ints, voxel_size(3)+pad floats,
-    //                      to_object affine (3 rows of float4)
-    //   uint32 voxel_indices[n_voxels]
-    //   float  grid_data[res_x * res_y * res_z]
-    struct MetalSDFHeader {
-        uint32_t res_x, res_y, res_z, n_voxels;
-        float voxel_size[3];
-        float pad;
-        mi_float4 to_object[3];
-    };
-    static_assert(sizeof(MetalSDFHeader) == 80, "MetalSDFHeader layout mismatch");
-#endif
-
-    // SDFGrid uses a custom layout rather than per-primitive [[primitive_data]]:
-    // pdata_size stays 0 and the whole slice size is reported through data_size.
-    // OptiX reads the precomputed device AABBs zero-copy and a header-only SBT
-    // record (pointers + resolution + affine) referencing the existing arrays.
     void describe(ShapeIR &g) const override {
         Base::describe(g);
-#if defined(MI_ENABLE_METAL)
-        if constexpr (dr::is_metal_v<Float>) {
-            auto shape = m_grid_texture.tensor().shape();
-            size_t grid_count = shape[0] * shape[1] * shape[2];
-            g.data_size =
-                sizeof(MetalSDFHeader)
-                + (size_t) m_filled_voxel_count * sizeof(uint32_t)
-                + grid_count * sizeof(float);
-            g.fill_aabbs = [](const void *ctx, void *out) {
-                static_cast<const SDFGrid *>(ctx)->gpu_fill_aabbs(out);
-            };
-            g.fill_data = [](const void *ctx, void *out) {
-                static_cast<const SDFGrid *>(ctx)->gpu_fill_data(out);
-            };
-        }
-#endif
-#if defined(MI_ENABLE_CUDA)
-        if constexpr (dr::is_cuda_v<Float>) {
-            g.data_size = sizeof(OptixSDFGridData);
+        // The GPU backends build from the tightly packed device boxes
+        if constexpr (dr::is_cuda_v<Float> || dr::is_metal_v<Float>)
             g.aabb_buffer = m_bboxes_ptr;
-            g.fill_data = [](const void *ctx, void *out) {
-                auto *self = const_cast<SDFGrid *>(
-                    static_cast<const SDFGrid *>(ctx));
-                auto shape = self->m_grid_texture.tensor().shape();
-                OptixSDFGridData &data = *static_cast<OptixSDFGridData *>(out);
-                data = OptixSDFGridData{};
-                data.voxel_indices = (uint32_t *) self->m_voxel_indices_ptr;
-                data.grid_data     = self->m_grid_texture.tensor().array().data();
-                data.res_x         = (uint32_t) shape[2];
-                data.res_y         = (uint32_t) shape[1];
-                data.res_z         = (uint32_t) shape[0];
-                ScalarVector3f vs  = self->m_voxel_size.scalar();
-                data.voxel_size    = { (float) vs[0], (float) vs[1],
-                                       (float) vs[2], 0.f };
-                shapedata::fill_affine3x4(
-                    self->m_to_world.scalar().inverse().matrix, data.to_object);
-            };
-        }
-#endif
     }
-
-#if defined(MI_ENABLE_METAL)
-    void gpu_fill_aabbs(void *out) const {
-        if constexpr (dr::is_metal_v<Float>) {
-            // m_jit_bboxes holds 6 floats per AABB; stream it straight into the
-            // host-visible shared Metal buffer ``out`` (data() evaluates first).
-            jit_memcpy(JitBackend::Metal, out, m_jit_bboxes.data(),
-                       6 * (size_t) m_filled_voxel_count * sizeof(float));
-        } else {
-            (void) out;
-        }
-    }
-
-    void gpu_fill_data(void *out) const {
-        if constexpr (dr::is_metal_v<Float>) {
-            auto shape = m_grid_texture.tensor().shape();
-            size_t res_x = shape[2], res_y = shape[1], res_z = shape[0];
-            size_t grid_count = res_x * res_y * res_z;
-            size_t n_voxels = (size_t) m_filled_voxel_count;
-
-            // 1. Header
-            MetalSDFHeader hdr{};
-            hdr.res_x = (uint32_t) res_x;
-            hdr.res_y = (uint32_t) res_y;
-            hdr.res_z = (uint32_t) res_z;
-            hdr.n_voxels = (uint32_t) n_voxels;
-            ScalarVector3f vs = m_voxel_size.scalar();
-            hdr.voxel_size[0] = (float) vs.x();
-            hdr.voxel_size[1] = (float) vs.y();
-            hdr.voxel_size[2] = (float) vs.z();
-            hdr.pad = 0.f;
-            // World->object affine, row-major (rows 0..2; last row implicit).
-            shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
-                                      hdr.to_object);
-
-            uint8_t *dst = (uint8_t *) out;
-            std::memcpy(dst, &hdr, sizeof(hdr));
-            dst += sizeof(hdr);
-
-            // 2./3. Voxel indices and grid SDF values must be read on the host.
-            // Migrate both device arrays to the host and wait once (a single
-            // required readback), then copy them into the output slice -- rather
-            // than evaluating, syncing and staging each array separately.
-            auto vi   = dr::migrate(m_jit_voxel_indices, JitBackend::None);
-            auto grid = dr::migrate(m_grid_texture.tensor().array(),
-                                    JitBackend::None);
-            dr::sync_thread();
-
-            std::memcpy(dst, vi.data(), n_voxels * sizeof(uint32_t));
-            dst += n_voxels * sizeof(uint32_t);
-            std::memcpy(dst, grid.data(), grid_count * sizeof(float));
-        } else {
-            (void) out;
-        }
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -642,35 +524,52 @@ private:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
         MI_INLINE ray_intersect_preliminary_common_impl(
-            const Ray3fP &ray_, ScalarIndex prim_index, dr::mask_t<FloatP> active) const {
+            const Ray3fP &ray_, dr::uint32_array_t<FloatP> prim_index,
+            dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using MaskP = dr::mask_t<FloatP>;
-
-        // The current implementation doesn't support JIT types so don't try to
-        // use this in for instance compute_surface_interaction
-        if constexpr (dr::is_jit_v<FloatP>)
-            NotImplementedError("ray_intersect_preliminary_common_impl");
-
-        AffineTransform<Point<FloatP, 4>> to_object = m_to_world.scalar().inverse();
-        Ray3fP ray = to_object * ray_;
+        using MaskP     = dr::mask_t<FloatP>;
+        using UInt32P   = dr::uint32_array_t<FloatP>;
+        using Vector3uP = Vector<UInt32P, 3>;
+        using Vector3fP = Vector<FloatP, 3>;
+        using Point3fP  = Point<FloatP, 3>;
+        using Value     = dr::float32_array_t<FloatP>;
 
         auto shape = m_grid_texture.tensor().shape();
+        // Data is packed [Z, Y, X, C]
+        uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
+                                (uint32_t) shape[0] };
 
-        uint32_t voxel_index     = m_voxel_indices_ptr[prim_index];
-        ScalarVector3u voxel_pos = to_voxel_position(voxel_index);
-
-        // Find voxel AABB in object space
-        ScalarBoundingBox3f bbox_local;
-        {
-            ScalarPoint3f bbox_min =
-                ScalarPoint3f((float) voxel_pos.x(), (float) voxel_pos.y(), (float) voxel_pos.z());
-            ScalarPoint3f bbox_max = bbox_min + ScalarPoint3f(1.f, 1.f, 1.f);
-            bbox_min *= m_voxel_size.scalar();
-            bbox_max *= m_voxel_size.scalar();
-            bbox_local.expand(bbox_min);
-            bbox_local.expand(bbox_max);
+        // Scalar variants read host memory. JIT variants gather from the
+        // evaluated buffers, which the recorded intersection function captures.
+        Ray3fP ray;
+        UInt32P voxel_index;
+        Vector3fP voxel_size;
+        if constexpr (dr::is_jit_v<FloatP>) {
+            ray = m_to_world.value().inverse() * ray_;
+            voxel_index = dr::gather<UInt32P>(m_jit_voxel_indices, prim_index, active);
+            voxel_size = m_voxel_size.value();
+        } else {
+            ray = m_to_world.scalar().inverse() * ray_;
+            voxel_index = m_voxel_indices_ptr[prim_index];
+            voxel_size = m_voxel_size.scalar();
         }
+
+        auto grid_value = [&](const Vector3uP &v) -> FloatP {
+            if constexpr (dr::is_jit_v<FloatP>)
+                return FloatP(dr::gather<Value>(m_grid_texture.tensor().array(),
+                                                to_voxel_index(v), active));
+            else
+                return FloatP(m_host_grid_data[to_voxel_index(v)]);
+        };
+
+        Vector3uP voxel_pos = to_voxel_position(voxel_index);
+        Vector3fP voxel_pos_f(voxel_pos);
+
+        // Voxel AABB in object space
+        BoundingBox<Point3fP> bbox_local(
+            Point3fP(voxel_pos_f * voxel_size),
+            Point3fP((voxel_pos_f + 1.f) * voxel_size));
 
         // To determine voxel intersection, we need both near and far AABB
         // intersections
@@ -682,33 +581,12 @@ private:
         MaskP valid_t = t_bbox_beg < t_bbox_end;
         active &= valid_t;
 
-        // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]
-        {
-            ScalarMatrix4f m{};
-            m[0][0] = (float) (shape[2] - 1);
-            m[1][0] = 0.f;
-            m[2][0] = 0.f;
-            m[3][0] = 0.f;
-
-            m[0][1] = 0.f;
-            m[1][1] = (float) (shape[1] - 1);
-            m[2][1] = 0.f;
-            m[3][1] = 0.f;
-
-            m[0][2] = 0.f;
-            m[1][2] = 0.f;
-            m[2][2] = (float) (shape[0] - 1);
-            m[3][2] = 0.f;
-
-            m[0][3] = -1.f * (float) voxel_pos.x();
-            m[1][3] = -1.f * (float) voxel_pos.y();
-            m[2][3] = -1.f * (float) voxel_pos.z();
-            m[3][3] = 1.f;
-
-            ScalarAffineTransform4f to_voxel = ScalarAffineTransform4f(m);
-
-            ray = to_voxel * ray;
-        }
+        // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]. The direction
+        // is scaled but not normalized, so distances along the ray are unchanged.
+        Vector3fP grid_scale((float) (shape_v[0] - 1), (float) (shape_v[1] - 1),
+                             (float) (shape_v[2] - 1));
+        ray.o = Point3fP(Vector3fP(ray.o) * grid_scale - voxel_pos_f);
+        ray.d = ray.d * grid_scale;
 
         /**
            Voxel intersection expressed as solution of cubic polynomial:
@@ -722,23 +600,14 @@ private:
         FloatP c2;
         FloatP c3;
         {
-            ScalarVector3u v000 = voxel_pos;
-            ScalarVector3u v100 = v000 + ScalarVector3u(1, 0, 0);
-            ScalarVector3u v010 = v000 + ScalarVector3u(0, 1, 0);
-            ScalarVector3u v110 = v000 + ScalarVector3u(1, 1, 0);
-            ScalarVector3u v001 = v000 + ScalarVector3u(0, 0, 1);
-            ScalarVector3u v101 = v000 + ScalarVector3u(1, 0, 1);
-            ScalarVector3u v011 = v000 + ScalarVector3u(0, 1, 1);
-            ScalarVector3u v111 = v000 + ScalarVector3u(1, 1, 1);
-
-            float s000 = m_host_grid_data[to_voxel_index(v000)];
-            float s100 = m_host_grid_data[to_voxel_index(v100)];
-            float s010 = m_host_grid_data[to_voxel_index(v010)];
-            float s110 = m_host_grid_data[to_voxel_index(v110)];
-            float s001 = m_host_grid_data[to_voxel_index(v001)];
-            float s101 = m_host_grid_data[to_voxel_index(v101)];
-            float s011 = m_host_grid_data[to_voxel_index(v011)];
-            float s111 = m_host_grid_data[to_voxel_index(v111)];
+            FloatP s000 = grid_value(voxel_pos);
+            FloatP s100 = grid_value(voxel_pos + Vector3uP(1, 0, 0));
+            FloatP s010 = grid_value(voxel_pos + Vector3uP(0, 1, 0));
+            FloatP s110 = grid_value(voxel_pos + Vector3uP(1, 1, 0));
+            FloatP s001 = grid_value(voxel_pos + Vector3uP(0, 0, 1));
+            FloatP s101 = grid_value(voxel_pos + Vector3uP(1, 0, 1));
+            FloatP s011 = grid_value(voxel_pos + Vector3uP(0, 1, 1));
+            FloatP s111 = grid_value(voxel_pos + Vector3uP(1, 1, 1));
 
             Vector<FloatP, 3> ray_p_in_voxel = ray(t_bbox_beg);
             FloatP o_x = ray_p_in_voxel.x();
@@ -810,27 +679,42 @@ private:
             return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
         };
 
+        // One regula falsi step
+        auto refine = [&](FloatP &t, FloatP &t_near, FloatP &t_far,
+                          FloatP &f_near, FloatP &f_far) {
+            t = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
+            FloatP f_t = eval_sdf(t);
+            MaskP bracket = f_t * f_near <= 0.f;
+            t_far  = dr::select(bracket, t, t_far);
+            f_far  = dr::select(bracket, f_t, f_far);
+            t_near = dr::select(bracket, t_near, t);
+            f_near = dr::select(bracket, f_near, f_t);
+        };
+
         auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
                                    FloatP f_far) -> FloatP {
             static constexpr uint32_t num_solve_max_iter = 50;
 
-            FloatP t   = 0;
-            FloatP f_t = 0;
-
-            uint32_t i = 0;
+            using UInt32P = dr::uint32_array_t<FloatP>;
+            FloatP t = 0;
+            UInt32P i = 0;
             MaskP done = false;
-            while (!dr::all(done)) {
-                t   = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
-                f_t = eval_sdf(t);
-                FloatP condition = f_t * f_near;
-                t_far = dr::select(condition <= 0.f, t, t_far);
-                f_far = dr::select(condition <= 0.f, f_t, f_far);
 
-                t_near = dr::select(condition > 0.f, t, t_near);
-                f_near = dr::select(condition > 0.f, f_t, f_near);
-                done   = (dr::abs(t_near - t_far) < NumSolveEpsilon) ||
-                       (num_solve_max_iter < ++i);
-            }
+            // Runs as a plain loop in scalar variants and symbolically otherwise
+            dr::tie(t, t_near, t_far, f_near, f_far, i, done) = dr::while_loop(
+                dr::make_tuple(t, t_near, t_far, f_near, f_far, i, done),
+                [](const FloatP &, const FloatP &, const FloatP &,
+                   const FloatP &, const FloatP &, const UInt32P &,
+                   const MaskP &done) { return !done; },
+                [&](FloatP &t, FloatP &t_near, FloatP &t_far,
+                    FloatP &f_near, FloatP &f_far, UInt32P &i,
+                    MaskP &done) {
+                    refine(t, t_near, t_far, f_near, f_far);
+                    i += 1;
+                    done = (dr::abs(t_near - t_far) < NumSolveEpsilon) ||
+                           (num_solve_max_iter < i);
+                },
+                "SDFGrid::numerical_solve");
 
             return t;
         };
@@ -870,7 +754,8 @@ private:
     /* Given an index of the flat SDFGrid data (voxel corners), return
      * the associated voxel position
      */
-    MI_INLINE ScalarVector3u to_voxel_position(uint32_t index) const {
+    template <typename Index>
+    MI_INLINE Vector<Index, 3> to_voxel_position(Index index) const {
         auto shape = m_grid_texture.tensor().shape();
         // Data is packed [Z, Y, X, C]
         uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
@@ -879,9 +764,9 @@ private:
         uint32_t resolution_x = shape_v[2] - 1;
         uint32_t resolution_y = shape_v[1] - 1;
 
-        uint32_t x = index % resolution_x;
-        uint32_t y = ((index - x) / resolution_x) % resolution_y;
-        uint32_t z =
+        Index x = index % resolution_x;
+        Index y = ((index - x) / resolution_x) % resolution_y;
+        Index z =
             (index - x - y * resolution_x) / (resolution_x * resolution_y);
 
         return { x, y, z };
@@ -891,7 +776,8 @@ private:
      * relative to the flat array of SDFGrid data. In particular, the returned
      * index maps to the bottom-left corner of the associated voxel
      */
-    MI_INLINE ScalarIndex to_voxel_index(const ScalarVector3u &v) const {
+    template <typename Index>
+    MI_INLINE Index to_voxel_index(const Vector<Index, 3> &v) const {
         auto shape = m_grid_texture.tensor().shape();
         // Data is packed [Z, Y, X, C]
         uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],

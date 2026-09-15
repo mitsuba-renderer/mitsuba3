@@ -9,14 +9,6 @@
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/scene_ir.h>
 
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/sphere.cuh"
-#endif
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    #include <mitsuba/render/shapedata.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -596,7 +588,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex /*prim_index*/,
+                                   dr::uint32_array_t<FloatP> /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         auto [valid, t] = intersect_impl<FloatP>(ray, active);
@@ -605,7 +597,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex /*prim_index*/,
+                                     dr::uint32_array_t<FloatP> /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         return intersect_impl<FloatP>(ray, active).first;
@@ -694,19 +686,6 @@ public:
     }
 
     // =============================================================
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    void gpu_fill_data(void *out) const {
-        shapedata::SphereData &d = *(shapedata::SphereData *) out;
-        ScalarPoint3f c = m_center.scalar();
-        d.center_radius = { (float) c.x(), (float) c.y(), (float) c.z(),
-                            (float) m_radius.scalar() };
-    }
-
-    void describe(ShapeIR &g) const override {
-        Base::template describe_with_data<Sphere, shapedata::SphereData>(g);
-    }
-#endif
 
     std::string to_string() const override {
         std::ostringstream oss;

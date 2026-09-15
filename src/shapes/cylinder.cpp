@@ -11,14 +11,6 @@
 
 #include <drjit/packet.h>
 
-#if defined(MI_ENABLE_CUDA)
-    #include "optix/cylinder.cuh"
-#endif
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    #include <mitsuba/render/shapedata.h>
-#endif
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -188,7 +180,7 @@ public:
                                    dr::maximum(p0 + x, p1 + x));
     }
 
-    ScalarBoundingBox3f bbox(ScalarIndex /*index*/, const ScalarBoundingBox3f &clip) const override {
+    ScalarBoundingBox3f bbox(ScalarIndex /*prim_index*/, const ScalarBoundingBox3f &clip) const override {
         using FloatP8         = dr::Packet<ScalarFloat, 8>;
         using MaskP8          = dr::mask_t<FloatP8>;
         using Point3fP8       = Point<FloatP8, 3>;
@@ -606,7 +598,7 @@ public:
     std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
                dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
-                                   ScalarIndex /*prim_index*/,
+                                   dr::uint32_array_t<FloatP> /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         auto [valid, t] = intersect_impl<FloatP>(ray, active);
@@ -615,7 +607,7 @@ public:
 
     template <typename FloatP, typename Ray3fP>
     dr::mask_t<FloatP> ray_test_impl(const Ray3fP &ray,
-                                     ScalarIndex /*prim_index*/,
+                                     dr::uint32_array_t<FloatP> /*prim_index*/,
                                      dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         return intersect_impl<FloatP>(ray, active).first;
@@ -691,21 +683,6 @@ public:
 
         return si;
     }
-
-#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
-    void gpu_fill_data(void *out) const {
-        shapedata::CylinderData &d = *(shapedata::CylinderData *) out;
-        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
-                                  d.to_object);
-        // Object space is the unit-radius, unit-length z-axis cylinder (length
-        // and radius are baked into m_to_world), so both params are 1 here.
-        d.params = { 1.f, 1.f, 0.f, 0.f };
-    }
-
-    void describe(ShapeIR &g) const override {
-        Base::template describe_with_data<Cylinder, shapedata::CylinderData>(g);
-    }
-#endif
 
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_radius) || dr::grad_enabled(m_length) ||

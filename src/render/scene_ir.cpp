@@ -9,6 +9,58 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/**
+ * Record the intersection routine of a custom shape (JIT variants only)
+ *
+ * Traces ``Shape::ray_intersect_preliminary()`` on symbolic placeholder
+ * inputs and hands the resulting computation to Dr.Jit.
+ */
+template <typename Float, typename Spectrum>
+static uint32_t record_intersection(const Shape<Float, Spectrum> *shape) {
+    MI_IMPORT_TYPES()
+    constexpr JitBackend backend = dr::backend_v<Float>;
+
+    std::string name = std::string(shape->class_name()) + "::ray_intersect_preliminary";
+
+    // Open a recording session
+    uint32_t in[9];
+    jit_isect_begin(backend, Float::Type, in);
+
+    struct SessionGuard {
+        const char *name;
+        bool committed = false;
+        ~SessionGuard() {
+            if (!committed)
+                jit_isect_end(backend, name, nullptr);
+        }
+    } guard { name.c_str() };
+
+    Point3f o(Float::steal(in[0]), Float::steal(in[1]), Float::steal(in[2]));
+    Vector3f d(Float::steal(in[3]), Float::steal(in[4]), Float::steal(in[5]));
+    Float maxt = Float::steal(in[6]), time = Float::steal(in[7]);
+    UInt32 prim_index = UInt32::steal(in[8]);
+
+    Ray3f ray(o, d, maxt, time, dr::zeros<Wavelength>());
+
+    // The preliminary intersection is detached by design
+    PreliminaryIntersection3f pi;
+    {
+        dr::suspend_grad<Float> suspend;
+        pi = shape->ray_intersect_preliminary(ray, prim_index, true);
+    }
+
+    // The attribute words hold single precision bit patterns
+    using Single = dr::float32_array_t<Float>;
+    UInt32 attr0 = dr::reinterpret_array<UInt32>(Single(pi.prim_uv.x())),
+           attr1 = dr::reinterpret_array<UInt32>(Single(pi.prim_uv.y()));
+
+    uint32_t out[4] = { pi.valid.index(), pi.t.index(), attr0.index(),
+                        attr1.index() };
+
+    guard.committed = true;
+    return jit_isect_end(backend, name.c_str(), out);
+}
+
 template <typename Float, typename Spectrum>
 SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
     SceneIR sd;
@@ -16,19 +68,28 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
     const auto &shapes = scene->shapes();        // top-level (incl. Instances)
     const auto &groups = scene->shapegroups();
 
-    // Describe every top-level shape, stamping data slots. Route non-instance
-    // shapes to the leading BLASes, Instances to the flattening pass below.
+    // Describe every top-level shape. Route non-instance shapes to the
+    // leading BLASes, Instances to the flattening pass below.
     std::vector<ShapeIR> top_noninst, inst_shapes;
     top_noninst.reserve(shapes.size());
     inst_shapes.reserve(shapes.size());
 
-    uint32_t slot = 0;
+    // JIT variants intersect custom shapes through their recorded routines
+    auto describe = [&](const Shape<Float, Spectrum> *shape, ShapeIR &g) {
+        shape->describe(g);
+        if constexpr (dr::is_jit_v<Float>) {
+            if (g.kind == ShapeIR::Kind::Custom) {
+                g.isect_func = record_intersection(shape);
+                sd.isect_funcs.push_back(g.isect_func);
+            }
+        }
+    };
+
     for (size_t i = 0; i < shapes.size(); ++i) {
         ShapeIR g;
-        shapes[i]->describe(g);
+        describe(shapes[i].get(), g);
         g.visibility_mask =
             accel_mask(shapes[i]->visibility(), shapes[i]->has_null());
-        g.data_slot = slot++;
         if (g.kind == ShapeIR::Kind::Instance)
             inst_shapes.push_back(std::move(g));
         else
@@ -40,10 +101,9 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         const auto &children = groups[i]->shapes();
         group_geoms[i].resize(children.size());
         for (size_t j = 0; j < children.size(); ++j) {
-            children[j]->describe(group_geoms[i][j]);
+            describe(children[j].get(), group_geoms[i][j]);
             group_geoms[i][j].visibility_mask =
                 accel_mask(children[j]->visibility(), children[j]->has_null());
-            group_geoms[i][j].data_slot = slot++;
         }
     }
 
@@ -110,6 +170,7 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
         }
     }
 
+    sd.instance_shapes = std::move(inst_shapes);
     return sd;
 }
 
