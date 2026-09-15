@@ -19,7 +19,7 @@ Light portal (:monosp:`portal`)
  * - to_world
    - |transform|
    - Specifies a linear object-to-world transformation. (Default: none (i.e.
-object space = world space))
+     object space = world space))
 
 A light portal marks an opening, such as a window or a door, through which
 the environment illuminates an otherwise enclosed part of the scene. Like the

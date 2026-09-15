@@ -102,7 +102,7 @@ for details on this.
 
 - `Python >= 3.10`
 - (optional) For computation on the GPU: `Nvidia driver >= 535`
-- (optional) For vectorized / parallel computation on the CPU: `LLVM >= 11.1`
+- (optional) For vectorized / parallel computation on the CPU: `LLVM >= 18`
 
 ## Usage
 

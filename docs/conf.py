@@ -551,18 +551,34 @@ def custom_step(app):
     generate_plugin_doc.generate(build_dir)
 
     # The API reference is rendered from the type stubs
+    api_dir = os.path.join(build_dir, 'api')
     try:
         import api_from_stubs
     except ImportError as e:
         print('conf.py: %s, skipping the API reference. Install the '
               'packages listed in docs/requirements.txt.' % e)
+        skip_api_reference(api_dir)
         return
     stub_dir = api_from_stubs.find_stub_dir()
     if stub_dir:
-        api_from_stubs.generate(stub_dir, os.path.join(build_dir, 'api'))
+        api_from_stubs.generate(stub_dir, api_dir)
     else:
         print('conf.py: no Mitsuba type stubs found, skipping the API '
               'reference. Install mitsuba, or build it locally.')
+        skip_api_reference(api_dir)
+
+
+def skip_api_reference(api_dir):
+    """Write an empty toctree fragment in place of the API reference.
+
+    'api_reference.rst' includes the fragment. A missing file would make the
+    include fail, and Sphinx then does not record the fragment as a dependency
+    of the page. A later build that generates the API reference would keep
+    the cached page and report every API page as unreachable.
+    """
+    os.makedirs(api_dir, exist_ok=True)
+    with open(os.path.join(api_dir, 'toctree.txt'), 'w') as f:
+        f.write('')
 
 
 # -- Register event callbacks ----------------------------------------------
