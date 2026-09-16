@@ -985,8 +985,9 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                     n_keyframes++;
                 }
             }
-            if (n_keyframes == 0)
-                fail(state, scene_node, "<animation> must contain at least one <transform> element");
+            if (n_keyframes < 2)
+                fail(state, scene_node, "<animation> must contain at least two <transform> "
+                                        "elements, use <transform> for a static transformation");
 
             // An 'id' makes the animation addressable by <ref>, so that
             // several instances can share one set of keyframes.

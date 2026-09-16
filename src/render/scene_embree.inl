@@ -239,8 +239,9 @@ embree_make_geometry(RTCDevice device, const ShapeIR &g,
                     const auto &kf = g.keyframes[i];
                     RTCQuaternionDecomposition rtc_decomp;
                     rtcInitQuaternionDecomposition(&rtc_decomp);
+                    // Embree expects the real part first
                     rtcQuaternionDecompositionSetQuaternion(
-                        &rtc_decomp, kf.quat[0], kf.quat[1], kf.quat[2], kf.quat[3]);
+                        &rtc_decomp, kf.quat[3], kf.quat[0], kf.quat[1], kf.quat[2]);
                     rtcQuaternionDecompositionSetScale(
                         &rtc_decomp, kf.scale[0], kf.scale[1], kf.scale[2]);
                     rtcQuaternionDecompositionSetTranslation(
@@ -359,21 +360,8 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
         rtcDetachGeometry(accel, geo);
     geometries.clear();
 
-    // Compute scene-wide keyframe time bounds across all animated instances
-    time_min = dr::Infinity<ScalarFloat>;
-    time_max = -dr::Infinity<ScalarFloat>;
-    for (const Shape *inst : scene->m_instances) {
-        const auto *to_world = inst->animated_to_world();
-        if (to_world && to_world->is_animated()) {
-            ScalarBoundingBox1f bounds = to_world->get_time_bounds();
-            time_min = std::min(time_min, bounds.min.x());
-            time_max = std::max(time_max, bounds.max.x());
-        }
-    }
-    if (time_min > time_max) {
-        time_min = 0.f;
-        time_max = 0.f;
-    }
+    time_min = sd.time_min;
+    time_max = sd.time_max;
 
     // Rebuild nested scenes first so Instances can reference them. Attach all
     // geometry before the single LLVM sync below.

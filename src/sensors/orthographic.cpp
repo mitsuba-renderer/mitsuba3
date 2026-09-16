@@ -1,7 +1,6 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/transform.h>
-#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/bbox.h>
 
 NAMESPACE_BEGIN(mitsuba)
@@ -79,10 +78,12 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class OrthographicCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
+    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_anim, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
-                    m_cone_scale, sample_wavelengths)
+                    m_cone_scale, sample_wavelengths, world_transform,
+                    traverse_world_transform, world_transform_string,
+                    position_bounds)
     MI_IMPORT_TYPES()
 
     OrthographicCamera(const Properties &props) : Base(props) {
@@ -92,7 +93,7 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -112,7 +113,7 @@ public:
 
         // Compute the world-space (geometric) mean width of a pixel
         // which is used to initialize the ray cone 'width' field
-        AffineTransform4f to_world = m_to_world->eval(0.f);
+        AffineTransform4f to_world = world_transform();
         Vector3f dx = to_world * m_dx,
                  dy = to_world * m_dy;
         m_pixel_width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
@@ -139,11 +140,11 @@ public:
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        auto to_world = m_to_world->eval(time);
+        auto to_world = world_transform(time);
         ray.o = to_world * near_p;
         ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
-        if (m_to_world->is_animated()) {
+        if (m_to_world_anim) {
             Vector3f dx = to_world * m_dx,
                      dy = to_world * m_dy;
             ray.cone.width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
@@ -159,9 +160,7 @@ public:
         return ProjectiveTransform4f(camera_to_sample.matrix);
     }
 
-    ScalarBoundingBox3f bbox() const override {
-        return m_to_world->get_translation_bounds();
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     std::string to_string() const override {
         using string::indent;
@@ -175,7 +174,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  world_transform = " << indent(m_to_world)  << std::endl
+            << "  world_transform = " << indent(world_transform_string())  << std::endl
             << "]";
         return oss.str();
     }

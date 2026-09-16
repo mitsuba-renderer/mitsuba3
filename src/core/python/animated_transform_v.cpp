@@ -13,10 +13,6 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
         MI_IMPORT_CORE_TYPES()
         auto animated_transform =
             nb::class_<AnimatedTransform, Object>(m, name, D(AnimatedTransform))
-                .def(nb::init<>(),
-                     "Create a transformation with a single identity keyframe")
-                .def(nb::init<const ScalarAffineTransform4f &>(),
-                     "Initialize from a constant scalar transformation")
                 .def(nb::init<const std::vector<
                          std::pair<ScalarFloat, ScalarAffineTransform4f>> &>(),
                      "Initialize from a list of keyframes")
@@ -32,19 +28,9 @@ void bind_animated_transform(nb::module_ &m, const char *name) {
                     },
                     "Initialize from a dictionary of keyframes")
                 .def_method(AnimatedTransform, eval, "time"_a)
-                .def_method(AnimatedTransform, eval_scalar, "time"_a)
-                .def_method(AnimatedTransform, is_animated)
-                .def_method(AnimatedTransform, get_time_bounds)
-                .def_method(AnimatedTransform, get_translation_bounds)
-                .def_method(AnimatedTransform, get_spatial_bounds, "bbox"_a)
-                .def_method(AnimatedTransform, has_scale)
-                .def_method(AnimatedTransform, has_shear)
-                .def_method(AnimatedTransform, parameters_grad_enabled)
-                .def_method(AnimatedTransform, ensure_uniform_keyframes);
+                .def_method(AnimatedTransform, eval_scalar, "time"_a);
 
         drjit::bind_traverse(animated_transform);
-        nb::implicitly_convertible<ScalarAffineTransform4f,
-                                   AnimatedTransform>();
     }
 }
 

@@ -160,13 +160,21 @@ SceneIR SceneIRBuilder<Float, Spectrum>::build(Scene<Float, Spectrum> *scene) {
     uint32_t instance_index = 0;
     for (const ShapeIR &inst : inst_shapes) {
         ++instance_index;
+
+        if (inst.keyframes.size() > 1) {
+            float t0 = inst.keyframes.front().time,
+                  t1 = inst.keyframes.back().time;
+            sd.time_min = sd.has_motion ? std::min(sd.time_min, t0) : t0;
+            sd.time_max = sd.has_motion ? std::max(sd.time_max, t1) : t1;
+            sd.has_motion = true;
+        }
+
         for (uint32_t bi : sd.group_blases[group_index.at(inst.group_id)]) {
             InstanceEntry e;
             e.blas_index = bi;
             e.instance_index = instance_index;
             for (int k = 0; k < 12; ++k)
                 e.to_world[k] = inst.to_world[k];
-            e.keyframes = inst.keyframes;
             sd.instances.push_back(e);
         }
     }

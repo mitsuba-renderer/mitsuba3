@@ -254,10 +254,9 @@ def test08_animated_transform(variant_scalar_rgb):
     # world_transform(time) evaluates at time
     assert dr.allclose(sensor.world_transform(0.5).translation(), [0, 0, 0.5])
     assert dr.allclose(sensor.world_transform_scalar(0.5).translation(), [0, 0, 0.5])
-    # animated_world_transform() returns the AnimatedTransform object
-    awt = sensor.animated_world_transform()
+    # world_transform_anim() returns the AnimatedTransform object
+    awt = sensor.world_transform_anim()
     assert isinstance(awt, mi.AnimatedTransform4f)
-    assert awt.is_animated()
 
 
 def test09_camera_shear_rejection(variant_scalar_rgb):
@@ -282,7 +281,7 @@ def test09_camera_shear_rejection(variant_scalar_rgb):
         })
 
     # Sheared static transform is rejected by perspective sensor
-    with pytest.raises(RuntimeError, match="Shear in the camera-to-world transformation is not allowed!"):
+    with pytest.raises(RuntimeError, match="Scale factors in the camera-to-world transformation are not allowed!"):
         sheared = T([[1, 1, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])
         mi.load_dict({
             'type': 'perspective',

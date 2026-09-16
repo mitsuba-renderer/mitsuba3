@@ -1,6 +1,5 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
-#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/medium.h>
@@ -86,7 +85,9 @@ after which it remains at the maximum value. A projection texture may optionally
 template <typename Float, typename Spectrum>
 class SpotLight final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_to_world)
+    MI_IMPORT_BASE(Emitter, m_flags, m_medium, world_transform,
+                   traverse_world_transform, world_transform_string,
+                   position_bounds)
     MI_IMPORT_TYPES(Scene, Texture)
 
     SpotLight(const Properties &props) : Base(props) {
@@ -115,7 +116,7 @@ public:
         cb->put("texture",      m_texture,      ParamFlags::Differentiable);
         cb->put("cutoff_angle", m_cutoff_angle, ParamFlags::Differentiable);
         cb->put("beam_width",   m_beam_width,   ParamFlags::Differentiable);
-        cb->put("to_world",     m_to_world,     ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -164,7 +165,7 @@ public:
         // 2. Sample spectrum
         auto si = dr::zeros<SurfaceInteraction3f>();
         si.time = time;
-        auto to_world = m_to_world->eval(time);
+        auto to_world = world_transform(time);
         si.p    = to_world.translation();
         si.uv   = direction_to_uv(local_dir);
         auto [wavelengths, spec_weight] =
@@ -182,7 +183,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        auto to_world = m_to_world->eval(it.time);
+        auto to_world = world_transform(it.time);
         ds.p        = to_world.translation();
         ds.n        = 0.f;
         ds.uv       = 0.f;
@@ -223,7 +224,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        auto to_world = m_to_world->eval(time);
+        auto to_world = world_transform(time);
         Vector3f center_dir = to_world * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
             /* position */ to_world.translation(), center_dir,
@@ -257,7 +258,7 @@ public:
                             const DirectionSample3f &ds,
                             Mask active) const override {
         Float inv_dist = dr::rcp(ds.dist);
-        Vector3f local_d = m_to_world->eval(ds.time).inverse() * -ds.d;
+        Vector3f local_d = world_transform(ds.time).inverse() * -ds.d;
 
         // Evaluate emitted radiance & falloff profile
         Float falloff = falloff_curve(local_d, active);
@@ -281,14 +282,12 @@ public:
         return 0.f;
     }
 
-    ScalarBoundingBox3f bbox() const override {
-        return m_to_world->get_translation_bounds();
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpotLight[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  to_world = " << string::indent(world_transform_string()) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  cutoff_angle = " << m_cutoff_angle << "," << std::endl
             << "  beam_width = " << m_beam_width << "," << std::endl

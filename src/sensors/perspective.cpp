@@ -1,6 +1,5 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/core/bbox.h>
 
@@ -132,20 +131,18 @@ The exact camera position and orientation is most easily expressed using the
 template <typename Float, typename Spectrum>
 class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_needs_sample_3,
-                   m_film, m_sampler, m_resolution, m_shutter_open,
-                   m_shutter_open_time, m_near_clip, m_far_clip,
-                   m_cone_scale, sample_wavelengths)
+    MI_IMPORT_BASE(ProjectiveCamera, m_needs_sample_3, m_film, m_sampler,
+                   m_resolution, m_shutter_open, m_shutter_open_time,
+                   m_near_clip, m_far_clip, m_cone_scale, sample_wavelengths,
+                   world_transform, traverse_world_transform,
+                   world_transform_string, check_to_world, position_bounds)
     MI_IMPORT_TYPES()
 
     PerspectiveCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
         m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
 
-        if (m_to_world->has_shear())
-            Throw("Shear in the camera-to-world transformation is not allowed!");
-        if (m_to_world->has_scale())
-            Throw("Scale factors in the camera-to-world transformation are not allowed!");
+        check_to_world();
 
         m_principal_point_offset = ScalarPoint2f(
             props.get<ScalarFloat>("principal_point_offset_x", 0.f),
@@ -160,17 +157,13 @@ public:
         cb->put("x_fov",                    m_x_fov,                      ParamFlags::NonDifferentiable);
         cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::NonDifferentiable);
         cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::NonDifferentiable);
-        cb->put("to_world",                 m_to_world,                   ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         Base::parameters_changed(keys);
-        if (keys.empty() || string::contains(keys, "to_world")) {
-            if (m_to_world->has_shear())
-                Throw("Shear in the camera-to-world transformation is not allowed!");
-            if (m_to_world->has_scale())
-                Throw("Scale factors in the camera-to-world transformation are not allowed!");
-        }
+        if (keys.empty() || string::contains(keys, "to_world"))
+            check_to_world();
 
         update_camera_transforms();
     }
@@ -228,7 +221,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        AffineTransform4f to_world = m_to_world->eval(time);
+        AffineTransform4f to_world = world_transform(time);
         ray.o = to_world.translation();
         ray.d = to_world * d;
 
@@ -260,7 +253,7 @@ public:
     sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
                      Mask active) const override {
         // Transform the reference point into the local coordinate system
-        AffineTransform4f trafo = m_to_world->eval(it.time);
+        AffineTransform4f trafo = world_transform(it.time);
         Point3f ref_p     = trafo.inverse() * it.p;
 
         // Check if it is outside of the clip range
@@ -295,9 +288,7 @@ public:
         return { ds, Spectrum(importance(local_d) * inv_dist * inv_dist) };
     }
 
-    ScalarBoundingBox3f bbox() const override {
-        return m_to_world->get_translation_bounds();
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     /**
      * Compute the directional sensor response function of the camera
@@ -371,7 +362,7 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
-            << "  to_world = " << indent(m_to_world, 13) << std::endl
+            << "  to_world = " << indent(world_transform_string(), 13) << std::endl
             << "]";
         return oss.str();
     }

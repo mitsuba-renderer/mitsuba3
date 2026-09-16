@@ -1,5 +1,4 @@
 #include <mitsuba/core/bbox.h>
-#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
@@ -60,7 +59,9 @@ uniformly radiates illumination into all directions.
 template <typename Float, typename Spectrum>
 class PointLight final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world)
+    MI_IMPORT_BASE(Emitter, m_flags, m_medium, m_needs_sample_3, m_to_world,
+                   world_transform, traverse_world_transform,
+                   world_transform_string, position_bounds)
     MI_IMPORT_TYPES(Scene, Shape, Texture)
 
     PointLight(const Properties &props) : Base(props) {
@@ -70,9 +71,8 @@ public:
                       "can be specified at the same time!'");
 
             ScalarPoint3f position = props.get<ScalarPoint3f>("position");
-            m_to_world = new AnimatedTransform<Float, Spectrum>(
-                ScalarAffineTransform4f::translate(ScalarVector3f(position)));
-            m_to_world->make_transform_opaque();
+            m_to_world = ScalarAffineTransform4f::translate(ScalarVector3f(position));
+            dr::make_opaque(m_to_world);
         }
 
         m_intensity = props.get_emissive_texture<Texture>("intensity", 1.f);
@@ -86,7 +86,7 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("to_world",   m_to_world,  ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
         cb->put("intensity",  m_intensity, ParamFlags::Differentiable);
     }
 
@@ -101,7 +101,7 @@ public:
 
         weight *= 4.f * dr::Pi<Float>;
 
-        Ray3f ray(m_to_world->eval(time).translation(),
+        Ray3f ray(world_transform(time).translation(),
                   warp::square_to_uniform_sphere(dir_sample), time,
                   wavelengths);
 
@@ -114,7 +114,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         DirectionSample3f ds;
-        ds.p       = m_to_world->eval(it.time).translation();
+        ds.p       = world_transform(it.time).translation();
         ds.n       = 0.f;
         ds.uv      = 0.f;
         ds.time    = it.time;
@@ -162,7 +162,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
-        ps.p = m_to_world->eval(time).translation();
+        ps.p = world_transform(time).translation();
         ps.time = time;
         ps.delta = true;
 
@@ -180,14 +180,12 @@ public:
         return 0.f;
     }
 
-    ScalarBoundingBox3f bbox() const override {
-        return m_to_world->get_translation_bounds();
-    }
+    ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl
-            << "  to_world = " << string::indent(m_to_world) << "," << std::endl
+            << "  to_world = " << string::indent(world_transform_string()) << "," << std::endl
             << "  intensity = " << m_intensity << "," << std::endl
             << "  medium = " << (m_medium ? string::indent(m_medium) : "none")
             << "]";

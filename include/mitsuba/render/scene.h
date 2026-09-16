@@ -803,7 +803,9 @@ protected:
     /// inverses (2 x 12 floats each)
     DynamicBuffer<Float> m_instance_transforms;
 
-    /// Packed keyframes of all instances (see ``AnimatedTransform4f::Keyframe::pack()``)
+    /// Packed keyframes of all animated instances. Each keyframe occupies 12
+    /// floats: the scale (3 floats + padding), the rotation quaternion in
+    /// ``(x, y, z, w)`` order, and the translation (3 floats + padding).
     DynamicBuffer<Float> m_instance_kf_data;
 
     /// Metadata of keyframes within ``m_instance_kf_data``. Each instance has
@@ -813,8 +815,8 @@ protected:
     /// floats so that the whole record can be packed-loaded.
     DynamicBuffer<Float> m_instance_kf_meta;
 
-    /// Number of instances with a static ``to_world``.
-    size_t m_static_instance_count = 0;
+    /// Does every instance have an animated ``to_world``?
+    bool m_all_instances_animated = false;
 
     /// Expand a preliminary intersection that may reference an instance.
     /// Called by `compute_surface_interaction`.
@@ -825,9 +827,11 @@ protected:
     /// Evaluate the transform of instance ``i0`` at ``time``. Animated
     /// instances interpolate keyframes using the active backend's rotation
     /// interpolation. Static instances use the differentiable matrix in
-    /// ``m_instance_transforms``.
+    /// ``m_instance_transforms``. With ``inverse`` set, the function returns
+    /// the world-to-instance transform, whose ``inverse_transpose`` is not
+    /// valid for static instances.
     AffineTransform4f eval_instance_to_world(const UInt32 &i0, const Float &time,
-                                             Mask active) const;
+                                             bool inverse, Mask active) const;
 
     // The Accel class needs to access the scene's protected members.
     friend SceneAccel<Float, Spectrum>;

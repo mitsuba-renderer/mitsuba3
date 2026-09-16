@@ -86,7 +86,7 @@ class PackedMeshShape final : public Mesh<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Mesh, m_filename, m_source_path, m_to_world,
                    m_vertex_count, m_face_count, m_face_normals,
-                   m_flip_normals, from_packed, to_world_scalar)
+                   m_flip_normals, from_packed)
     MI_IMPORT_TYPES()
 
     PackedMeshShape(const Properties &props) : Base(props) {
@@ -183,9 +183,9 @@ public:
         }
 
         // The records arrived in bulk, so they are transformed after the fact
-        pm.set_transform(to_world_scalar(), m_flip_normals);
+        pm.set_transform(m_to_world.scalar(), m_flip_normals);
         m_flip_normals = false;
-        m_to_world = new AnimatedTransform4f();
+        m_to_world = ScalarAffineTransform4f();
         pm.transform_records();
 
         // The stored FaceNormals flag applies when the scene description

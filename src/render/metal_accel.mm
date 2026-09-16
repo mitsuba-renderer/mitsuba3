@@ -179,13 +179,12 @@ static void compact_blases(id<MTLDevice> device, id<MTLCommandQueue> queue,
     // The caller encodes the TLAS into this command buffer.
 }
 
-/// Convert a keyframe to ``MTLComponentTransform``, reordering its quaternion
-/// from ``(w, x, y, z)`` to Metal's ``(x, y, z, w)``.
+/// Convert a keyframe to ``MTLComponentTransform``
 static MTLComponentTransform to_component_transform(const KeyframeIR &kf) {
     MTLComponentTransform ct = {};
     ct.scale = MTLPackedFloat3Make(kf.scale[0], kf.scale[1], kf.scale[2]);
     ct.pivot = MTLPackedFloat3Make(0.f, 0.f, 0.f);
-    ct.rotation = MTLPackedFloatQuaternionMake(kf.quat[1], kf.quat[2], kf.quat[3], kf.quat[0]);
+    ct.rotation = MTLPackedFloatQuaternionMake(kf.quat[0], kf.quat[1], kf.quat[2], kf.quat[3]);
     ct.translation = MTLPackedFloat3Make(kf.trans[0], kf.trans[1], kf.trans[2]);
     return ct;
 }
@@ -215,9 +214,11 @@ static MTLComponentTransform to_component_transform(const float to_world[12]) {
 /// Build all Metal objects for the lowered scene and register a fresh Dr.Jit
 /// scene variable.
 static std::pair<MetalAccelData *, uint32_t>
-build_impl(const std::vector<BlasEntry> &blases,
-           const std::vector<InstanceEntry> &instances,
-           const std::vector<uint32_t> &user_ids, bool compact) {
+build_impl(const SceneIR &sd, const std::vector<uint32_t> &user_ids,
+           bool compact) {
+    const std::vector<BlasEntry> &blases = sd.blases;
+    const std::vector<InstanceEntry> &instances = sd.instances;
+
     @autoreleasepool {
         id<MTLDevice> device = (__bridge id<MTLDevice>) jit_metal_context();
         id<MTLCommandQueue> queue =
@@ -241,9 +242,6 @@ build_impl(const std::vector<BlasEntry> &blases,
         std::vector<bool> blas_backface_cull(blases.size(), false);
         std::vector<uint32_t> blas_ift_base(blases.size(), 0u);
         uint32_t n_isect = 0;
-        bool any_animated = false;
-        for (const InstanceEntry &inst : instances)
-            any_animated |= inst.keyframes.size() > 1;
         size_t aabb_total = 0;
 
         for (size_t blas_idx = 0; blas_idx < blases.size(); ++blas_idx) {
@@ -467,11 +465,11 @@ build_impl(const std::vector<BlasEntry> &blases,
             d.userID                          = user_ids[i];
         };
 
-        if (any_animated) {
+        if (sd.has_motion) {
             // Static instances still occupy one keyframe so that every entry
             // has an addressable range in the shared transform buffer.
             for (const InstanceEntry &inst : instances)
-                total_motion_transforms += std::max((size_t) 1, inst.keyframes.size());
+                total_motion_transforms += std::max((size_t) 1, sd.keyframes(inst).size());
 
             BufferAllocation inst_alloc(
                 n_inst * sizeof(MTLAccelerationStructureMotionInstanceDescriptor),
@@ -490,6 +488,7 @@ build_impl(const std::vector<BlasEntry> &blases,
             size_t transform_index = 0;
             for (size_t i = 0; i < n_inst; ++i) {
                 const InstanceEntry &inst = instances[i];
+                const std::vector<KeyframeIR> &keyframes = sd.keyframes(inst);
                 MTLAccelerationStructureMotionInstanceDescriptor &d = inst_descs[i];
                 d = {};
                 fill_common(d, i);
@@ -498,11 +497,11 @@ build_impl(const std::vector<BlasEntry> &blases,
                 d.motionStartBorderMode      = MTLMotionBorderModeClamp;
                 d.motionEndBorderMode        = MTLMotionBorderModeClamp;
 
-                if (inst.keyframes.size() > 1) {
-                    d.motionTransformsCount = (uint32_t) inst.keyframes.size();
-                    d.motionStartTime       = inst.keyframes.front().time;
-                    d.motionEndTime         = inst.keyframes.back().time;
-                    for (const KeyframeIR &kf : inst.keyframes)
+                if (keyframes.size() > 1) {
+                    d.motionTransformsCount = (uint32_t) keyframes.size();
+                    d.motionStartTime       = keyframes.front().time;
+                    d.motionEndTime         = keyframes.back().time;
+                    for (const KeyframeIR &kf : keyframes)
                         motion_transforms[transform_index++] = to_component_transform(kf);
                 } else {
                     // Static entries use a single key, clamped over the whole range.
@@ -545,7 +544,7 @@ build_impl(const std::vector<BlasEntry> &blases,
         tdesc.instancedAccelerationStructures = blas_array;
         tdesc.instanceDescriptorBuffer        = inst_buf;
         tdesc.instanceCount                   = n_inst;
-        if (any_animated) {
+        if (sd.has_motion) {
             tdesc.instanceDescriptorType =
                 MTLAccelerationStructureInstanceDescriptorTypeMotion;
             tdesc.motionTransformBuffer = motion_transforms_buf;
@@ -584,7 +583,7 @@ build_impl(const std::vector<BlasEntry> &blases,
         if (n_isect) geom_mask |= 0x2u;
         if (any_curves) geom_mask |= 0x4u;
         if (any_backface_culled_triangles) geom_mask |= 0x8u;
-        if (any_animated) geom_mask |= 0x10u;
+        if (sd.has_motion) geom_mask |= 0x10u;
 
         // Everything the TLAS references must be marked resident when a
         // kernel traces against this scene.
@@ -628,7 +627,7 @@ build_impl(const std::vector<BlasEntry> &blases,
 std::pair<MetalAccelData *, uint32_t>
 build_metal_accel(const SceneIR &sd, const std::vector<uint32_t> &user_ids,
                   bool compact) {
-    return build_impl(sd.blases, sd.instances, user_ids, compact);
+    return build_impl(sd, user_ids, compact);
 }
 
 void release_metal_accel(MetalAccelData *accel, uint32_t scene_index) {

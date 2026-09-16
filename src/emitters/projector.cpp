@@ -1,5 +1,4 @@
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/sensor.h>
@@ -118,7 +117,9 @@ operation remains efficient even if only a single pixel is turned on.
 
 MI_VARIANT class Projector final : public Emitter<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3)
+    MI_IMPORT_BASE(Emitter, m_flags, m_to_world, m_needs_sample_3,
+                   world_transform, traverse_world_transform,
+                   world_transform_string)
     MI_IMPORT_TYPES(Texture)
 
     Projector(const Properties &props) : Base(props) {
@@ -138,7 +139,7 @@ public:
         Base::traverse(cb);
         cb->put("scale",      m_intensity_scale, ParamFlags::Differentiable);
         cb->put("irradiance", m_irradiance,      ParamFlags::Differentiable);
-        cb->put("to_world",   m_to_world,        ParamFlags::NonDifferentiable);
+        traverse_world_transform(cb);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -178,7 +179,7 @@ public:
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.t                    = 0.f;
         si.time                 = time;
-        auto to_world           = m_to_world->eval(time);
+        auto to_world           = world_transform(time);
         si.p                    = to_world.translation();
         si.uv                   = uv;
         auto [wavelengths, weight] =
@@ -207,7 +208,7 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
         // 1. Transform the reference point into the local coordinate system
-        auto to_world    = m_to_world->eval(it.time);
+        auto to_world    = world_transform(it.time);
         Point3f it_local = to_world.inverse() * it.p;
 
         // 2. Map to UV coordinates
@@ -250,7 +251,7 @@ public:
                     Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSamplePosition, active);
 
-        auto to_world = m_to_world->eval(time);
+        auto to_world = world_transform(time);
         Vector3f center_dir = to_world * ScalarVector3f(0.f, 0.f, 1.f);
         PositionSample3f ps(
             /* position */ to_world.translation(), center_dir,
@@ -277,7 +278,7 @@ public:
                             Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
-        Point3f it_local = m_to_world->eval(it.time).inverse() * it.p;
+        Point3f it_local = world_transform(it.time).inverse() * it.p;
 
         SurfaceInteraction3f it_query = dr::zeros<SurfaceInteraction3f>();
         it_query.wavelengths = it.wavelengths;
@@ -315,7 +316,7 @@ public:
             << "  x_fov = " << m_x_fov << "," << std::endl
             << "  irradiance = " << string::indent(m_irradiance) << "," << std::endl
             << "  intensity_scale = " << string::indent(m_intensity_scale) << "," << std::endl
-            << "  to_world = " << string::indent(m_to_world) << std::endl
+            << "  to_world = " << string::indent(world_transform_string()) << std::endl
             << "]";
         return oss.str();
     }

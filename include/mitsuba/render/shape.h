@@ -9,7 +9,6 @@
 #include <mitsuba/core/field.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/scene_ir.h>
-#include <mitsuba/core/animated_transform.h>
 #include <drjit/packet.h>
 #include <map>
 
@@ -787,17 +786,15 @@ public:
     /// Is this shape an instance?
     bool is_instance() const { return shape_type() == +ShapeType::Instance; };
 
-    /// Return the object-to-world transformation at ``time``
-    AffineTransform4f to_world(Float time = 0.f) const { return m_to_world->eval(time); }
+    /// Return the object-to-world transformation
+    AffineTransform4f to_world() const { return m_to_world.value(); }
 
-    /// Return the scalar object-to-world transformation at ``time``
-    ScalarAffineTransform4f to_world_scalar(ScalarFloat time = 0.f) const { return m_to_world->eval_scalar(time); }
+    /// Return the object-to-world transformation (scalar form)
+    const ScalarAffineTransform4f &to_world_scalar() const { return m_to_world.scalar(); }
 
-    /// Return the object-to-world `AnimatedTransform4f`
-    const AnimatedTransform4f *animated_to_world() const { return m_to_world.get(); }
-
-    /// Return the object-to-world `AnimatedTransform4f`
-    AnimatedTransform4f *animated_to_world() { return m_to_world.get(); }
+    /// Return the animated object-to-world transformation, or ``nullptr`` if
+    /// it is constant. Only instances can be animated.
+    virtual const AnimatedTransform4f *to_world_anim() const { return nullptr; }
 
     /// Does the surface of this shape mark a medium transition?
     bool is_medium_transition() const { return m_interior_medium.get() != nullptr ||
@@ -912,15 +909,11 @@ public:
 
 protected:
     Shape(const Properties &props);
-
-    inline Shape() : JitObject<Shape>("") {
-        m_to_world = new AnimatedTransform4f();
-    }
+    inline Shape() : JitObject<Shape>("") { }
 
 protected:
     virtual void initialize();
     std::string get_children_string() const;
-
 protected:
     ref<BSDF> m_bsdf;
     ref<Emitter> m_emitter;
@@ -938,7 +931,7 @@ protected:
 
     std::map<std::string, ref<Texture>, std::less<>> m_texture_attributes;
 
-    ref<AnimatedTransform4f> m_to_world;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
 
     /// True if the shape is used in a ``ShapeGroup``
     bool m_is_instance = false;

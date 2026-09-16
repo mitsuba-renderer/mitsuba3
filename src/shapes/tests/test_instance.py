@@ -196,22 +196,22 @@ def test03_ray_intersect_instance(variants_all_rgb, width):
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert 'T=[-0.5, -0.5, 0]' in instance_str
-    assert 'S=[0.5, 0.5, 0.5]' in instance_str
+    assert '[0.5, 0, 0, -0.5]' in instance_str
+    assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = mi.Ray3f([-0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert 'T=[-0.5, 0.5, 0]' in instance_str
-    assert 'S=[0.5, 0.5, 0.5]' in instance_str
+    assert '[0.5, 0, 0, -0.5]' in instance_str
+    assert '[0, 0.5, 0, 0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, -0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
     assert dr.all(si.is_valid())
     instance_str = hit_instance_str(si)
-    assert 'T=[0.5, -0.5, 0]' in instance_str
-    assert 'S=[0.5, 0.5, 0.5]' in instance_str
+    assert '[0.5, 0, 0, 0.5]' in instance_str
+    assert '[0, 0.5, 0, -0.5]' in instance_str
 
     ray = mi.Ray3f([0.5, 0.5, -12], [0.0, 0.0, 1.0], time, [])
     si = scene.ray_intersect(ray)
@@ -597,30 +597,56 @@ def test10_animated_instance_rotation_scaling(variants_all_rgb):
     assert dr.allclose(dr.abs(si.n), [1, 0, 0], atol=1e-4)
 
 
-def test11_non_uniform_animation_error(variants_vec_backends_once):
-    """Instances reject unevenly spaced keyframes"""
+@pytest.mark.parametrize("times, uniform", [
+    ([0.0, 1.0], True),
+    ([0.0, 0.5, 1.0], True),
+    ([-2.0, -1.5, -1.0], True),
+    ([0.0, 0.3, 1.0], False),
+])
+def test11_uniform_keyframes(variant_scalar_rgb, times, uniform):
+    """Instances accept evenly spaced keyframes and reject the rest"""
     from mitsuba import ScalarTransform4f as T
 
-    with pytest.raises(RuntimeError):
-        mi.load_dict({
-            'type': 'scene',
-            'group_0': {
-                'type': 'shapegroup',
-                'shape': {'type': 'sphere'}
-            },
-            'instance': {
-                'type': 'instance',
-                'group': {'type': 'ref', 'id': 'group_0'},
-                'to_world': mi.AnimatedTransform4f({
-                    0.0: T().translate([0, 0, 0]),
-                    0.3: T().translate([0, 0, 1]),
-                    1.0: T().translate([0, 0, 2])
-                })
-            }
+    def load():
+        return mi.load_dict({
+            'type': 'instance',
+            'group': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+            'to_world': mi.AnimatedTransform4f({
+                t: T().translate([0, 0, i]) for i, t in enumerate(times)
+            })
         })
 
+    if uniform:
+        load()
+    else:
+        with pytest.raises(RuntimeError, match="uniform range of keyframes"):
+            load()
 
-def test12_animated_instances_with_differing_time_ranges(variants_all_rgb):
+
+def test12_animated_bbox(variant_scalar_rgb):
+    """The bounding box of an animated instance covers its swept volume"""
+    from mitsuba import ScalarTransform4f as T
+
+    def bbox(times, offsets):
+        return mi.load_dict({
+            'type': 'instance',
+            'group': {'type': 'shapegroup', 'shape': {'type': 'sphere'}},
+            'to_world': mi.AnimatedTransform4f({
+                t: T().translate(o) for t, o in zip(times, offsets)
+            })
+        }).bbox()
+
+    b = bbox([0.0, 1.0], [[0, 0, 0], [10, 0, 0]])
+    assert dr.allclose(b.min, [-1, -1, -1])
+    assert dr.allclose(b.max, [11, 1, 1])
+
+    # Keyframes that lie off the internal sample grid must be included
+    b = bbox([0.0, 0.25, 0.5, 0.75, 1.0],
+             [[0, 0, 0], [0, 100, 0], [0, 0, 0], [0, 0, 0], [0, 0, 0]])
+    assert b.max[1] >= 101.0
+
+
+def test13_animated_instances_with_differing_time_ranges(variants_all_rgb):
     """Instances with different keyframe ranges follow the backend's clamping rules"""
     from mitsuba import ScalarTransform4f as T
 

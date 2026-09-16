@@ -307,12 +307,33 @@ void build_gas(const OptixDeviceContext &context,
     }
 }
 
-void prepare_ias(const SceneIR &sd,
-                 const std::vector<OptixTraversableHandle> &blas_handle,
-                 const std::vector<uint32_t> &blas_sbt_offset,
-                 OptixDeviceContext context,
-                 std::vector<void*> &out_motion_transforms,
-                 OptixInstance *out) {
+void *prepare_ias(const SceneIR &sd,
+                  const std::vector<OptixTraversableHandle> &blas_handle,
+                  const std::vector<uint32_t> &blas_sbt_offset,
+                  OptixDeviceContext context,
+                  OptixInstance *out) {
+    // The motion transforms of all animated instances share one buffer, in
+    // which each transform must start at an 8 byte boundary
+    auto srt_size = [](size_t n_keyframes) {
+        size_t size = sizeof(OptixSRTMotionTransform) +
+                      (n_keyframes - 2) * sizeof(OptixSRTData);
+        return (size + 7) & ~(size_t) 7;
+    };
+
+    size_t mt_size = 0;
+    for (const InstanceEntry &inst : sd.instances) {
+        size_t n_keyframes = sd.keyframes(inst).size();
+        if (n_keyframes > 1)
+            mt_size += srt_size(n_keyframes);
+    }
+
+    void *mt_device = nullptr, *mt_staging = nullptr;
+    if (mt_size) {
+        mt_device  = jit_malloc(JitBackend::CUDA, mt_size);
+        mt_staging = jit_malloc(JitBackend::CUDA, mt_size, /* shared = */ 1);
+    }
+    size_t mt_offset = 0;
+
     for (size_t i = 0; i < sd.instances.size(); ++i) {
         const InstanceEntry &inst = sd.instances[i];
         const BlasEntry &blas = sd.blases[inst.blas_index];
@@ -325,46 +346,40 @@ void prepare_ias(const SceneIR &sd,
                              : OPTIX_INSTANCE_FLAG_DISABLE_TRIANGLE_FACE_CULLING;
 
         uint32_t instance_id = inst.instance_index;
+        const std::vector<KeyframeIR> &keyframes = sd.keyframes(inst);
 
-        if (inst.keyframes.size() > 1) {
+        if (keyframes.size() > 1) {
             // For an animated instance, wrap the BLAS in an SRT motion-transform
             // traversable so intersections interpolate the instance-to-world
             // transform across time. The IAS then references that traversable
             // through an identity instance transform.
-            size_t n_keyframes = inst.keyframes.size();
+            size_t n_keyframes = keyframes.size();
             // 'numKeys' below is an unsigned short
             if (n_keyframes > 65535)
                 Throw("prepare_ias(): an animated instance may have at most "
                       "65535 keyframes, but %zu were given.", n_keyframes);
-            size_t size = sizeof(OptixSRTMotionTransform) +
-                          (n_keyframes - 2) * sizeof(OptixSRTData);
-            void *host_ptr = jit_malloc(JitBackend::CUDA, size, /* shared = */ 1);
-
-            OptixSRTMotionTransform *mt = (OptixSRTMotionTransform *) host_ptr;
+            auto *mt = (OptixSRTMotionTransform *) ((uint8_t *) mt_staging + mt_offset);
             mt->child                   = blas_handle[inst.blas_index];
             mt->motionOptions.numKeys   = (unsigned short) n_keyframes;
             mt->motionOptions.flags     = 0;
-            mt->motionOptions.timeBegin = inst.keyframes.front().time;
-            mt->motionOptions.timeEnd   = inst.keyframes.back().time;
+            mt->motionOptions.timeBegin = keyframes.front().time;
+            mt->motionOptions.timeEnd   = keyframes.back().time;
             for (size_t k = 0; k < n_keyframes; ++k) {
-                const KeyframeIR &kf = inst.keyframes[k];
+                const KeyframeIR &kf = keyframes[k];
                 OptixSRTData &srt = mt->srtData[k];
                 srt.sx = kf.scale[0]; srt.sy = kf.scale[1]; srt.sz = kf.scale[2];
                 srt.a = srt.b = srt.c = 0.f; // no shear
                 srt.pvx = srt.pvy = srt.pvz = 0.f;
-                // KeyframeIR stores quaternions w-first (quat[0] = w).
-                srt.qx = kf.quat[1]; srt.qy = kf.quat[2];
-                srt.qz = kf.quat[3]; srt.qw = kf.quat[0];
+                srt.qx = kf.quat[0]; srt.qy = kf.quat[1];
+                srt.qz = kf.quat[2]; srt.qw = kf.quat[3];
                 srt.tx = kf.trans[0]; srt.ty = kf.trans[1]; srt.tz = kf.trans[2];
             }
 
-            void *device_ptr = jit_malloc_migrate(host_ptr, JitBackend::CUDA, 1);
-            out_motion_transforms.push_back(device_ptr);
-
             OptixTraversableHandle motion_handle;
             jit_optix_check(optixConvertPointerToTraversableHandle(
-                context, (CUdeviceptr) device_ptr,
+                context, (CUdeviceptr) ((uint8_t *) mt_device + mt_offset),
                 OPTIX_TRAVERSABLE_TYPE_SRT_MOTION_TRANSFORM, &motion_handle));
+            mt_offset += srt_size(n_keyframes);
 
             out[i] = OptixInstance{
                 { 1.f, 0.f, 0.f, 0.f,
@@ -392,6 +407,13 @@ void prepare_ias(const SceneIR &sd,
             };
         }
     }
+
+    if (mt_size) {
+        jit_memcpy_async(JitBackend::CUDA, mt_device, mt_staging, mt_size);
+        jit_free(mt_staging);
+    }
+
+    return mt_device;
 }
 
 NAMESPACE_END(mitsuba)

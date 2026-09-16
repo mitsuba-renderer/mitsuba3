@@ -40,9 +40,9 @@ The ``<animation>`` tag may carry an ``id`` so that several objects can share it
 via ``<ref>``. See the :ref:`XML scene format description <sec-file-format>`
 for details on references.
 
-Keyframe times must be distinct. Animations must be free of shear, which the
-interpolated representation cannot express. Single-frame animations do not
-count as animations and are exempt from this limitation.
+An animation requires at least two keyframes with distinct times. Use a plain
+``<transform>`` for static objects. Animations must be free of shear, which the
+interpolated representation cannot express.
 
 What can be animated
 --------------------
@@ -365,14 +365,17 @@ The tensors can be edited independently.
 
 The four tensors must agree on the number of keyframes. Changing it therefore
 requires writing all four, followed by another call to
-:py:func:`mitsuba.traverse()` to obtain views of the resized tensors.
+:py:func:`mitsuba.traverse()` to obtain the resized tensors. An animation must
+keep at least two keyframes.
 
-A transformation with a **single keyframe** additionally exposes a plain 4x4
-matrix under its parent's name (e.g. ``params['sensor.to_world']``), which
-keeps existing scripts that update or differentiate static transformations
-working. This matrix takes precedence if written alongside the tensors.
+Objects without animation store their transformation as a plain 4x4 matrix,
+which :py:func:`mitsuba.traverse()` exposes directly under the parameter name.
 
 .. code-block:: python
 
     params['sensor.to_world'] = mi.ScalarTransform4f.translate([0, 0, 1])
     params.update()
+
+Static objects cannot be turned into animated ones through
+:py:func:`mitsuba.traverse()`. Specify an animation when loading the scene
+instead.

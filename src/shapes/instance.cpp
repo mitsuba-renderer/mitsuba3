@@ -1,3 +1,4 @@
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/fwd.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/fwd.h>
@@ -54,8 +55,7 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 template <typename Float, typename Spectrum>
 class Instance final: public Shape<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type, m_visibility,
-                   mark_dirty, to_world_scalar)
+    MI_IMPORT_BASE(Shape, m_to_world, m_shape_type, m_visibility, mark_dirty)
     MI_IMPORT_TYPES(BSDF)
 
     using typename Base::ScalarSize;
@@ -63,9 +63,11 @@ public:
     using ShapeGroup_ = ShapeGroup<Float, Spectrum>;
 
     Instance(const Properties &props) : Base(props) {
+        m_to_world_anim =
+            AnimatedTransform4f::from_properties(props, "to_world").second;
+
         for (auto &prop : props.objects()) {
-            // An <animation> arrives as an object property. Shape's constructor
-            // already consumed it
+            // An <animation> arrives as an object property
             if (prop.try_get<AnimatedTransform4f>())
                 continue;
 
@@ -86,19 +88,26 @@ public:
 
         m_shape_type = ShapeType::Instance;
 
-        m_to_world->ensure_uniform_keyframes();
-        // Instances skip Shape::initialize(), so make the transform opaque here.
-        m_to_world->make_transform_opaque();
+        if (m_to_world_anim)
+            m_to_world_anim->ensure_uniform_keyframes();
+
+        dr::make_opaque(m_to_world);
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("to_world", m_to_world,
-                ParamFlags::Differentiable | ParamFlags::Discontinuous);
+        auto flags = ParamFlags::Differentiable | ParamFlags::Discontinuous;
+        if (m_to_world_anim)
+            cb->put("to_world", m_to_world_anim, flags);
+        else
+            cb->put("to_world", m_to_world, flags);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            m_to_world->ensure_uniform_keyframes();
+            if (m_to_world_anim)
+                m_to_world_anim->ensure_uniform_keyframes();
+            else
+                m_to_world = m_to_world.value().update();
             mark_dirty();
         }
         Base::parameters_changed(keys);
@@ -106,9 +115,18 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         const ScalarBoundingBox3f &bbox = m_shapegroup->bbox();
+
+        // If the shape group is empty, return the invalid bbox
         if (!bbox.valid())
             return bbox;
-        return m_to_world->get_spatial_bounds(bbox);
+
+        if (m_to_world_anim)
+            return m_to_world_anim->get_spatial_bounds(bbox);
+
+        ScalarBoundingBox3f result;
+        for (int i = 0; i < 8; ++i)
+            result.expand(m_to_world.scalar() * bbox.corner(i));
+        return result;
     }
 
     ScalarSize primitive_count() const override { return 1; }
@@ -131,7 +149,7 @@ public:
                                    dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_intersect_preliminary_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
+            return m_shapegroup->ray_intersect_preliminary_scalar(to_world_scalar_at(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_intersect_preliminary() should only be called with scalar types.");
         }
@@ -144,7 +162,7 @@ public:
         MI_MASK_ARGUMENT(active);
 
         if constexpr (!dr::is_array_v<FloatP>) {
-            return m_shapegroup->ray_test_scalar(m_to_world->eval_scalar(ray.time).inverse() * ray);
+            return m_shapegroup->ray_test_scalar(to_world_scalar_at(ray.time).inverse() * ray);
         } else {
             Throw("Instance::ray_test_impl() should only be called with scalar types.");
         }
@@ -156,15 +174,23 @@ public:
 
     std::string to_string() const override {
         std::ostringstream oss;
-            oss << "Instance[" << std::endl
-                << "  shapegroup = " << string::indent(m_shapegroup) << std::endl
-                << "  to_world = " << string::indent(m_to_world, 13) << "," << std::endl
-                << "]";
+        oss << "Instance[" << std::endl
+            << "  shapegroup = " << string::indent(m_shapegroup) << std::endl
+            << "  to_world = "
+            << string::indent(AnimatedTransform4f::transform_string(
+                                  m_to_world.scalar(), m_to_world_anim.get()), 13)
+            << "," << std::endl
+            << "]";
         return oss.str();
     }
 
     bool parameters_grad_enabled() const override {
-        return m_to_world->parameters_grad_enabled() || m_shapegroup->parameters_grad_enabled();
+        return dr::grad_enabled(m_to_world) ||
+               m_shapegroup->parameters_grad_enabled();
+    }
+
+    const AnimatedTransform4f *to_world_anim() const override {
+        return m_to_world_anim.get();
     }
 
     void describe(ShapeIR &g) const override {
@@ -173,27 +199,23 @@ public:
 
         // Animated instances are emitted as decomposed keyframes. A static one
         // is described by 'to_world' below.
-        if (m_to_world->is_animated()) {
-            for (const auto &[time, kf] : m_to_world->keyframes()) {
+        if (m_to_world_anim) {
+            for (const auto &[time, kf] : m_to_world_anim->keyframes()) {
                 KeyframeIR kf_ir;
                 kf_ir.time = (float) time;
-                kf_ir.scale[0] = (float) kf.S.x();
-                kf_ir.scale[1] = (float) kf.S.y();
-                kf_ir.scale[2] = (float) kf.S.z();
-                kf_ir.quat[0] = (float) kf.Q.w();
-                kf_ir.quat[1] = (float) kf.Q.x();
-                kf_ir.quat[2] = (float) kf.Q.y();
-                kf_ir.quat[3] = (float) kf.Q.z();
-                kf_ir.trans[0] = (float) kf.T.x();
-                kf_ir.trans[1] = (float) kf.T.y();
-                kf_ir.trans[2] = (float) kf.T.z();
+                for (size_t i = 0; i < 3; ++i) {
+                    kf_ir.scale[i] = (float) kf.S[i];
+                    kf_ir.trans[i] = (float) kf.T[i];
+                }
+                for (size_t i = 0; i < 4; ++i)
+                    kf_ir.quat[i] = (float) kf.Q[i];
                 g.keyframes.push_back(kf_ir);
             }
         }
 
         // Column-major 3x4 affine (to_world[col*3 + row]). Each backend repacks
         // into its instance-descriptor convention.
-        const auto &M = to_world_scalar().matrix;
+        const auto &M = m_to_world.scalar().matrix;
         for (size_t col = 0; col < 4; ++col)
             for (size_t row = 0; row < 3; ++row)
                 g.to_world[col * 3 + row] = (float) M(row, col);
@@ -203,9 +225,18 @@ public:
 
     MI_DECLARE_CLASS(Instance)
 private:
+    /// Return the scalar object-to-world transformation at ``time``
+    ScalarAffineTransform4f to_world_scalar_at(ScalarFloat time) const {
+        return m_to_world_anim ? m_to_world_anim->eval_scalar(time)
+                               : m_to_world.scalar();
+    }
+
    ref<ShapeGroup_> m_shapegroup;
 
-   MI_TRAVERSE_CB(Base, m_shapegroup)
+   /// Animated object-to-world transformation, or ``nullptr`` if it is constant
+   ref<AnimatedTransform4f> m_to_world_anim;
+
+   MI_TRAVERSE_CB(Base, m_shapegroup, m_to_world_anim)
 };
 
 MI_EXPORT_PLUGIN(Instance)

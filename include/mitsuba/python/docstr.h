@@ -4151,7 +4151,9 @@ static const char *__doc_mitsuba_Endpoint_traverse_cb = R"doc()doc";
 
 static const char *__doc_mitsuba_Endpoint_traverse_cb_fields = R"doc()doc";
 
-static const char *__doc_mitsuba_Endpoint_animated_world_transform = R"doc(Return the underlying `AnimatedTransform4f`)doc";
+static const char *__doc_mitsuba_Endpoint_world_transform_anim =
+R"doc(Return the animated local-to-world transformation, or ``nullptr`` if
+it is constant)doc";
 
 static const char *__doc_mitsuba_Endpoint_world_transform = R"doc(Return the local-to-world transformation at ``time``)doc";
 
@@ -10685,8 +10687,9 @@ static const char *__doc_mitsuba_Shape_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_Shape_animated_to_world =
-R"doc(Return the object-to-world `AnimatedTransform4f`)doc";
+static const char *__doc_mitsuba_Shape_to_world_anim =
+R"doc(Return the animated object-to-world transformation, or ``nullptr`` if
+it is constant)doc";
 
 static const char *__doc_mitsuba_Shape_add_texture_attribute =
 R"doc(Add a texture attribute with the given ``name``.

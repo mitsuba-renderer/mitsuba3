@@ -98,8 +98,9 @@ public:
      * matrix with a scalar (host-side) value.
      */
     void set_world_transform_scalar(const ScalarAffineTransform4f &to_world) {
-        this->m_to_world = new AnimatedTransform4f(to_world);
-        this->m_to_world->make_transform_opaque();
+        this->m_to_world = to_world;
+        this->m_to_world_anim = nullptr;
+        dr::make_opaque(this->m_to_world);
     }
 
     /**
@@ -204,6 +205,13 @@ public:
 
 protected:
     ProjectiveCamera(const Properties &props);
+
+    /// Raise an exception if the camera-to-world transformation contains scale
+    void check_to_world() const {
+        if (this->m_to_world.scalar().has_scale() ||
+            (this->m_to_world_anim && this->m_to_world_anim->has_scale()))
+            Throw("Scale factors in the camera-to-world transformation are not allowed!");
+    }
 
 protected:
     ScalarFloat m_near_clip;

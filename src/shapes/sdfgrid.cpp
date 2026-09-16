@@ -105,7 +105,7 @@ class SDFGrid final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_is_instance, m_shape_type,
                    initialize, mark_dirty, get_children_string,
-                   parameters_grad_enabled, to_world, to_world_scalar)
+                   parameters_grad_enabled)
     MI_IMPORT_TYPES()
 
     /// Termination threshold of the numerical root finder, in ray parameter units
@@ -188,7 +188,7 @@ public:
 
     void update() {
         auto [S, Q, T] =
-            dr::transform_decompose(to_world_scalar().matrix, 25);
+            dr::transform_decompose(m_to_world.scalar().matrix, 25);
         if (dr::abs(Q[0]) > 1e-6f || dr::abs(Q[1]) > 1e-6f ||
             dr::abs(Q[2]) > 1e-6f || dr::abs(Q[3] - 1) > 1e-6f)
             Log(Warn, "'to_world' transform shouldn't perform any rotations, "
@@ -237,6 +237,7 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
+            m_to_world = m_to_world.value().update();
             m_grid_texture.update_inplace();
 
             update();
@@ -249,7 +250,7 @@ public:
 
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
-        ScalarAffineTransform4f to_world = to_world_scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         bbox.expand(to_world * ScalarPoint3f(0.f, 0.f, 0.f));
         bbox.expand(to_world * ScalarPoint3f(1.f, 0.f, 0.f));
@@ -341,7 +342,7 @@ public:
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
 
-        AffineTransform4f to_world  = this->to_world();
+        AffineTransform4f to_world  = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
@@ -491,11 +492,11 @@ public:
 
     Normal3f smooth(const Point3f &p) const {
         Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
-        return dr::normalize(this->to_world() * Normal3f(n));
+        return dr::normalize(m_to_world.value() * Normal3f(n));
     }
 
     bool parameters_grad_enabled() const override {
-        return m_to_world->parameters_grad_enabled();
+        return dr::grad_enabled(m_to_world);
     }
 
     void describe(ShapeIR &g) const override {
@@ -545,11 +546,11 @@ private:
         UInt32P voxel_index;
         Vector3fP voxel_size;
         if constexpr (dr::is_jit_v<FloatP>) {
-            ray = this->to_world().inverse() * ray_;
+            ray = m_to_world.value().inverse() * ray_;
             voxel_index = dr::gather<UInt32P>(m_jit_voxel_indices, prim_index, active);
             voxel_size = m_voxel_size.value();
         } else {
-            ray = to_world_scalar().inverse() * ray_;
+            ray = m_to_world.scalar().inverse() * ray_;
             voxel_index = m_voxel_indices_ptr[prim_index];
             voxel_size = m_voxel_size.scalar();
         }
@@ -904,7 +905,7 @@ private:
                                  static_cast<uint32_t>(shape[0]) };
         uint32_t max_voxel_count =
             (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
-        ScalarAffineTransform4f to_world = to_world_scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
 

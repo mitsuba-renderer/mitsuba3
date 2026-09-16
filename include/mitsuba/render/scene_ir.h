@@ -29,6 +29,7 @@ inline uint32_t accel_mask(ShapeVisibility visibility, bool has_null) {
 struct KeyframeIR {
     float time;
     float scale[3];
+    /// Rotation quaternion in ``(x, y, z, w)`` order
     float quat[4];
     float trans[3];
 };
@@ -148,9 +149,6 @@ struct InstanceEntry {
 
     /// Index + 1 of the owning ``instance``, or 0 for a top-level BLAS.
     uint32_t instance_index = 0;
-
-    /// Keyframes for animated instances (empty if the instance is static).
-    std::vector<KeyframeIR> keyframes;
 };
 
 /// Scene description consumed by acceleration-structure builders.
@@ -178,6 +176,21 @@ struct SceneIR {
     /// ``ShapeIR::isect_func``), released with the IR. Bindings retain
     /// their own reference.
     std::vector<uint32_t> isect_funcs;
+
+    /// Does any instance have more than one keyframe?
+    bool has_motion = false;
+
+    /// Time range spanned by the keyframes of all animated instances
+    float time_min = 0.f, time_max = 0.f;
+
+    /// Return the keyframes of the instance that owns ``inst``. The result is
+    /// empty for static instances and top-level BLAS entries.
+    const std::vector<KeyframeIR> &keyframes(const InstanceEntry &inst) const {
+        static const std::vector<KeyframeIR> empty;
+        return inst.instance_index
+                   ? instance_shapes[inst.instance_index - 1].keyframes
+                   : empty;
+    }
 
     SceneIR() = default;
     SceneIR(SceneIR &&) = default;

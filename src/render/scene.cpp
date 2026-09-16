@@ -1,3 +1,4 @@
+#include <mitsuba/core/animated_transform.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/render/bsdf.h>
@@ -300,6 +301,9 @@ static Matrix unpack_matrix(const Rec &rec, size_t off = 0) {
         0.f,          0.f,          0.f,          1.f);
 }
 
+/// Number of floats per keyframe in ``Scene::m_instance_kf_data``
+static constexpr uint32_t KeyframeStride = 12;
+
 MI_VARIANT void Scene<Float, Spectrum>::update_portal_data() {
     size_t n = m_portals.size();
     std::unique_ptr<ScalarFloat[]> data(new ScalarFloat[12 * n]);
@@ -381,52 +385,49 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
 
     // If any instance is animated, build per-instance keyframe buffers used by
     // eval_instance_to_world() for time-dependent (motion-blurred) lookups.
-    // Static instances contribute a single keyframe so the buffers remain
-    // addressable for every instance. The interpolation math is skipped for
-    // them via a per-lane count check.
-    m_static_instance_count = 0;
-    for (size_t i = 0; i < n; ++i)
-        m_static_instance_count +=
-            !m_instances[i]->animated_to_world()->is_animated();
-
-    if (m_static_instance_count == n) {
-        m_instance_kf_data = dr::zeros<DynamicBuffer<Float>>(0);
-        m_instance_kf_meta = dr::zeros<DynamicBuffer<Float>>(0);
-        return;
-    }
+    // Static instances have no keyframes and are skipped via a per-lane count
+    // check.
     using ScalarUInt = dr::uint_array_t<ScalarFloat>;
-
-    std::vector<ScalarFloat> meta(4 * n), chunks;
+    std::vector<ScalarFloat> meta, chunks;
     size_t running = 0;
+    m_all_instances_animated = true;
+
     for (size_t i = 0; i < n; ++i) {
-        const auto &kfs = m_instances[i]->animated_to_world()->keyframes();
+        const AnimatedTransform4f *anim = m_instances[i]->to_world_anim();
+        if (!anim) {
+            m_all_instances_animated = false;
+            continue;
+        }
+
+        if (meta.empty())
+            meta.resize(4 * n, 0.f);
+
+        const auto &kfs = anim->keyframes();
         size_t k = kfs.size();
+
         // Uniform spacing, as required by the ray tracing backends and
-        // enforced by Instance's calls to ensure_uniform_keyframes(). The step
-        // is unused for static instances but kept nonzero to avoid a division
-        // by zero when forming the reciprocal below.
-        ScalarFloat tstep =
-            k > 1 ? (kfs.back().first - kfs.front().first) / (k - 1) : 1.f;
+        // enforced by Instance's calls to ensure_uniform_keyframes()
+        ScalarFloat tstep = (kfs.back().first - kfs.front().first) / (k - 1);
         // See the layout documented alongside m_instance_kf_meta. Dividing by
         // the step here keeps the vectorized lookup free of a division.
         meta[4 * i + 0] = kfs.front().first;
         meta[4 * i + 1] = 1.f / tstep;
         meta[4 * i + 2] = dr::reinterpret_array<ScalarFloat>((ScalarUInt) running);
         meta[4 * i + 3] = dr::reinterpret_array<ScalarFloat>((ScalarUInt) (k - 1));
-        for (const auto &[time, kf] : kfs) {
-            size_t base = chunks.size();
-            chunks.resize(base + KeyframeStride);
-            kf.pack(time, chunks.data() + base);
-        }
+
+        // See m_instance_kf_data for the layout
+        for (const auto &[time, kf] : kfs)
+            chunks.insert(chunks.end(), { kf.S[0], kf.S[1], kf.S[2], 0.f,
+                                          kf.Q[0], kf.Q[1], kf.Q[2], kf.Q[3],
+                                          kf.T[0], kf.T[1], kf.T[2], 0.f });
         running += k;
     }
 
-    // The vectorized lookup addresses keyframes with 32 bit indices
-    constexpr size_t max_keyframes = 0xFFFFFFFFu / KeyframeStride;
-    if (running > max_keyframes)
-        Throw("Scene::update_instance_transforms(): the scene's instances have "
-              "%zu keyframes in total, which exceeds the limit of %zu.",
-              running, max_keyframes);
+    if (running == 0) {
+        m_instance_kf_data = dr::zeros<DynamicBuffer<Float>>(0);
+        m_instance_kf_meta = dr::zeros<DynamicBuffer<Float>>(0);
+        return;
+    }
 
     // m_instance_kf_data is a read-only acceleration cache populated on the
     // host for primal motion blur evaluation during ray tracing and surface
@@ -442,10 +443,17 @@ MI_VARIANT void Scene<Float, Spectrum>::update_instance_transforms() {
 MI_VARIANT typename Scene<Float, Spectrum>::AffineTransform4f
 Scene<Float, Spectrum>::eval_instance_to_world(const UInt32 &i0,
                                                const Float &time,
+                                               bool inverse,
                                                Mask active) const {
     auto gather_static = [&]() {
-        // Each record holds the matrix and its inverse (24 values).
-        // Transpose the stored inverse to avoid an inversion per hit.
+        // Each record holds the matrix and its inverse (2 x 12 values)
+        if (inverse) {
+            Matrix4f m = unpack_matrix<Matrix4f>(dr::gather<dr::Array<Float, 12>>(
+                m_instance_transforms, 2u * i0 + 1u, active));
+            return AffineTransform4f(m, dr::identity<Matrix4f>());
+        }
+
+        // Transpose the stored inverse to avoid an inversion per hit
         auto rec = dr::gather<dr::Array<Float, 24>>(m_instance_transforms, i0,
                                                     active);
         return AffineTransform4f(
@@ -481,11 +489,11 @@ Scene<Float, Spectrum>::eval_instance_to_world(const UInt32 &i0,
     PackedKeyframe a = dr::gather<PackedKeyframe>(m_instance_kf_data, ki0, animated),
                    b = dr::gather<PackedKeyframe>(m_instance_kf_data, ki1, animated);
 
-    Vector3f s0(a[1], a[2], a[3]), s1(b[1], b[2], b[3]);
+    Vector3f s0(a[0], a[1], a[2]), s1(b[0], b[1], b[2]);
     Quaternion4f q0(a[4], a[5], a[6], a[7]), q1(b[4], b[5], b[6], b[7]);
     Vector3f tr0(a[8], a[9], a[10]), tr1(b[8], b[9], b[10]);
 
-    AffineTransform4f animated_to_world = [&]() {
+    AffineTransform4f animated_trafo = [&]() {
         if constexpr (dr::is_metal_v<Float> || dr::is_cuda_v<Float>) {
             Quaternion4f q = dr::normalize(dr::lerp(q0, q1, frac));
             return AffineTransform4f(
@@ -496,11 +504,14 @@ Scene<Float, Spectrum>::eval_instance_to_world(const UInt32 &i0,
         }
     }();
 
-    // Every instance is animated, so the static matrices are unused
-    if (m_static_instance_count == 0)
-        return animated_to_world;
+    if (inverse)
+        animated_trafo = animated_trafo.inverse();
 
-    return dr::select(animated, animated_to_world, gather_static());
+    // Every instance is animated, so the static matrices are unused
+    if (m_all_instances_animated)
+        return animated_trafo;
+
+    return dr::select(animated, animated_trafo, gather_static());
 }
 
 MI_VARIANT typename Scene<Float, Spectrum>::SurfaceInteraction3f
@@ -552,7 +563,8 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
                              const Float &time, const UInt32 &index) {
             DRJIT_MARK_USED(detach_shape);
             AffineTransform4f to_object =
-                eval_instance_to_world(index - 1u, time, true).inverse();
+                eval_instance_to_world(index - 1u, time, /* inverse = */ true,
+                                       /* active = */ true);
 
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
@@ -586,7 +598,8 @@ Scene<Float, Spectrum>::compute_surface_interaction_instanced(
             DRJIT_MARK_USED(follow_shape);
             DRJIT_MARK_USED(grad_enabled);
             AffineTransform4f to_world =
-                eval_instance_to_world(index - 1u, ray.time, true);
+                eval_instance_to_world(index - 1u, ray.time, /* inverse = */ false,
+                                       /* active = */ true);
             if constexpr (dr::is_diff_v<Float>) {
                 if (detach_shape)
                     to_world = dr::detach(to_world);

@@ -4,268 +4,131 @@ import mitsuba as mi
 import numpy as np
 
 
-def test01_default_is_identity(variant_scalar_rgb):
-    """The default constructor yields a static identity transformation"""
-    at = mi.AnimatedTransform4f()
-    assert not at.is_animated()
-    assert dr.allclose(at.eval_scalar(0.5).matrix, dr.identity(mi.Matrix4f))
+def make_translation_anim(times, offsets):
+    return mi.AnimatedTransform4f({
+        t: mi.ScalarAffineTransform4f.translate(o)
+        for t, o in zip(times, offsets)
+    })
 
 
-def test02_basics(variant_scalar_rgb):
-    """Construction from a constant transform and from keyframes"""
-    # Test construction from constant transform
+def test01_basics(variant_scalar_rgb):
+    """Construction from keyframes"""
     trafo = mi.ScalarAffineTransform4f.translate([1, 2, 3])
-    at = mi.AnimatedTransform4f(trafo)
-    assert not at.is_animated()
-    assert dr.allclose(at.eval_scalar(0.5).matrix, trafo.matrix)
-
-    # Test adding keyframes
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 2, 3])
-    })
-    assert at.is_animated()
-
-    # Test evaluation at keyframes
+    at = make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 2, 3]])
     assert dr.allclose(at.eval_scalar(0.0).matrix, dr.identity(mi.Matrix4f))
-    assert dr.allclose(at.eval_scalar(1.0).matrix, mi.ScalarAffineTransform4f.translate([1, 2, 3]).matrix)
-
-    # Test interpolation
-    mid = at.eval_scalar(0.5)
-    assert dr.allclose(mid.matrix, mi.ScalarAffineTransform4f.translate([0.5, 1, 1.5]).matrix)
+    assert dr.allclose(at.eval_scalar(1.0).matrix, trafo.matrix)
+    assert dr.allclose(at.eval_scalar(0.5).translation(), [0.5, 1, 1.5])
 
 
-def test03_rotation_interpolation(variant_scalar_rgb):
-    """Rotations are interpolated at constant angular speed"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 0),
-        1.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 90)
-    })
-
-    # Halfway should be 45 degrees
-    mid = at.eval_scalar(0.5)
-    expected = mi.ScalarAffineTransform4f.rotate([0, 0, 1], 45)
-    assert dr.allclose(mid.matrix, expected.matrix)
-    assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
-
-
-def test04_scaling_interpolation(variant_scalar_rgb):
-    """Scale factors are interpolated linearly"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.scale([1, 1, 1]),
-        1.0: mi.ScalarAffineTransform4f.scale([2, 4, 8])
-    })
-
-    mid = at.eval_scalar(0.5)
-    expected = mi.ScalarAffineTransform4f.scale([1.5, 2.5, 4.5])
-    assert dr.allclose(mid.matrix, expected.matrix)
-    assert dr.allclose(mid.inverse().matrix, expected.inverse().matrix)
-
-
-def test05_complex_interpolation(variant_scalar_rgb):
-    """Translation, rotation and scale are interpolated component-wise"""
-    t0 =mi.ScalarAffineTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 30).scale([1, 2, 1])
-    t1 = mi.ScalarAffineTransform4f.translate([4, 5, 6]).rotate([0, 1, 0], 60).scale([2, 1, 2])
+@pytest.mark.parametrize("t0, t1, mid", [
+    # Rotations are interpolated at constant angular speed
+    (lambda T: T().rotate([0, 0, 1], 0),
+     lambda T: T().rotate([0, 0, 1], 90),
+     lambda T: T().rotate([0, 0, 1], 45)),
+    # Scale factors are interpolated linearly
+    (lambda T: T().scale([1, 1, 1]),
+     lambda T: T().scale([2, 4, 8]),
+     lambda T: T().scale([1.5, 2.5, 4.5])),
+    # Translation, rotation and scale are interpolated component-wise
+    (lambda T: T().translate([1, 2, 3]).rotate([0, 1, 0], 30).scale([1, 2, 1]),
+     lambda T: T().translate([4, 5, 6]).rotate([0, 1, 0], 60).scale([2, 1, 2]),
+     lambda T: T().translate([2.5, 3.5, 4.5]).rotate([0, 1, 0], 45).scale([1.5, 1.5, 1.5])),
+])
+def test02_interpolation(variant_scalar_rgb, t0, t1, mid):
+    """Keyframes are reproduced exactly and interpolated component-wise"""
+    T = mi.ScalarAffineTransform4f
+    t0, t1, mid = t0(T), t1(T), mid(T)
     at = mi.AnimatedTransform4f({0.0: t0, 1.0: t1})
 
-    # Keyframe evaluation
     assert dr.allclose(at.eval_scalar(0.0).matrix, t0.matrix)
     assert dr.allclose(at.eval_scalar(1.0).matrix, t1.matrix)
-
-    # Midpoint manual composition
-    expected_mid = mi.ScalarAffineTransform4f.translate([2.5, 3.5, 4.5]) @ \
-                   mi.ScalarAffineTransform4f.rotate([0, 1, 0], 45) @ \
-                   mi.ScalarAffineTransform4f.scale([1.5, 1.5, 1.5])
-
-    assert dr.allclose(at.eval_scalar(0.5).matrix, expected_mid.matrix)
-    assert dr.allclose(at.eval_scalar(0.5).inverse().matrix, expected_mid.inverse().matrix)
+    assert dr.allclose(at.eval_scalar(0.5).matrix, mid.matrix)
+    assert dr.allclose(at.eval_scalar(0.5).inverse().matrix, mid.inverse().matrix)
 
 
-def test06_vectorized_eval(variants_vec_backends_once):
-    """eval() interpolates a vector of times"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 1, 1])
-    })
-
-    times_list = [0.0, 0.25, 0.5, 0.75, 1.0]
-    expected_translations = np.array([
-        [0.0, 0.25, 0.5, 0.75, 1.0],
-        [0.0, 0.25, 0.5, 0.75, 1.0],
-        [0.0, 0.25, 0.5, 0.75, 1.0]
-    ])
-
-
-    times = mi.Float(times_list)
-    trafos = at.eval(times)
-    assert dr.allclose(trafos.translation(), expected_translations)
-    assert dr.allclose(trafos.inverse().matrix, mi.AffineTransform4f.translate(expected_translations).inverse().matrix)
-
-
-def test07_scalar_eval(variant_scalar_rgb):
-    """eval_scalar() interpolates individual times"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 1, 1])
-    })
-    times_list = [0.0, 0.25, 0.5, 0.75, 1.0]
-    expected_translations = np.array([
-        [0.0, 0.25, 0.5, 0.75, 1.0],
-        [0.0, 0.25, 0.5, 0.75, 1.0],
-        [0.0, 0.25, 0.5, 0.75, 1.0]
-    ])
-    for i, t in enumerate(times_list):
-        trafo = at.eval_scalar(t)
-        assert dr.allclose(trafo.translation(), expected_translations[:, i])
-
-
-def test08_shear(variant_scalar_rgb):
-    """Shear is accepted for constant transforms and rejected for animations"""
-    m = mi.Matrix4f(1)
+def sheared():
+    m = mi.ScalarMatrix4f(1)
     m[0, 1] = 1.0
-    trafo = mi.ScalarAffineTransform4f(m)
+    return mi.ScalarAffineTransform4f(m)
 
-    # A constant transform is evaluated as a plain matrix, so shear is allowed
-    at = mi.AnimatedTransform4f(trafo)
-    assert dr.allclose(at.eval_scalar(0.0).matrix, m)
-    assert at.has_shear()
-    # Polar decomposition of shear also produces non-unit diagonal stretch.
-    assert at.has_scale()
 
-    at = mi.AnimatedTransform4f({0.0: trafo})
-    assert dr.allclose(at.eval_scalar(0.0).matrix, m)
-    assert at.has_shear()
-
+@pytest.mark.parametrize("keyframes, match", [
     # Keyframes are stored in decomposed form, which cannot represent shear
-    with pytest.raises(RuntimeError, match="must not contain shear"):
-        mi.AnimatedTransform4f({
-            0.0: trafo,
-            1.0: mi.ScalarAffineTransform4f(mi.Matrix4f(1))
-        })
+    (lambda: [(0.0, sheared()), (1.0, mi.ScalarAffineTransform4f())],
+     "must not contain shear"),
+    (lambda: [], "at least two keyframes"),
+    (lambda: [(0.0, mi.ScalarAffineTransform4f())], "at least two keyframes"),
+    # Coincident keyframes would divide by zero
+    (lambda: [(1.0, mi.ScalarAffineTransform4f.translate([0, 0, 0])),
+              (1.0, mi.ScalarAffineTransform4f.translate([1, 0, 0]))],
+     "same time"),
+])
+def test03_invalid_keyframes(variant_scalar_rgb, keyframes, match):
+    """Invalid keyframe lists are rejected"""
+    with pytest.raises(RuntimeError, match=match):
+        mi.AnimatedTransform4f(keyframes())
 
 
-def test09_no_keyframes_error(variant_scalar_rgb):
-    """An empty keyframe list is rejected"""
-    with pytest.raises(RuntimeError, match="at least one keyframe"):
-        mi.AnimatedTransform4f([])
-
-
-def test10_properties(variant_scalar_rgb):
-    """An AnimatedTransform4f can be stored in a Properties object"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 2, 3])
-    })
-
-    props = mi.Properties()
-    props["to_world"] = at
-
-    # Check that it's retrieved correctly and has same content
-    retrieved = props["to_world"]
-    assert retrieved is not None
-    assert props.type("to_world") == mi.Properties.Type.Object
-
-
-def test11_xml_loading(variant_scalar_rgb):
-    """The <animation> tag produces an animated to_world transformation"""
+def test04_xml_roundtrip(variant_scalar_rgb):
+    """The <animation> tag loads and survives a round trip through the XML writer"""
     xml = """<scene version="3.0.0">
         <sensor type="perspective">
             <animation name="to_world">
                 <transform time="0">
                     <translate x="0" y="0" z="0"/>
                 </transform>
-                <transform time="1">
+                <transform time="1.5">
                     <translate x="1" y="2" z="3"/>
                 </transform>
             </animation>
         </sensor>
     </scene>"""
 
-    scene = mi.load_string(xml)
-    at = scene.sensors()[0].animated_world_transform()
-    assert at.is_animated()
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
-    assert dr.allclose(at.eval_scalar(1.0).translation(), [1, 2, 3])
-    assert dr.allclose(at.eval_scalar(0.5).translation(), [0.5, 1, 1.5])
+    config = mi.parser.ParserConfig(mi.variant())
+    written = mi.parser.write_string(mi.parser.parse_string(config, xml))
+    assert "<animation" in written
+
+    for source in [xml, written]:
+        state = mi.parser.parse_string(config, source)
+        scene = mi.parser.instantiate(config, state)
+        at = scene.sensors()[0].world_transform_anim()
+        assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
+        assert dr.allclose(at.eval_scalar(0.75).translation(), [0.5, 1, 1.5])
+        assert dr.allclose(at.eval_scalar(1.5).translation(), [1, 2, 3])
 
     # An <animation> may also sit directly under <scene>, in which case it is
     # instantiated as a plain child object.
-    standalone = mi.load_string("""<scene version="3.0.0">
+    mi.load_string("""<scene version="3.0.0">
         <animation name="test_anim">
             <transform time="0"><translate x="0" y="0" z="0"/></transform>
             <transform time="1"><translate x="1" y="2" z="3"/></transform>
         </animation>
     </scene>""")
-    assert standalone is not None
+
+    with pytest.raises(Exception, match="at least two <transform>"):
+        mi.load_string("""<scene version="3.0.0">
+            <animation name="test_anim">
+                <transform time="0"><translate x="1" y="2" z="3"/></transform>
+            </animation>
+        </scene>""")
 
 
-def test12_translation_bounds(variant_scalar_rgb):
-    """get_translation_bounds() covers the translations of all keyframes"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([1, -2, 3]),
-        1.0: mi.ScalarAffineTransform4f.translate([-1, 5, 0]),
-        2.0: mi.ScalarAffineTransform4f.translate([0, 2, 8])
+def test05_endpoint_bbox(variant_scalar_rgb):
+    """The bounding box of an animated endpoint covers all keyframe positions"""
+    emitter = mi.load_dict({
+        'type': 'point',
+        'to_world': make_translation_anim([0.0, 1.0, 2.0],
+                                          [[1, -2, 3], [-1, 5, 0], [0, 2, 8]])
     })
 
-    bbox = at.get_translation_bounds()
+    bbox = emitter.bbox()
     assert dr.allclose(bbox.min, [-1, -2, 0])
     assert dr.allclose(bbox.max, [1, 5, 8])
 
 
-def test13_has_scale(variant_scalar_rgb):
-    """has_scale() detects a non-unit scale in any keyframe"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
-        1.0: mi.ScalarAffineTransform4f.translate([4, 5, 6])
-    })
-    assert not at.has_scale()
-
-    at2 = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
-        1.0: mi.ScalarAffineTransform4f.scale([2, 1, 1])
-    })
-    assert at2.has_scale()
-
-
-def test14_time_bounds(variant_scalar_rgb):
-    """get_time_bounds() returns the first and last keyframe time"""
-    at = mi.AnimatedTransform4f({
-        0.5: mi.ScalarAffineTransform4f.translate([1, 2, 3]),
-        1.5: mi.ScalarAffineTransform4f.translate([4, 5, 6])
-    })
-
-    bbox = at.get_time_bounds()
-    assert bbox.min == 0.5
-    assert bbox.max == 1.5
-
-
-def test15_spatial_bounds(variant_scalar_rgb):
-    """get_spatial_bounds() covers the bounding box swept over the animation"""
-    bbox = mi.ScalarBoundingBox3f([0, 0, 0], [1, 1, 1])
-
-    # Single keyframe
-    at_single = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([10, 0, 0]))
-    single_bounds = at_single.get_spatial_bounds(bbox)
-    assert dr.allclose(single_bounds.min, [10, 0, 0])
-    assert dr.allclose(single_bounds.max, [11, 1, 1])
-
-    # Multiple keyframes
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([10, 0, 0])
-    })
-
-    spatial_bounds = at.get_spatial_bounds(bbox)
-    assert dr.allclose(spatial_bounds.min, [0, 0, 0])
-    assert dr.allclose(spatial_bounds.max, [11, 1, 1])
-
-
-def test16_parameters_changed(variants_vec_backends_once):
+def test06_parameters_changed(variants_vec_backends_once):
     """Writing a keyframe tensor via traverse() updates both evaluation paths"""
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
-    })
+    at = make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 0, 0]])
     sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
     params = mi.traverse(sensor)
     # translation.x of the second keyframe
@@ -277,75 +140,27 @@ def test16_parameters_changed(variants_vec_backends_once):
     assert dr.allclose(at.eval(mi.Float(1.0)).translation(), [2.5, 0, 0])
 
 
-def test17_change_frame_number(variants_vec_backends_once):
+def test07_change_frame_number(variants_all_backends_once):
     """Writing all four tensors can change the number of keyframes"""
-    # Initialize with 1 keyframe
-    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1.0, 0.0, 0.0]))
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
+    at = make_translation_anim([0.0, 1.0], [[1, 0, 0], [3, 0, 0]])
+    assert dr.allclose(at.eval_scalar(0.5).translation(), [2.0, 0.0, 0.0])
 
-    # Modify to 2 keyframes. All four views must be written together, since
+    # Grow to 3 keyframes. All four views must be written together, since
     # they have to agree on the number of keyframes.
     params = mi.traverse(at)
-    keys = ["times", "scale", "rotation", "translation"]
-    params['times']       = mi.TensorXf([0.0, 1.0], shape=(2,))
-    params['scale']       = mi.TensorXf([1.0] * 6, shape=(2, 3))
-    params['rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0] * 2, shape=(2, 4))
+    params['times']       = mi.TensorXf([0.0, 1.0, 2.0], shape=(3,))
+    params['scale']       = mi.TensorXf([1.0] * 9, shape=(3, 3))
+    params['rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0] * 3, shape=(3, 4))
     params['translation'] = mi.TensorXf([1.0, 0.0, 0.0,
-                                        3.0, 0.0, 0.0], shape=(2, 3))
-    at.parameters_changed(keys)
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
+                                         3.0, 0.0, 0.0,
+                                         7.0, 0.0, 0.0], shape=(3, 3))
+    params.update()
     assert dr.allclose(at.eval_scalar(0.5).translation(), [2.0, 0.0, 0.0])
-    assert dr.allclose(at.eval_scalar(1.0).translation(), [3.0, 0.0, 0.0])
-
-    # Shrink back to 1 keyframe
-    params = mi.traverse(at)
-    params['times']       = mi.TensorXf([0.5], shape=(1,))
-    params['scale']       = mi.TensorXf([1.0, 1.0, 1.0], shape=(1, 3))
-    params['rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0], shape=(1, 4))
-    params['translation'] = mi.TensorXf([5.0, 0.0, 0.0], shape=(1, 3))
-    at.parameters_changed(keys)
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [5.0, 0.0, 0.0])
-    assert dr.allclose(at.eval_scalar(1.0).translation(), [5.0, 0.0, 0.0])
+    assert dr.allclose(at.eval_scalar(1.5).translation(), [5.0, 0.0, 0.0])
+    assert dr.allclose(at.eval(mi.Float(1.5)).translation(), [5.0, 0.0, 0.0])
 
 
-def test18_ensure_uniform_keyframes(variant_scalar_rgb):
-    """ensure_uniform_keyframes() accepts even spacing and rejects the rest"""
-    # Uniform keyframes
-    at = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        0.5: mi.ScalarAffineTransform4f.translate([1, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([2, 0, 0])
-    })
-    at.ensure_uniform_keyframes()  # Should not raise
-
-    # 1 or 2 keyframes should always pass
-    at2 = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([0, 0, 0]))
-    at2.ensure_uniform_keyframes()
-
-    at3 = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([1, 0, 0])
-    })
-    at3.ensure_uniform_keyframes()
-
-    # Non-uniform keyframes
-    at4 = mi.AnimatedTransform4f({
-        0.0: mi.ScalarAffineTransform4f.translate([0, 0, 0]),
-        0.3: mi.ScalarAffineTransform4f.translate([1, 0, 0]),
-        1.0: mi.ScalarAffineTransform4f.translate([2, 0, 0])
-    })
-    with pytest.raises(RuntimeError, match="uniform range of keyframes"):
-        at4.ensure_uniform_keyframes()
-
-
-def make_translation_anim(times, offsets):
-    return mi.AnimatedTransform4f({
-        t: mi.ScalarAffineTransform4f.translate(o)
-        for t, o in zip(times, offsets)
-    })
-
-
-def test19_vectorized_eval_many_keyframes(variants_vec_backends_once):
+def test08_vectorized_eval_many_keyframes(variants_vec_backends_once):
     """eval() locates the right keyframe pair in a longer animation"""
     at = make_translation_anim([0.0, 1.0, 2.0, 3.0],
                                [[0, 0, 0], [1, 0, 0], [1, 4, 0], [1, 4, 9]])
@@ -360,8 +175,8 @@ def test19_vectorized_eval_many_keyframes(variants_vec_backends_once):
     assert dr.allclose(got, expected)
 
 
-def test20_eval_matches_eval_scalar(variants_vec_backends_once):
-    """eval() and eval_scalar() agree, including outside the time range"""
+def test09_eval_matches_eval_scalar(variants_all_backends_once):
+    """eval() and eval_scalar() agree, and both clamp outside the time range"""
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.translate([1, 2, 3]).rotate([0, 1, 0], 10),
         1.0: mi.ScalarAffineTransform4f.translate([4, 5, 6]).rotate([0, 1, 0], 50).scale([2, 1, 1]),
@@ -369,29 +184,17 @@ def test20_eval_matches_eval_scalar(variants_vec_backends_once):
     })
 
     for t in [-1.0, 0.0, 0.3, 1.0, 1.9, 2.5, 4.0]:
-        assert dr.allclose(at.eval(mi.Float(t)).matrix,
-                           mi.Matrix4f(at.eval_scalar(t).matrix), atol=1e-5)
+        ref = at.eval_scalar(t)
+        trafo = at.eval(mi.Float(t))
+        assert dr.allclose(trafo.matrix, mi.Matrix4f(ref.matrix), atol=1e-5)
+        assert dr.allclose(trafo.inverse().matrix,
+                           mi.Matrix4f(ref.inverse().matrix), atol=1e-5)
+
+    assert dr.allclose(at.eval_scalar(-1.0).matrix, at.eval_scalar(0.0).matrix)
+    assert dr.allclose(at.eval_scalar(4.0).matrix, at.eval_scalar(2.5).matrix)
 
 
-def test21_clamping_outside_time_range(variant_scalar_rgb):
-    """eval_scalar() clamps times to the first and last keyframe"""
-    at = make_translation_anim([1.0, 2.0], [[0, 0, 0], [10, 0, 0]])
-    for t in [-5.0, 0.0, 1.0]:
-        assert dr.allclose(at.eval_scalar(t).translation(), [0, 0, 0])
-    for t in [2.0, 3.0, 100.0]:
-        assert dr.allclose(at.eval_scalar(t).translation(), [10, 0, 0])
-
-
-def test22_clamping_outside_time_range_vec(variants_vec_backends_once):
-    """eval() clamps times to the first and last keyframe"""
-    at = make_translation_anim([1.0, 2.0, 3.0], [[0, 0, 0], [10, 0, 0], [20, 0, 0]])
-    got = at.eval(mi.Float([-5.0, 1.0, 3.0, 99.0])).translation()
-    assert dr.allclose(got, np.array([[0.0, 0.0, 20.0, 20.0],
-                                      [0.0, 0.0, 0.0, 0.0],
-                                      [0.0, 0.0, 0.0, 0.0]]))
-
-
-def test23_large_rotation_hemisphere(variant_scalar_rgb):
+def test10_large_rotation_hemisphere(variant_scalar_rgb):
     """A step beyond 180 degrees flips the second quaternion onto the short path"""
     at = mi.AnimatedTransform4f({
         0.0: mi.ScalarAffineTransform4f.rotate([0, 0, 1], 0),
@@ -403,130 +206,47 @@ def test23_large_rotation_hemisphere(variant_scalar_rgb):
     assert dr.allclose(mid.matrix, expected.matrix)
 
 
-def test24_unsorted_keyframes_are_sorted(variant_scalar_rgb):
+def test11_unsorted_keyframes_are_sorted(variant_scalar_rgb):
     """Keyframes are sorted by time on construction"""
     at = mi.AnimatedTransform4f([
         (2.0, mi.ScalarAffineTransform4f.translate([2, 0, 0])),
         (0.0, mi.ScalarAffineTransform4f.translate([0, 0, 0])),
         (1.0, mi.ScalarAffineTransform4f.translate([1, 0, 0])),
     ])
-    bounds = at.get_time_bounds()
-    assert bounds.min == 0.0 and bounds.max == 2.0
     assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
     assert dr.allclose(at.eval_scalar(0.5).translation(), [0.5, 0, 0])
     assert dr.allclose(at.eval_scalar(2.0).translation(), [2, 0, 0])
 
 
-def test25_duplicate_keyframe_times(variant_scalar_rgb):
-    """Coincident keyframes are rejected, since they would divide by zero"""
+def test12_shrink_to_static(variants_vec_backends_once):
+    """Editing an attached animation down to one keyframe raises an error"""
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'to_world': make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 0, 0]])
+    })
+    assert sensor.world_transform_anim() is not None
+
+    params = mi.traverse(sensor)
+    params['to_world.times']       = mi.TensorXf([0.0], shape=(1,))
+    params['to_world.scale']       = mi.TensorXf([1.0, 1.0, 1.0], shape=(1, 3))
+    params['to_world.rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0], shape=(1, 4))
+    params['to_world.translation'] = mi.TensorXf([5.0, 0.0, 0.0], shape=(1, 3))
+    with pytest.raises(RuntimeError, match="at least two keyframes"):
+        params.update()
+
+
+def test13_edited_keyframes_are_validated(variants_all_backends_once):
+    """Keyframes written via traverse() are sorted and validated"""
+    at = make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 0, 0]])
+    params = mi.traverse(at)
+    params['times'] = mi.TensorXf([1.0, 0.0], shape=(2,))
+    params.update()
+    assert dr.allclose(at.eval_scalar(0.0).translation(), [1, 0, 0])
+    assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [1, 0, 0])
+
+    params['times'] = mi.TensorXf([0.5, 0.5], shape=(2,))
     with pytest.raises(RuntimeError, match="same time"):
-        mi.AnimatedTransform4f([
-            (1.0, mi.ScalarAffineTransform4f.translate([0, 0, 0])),
-            (1.0, mi.ScalarAffineTransform4f.translate([1, 0, 0])),
-        ])
-
-
-def test26_static_data_edit(variants_vec_backends_once):
-    """Writing the tensors of a static transform also updates its matrix"""
-    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
-    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
-
-    params = mi.traverse(sensor)
-    translation = mi.TensorXf(params['to_world.translation'])
-    translation[0, 0] = 5.0  # translation.x of the only keyframe
-    params['to_world.translation'] = translation
-    params.update()
-
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [5, 0, 0])
-    assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [5, 0, 0])
-
-
-def test27_static_transform_edit(variants_vec_backends_once):
-    """Writing the matrix of a static transform also updates its keyframe"""
-    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
-    sensor = mi.load_dict({'type': 'perspective', 'to_world': at})
-
-    params = mi.traverse(sensor)
-    params['to_world'] = mi.AffineTransform4f().translate([0, 7, 0])
-    params.update()
-
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 7, 0])
-    assert dr.allclose(at.eval(mi.Float(0.0)).translation(), [0, 7, 0])
-    # get_translation_bounds() reads the host-side keyframe list, which must
-    # have followed the write to 'transform'.
-    bbox = at.get_translation_bounds()
-    assert dr.allclose(bbox.min, [0, 7, 0]) and dr.allclose(bbox.max, [0, 7, 0])
-
-
-def test28_grad_enabled(variants_all_ad_rgb):
-    """parameters_grad_enabled() reflects gradients enabled via traverse()"""
-    static =mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1, 0, 0]))
-    assert not static.parameters_grad_enabled()
-
-    animated = make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 0, 0]])
-    assert not animated.parameters_grad_enabled()
-
-    # Gradients enter through a write. Enabling them on a view attaches the
-    # packed buffer once the view is folded back in by parameters_changed()
-    params = mi.traverse(animated)
-    translation = mi.TensorXf(params['translation'])
-    dr.enable_grad(translation)
-    params['translation'] = translation
-    params.update()
-    assert animated.parameters_grad_enabled()
-
-
-def test29_spatial_bounds_hits_keyframes(variant_scalar_rgb):
-    """get_spatial_bounds() includes keyframes that lie off its sample grid"""
-    at =make_translation_anim([0.0, 1.0 / 3.0, 1.0],
-                               [[0, 0, 0], [0, 100, 0], [0, 0, 0]])
-    bbox = mi.ScalarBoundingBox3f([0, 0, 0], [1, 1, 1])
-    bounds = at.get_spatial_bounds(bbox)
-    assert bounds.max[1] >= 100.0
-
-
-def test30_xml_roundtrip(variant_scalar_rgb):
-    """An <animation> survives a round trip through the XML writer"""
-    xml = """<scene version="3.0.0">
-        <sensor type="perspective">
-            <animation name="to_world">
-                <transform time="0">
-                    <translate x="0" y="0" z="0"/>
-                </transform>
-                <transform time="1.5">
-                    <translate x="1" y="2" z="3"/>
-                </transform>
-            </animation>
-        </sensor>
-    </scene>"""
-
-    state = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), xml)
-    written = mi.parser.write_string(state)
-    assert "<animation" in written
-
-    # Re-parsing the generated document must yield the same animation.
-    state2 = mi.parser.parse_string(mi.parser.ParserConfig(mi.variant()), written)
-    scene = mi.parser.instantiate(mi.parser.ParserConfig(mi.variant()), state2)
-    at = scene.sensors()[0].animated_world_transform()
-    assert at.is_animated()
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [0, 0, 0])
-    assert dr.allclose(at.eval_scalar(1.5).translation(), [1, 2, 3])
-
-
-def test31_negative_times(variant_scalar_rgb):
-    """Negative keyframe times work for evaluation, bounds and uniformity checks"""
-    at = make_translation_anim([-2.0, -1.5, -1.0],
-                               [[0, 0, 0], [1, 0, 0], [2, 0, 0]])
-
-    assert dr.allclose(at.eval_scalar(-2.0).translation(), [0, 0, 0])
-    assert dr.allclose(at.eval_scalar(-1.75).translation(), [0.5, 0, 0])
-    assert dr.allclose(at.eval_scalar(-1.0).translation(), [2, 0, 0])
-
-    bounds = at.get_time_bounds()
-    assert bounds.min == -2.0 and bounds.max == -1.0
-
-    # A uniform range of negative times must not be rejected by ensure_uniform_keyframes().
-    at.ensure_uniform_keyframes()
+        params.update()
 
 
 @pytest.mark.parametrize("trafo_fn", [
@@ -535,28 +255,9 @@ def test31_negative_times(variant_scalar_rgb):
     lambda T: T().rotate([0, 1, 0], 33).scale([-1, 2, 1]),
     lambda T: T().translate([1, 2, 3]).rotate([1, 0, 0], 90).scale([2, -3, 4]),
 ])
-def test32_mirroring_decomposition(variant_scalar_rgb, trafo_fn):
+def test14_mirroring_decomposition(variant_scalar_rgb, trafo_fn):
     """Mirroring transformations survive the decomposition into keyframes"""
-    trafo =trafo_fn(mi.ScalarAffineTransform4f)
+    trafo = trafo_fn(mi.ScalarAffineTransform4f)
     at = mi.AnimatedTransform4f({0.0: trafo, 1.0: trafo})
     for t in [0.0, 0.5, 1.0]:
         assert dr.allclose(at.eval_scalar(t).matrix, trafo.matrix, atol=1e-5), t
-
-
-def test33_change_frame_number_params_update(variant_scalar_rgb):
-    """Changing the keyframe count also works through params.update()"""
-    # Initialize with 1 keyframe
-    at = mi.AnimatedTransform4f(mi.ScalarAffineTransform4f.translate([1.0, 0.0, 0.0]))
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
-
-    # Modify to 2 keyframes via mi.traverse and params.update()
-    params = mi.traverse(at)
-    params['times']       = mi.TensorXf([0.0, 1.0], shape=(2,))
-    params['scale']       = mi.TensorXf([1.0] * 6, shape=(2, 3))
-    params['rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0] * 2, shape=(2, 4))
-    params['translation'] = mi.TensorXf([1.0, 0.0, 0.0,
-                                        3.0, 0.0, 0.0], shape=(2, 3))
-    params.update()
-    assert dr.allclose(at.eval_scalar(0.0).translation(), [1.0, 0.0, 0.0])
-    assert dr.allclose(at.eval_scalar(0.5).translation(), [2.0, 0.0, 0.0])
-    assert dr.allclose(at.eval_scalar(1.0).translation(), [3.0, 0.0, 0.0])

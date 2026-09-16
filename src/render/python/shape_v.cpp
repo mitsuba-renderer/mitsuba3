@@ -533,10 +533,9 @@ MI_PY_EXPORT(Shape) {
 
     auto shape = MI_PY_TRAMPOLINE_CLASS(PyShape, Shape, Object)
         .def(nb::init<const Properties &>(), "props"_a)
-        .def_method(Shape, to_world, "time"_a = 0.f)
-        .def_method(Shape, to_world_scalar, "time"_a = 0.f)
-        .def("animated_to_world", [] (Shape &s) { return s.animated_to_world(); },
-             D(Shape, animated_to_world))
+        .def("to_world", &Shape::to_world, D(Shape, to_world))
+        .def("to_world_scalar", &Shape::to_world_scalar,
+             D(Shape, to_world_scalar))
         .def("bbox", nb::overload_cast<>(
             &Shape::bbox, nb::const_), D(Shape, bbox))
         .def("bbox", nb::overload_cast<ScalarUInt32>(

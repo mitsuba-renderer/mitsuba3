@@ -315,7 +315,8 @@ public:
 
     /// Return the local-to-world transformation at ``time``
     AffineTransform4f world_transform(Float time = 0.f) const {
-        return m_to_world->eval(time);
+        return m_to_world_anim ? m_to_world_anim->eval(time)
+                               : m_to_world.value();
     }
 
     /**
@@ -325,17 +326,14 @@ public:
      * for queued device work.
      */
     ScalarAffineTransform4f world_transform_scalar(ScalarFloat time = 0.f) const {
-        return m_to_world->eval_scalar(time);
+        return m_to_world_anim ? m_to_world_anim->eval_scalar(time)
+                               : m_to_world.scalar();
     }
 
-    /// Return the underlying `AnimatedTransform4f`
-    const AnimatedTransform<Float, Spectrum>* animated_world_transform() const {
-        return m_to_world.get();
-    }
-
-    /// Return the underlying `AnimatedTransform4f`
-    AnimatedTransform<Float, Spectrum>* animated_world_transform() {
-        return m_to_world.get();
+    /// Return the animated local-to-world transformation, or ``nullptr`` if
+    /// it is constant
+    const AnimatedTransform4f *world_transform_anim() const {
+        return m_to_world_anim.get();
     }
 
     /**
@@ -395,20 +393,42 @@ public:
 
     void traverse(TraversalCallback *callback) override;
 
+    void parameters_changed(const std::vector<std::string> &keys = {}) override;
+
     MI_DECLARE_CLASS(Endpoint)
 
 protected:
     Endpoint(const Properties &props);
     Endpoint(const Properties &props, ObjectType type);
 
+    /// Expose the constant or animated ``to_world`` transformation
+    void traverse_world_transform(TraversalCallback *cb) {
+        if (m_to_world_anim)
+            cb->put("to_world", m_to_world_anim, ParamFlags::NonDifferentiable);
+        else
+            cb->put("to_world", m_to_world, ParamFlags::NonDifferentiable);
+    }
+
+    /// Return a string representation of the constant or animated
+    /// ``to_world`` transformation
+    std::string world_transform_string() const {
+        return AnimatedTransform4f::transform_string(m_to_world.scalar(),
+                                                     m_to_world_anim.get());
+    }
+
+    /// Return the bounding box of the endpoint's position, which covers all
+    /// keyframes of an animated ``to_world`` transformation
+    ScalarBoundingBox3f position_bounds() const;
+
 protected:
-    ref<AnimatedTransform<Float, Spectrum>> m_to_world;
+    field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
+    ref<AnimatedTransform4f> m_to_world_anim;
     ref<Medium> m_medium;
     Shape *m_shape = nullptr;
     bool m_needs_sample_2 = true;
     bool m_needs_sample_3 = true;
 
-    MI_DECLARE_TRAVERSE_CB(m_to_world, m_medium)
+    MI_DECLARE_TRAVERSE_CB(m_to_world, m_to_world_anim, m_medium)
 };
 
 MI_EXTERN_CLASS(Endpoint)

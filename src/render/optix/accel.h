@@ -91,14 +91,13 @@ build_gas(const OptixDeviceContext &context,
 /// Instances with more than one keyframe are inserted behind an
 /// ``OptixSRTMotionTransform`` traversable (built with ``context``) so that
 /// intersections interpolate the instance-to-world transform across time. The
-/// device allocations backing those transforms are appended to
-/// ``out_motion_transforms``, whose owner is responsible for freeing them.
-extern MI_EXPORT_LIB void
+/// function returns the device buffer holding these transforms (or
+/// ``nullptr`` if there are none), which the caller must free.
+extern MI_EXPORT_LIB void *
 prepare_ias(const SceneIR &sd,
             const std::vector<OptixTraversableHandle> &blas_handle,
             const std::vector<uint32_t> &blas_sbt_offset,
             OptixDeviceContext context,
-            std::vector<void*> &out_motion_transforms,
             OptixInstance *out);
 
 NAMESPACE_END(mitsuba)

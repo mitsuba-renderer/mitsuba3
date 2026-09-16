@@ -87,8 +87,7 @@ template <typename Float, typename Spectrum>
 class Disk final : public Shape<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Shape, m_to_world, m_discontinuity_types, m_shape_type,
-                   initialize, mark_dirty, get_children_string, to_world,
-                   to_world_scalar)
+                   initialize, mark_dirty, get_children_string)
     MI_IMPORT_TYPES()
 
     using typename Base::ScalarIndex;
@@ -112,14 +111,13 @@ public:
     }
 
     void update() {
-        AffineTransform4f to_world = this->to_world();
-        Vector3f dp_du = to_world * Vector3f(1.f, 0.f, 0.f);
-        Vector3f dp_dv = to_world * Vector3f(0.f, 1.f, 0.f);
+        Vector3f dp_du = m_to_world.value() * Vector3f(1.f, 0.f, 0.f);
+        Vector3f dp_dv = m_to_world.value() * Vector3f(0.f, 1.f, 0.f);
 
         m_du = dr::norm(dp_du);
         m_dv = dr::norm(dp_dv);
 
-        Normal3f n = dr::normalize(to_world * Normal3f(0.f, 0.f, 1.f));
+        Normal3f n = dr::normalize(m_to_world.value() * Normal3f(0.f, 0.f, 1.f));
         if (m_flip_normals)
             n = -n;
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
@@ -141,6 +139,7 @@ public:
             if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
+            m_to_world = m_to_world.value().update();
             update();
         }
         Base::parameters_changed(keys);
@@ -148,7 +147,7 @@ public:
 
 
     ScalarBoundingBox3f bbox() const override {
-        ScalarAffineTransform4f to_world = to_world_scalar();
+        ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         ScalarPoint3f c = to_world * ScalarPoint3f(0.f, 0.f, 0.f);
         ScalarVector3f u = to_world * ScalarVector3f(1.f, 0.f, 0.f);
@@ -179,10 +178,9 @@ public:
 
         PositionSample3f ps = dr::zeros<PositionSample3f>();
         Point3f local(p.x(), p.y(), 0.f);
-        AffineTransform4f to_world = this->to_world();
-        ps.p     = to_world * local;
+        ps.p     = m_to_world.value() * local;
         ps.n     = m_frame.n;
-        ps.p_err = to_world.position_error(local, ps.n);
+        ps.p_err = m_to_world.value().position_error(local, ps.n);
         ps.pdf   = m_inv_surface_area;
         ps.time  = time;
         ps.delta = false;
@@ -203,9 +201,8 @@ public:
         MI_MASK_ARGUMENT(active);
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
-        AffineTransform4f to_world_value = this->to_world();
-        AffineTransform4f to_world = detach_shape ? dr::detach(to_world_value)
-                                                  : to_world_value;
+        AffineTransform4f to_world = detach_shape ? dr::detach(m_to_world.value())
+                                                  : m_to_world.value();
         Normal3f n = detach_shape ? dr::detach(m_frame.n) : m_frame.n;
 
         auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.y());
@@ -243,7 +240,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        AffineTransform4f to_world = this->to_world();
+        const AffineTransform4f& to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         // Sample a point on the shape surface
@@ -303,7 +300,7 @@ public:
 
             auto [sin_theta, cos_theta] = dr::sincos(uv.y() * dr::TwoPi<Float>);
             Point3f local  = uv.x() * Point3f(cos_theta, sin_theta, 0.f);
-            Point3f p_diff = this->to_world() * local;
+            Point3f p_diff = m_to_world.value() * local;
 
             return dr::replace_grad(si.p, p_diff);
         }
@@ -319,7 +316,7 @@ public:
         if (!has_flag(flags, DiscontinuityFlags::PerimeterType))
             return dr::zeros<SilhouetteSample3f>();
 
-        AffineTransform4f to_world = this->to_world();
+        const AffineTransform4f &to_world = m_to_world.value();
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
         ss.uv = Point2f(1.f, si.uv.y());
@@ -370,10 +367,9 @@ public:
         SilhouetteSample3f ss = primitive_silhouette_projection(viewpoint, si, flags, 0.f, active);
 
         // Arc-length ratio
-        AffineTransform4f to_world = this->to_world();
-        Point3f local_p = to_world.inverse() * ss.p;
+        Point3f local_p = m_to_world.value().inverse() * ss.p;
         ss.pdf = dr::InvTwoPi<Float> *
-                 dr::rsqrt(dr::squared_norm(to_world *
+                 dr::rsqrt(dr::squared_norm(m_to_world.value() *
                      Vector3f(local_p.y(), -local_p.x(), 0.f)));
 
         return ss;
@@ -390,9 +386,9 @@ public:
     intersect_impl(const Ray3fP &ray_, dr::mask_t<FloatP> active) const {
         AffineTransform<Point<FloatP, 4>> to_object;
         if constexpr (!dr::is_jit_v<FloatP>)
-            to_object = to_world_scalar().inverse();
+            to_object = m_to_world.scalar().inverse();
         else
-            to_object = this->to_world().inverse();
+            to_object = m_to_world.value().inverse();
 
         Ray3fP ray = to_object * ray_;
         FloatP t   = -ray.o.z() / ray.d.z();
@@ -435,7 +431,7 @@ public:
 
         bool detach_shape = has_flag(ray_flags, RayFlags::DetachShape);
 
-        AffineTransform4f to_world = this->to_world();
+        AffineTransform4f to_world = m_to_world.value();
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object, m_frame);
@@ -490,7 +486,7 @@ public:
     }
 
     bool parameters_grad_enabled() const override {
-        return m_to_world->parameters_grad_enabled();
+        return dr::grad_enabled(m_to_world.value());
     }
 
     std::string to_string() const override {
