@@ -227,18 +227,18 @@ public:
             file_resolver()->resolve(DATABASE_PATH + "sampling_data.bin")
         };
 
-        m_sky_params_dataset = load_field<TensorXf64>(datasets, "sky_params" + dataset_type);
-        m_sky_rad_dataset = load_field<TensorXf64>(datasets, "sky_rad" + dataset_type);
-        m_sun_rad_dataset = load_field<TensorXf64>(datasets, "sun_rad" + dataset_type);
+        m_sky_params_dataset = load_field<double>(datasets, "sky_params" + dataset_type);
+        m_sky_rad_dataset = load_field<double>(datasets, "sky_rad" + dataset_type);
+        m_sun_rad_dataset = load_field<double>(datasets, "sun_rad" + dataset_type);
 
-        m_sampling_params = load_field<TensorXf32>(sampling_dataset, "weights");
+        m_sampling_params = load_field<float>(sampling_dataset, "weights");
 
-        m_sky_irrad_dataset = load_field<TensorXf32>(sampling_dataset, "sky_irradiance");
-        m_sun_irrad_dataset = load_field<TensorXf32>(sampling_dataset, "sun_irradiance");
+        m_sky_irrad_dataset = load_field<float>(sampling_dataset, "sky_irradiance");
+        m_sun_irrad_dataset = load_field<float>(sampling_dataset, "sun_irradiance");
 
         // Only used in spectral mode since limb darkening is baked in the RGB dataset
         if constexpr (!is_rgb_v<Spectrum>) {
-            m_sun_ld = load_field<TensorXf64>(datasets, "sun_ld_spec");
+            m_sun_ld = load_field<double>(datasets, "sun_ld_spec");
         }
 
         // Precompute sun dataset
@@ -1192,15 +1192,30 @@ protected:
      *     tensor_name: Name of the tensor to extract
      *
      * Template Args:
-     *     FileTensor: Tensor and type stored in the file
+     *     FileScalar: Component type stored in the file
      *
      * Returns:
      *     The queried tensor
      */
-    template <typename FileTensor>
+    template <typename FileScalar>
     TensorXf load_field(const TensorFile& tensor_file, const std::string_view tensor_name) const {
-        FileTensor ft = tensor_file.field(tensor_name).to<FileTensor>();
-        return TensorXf(std::move(ft.array()), std::move(ft.shape()));
+        const TensorFile::Field &field = tensor_file.field(tensor_name);
+        if (struct_type_v<FileScalar> != field.dtype)
+            Throw("Sunsky emitter: the dataset \"%s\" has an unexpected "
+                  "component format!", std::string(tensor_name).c_str());
+
+        // Convert on the host. Loading the file's double precision data into
+        // a JIT array first would create a Float64 variable, which the Metal
+        // backend does not support.
+        size_t size = 1;
+        for (size_t s : field.shape)
+            size *= s;
+        std::vector<dr::scalar_t<FloatStorage>> data(size);
+        const FileScalar *src = (const FileScalar *) field.data;
+        for (size_t i = 0; i < size; ++i)
+            data[i] = (dr::scalar_t<FloatStorage>) src[i];
+
+        return TensorXf(data.data(), field.shape.size(), field.shape.data());
     }
 
     /**
