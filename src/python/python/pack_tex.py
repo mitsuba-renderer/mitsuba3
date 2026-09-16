@@ -23,12 +23,13 @@ texture:
   BC4  single-channel data such as roughness or opacity, reduced to the
        luminance that Mitsuba would compute from a color image
 
+Files with identical contents that are used in the same way share one entry.
 The rewritten scene references the container through the ``filename`` and
 ``name`` parameters of each bitmap texture. The "File formats" section of the
 Mitsuba documentation describes the container. The encoder is available at
 https://github.com/richgel999/bc7enc_rdo and is located through ``--bc7enc``.
 """
-import argparse, os, subprocess, struct, sys, tempfile, shutil, time
+import argparse, hashlib, os, subprocess, struct, sys, tempfile, shutil, time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from xml.etree import ElementTree as ET
@@ -257,7 +258,8 @@ def main():
     parent_of = {c: p for p in root.iter() for c in p}
 
     # Collect the bitmap textures and decide on a format for each usage
-    uses = []   # (element, filename element, (absolute path, kind, raw))
+    uses = []      # (element, filename element, (content hash, kind, raw), absolute path)
+    digests = {}   # absolute path -> content hash
     for tex in root.iter('texture'):
         fn = tex.find('string[@name="filename"]')
         if tex.get('type') != 'bitmap' or fn is None:
@@ -274,20 +276,23 @@ def main():
             kind = 'scalar'
         else:
             kind = 'color'
-        uses.append((tex, fn, (path, kind, raw)))
+        if path not in digests:
+            with open(path, 'rb') as f:
+                digests[path] = hashlib.sha256(f.read()).hexdigest()
+        uses.append((tex, fn, (digests[path], kind, raw), path))
 
-    # One entry per (file, kind, raw), named after the file with a suffix when
-    # the same file is used in several ways
-    keys = {}   # key -> filename as written in the scene
-    for tex, fn, key in uses:
-        keys.setdefault(key, fn.get('value'))
-    per_file = Counter(path for path, _, _ in keys)
+    # One entry per (file contents, kind, raw), named after the first file with
+    # these contents, plus a suffix when the contents are used in several ways
+    keys = {}   # key -> (absolute path, filename as written in the scene)
+    for tex, fn, key, path in uses:
+        keys.setdefault(key, (path, fn.get('value')))
+    per_file = Counter(digest for digest, _, _ in keys)
     names = {}
-    for (path, kind, raw), fn in keys.items():
+    for (digest, kind, raw), (path, fn) in keys.items():
         name = os.path.splitext(fn.replace('\\', '/'))[0]
-        if per_file[path] > 1:
+        if per_file[digest] > 1:
             name += f'_{kind}' + ('_raw' if raw else '')
-        names[(path, kind, raw)] = name
+        names[(digest, kind, raw)] = name
 
     counts = Counter(kind for _, kind, _ in names)
     print(f'{len(uses)} bitmap textures, {len(names)} unique: '
@@ -304,7 +309,8 @@ def main():
     with tempfile.TemporaryDirectory(prefix='pack_tex_', dir=args.tmp) as tmp, \
          ThreadPoolExecutor(max_workers=jobs) as pool, \
          tqdm(total=len(names), unit='texture', dynamic_ncols=True) as progress:
-        futures = {pool.submit(compress, key, name, os.path.join(tmp, str(i)), args, omp_threads): key
+        futures = {pool.submit(compress, (keys[key][0],) + key[1:], name,
+                               os.path.join(tmp, str(i)), args, omp_threads): key
                    for i, (key, name) in enumerate(names.items())}
         # Stream each encoded entry to the container as soon as it is ready
         for fut in as_completed(futures):
@@ -324,7 +330,7 @@ def main():
     # Rewrite the scene: uniform textures become plain color values, the
     # others reference the container
     rel = os.path.relpath(container, os.path.dirname(output)).replace('\\', '/')
-    for tex, fn, key in uses:
+    for tex, fn, key, _ in uses:
         e = results[key]
         parent = parent_of[tex]
         if 'constant' in e:
