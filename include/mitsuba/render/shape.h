@@ -912,6 +912,12 @@ protected:
     inline Shape() : JitObject<Shape>("") { }
 
 protected:
+    /**
+     * Attach the shape to its area emitter and sensor, and make the
+     * ``to_world`` transform of non-mesh shapes opaque.
+     *
+     * Every shape must call this at the end of its constructor.
+     */
     virtual void initialize();
     std::string get_children_string() const;
 protected:

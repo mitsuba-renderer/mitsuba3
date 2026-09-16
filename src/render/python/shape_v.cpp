@@ -67,6 +67,9 @@ public:
 
     PyShape(const Properties &props) : Shape(props) { }
 
+    // Python shapes call this at the end of their constructor
+    using Shape::initialize;
+
     ScalarBoundingBox3f bbox() const override {
         NB_OVERRIDE_PURE(bbox);
     }
@@ -553,7 +556,8 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, set_bsdf, "bsdf"_a)
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count)
-        .def_method(Shape, precompute_silhouette, "viewpoint"_a);
+        .def_method(Shape, precompute_silhouette, "viewpoint"_a)
+        .def("initialize", &PyShape::initialize, D(Shape, initialize));
 
     drjit::bind_traverse(shape);
 
