@@ -265,6 +265,8 @@ protected:
     ScalarBoundingSphere3f m_bsphere;
     ref<Shape> m_target_shape;
     Point3f m_target_point;
+
+    MI_TRAVERSE_CB(Base, m_target_shape, m_target_point)
 };
 
 MI_EXPORT_PLUGIN(DistantSensor)

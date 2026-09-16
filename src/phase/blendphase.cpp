@@ -205,6 +205,8 @@ public:
 protected:
     ref<Volume> m_weight;
     ref<Base> m_nested_phase[2];
+
+    MI_TRAVERSE_CB(Base, m_weight, m_nested_phase)
 };
 
 MI_EXPORT_PLUGIN(BlendPhaseFunction)

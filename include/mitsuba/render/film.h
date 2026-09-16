@@ -241,7 +241,7 @@ protected:
     /// Buffer underlying \ref launch_params()
     DynamicBuffer<UInt32> m_launch_params;
 
-    MI_DECLARE_TRAVERSE_CB(m_srf, m_launch_params)
+    MI_DECLARE_TRAVERSE_CB(m_filter, m_srf, m_launch_params)
 };
 
 MI_EXTERN_CLASS(Film)
