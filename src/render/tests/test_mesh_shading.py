@@ -93,6 +93,7 @@ def test02_eval_parameterization(variants_all_rgb):
         "filename": "resources/data/common/meshes/rectangle.obj",
         "emitter": {
             "type": "area",
+            "sample_texture": True,
             "radiance": {"type": "checkerboard"}
         }
     })

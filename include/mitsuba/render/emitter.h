@@ -26,10 +26,10 @@ enum class EmitterFlags : uint32_t {
     /// The emitter emits light in a single direction
     DeltaDirection       = 0x00002,
 
-    /// The emitter is placed at infinity (e.g. environment maps)
+    /// The emitter is placed at infinity (i.e., it is an environment map)
     Infinite             = 0x00004,
 
-    /// The emitter is attached to a surface (e.g. area emitters)
+    /// The emitter is attached to a surface (i.e., it is an area emitter)
     Surface              = 0x00008,
 
     // =============================================================
@@ -44,6 +44,12 @@ enum class EmitterFlags : uint32_t {
 
     /// Light portal (see ``Scene::portals()``), does not emit anything itself
     Portal               = 0x00040,
+
+    /**
+     * The emitter importance samples a texture and maps the result onto
+     * the shape through ``Shape::eval_parameterization()``.
+     */
+    SamplesTexture       = 0x00080,
 
     // =============================================================
     //                  Compound lobe attributes

@@ -1027,7 +1027,7 @@ public:
      */
     void build_parameterization();
 
-    /// Does a spatially varying emitter require ``m_parameterization?``
+    /// Does the emitter sample positions through ``m_parameterization``?
     bool needs_parameterization() const;
 
     size_t vertex_data_bytes() const;

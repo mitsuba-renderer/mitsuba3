@@ -274,7 +274,10 @@ Mitsuba 3.10.0
   A shape may represent a single geometric primitive or an aggregate containing
   many sub-primitives. All Mitsuba shapes with custom intersection routines
   (``sphere``, ``disk``, ``cylinder``, ``ellipsoids``, and ``sdfgrid``) were
-  migrated to the new interface as part of this change.
+  migrated to the new interface as part of this change. A Python shape that
+  carries an area emitter or sensor calls :py:func:`initialize()
+  <mitsuba.Shape.initialize>` at the end of its constructor, like the C++
+  plugins do.
 
   This unification removes roughly 3.3K lines of code from Mitsuba. Previously,
   shapes had to provide four versions of each intersection routine: a C++
@@ -305,6 +308,10 @@ Mitsuba 3.10.0
   ``mi.traverse()``. Replace ``params['emitter.position']`` with
   ``params['emitter.to_world']`` and a translation. The ``position`` scene
   description property is unchanged.
+
+- **Textured area emitters** are now uniformly sampled by default, as the
+  importance sampling routine was very expensive and had numerous drawbacks.
+  To importance sample the texture, set the ``sample_texture`` parameter.
 
 Mitsuba 3.9.1
 -------------

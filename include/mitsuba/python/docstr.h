@@ -3814,6 +3814,11 @@ static const char *__doc_mitsuba_EmitterFlags_SpatiallyVarying = R"doc(The emiss
 
 static const char *__doc_mitsuba_EmitterFlags_Surface = R"doc(The emitter is attached to a surface (e.g. area emitters))doc";
 
+static const char *__doc_mitsuba_EmitterFlags_SamplesTexture =
+R"doc(The emitter importance samples its texture and maps the result onto
+the shape through ``Shape::eval_parameterization()``, which meshes must
+prepare for)doc";
+
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
 
 static const char *__doc_mitsuba_Emitter_class_name = R"doc()doc";
@@ -10892,7 +10897,13 @@ Args:
 
 static const char *__doc_mitsuba_Shape_has_null = R"doc(Does the shape's BSDF have a `BSDFFlags.Null` component?)doc";
 
-static const char *__doc_mitsuba_Shape_initialize = R"doc()doc";
+static const char *__doc_mitsuba_Shape_initialize =
+R"doc(Attach the shape to its area emitter and sensor, and make the
+``to_world`` transform of non-mesh shapes opaque.
+
+Every shape must call this at the end of its constructor. Shapes
+implemented in Python call ``self.initialize()`` after
+``mi.Shape.__init__()``.)doc";
 
 static const char *__doc_mitsuba_Shape_interior_medium = R"doc(Return the medium that lies on the interior of this shape)doc";
 

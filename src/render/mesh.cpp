@@ -1658,9 +1658,18 @@ Mesh<Float, Spectrum>::find_part(ScalarIndex prim_index) const {
 }
 
 MI_VARIANT bool Mesh<Float, Spectrum>::needs_parameterization() const {
-    return m_emitter &&
-           has_flag(m_emitter->flags(), EmitterFlags::SpatiallyVarying) &&
-           has_texcoords() && m_vertex_count > 0;
+    if (!m_emitter || !has_texcoords() || m_vertex_count == 0)
+        return false;
+
+    // Emitters that sample their texture map texels onto the surface. A
+    // textured emitter on a differentiable mesh also needs the mapping to
+    // follow the surface under a fixed sampled direction (see the 'area'
+    // plugin). Both must find it built, since the sampling code runs inside
+    // symbolic calls that cannot build it on demand.
+    uint32_t flags = m_emitter->flags();
+    return has_flag(flags, EmitterFlags::SamplesTexture) ||
+           (has_flag(flags, EmitterFlags::SpatiallyVarying) &&
+            parameters_grad_enabled());
 }
 
 MI_VARIANT void Mesh<Float, Spectrum>::build_parameterization() {

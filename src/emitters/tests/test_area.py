@@ -141,7 +141,8 @@ def test05_shape_accessors(variants_vec_rgb):
 
 
 @fresolver_append_path
-def test06_sample_direction_moving_texture(variants_all_ad_rgb):
+@pytest.mark.parametrize('sample_texture', [False, True])
+def test06_sample_direction_moving_texture(variants_all_ad_rgb, sample_texture):
     """The weight of a detached emitter sample follows the deformation of a
     textured emitter under the fixed sampled direction. Its derivative
     matches finite differences of the radiance that the direction meets on
@@ -155,6 +156,7 @@ def test06_sample_direction_moving_texture(variants_all_ad_rgb):
             'to_world': T().translate([0.3, 0.2, 2]) @ T().rotate([1, 0, 0], 200),
             'emitter': {
                 'type': 'area',
+                'sample_texture': sample_texture,
                 # Software lookups keep the finite differences below exact
                 # on backends with hardware texture sampling
                 'radiance': {'type': 'bitmap', 'accel': False,
@@ -194,3 +196,49 @@ def test06_sample_direction_moving_texture(variants_all_ad_rgb):
 
     assert dr.any(dr.abs(mi.unpolarized_spectrum(grad_fd)) > 0.01)
     dr.assert_allclose(grad, grad_fd, rtol=1e-2, atol=1e-3)
+
+
+@fresolver_append_path
+def test07_textured_sampling_modes(variants_vec_rgb):
+    """A textured emitter is sampled like a uniform one by default, with the
+    density of the shape, and proportionally to the texture with
+    'sample_texture'. Both modes report their density consistently and
+    estimate the same irradiance."""
+    T = mi.ScalarTransform4f
+
+    def make(sample_texture):
+        return mi.load_dict({
+            'type': 'obj',
+            'filename': 'resources/data/common/meshes/rectangle.obj',
+            'to_world': T().translate([0.3, 0.2, 2]) @ T().rotate([1, 0, 0], 180),
+            'emitter': {
+                'type': 'area',
+                'sample_texture': sample_texture,
+                'radiance': {'type': 'bitmap', 'accel': False,
+                             'filename': 'resources/data/common/textures/gradient.jpg'}
+            }
+        })
+
+    n = 1 << 18
+    it = dr.zeros(mi.Interaction3f, n)
+    it.p = mi.Point3f(0.1, -0.2, 0)
+    sampler = mi.load_dict({'type': 'independent'})
+    sampler.seed(0, n)
+    u = sampler.next_2d()
+
+    irradiance = []
+    for sample_texture in (False, True):
+        shape = make(sample_texture)
+        emitter = shape.emitter()
+        flag = int(mi.EmitterFlags.SamplesTexture)
+        assert bool(emitter.flags() & flag) == sample_texture
+        ds, weight = emitter.sample_direction(it, u)
+        assert dr.all(ds.pdf > 0)
+        dr.assert_allclose(emitter.pdf_direction(it, ds), ds.pdf, rtol=1e-4)
+        shape_pdf = shape.sample_direction(it, u).pdf
+        if sample_texture:
+            assert not dr.allclose(ds.pdf, shape_pdf, rtol=1e-2)
+        else:
+            dr.assert_allclose(ds.pdf, shape_pdf, rtol=1e-5)
+        irradiance.append(dr.mean(weight[0] * ds.d.z))
+    dr.assert_allclose(irradiance[0], irradiance[1], rtol=0.01)

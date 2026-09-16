@@ -20,7 +20,8 @@ Area light (:monosp:`area`)
 
  * - radiance
    - |spectrum| or |texture|
-   - Specifies the emitted radiance in units of power per unit area per unit steradian.
+   - Specifies the emitted radiance in units of power per unit area per unit
+steradian.
    - |exposed|, |differentiable|
 
  * - twosided
@@ -29,6 +30,15 @@ Area light (:monosp:`area`)
      the hemisphere containing the surface normal. Enabling this parameter
      doubles the emitted power for a given radiance value. (Default: |false|)
 
+ * - sample_texture
+   - |bool|
+   - Textured areas lights use uniform sampling by default. This can lead to
+     noise in rendered images when the texture is non-uniform and takes on high
+     values in a small region. Set :paramtype:`sample_texture` in this case.
+     This feature requires the shape to have a valid non-overlapping UV
+     parameterization. The default strategy is to use simple uniform sampling.
+     (Default: |false|)
+
 This plugin implements an area light, i.e. a light source that emits
 diffuse illumination from the exterior of an arbitrary shape.
 Since the emission profile of an area light is completely diffuse, it
@@ -36,8 +46,8 @@ has the same apparent brightness regardless of the observer's viewing
 direction. Furthermore, since it occupies a nonzero amount of space, an
 area light generally causes scene objects to cast soft shadows.
 
-The :ref:`visibility <sec-shape-visibility>` of an area light is a property
-of the shape that carries it.
+The :ref:`visibility <sec-shape-visibility>` of an area light should
+be specified on the underlying shape.
 
 To create an area light source, simply instantiate the desired
 emitter shape and specify an :monosp:`area` instance as its child:
@@ -83,6 +93,9 @@ public:
         m_flags = +EmitterFlags::Surface;
         if (m_radiance->is_spatially_varying())
             m_flags |= +EmitterFlags::SpatiallyVarying;
+        if (props.get<bool>("sample_texture", false) &&
+            m_radiance->is_spatially_varying())
+            m_flags |= +EmitterFlags::SamplesTexture;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -151,9 +164,9 @@ public:
         DirectionSample3f ds;
         SurfaceInteraction3f si;
 
-        // One of two very different strategies is used depending on 'm_radiance'
-        if (likely(!m_radiance->is_spatially_varying())) {
-            // Texture is uniform, try to importance sample the shape wrt. solid angle at 'it'
+        if (likely(!has_flag(m_flags, EmitterFlags::SamplesTexture))) {
+            // Importance sample the shape wrt. solid angle at 'it' and
+            // evaluate the texture at the result
             ds = m_shape->sample_direction(it, sample, active);
             active &= ds.pdf != 0.f;
             if (!m_twosided)
@@ -212,7 +225,7 @@ public:
         }
 
         Float value;
-        if (!m_radiance->is_spatially_varying()) {
+        if (!has_flag(m_flags, EmitterFlags::SamplesTexture)) {
             value = m_shape->pdf_direction(it, ds, active);
         } else {
             // This surface intersection would be nice to avoid..
@@ -265,10 +278,9 @@ public:
                             "associated Shape.");
         }
 
-        // Two strategies to sample the spatial component based on 'm_radiance'
         PositionSample3f ps;
-        if (!m_radiance->is_spatially_varying()) {
-            // Radiance not spatially varying, use area-based sampling of shape
+        if (!has_flag(m_flags, EmitterFlags::SamplesTexture)) {
+            // Area-based sampling of the shape
             ps = m_shape->sample_position(time, sample, active);
         } else {
             // Importance sample texture
@@ -302,6 +314,8 @@ public:
         oss << "AreaLight[" << std::endl
             << "  radiance = " << string::indent(m_radiance) << "," << std::endl
             << "  twosided = " << m_twosided << "," << std::endl
+            << "  sample_texture = "
+            << has_flag(m_flags, EmitterFlags::SamplesTexture) << "," << std::endl
             << "  surface_area = ";
         if (m_shape) oss << m_shape->surface_area();
         else         oss << "  <no shape attached!>";
