@@ -30,7 +30,6 @@
 #endif
 
 #define MI_MODULE_LIB    1
-#define MI_MODULE_UI     2
 
 #if MI_BUILD_MODULE == MI_MODULE_LIB
 #  define MI_EXPORT_LIB MI_EXPORT
@@ -42,12 +41,6 @@
 #  else
 #    define MI_EXTERN_LIB extern
 #  endif
-#endif
-
-#if MI_BUILD_MODULE == MI_MODULE_UI
-#  define MI_EXPORT_UI MI_EXPORT
-#else
-#  define MI_EXPORT_UI MI_IMPORT
 #endif
 
 /* A few macro helpers to enable overloading macros based on the number of parameters */
