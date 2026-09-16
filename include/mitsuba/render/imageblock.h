@@ -345,7 +345,7 @@ protected:
     Point2i m_offset_o;
     Vector2u m_size_o;
 
-    MI_TRAVERSE_CB(Object, m_tensor, m_offset_o, m_size_o)
+    MI_TRAVERSE_CB(Object, m_rfilter, m_tensor, m_offset_o, m_size_o)
 };
 
 MI_EXTERN_CLASS(ImageBlock)

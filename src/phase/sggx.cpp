@@ -139,6 +139,8 @@ public:
 private:
     // bool m_diffuse;
     ref<Volume> m_ndf_params;
+
+    MI_TRAVERSE_CB(Base, m_ndf_params)
 };
 
 MI_EXPORT_PLUGIN(SGGXPhaseFunction)

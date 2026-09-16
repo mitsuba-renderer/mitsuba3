@@ -1275,6 +1275,8 @@ protected:
     TensorXf m_sun_irrad_dataset;
 
     TensorXf m_sampling_params;
+
+    MI_TRAVERSE_CB(Base, m_albedo_tex)
 };
 
 #undef SUN_HALF_APERTURE

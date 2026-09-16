@@ -624,7 +624,7 @@ private:
     std::vector<std::string> m_aov_names;
     std::vector<ref<Base>> m_integrators;
     ref<Base> m_aov_integrator;
-    MI_TRAVERSE_CB(Base, m_integrators)
+    MI_TRAVERSE_CB(Base, m_integrators, m_aov_integrator)
 };
 
 MI_EXPORT_PLUGIN(AOVIntegrator)
