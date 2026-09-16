@@ -424,7 +424,8 @@ public:                                                                        \
                       std::remove_pointer_t<decltype(this)>>::value);          \
         DRJIT_MARK_USED(payload);                                              \
         DRJIT_MARK_USED(cb);                                                   \
-        if (cb.role != drjit::TraverseRole::Freeze)                            \
+        if (cb.role != drjit::TraverseRole::Freeze &&                          \
+            cb.role != drjit::TraverseRole::Children)                          \
             return;                                                            \
         if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)           \
             Base::traverse_cb(payload, cb);                                    \
@@ -461,7 +462,8 @@ public:                                                                        \
         MI_VARIANT                                                             \
         void Type<Float, Spectrum>::traverse_cb(                               \
             void *payload, const drjit::TraverseVisitor &cb) {                 \
-            if (cb.role != drjit::TraverseRole::Freeze)                        \
+            if (cb.role != drjit::TraverseRole::Freeze &&                      \
+                cb.role != drjit::TraverseRole::Children)                      \
                 return;                                                        \
                                                                                \
             if constexpr (!std::is_same_v<Base, drjit::TraversableBase>)       \

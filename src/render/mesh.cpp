@@ -2889,7 +2889,8 @@ MI_VARIANT bool Mesh<Float, Spectrum>::parameters_grad_enabled() const {
 MI_VARIANT void
 Mesh<Float, Spectrum>::traverse_cb(void *payload,
                                    const drjit::TraverseVisitor &cb) {
-    if (cb.role != drjit::TraverseRole::Freeze)
+    if (cb.role != drjit::TraverseRole::Freeze &&
+        cb.role != drjit::TraverseRole::Children)
         return;
 
     Base::traverse_cb(payload, cb);
