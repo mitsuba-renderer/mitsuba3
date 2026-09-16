@@ -17,9 +17,6 @@
 [submodule "ext/pugixml"]
     path = ext/pugixml
     url = https://github.com/mitsuba-renderer/pugixml
-[submodule "ext/nanogui"]
-    path = ext/nanogui
-    url = https://github.com/mitsuba-renderer/nanogui
 [submodule "resources/data"]
     path = resources/data
     url = https://github.com/mitsuba-renderer/mitsuba-data

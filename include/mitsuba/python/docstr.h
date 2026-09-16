@@ -4434,15 +4434,6 @@ static const char *__doc_mitsuba_Frame_to_local = R"doc(Convert from world coord
 
 static const char *__doc_mitsuba_Frame_to_world = R"doc(Convert from local coordinates to world coordinates)doc";
 
-static const char *__doc_mitsuba_GPUTexture =
-R"doc(Defines an abstraction for textures that works with
-OpenGL, OpenGL ES, and Metal.
-
-Wraps nanogui::Texture and adds a new constructor for creating
-textures from `Bitmap` instances.)doc";
-
-static const char *__doc_mitsuba_GPUTexture_GPUTexture = R"doc()doc";
-
 static const char *__doc_mitsuba_Hierarchical2D =
 R"doc(Implements a hierarchical sample warping scheme for 2D distributions
 with linear interpolation and an optional dependence on additional parameters
@@ -6852,44 +6843,6 @@ static const char *__doc_mitsuba_MicrofacetType = R"doc(Supported normal distrib
 static const char *__doc_mitsuba_MicrofacetType_Beckmann = R"doc(Beckmann distribution derived from Gaussian random surfaces)doc";
 
 static const char *__doc_mitsuba_MicrofacetType_GGX = R"doc(GGX: Long-tailed distribution for very rough surfaces (aka. Trowbridge-Reitz distr.))doc";
-
-static const char *__doc_mitsuba_MitsubaViewer = R"doc(Main class of the Mitsuba user interface)doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_MitsubaViewer = R"doc(Create a new viewer interface)doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_Tab = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_append_tab = R"doc(Append an empty tab)doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_close_tab_impl = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_keyboard_event = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_load = R"doc(Load content (a scene or an image) into a tab)doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_btn_menu = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_btn_play = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_btn_reload = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_btn_settings = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_btn_stop = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_contents = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_progress_bar = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_progress_panel = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_tab_widget = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_tabs = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_m_view = R"doc()doc";
-
-static const char *__doc_mitsuba_MitsubaViewer_perform_layout = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator =
 R"doc(Abstract integrator that performs *recursive* Monte Carlo sampling
