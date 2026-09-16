@@ -240,9 +240,6 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
-        Float eps = dr::Epsilon<Float>;
-
         // Convert global v to segment-local v
         Float v_global = uv.y();
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * m_segment_count);
@@ -250,38 +247,8 @@ public:
         segment_idx = dr::minimum(segment_idx, UInt32(m_segment_count) - 1u);
         Float v_local = v_global * m_segment_count - segment_idx;
 
-        pi.prim_uv.x() = v_local;
-        pi.prim_uv.y() = 0;
-        pi.prim_index = segment_idx;
-        pi.shape = this;
-        pi.valid = active;
-        dr::masked(pi.t, active) = eps * 10;
-
-        // Create a ray at the intersection point and offset it by epsilon in
-        // the direction of the local surface normal
-        Point3f c;
-        Vector3f dc_dv, dc_dvv;
-        Float radius, dr_dv;
-        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
-            cubic_interpolation(v_local, segment_idx, active);
-        Vector3f dc_dv_normalized = dr::normalize(dc_dv);
-
-        Vector3f u_rot, u_rad;
-        std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
-
-        auto [sin_u, cos_u] = dr::sincos(uv.x() * dr::TwoPi<Float>);
-        Point3f o = c + cos_u * u_rad * (radius + pi.t) + sin_u * u_rot * (radius + pi.t);
-
-        Vector3f rad_vec = o - c;
-        Normal3f d = -dr::normalize(dr::norm(dc_dv) * rad_vec - (dr_dv * radius) * dc_dv_normalized);
-
-        Ray3f ray(o, d, 0, Wavelength(0));
-
-        SurfaceInteraction3f si =
-            compute_surface_interaction(ray, pi, ray_flags, active);
-        si.finalize_surface_interaction(pi, ray, ray_flags, active);
-
-        return si;
+        return eval_primitive_parameterization(segment_idx, v_local, uv.x(),
+                                               ray_flags, active);
     }
 
     // =============================================================
@@ -544,52 +511,10 @@ public:
                             Float(last_segment_idx - first_segment_idx + 1);
 
             Mask use_first = curve_v < 0.5f;
-            local_v = dr::select(use_first, 0.f, 1.f);
-            ss.prim_index = dr::select(use_first, first_segment_idx, last_segment_idx);
-            // Primitive parameterization (segment-local `v`, azimuth)
-            ss.uv = Point2f(local_v, si.uv.x());
-
-            // Map UV parameterization to point on surface
-            Point3f c;
-            Vector3f dc_dv, dc_dvv;
-            Float radius, dr_dv;
-            std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
-                cubic_interpolation(local_v, ss.prim_index, active);
-            Vector3f dc_dv_normalized = dr::normalize(dc_dv);
-
-            Vector3f u_rot, u_rad;
-            std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
-            auto [sin_u, cos_u] = dr::sincos(si.uv.x() * dr::TwoPi<Float>);
-
-            ss.p = c + cos_u * u_rad * radius + sin_u * u_rot * radius;
-            ss.d = dr::normalize(ss.p - viewpoint);
-            ss.silhouette_d =
-                dr::cross(dr::normalize(cos_u * u_rad + sin_u * u_rot),
-                          dr::normalize(dc_dv));
-            ss.n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
-
-            // Because of backface culling, we only consider the set of
-            // directions which are seeing the outside of the curve
-            Vector3f rad_vec = ss.p - c;
-            Float correction = dr::dot(rad_vec, dc_dvv); // curvature correction
-            Normal3f n = dr::normalize(
-                (dr::squared_norm(dc_dv) - correction) * rad_vec -
-                (dr_dv * radius) * dc_dv);
-            Mask success = dr::dot(n, ss.d) < 0;
-
-            // `ss.n` points from the surface (foreground) to the background:
-            // flip it if it points along the surface tangent into the tube
-            // The radial frame also bends along the curve. Its component
-            // along the rim tangent does not affect this orientation test.
-            Vector3f into_tube = ((1.f - correction / dr::squared_norm(dc_dv)) *
-                                  dc_dv + dr_dv * (rad_vec / radius)) *
-                                 dr::select(local_v == 0.f, 1.f, -1.f);
-            dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
-
-            ss.discontinuity_type =
-                dr::select(success,
-                           (uint32_t) DiscontinuityFlags::PerimeterType,
-                           (uint32_t) DiscontinuityFlags::Empty);
+            ss = project_rim(
+                viewpoint,
+                dr::select(use_first, first_segment_idx, last_segment_idx),
+                !use_first, si.uv.x(), active);
         } else if (has_flag(flags, DiscontinuityFlags::InteriorType)) {
             UInt32 segment_id =
                 dr::floor2int<UInt32>(si.uv.y() * m_segment_count);
@@ -597,125 +522,8 @@ public:
             segment_id = dr::minimum(segment_id, UInt32(m_segment_count) - 1u);
             Float v_local = si.uv.y() * m_segment_count - segment_id;
 
-            Point3f c;
-            Vector3f dc_dv, dc_dvv, dc_dvvv;
-            Float radius, dr_dv, dr_dvv;
-            std::tie(c, dc_dv, dc_dvv, dc_dvvv, radius, dr_dv, dr_dvv) =
-                cubic_interpolation(v_local, segment_id, active);
-            Float dc_dv_norm = dr::norm(dc_dv);
-            Vector3f dc_dv_normalized = dc_dv / dc_dv_norm,
-                     dc_dvv_scaled = dc_dvv / dr::squared_norm(dc_dv);
-            Vector3f dir_rot, dir_rad;
-            std::tie(dir_rot, dir_rad) = local_frame(dc_dv_normalized);
-
-            Vector3f OC = c - viewpoint;
-            Float inv_OC_norm = dr::rsqrt(dr::squared_norm(OC));
-            OC *= inv_OC_norm;
-
-            // Find a silhouette point by fixing `si.v` (along the curve) and
-            // bisecting `si.u`.
-            const auto normal_eq = [&](Float u) {
-                auto [sin_u, cos_u] = dr::sincos(u * dr::TwoPi<Float>);
-                Vector3f rad = cos_u * dir_rad + sin_u * dir_rot;
-                return dc_dv_norm * (1.f - radius * dr::dot(dc_dvv_scaled, rad)) *
-                    (radius * inv_OC_norm + dr::dot(OC, rad)) -
-                    dr_dv * dr::dot(OC, dc_dv_normalized);
-            };
-            // Bracket up to two roots on the full circle (a half circle can
-            // miss both). The seed `si.uv.x()` picks one, the root count is
-            // stored in `ss.projection_index` for the pdf.
-            constexpr uint32_t BucketCount = 16;
-            Float u_lo0 = 0.f, u_hi0 = 0.f, u_lo1 = 0.f, u_hi1 = 0.f;
-            UInt32 root_count = 0u;
-            Float u_prev = 0.f, f_prev = normal_eq(0.f);
-            for (uint32_t k = 1; k <= BucketCount; ++k) {
-                Float u_k = Float(k) / BucketCount,
-                      f_k = normal_eq(u_k);
-                Mask bracket = active && (f_prev * f_k < 0.f),
-                     first   = bracket && (root_count == 0u),
-                     second  = bracket && (root_count == 1u);
-                dr::masked(u_lo0, first)  = u_prev;
-                dr::masked(u_hi0, first)  = u_k;
-                dr::masked(u_lo1, second) = u_prev;
-                dr::masked(u_hi1, second) = u_k;
-                dr::masked(root_count, first || second) += 1u;
-                u_prev = u_k;
-                f_prev = f_k;
-            }
-
-            Mask use_second = (si.uv.x() >= 0.5f) && (root_count >= 2u);
-            Float u_lower = dr::select(use_second, u_lo1, u_lo0),
-                  u_upper = dr::select(use_second, u_hi1, u_hi0);
-            Float f_lower = normal_eq(u_lower),
-                  f_upper = normal_eq(u_upper);
-
-            Mask success = active && (root_count > 0u),
-                 active_loop = Mask(success);
-            ss.projection_index = dr::select(success, root_count, 0u);
-            UInt32 cnt = 0u;
-
-            std::tie(u_lower, u_upper, f_lower, f_upper, cnt,
-                active_loop) = dr::while_loop(
-                std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt,
-                active_loop),
-            [](const Float&, const Float&, const Float&, const Float&,
-                const UInt32&, const Mask& active_loop) {
-                return active_loop;
-            },
-            [normal_eq](Float& u_lower, Float& u_upper, Float& f_lower,
-                Float& f_upper, UInt32& cnt, Mask& active_loop) {
-
-                Float u_middle = 0.5f * (u_lower + u_upper);
-                Float f_middle = normal_eq(u_middle);
-                Mask lower = f_middle * f_lower <= 0.f;
-                u_lower = dr::select(lower, u_lower, u_middle);
-                u_upper = dr::select(lower, u_middle, u_upper);
-                f_lower = dr::select(lower, f_lower, f_middle);
-                f_upper = dr::select(lower, f_middle, f_upper);
-
-                cnt += 1u;
-                active_loop &= cnt < 22u;
-            },
-            "B-Spline curve projection bisection");
-
-            ss.discontinuity_type =
-                dr::select(success,
-                           (uint32_t) DiscontinuityFlags::InteriorType,
-                           (uint32_t) DiscontinuityFlags::Empty);
-
-            dr::masked(u_lower, u_lower < 0.f) += 1.f;
-            dr::masked(u_lower, u_lower > 1.f) -= 1.f;
-
-            // Texture parameterization (azimuth, global `v`)
-            Point2f tex_uv = Point2f(u_lower, si.uv.y());
-            SurfaceInteraction3f si_ = eval_parameterization(
-                tex_uv, RayFlags::Default | RayFlags::DetachShape, active);
-            ss.p = si_.p;
-            ss.n = si_.n;
-            ss.d = dr::normalize(ss.p - viewpoint);
-            ss.prim_index = si_.prim_index;
-            // Primitive parameterization (segment-local `v`, azimuth)
-            Float v_local_out = tex_uv.y() * m_segment_count - si_.prim_index;
-            ss.uv = Point2f(v_local_out, tex_uv.x());
-
-            Vector3f dp_du, dp_dv, dn_du, dn_dv;
-            Float L, M, N;
-            std::tie(dp_du, dp_dv, dn_du, dn_dv, L, M, N) =
-                partials(tex_uv, active);
-            // Decompose `ss.d` in the (non-orthogonal) surface basis
-            Float E = dr::squared_norm(dp_du),
-                  F = dr::dot(dp_du, dp_dv),
-                  G = dr::squared_norm(dp_dv);
-            Float det = dr::maximum(E * G - dr::square(F), 1e-12f);
-            Float a = (G * dr::dot(ss.d, dp_du) - F * dr::dot(ss.d, dp_dv)) / det,
-                  b = (E * dr::dot(ss.d, dp_dv) - F * dr::dot(ss.d, dp_du)) / det;
-            ss.silhouette_d =
-                dr::normalize(dr::cross(ss.n, a * dn_du + b * dn_dv));
-
-            // `ss.n` points from foreground to background: flip it at concave
-            // folds (positive normal curvature along `ss.d`)
-            Float kappa_n = L * a * a + 2.f * M * a * b + N * b * b;
-            dr::masked(ss.n, success && (kappa_n > 0.f)) *= -1.f;
+            ss = project_interior(viewpoint, segment_id, v_local, si.uv.x(),
+                                  active);
         }
 
         ss.flags = flags;
@@ -726,90 +534,109 @@ public:
     }
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
-    precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
-        // Sample the open endpoint rims and the smooth silhouette uniformly
-        std::vector<uint32_t> type = {+DiscontinuityFlags::PerimeterType, +DiscontinuityFlags::InteriorType};
-        std::vector<ScalarFloat> weight_arr = { 0.50f, 0.50f };
+    precompute_silhouette(const ScalarPoint3f &viewpoint) const override {
+        if constexpr (!dr::is_jit_v<Float>) {
+            NotImplementedError("precompute_silhouette");
+        } else {
+            /* One entry per open rim (`2 i + end` for curve `i`) and one per
+               segment (`2 C + j`) for the smooth silhouette, so that the
+               sample only has to place the point within its entry. The weights
+               are the lengths of the silhouettes the entries hold. */
+            uint32_t curve_count = (uint32_t) dr::width(m_curves_prim_idx) - 1,
+                     segment_count = (uint32_t) dr::width(m_indices),
+                     rim_count = 2 * curve_count;
+            Point3f o(viewpoint);
 
-        DynamicBuffer<UInt32> indices = dr::load<UInt32>(type.data(), type.size());
-        DynamicBuffer<Float> weights = dr::load<Float>(weight_arr.data(), weight_arr.size());
+            // Rims: the arc of the rim circle that faces the viewpoint
+            UInt32 rim = dr::arange<UInt32>(rim_count);
+            auto [rim_prim_idx, at_end] = rim_segment(rim, true);
+            CrossSection cs =
+                cross_section(dr::select(at_end, 1.f, 0.f), rim_prim_idx, o, true);
+            auto [arc_start, arc_length] = rim_arc(cs, true);
+            Float w_rim = dr::TwoPi<Float> * cs.radius * arc_length;
 
-        return {indices, weights};
+            // Segments: the two branches of the smooth silhouette
+            UInt32 segment_idx = dr::arange<UInt32>(segment_count);
+            Float w_segment = 2.f * segment_length(segment_idx, true);
+
+            DynamicBuffer<Float> weights =
+                dr::zeros<Float>(rim_count + segment_count);
+            dr::scatter(weights, w_rim, rim);
+            dr::scatter(weights, w_segment, segment_idx + rim_count);
+            dr::masked(weights, !(weights > 0.f)) = 0.f;
+
+            DynamicBuffer<UInt32> indices = dr::compress(weights > 0.f);
+
+            return { indices, dr::gather<Float>(weights, indices) };
+        }
     }
 
     SilhouetteSample3f
     sample_precomputed_silhouette(const Point3f &viewpoint,
-                                  UInt32 sample1 /*type_sample*/, Float sample2,
+                                  UInt32 sample1 /*entry*/, Float sample2,
                                   Mask active) const override {
-        // Call `primitive_silhouette_projection` which uses `si.uv` and
-        // `si.prim_index` to compute the silhouette point.
+        MI_MASK_ARGUMENT(active);
 
-        SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
+        uint32_t rim_count = 2 * ((uint32_t) dr::width(m_curves_prim_idx) - 1);
+        Mask rim      = active && (sample1 < rim_count),
+             interior = active && (sample1 >= rim_count);
+
         SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
 
-        // Perimeter silhouette
-        size_t curve_count = dr::width(m_curves_prim_idx) - 1;
-        UInt32 curve_idx = dr::floor2int<UInt32>(sample2 * curve_count);
-        curve_idx = dr::clip(curve_idx, 0, (uint32_t) curve_count - 1); // In case sample2 == 1
+        // Rim of an open curve end: the azimuth is uniform on the arc facing
+        // the viewpoint, the rest of the circle is culled
+        {
+            auto [prim_idx, at_end] = rim_segment(sample1, rim);
+            CrossSection cs =
+                cross_section(dr::select(at_end, 1.f, 0.f), prim_idx, viewpoint, rim);
+            auto [arc_start, arc_length] = rim_arc(cs, rim);
+            Float u = arc_start + sample2 * arc_length;
+            u -= dr::floor(u);
 
-        UInt32 first_segment_idx =
-            dr::gather<UInt32>(m_curves_prim_idx, curve_idx, active);
-        UInt32 last_segment_idx =
-            dr::gather<UInt32>(m_curves_prim_idx, curve_idx + 1, active) - 1;
+            SilhouetteSample3f ss_rim =
+                project_rim(viewpoint, prim_idx, at_end, u, rim);
+            Mask has_arc = arc_length > 0.f;
+            // Density per unit length along the rim
+            ss_rim.pdf = dr::select(
+                has_arc, dr::rcp(dr::TwoPi<Float> * cs.radius * arc_length), 0.f);
+            dr::masked(ss_rim.discontinuity_type, !has_arc) =
+                (uint32_t) DiscontinuityFlags::Empty;
+            ss_rim.flags = (uint32_t) DiscontinuityFlags::PerimeterType;
+            dr::masked(ss, rim) = ss_rim;
+        }
 
-        Float sample_rim = sample2 * curve_count - curve_idx;
-        Bool use_first = sample_rim < 0.5f;
+        // Smooth silhouette of a segment: `v` is uniform on the segment, and
+        // the two halves of the sample pick the two branches
+        {
+            UInt32 segment_idx = sample1 - rim_count;
+            Mask use_second = sample2 >= 0.5f;
+            Float v_local = dr::select(use_second, dr::fmsub(sample2, 2.f, 1.f),
+                                       sample2 * 2.f);
 
-        // Avoid numerical issues on `v` by having too close to 0 or 1
-        Point2f local_uv = dr::select(
-            use_first,
-            Point2f(sample_rim * 2.f, 0.1f),
-            Point2f(sample_rim * 2.f - 1.f, 0.9f)
-        );
+            SilhouetteSample3f ss_interior = project_interior(
+                viewpoint, segment_idx, v_local, sample2, interior);
 
-        si.prim_index =
-            dr::select(use_first, first_segment_idx, last_segment_idx);
-        si.uv = Point2f(local_uv.x(),
-                        (local_uv.y() + si.prim_index) / m_segment_count);
-
-        uint32_t flags = (uint32_t) DiscontinuityFlags::PerimeterType;
-        Mask perimeter = active & (sample1 == +DiscontinuityFlags::PerimeterType);
-        dr::masked(ss, perimeter) =
-            primitive_silhouette_projection(viewpoint, si, flags, 0.f, perimeter);
-        // Radius at the tip: the projection snaps `ss.uv.x()` to exactly 0 or 1
-        Float radius;
-        std::tie(std::ignore, std::ignore, std::ignore, std::ignore, radius,
-                 std::ignore, std::ignore) =
-            cubic_interpolation(ss.uv.x(), ss.prim_index, active);
-        dr::masked(ss.pdf, perimeter) =
-            dr::rcp(dr::TwoPi<Float> * radius * (2 * curve_count));
-
-        // Interior silhouette
-        si.uv = Point2f(0.1f, sample2 * 2.f);
-        dr::masked(si.uv, sample2 > 0.5f) = Point2f(0.6f, dr::fmsub(sample2, 2.f, 1.f));
-        flags = (uint32_t) DiscontinuityFlags::InteriorType;
-        Mask interior = active & (sample1 == +DiscontinuityFlags::InteriorType);
-        dr::masked(ss, interior) =
-            primitive_silhouette_projection(viewpoint, si, flags, 0.f, interior);
-
-        // Texture parameterization (azimuth, global `v`)
-        Float global_v = (ss.uv.x() + ss.prim_index) / m_segment_count;
-        Point2f tex_uv = Point2f(ss.uv.y(), global_v);
-
-        // Density per unit length along the silhouette curve: its tangent
-        // dx/dv has a `dp_dv`-coefficient of 1, so |dx/dv| = 1 / |beta|.
-        // Both seeds hit the same root if only one exists.
-        Vector3f dp_du, dp_dv;
-        std::tie(dp_du, dp_dv, std::ignore, std::ignore, std::ignore,
-                 std::ignore, std::ignore) = partials(tex_uv, active);
-        Float E = dr::squared_norm(dp_du),
-              F = dr::dot(dp_du, dp_dv),
-              G = dr::squared_norm(dp_dv);
-        Float det  = dr::maximum(E * G - dr::square(F), 1e-12f);
-        Float beta = (E * dr::dot(ss.silhouette_d, dp_dv) -
-                      F * dr::dot(ss.silhouette_d, dp_du)) / det;
-        Float root_count = dr::clip(Float(ss.projection_index), 1.f, 2.f);
-        dr::masked(ss.pdf, interior) = dr::abs(beta) / root_count;
+            Vector3f dp_du, dp_dv;
+            std::tie(dp_du, dp_dv, std::ignore, std::ignore, std::ignore,
+                     std::ignore, std::ignore) =
+                partials(segment_idx, v_local, ss_interior.uv.y(), interior);
+            /* Density per unit length along the silhouette curve: its tangent
+               dx/dv has a `dp_dv`-coefficient of 1, so |dx/dv| = 1 / |beta|.
+               `partials` differentiates w.r.t. the global `v`, which covers
+               all segments, hence the `m_segment_count` factor. Both halves
+               hit the same root if only one exists. */
+            Float E = dr::squared_norm(dp_du),
+                  F = dr::dot(dp_du, dp_dv),
+                  G = dr::squared_norm(dp_dv);
+            Float det  = dr::maximum(E * G - dr::square(F), 1e-12f);
+            Float beta = (E * dr::dot(ss_interior.silhouette_d, dp_dv) -
+                          F * dr::dot(ss_interior.silhouette_d, dp_du)) / det;
+            Float root_count =
+                dr::clip(Float(ss_interior.projection_index), 1.f, 2.f);
+            ss_interior.pdf = m_segment_count * dr::abs(beta) / root_count;
+            ss_interior.flags = (uint32_t) DiscontinuityFlags::InteriorType;
+            dr::masked(ss, interior) = ss_interior;
+        }
 
         return ss;
     }
@@ -1082,15 +909,26 @@ private:
      */
     std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
     partials(Point2f uv, Mask active) const {
-        // The radial direction follows `local_frame`, whose derivatives are
-        // continuous across segments (unlike the Frenet torsion). The
-        // fundamental forms then give the normal's partials (Weingarten).
         Float v_global = uv.y();
         UInt32 segment_idx = dr::floor2int<UInt32>(v_global * m_segment_count);
         // In case `v_global == 1`
         segment_idx = dr::minimum(segment_idx, UInt32(m_segment_count) - 1u);
         Float v_local = v_global * m_segment_count - segment_idx;
 
+        return partials(segment_idx, v_local, uv.x(), active);
+    }
+
+    /**
+     * `partials` in the primitive parameterization. The returned derivatives
+     * are still those of the texture parameterization (`u` in [0, 2pi), `v`
+     * running over all segments).
+     */
+    std::tuple<Vector3f, Vector3f, Vector3f, Vector3f, Float, Float, Float>
+    partials(const UInt32 &segment_idx, const Float &v_local, const Float &u,
+             Mask active) const {
+        // The radial direction follows `local_frame`, whose derivatives are
+        // continuous across segments (unlike the Frenet torsion). The
+        // fundamental forms then give the normal's partials (Weingarten).
         Point3f c;
         Vector3f dc_dv, dc_dvv, dc_dvvv;
         Float radius, dr_dv, dr_dvv;
@@ -1117,7 +955,7 @@ private:
         // Consistent local frame and its `v`-derivatives
         auto [dir_rot, dir_rad, dir_rot_dv, dir_rad_dv, dir_rot_dvv,
               dir_rad_dvv] = local_frame_derivatives(dc_dv, dc_dvv, dc_dvvv);
-        auto [s_, c_] = dr::sincos(uv.x() * dr::TwoPi<Float>);
+        auto [s_, c_] = dr::sincos(u * dr::TwoPi<Float>);
         Vector3f rad = c_ * dir_rad + s_ * dir_rot;
         Float cos_theta_u = dr::dot(frame_n, rad);
         Normal3f n = dr::normalize(
@@ -1174,6 +1012,341 @@ private:
         Vector3f v_rad = dr::cross(v_rot, dc_dv_normalized);
 
         return { v_rot, v_rad };
+    }
+
+    /**
+     * `eval_parameterization` in the primitive parameterization. Shapes with
+     * many segments cannot resolve a segment-local `v` through the global one,
+     * which is a single-precision number covering the whole shape.
+     */
+    SurfaceInteraction3f
+    eval_primitive_parameterization(const UInt32 &segment_idx,
+                                    const Float &v_local, const Float &u,
+                                    uint32_t ray_flags, Mask active) const {
+        PreliminaryIntersection3f pi = dr::zeros<PreliminaryIntersection3f>();
+        Float eps = dr::Epsilon<Float>;
+
+        pi.prim_uv.x() = v_local;
+        pi.prim_uv.y() = 0;
+        pi.prim_index = segment_idx;
+        pi.shape = this;
+        pi.valid = active;
+        dr::masked(pi.t, active) = eps * 10;
+
+        // Create a ray at the intersection point and offset it by epsilon in
+        // the direction of the local surface normal
+        Point3f c;
+        Vector3f dc_dv, dc_dvv;
+        Float radius, dr_dv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
+            cubic_interpolation(v_local, segment_idx, active);
+        Vector3f dc_dv_normalized = dr::normalize(dc_dv);
+
+        Vector3f u_rot, u_rad;
+        std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
+
+        auto [sin_u, cos_u] = dr::sincos(u * dr::TwoPi<Float>);
+        Point3f o = c + cos_u * u_rad * (radius + pi.t) + sin_u * u_rot * (radius + pi.t);
+
+        Vector3f rad_vec = o - c;
+        Normal3f d = -dr::normalize(dr::norm(dc_dv) * rad_vec - (dr_dv * radius) * dc_dv_normalized);
+
+        Ray3f ray(o, d, 0, Wavelength(0));
+
+        SurfaceInteraction3f si =
+            compute_surface_interaction(ray, pi, ray_flags, active);
+        si.finalize_surface_interaction(pi, ray, ray_flags, active);
+
+        return si;
+    }
+
+    /// Cross-section of a segment at a local `v`, as seen from a viewpoint
+    struct CrossSection {
+        Vector3f dir_rot, dir_rad, dc_dv_normalized, dc_dvv_scaled;
+        /// Unit direction from the viewpoint to the center line
+        Vector3f OC;
+        Float dc_dv_norm, radius, dr_dv, inv_OC_norm;
+    };
+
+    CrossSection cross_section(const Float &v_local, const UInt32 &segment_idx,
+                               const Point3f &viewpoint, Mask active) const {
+        CrossSection cs;
+        Point3f c;
+        Vector3f dc_dv, dc_dvv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, cs.radius, cs.dr_dv,
+                 std::ignore) = cubic_interpolation(v_local, segment_idx, active);
+        cs.dc_dv_norm = dr::norm(dc_dv);
+        cs.dc_dv_normalized = dc_dv / cs.dc_dv_norm;
+        cs.dc_dvv_scaled = dc_dvv / dr::squared_norm(dc_dv);
+        std::tie(cs.dir_rot, cs.dir_rad) = local_frame(cs.dc_dv_normalized);
+
+        cs.OC = c - viewpoint;
+        cs.inv_OC_norm = dr::rsqrt(dr::squared_norm(cs.OC));
+        cs.OC *= cs.inv_OC_norm;
+
+        return cs;
+    }
+
+    /**
+     * `dot(n, p - viewpoint)` on a cross-section as a function of the azimuth
+     * `u`, up to a positive factor: its roots are the silhouette points, and
+     * it is negative where the surface faces the viewpoint
+     */
+    Float silhouette_eq(const CrossSection &cs, const Float &u) const {
+        auto [sin_u, cos_u] = dr::sincos(u * dr::TwoPi<Float>);
+        Vector3f rad = cos_u * cs.dir_rad + sin_u * cs.dir_rot;
+        return cs.dc_dv_norm * (1.f - cs.radius * dr::dot(cs.dc_dvv_scaled, rad)) *
+            (cs.radius * cs.inv_OC_norm + dr::dot(cs.OC, rad)) -
+            cs.dr_dv * dr::dot(cs.OC, cs.dc_dv_normalized);
+    }
+
+    /**
+     * Scan `silhouette_eq` for sign changes on the full circle (a half circle
+     * can miss both roots). Returns the brackets `[lo, hi]` of the first two
+     * roots and the number of sign changes.
+     */
+    std::tuple<Float, Float, Float, Float, UInt32>
+    silhouette_brackets(const CrossSection &cs, Mask active) const {
+        constexpr uint32_t BucketCount = 16;
+        Float u_lo0 = 0.f, u_hi0 = 0.f, u_lo1 = 0.f, u_hi1 = 0.f;
+        UInt32 sign_changes = 0u;
+        Float u_prev = 0.f, f_prev = silhouette_eq(cs, 0.f);
+        for (uint32_t k = 1; k <= BucketCount; ++k) {
+            Float u_k = Float(k) / BucketCount,
+                  f_k = silhouette_eq(cs, u_k);
+            Mask bracket = active && (f_prev * f_k < 0.f),
+                 first   = bracket && (sign_changes == 0u),
+                 second  = bracket && (sign_changes == 1u);
+            dr::masked(u_lo0, first)  = u_prev;
+            dr::masked(u_hi0, first)  = u_k;
+            dr::masked(u_lo1, second) = u_prev;
+            dr::masked(u_hi1, second) = u_k;
+            dr::masked(sign_changes, bracket) += 1u;
+            u_prev = u_k;
+            f_prev = f_k;
+        }
+
+        return { u_lo0, u_hi0, u_lo1, u_hi1, sign_changes };
+    }
+
+    /// Bisect the root of `silhouette_eq` in the bracket `[u_lower, u_upper]`
+    Float bisect_silhouette(const CrossSection &cs, Float u_lower,
+                            Float u_upper, Mask active) const {
+        Float f_lower = silhouette_eq(cs, u_lower),
+              f_upper = silhouette_eq(cs, u_upper);
+        Mask active_loop = Mask(active);
+        UInt32 cnt = 0u;
+
+        std::tie(u_lower, u_upper, f_lower, f_upper, cnt,
+            active_loop) = dr::while_loop(
+            std::make_tuple(u_lower, u_upper, f_lower, f_upper, cnt,
+            active_loop),
+        [](const Float&, const Float&, const Float&, const Float&,
+            const UInt32&, const Mask& active_loop) {
+            return active_loop;
+        },
+        [this, cs](Float& u_lower, Float& u_upper, Float& f_lower,
+            Float& f_upper, UInt32& cnt, Mask& active_loop) {
+
+            Float u_middle = 0.5f * (u_lower + u_upper);
+            Float f_middle = silhouette_eq(cs, u_middle);
+            Mask lower = f_middle * f_lower <= 0.f;
+            u_lower = dr::select(lower, u_lower, u_middle);
+            u_upper = dr::select(lower, u_middle, u_upper);
+            f_lower = dr::select(lower, f_lower, f_middle);
+            f_upper = dr::select(lower, f_middle, f_upper);
+
+            cnt += 1u;
+            active_loop &= cnt < 22u;
+        },
+        "B-Spline curve projection bisection");
+
+        return u_lower;
+    }
+
+    /**
+     * Azimuthal arc `(start, length)` of a rim that faces the viewpoint. The
+     * rim is only a silhouette there, its backfaces being culled. The arc is
+     * bounded by the two roots of `silhouette_eq`; if the scan finds any other
+     * number of them, the full circle is used and the samples that fall on a
+     * backface are rejected.
+     */
+    std::pair<Float, Float> rim_arc(const CrossSection &cs, Mask active) const {
+        auto [u_lo0, u_hi0, u_lo1, u_hi1, sign_changes] =
+            silhouette_brackets(cs, active);
+        Mask two = active && (sign_changes == 2u);
+        Float u_0 = bisect_silhouette(cs, u_lo0, u_hi0, two),
+              u_1 = bisect_silhouette(cs, u_lo1, u_hi1, two);
+
+        // The roots bound the front-facing arc either directly or across the
+        // wrap-around
+        Mask inner = silhouette_eq(cs, 0.5f * (u_0 + u_1)) < 0.f;
+        Float start  = dr::select(inner, u_0, u_1),
+              length = dr::select(inner, u_1 - u_0, 1.f - (u_1 - u_0));
+
+        // Without a sign change the rim either faces the viewpoint as a whole,
+        // or not at all
+        Mask front = silhouette_eq(cs, 0.f) < 0.f;
+        Float full = dr::select((sign_changes == 0u) && !front, 0.f, 1.f);
+
+        return { dr::select(two, start, 0.f), dr::select(two, length, full) };
+    }
+
+    /**
+     * First (`at_end == false`) or last segment of the curve whose rim is the
+     * precomputed silhouette entry `2 * curve + at_end`
+     */
+    std::pair<UInt32, Mask> rim_segment(const UInt32 &entry, Mask active) const {
+        UInt32 curve_idx = entry / 2u;
+        Mask at_end = (entry & 1u) != 0u;
+
+        UInt32 first_segment_idx =
+            dr::gather<UInt32>(m_curves_prim_idx, curve_idx, active);
+        UInt32 last_segment_idx =
+            dr::gather<UInt32>(m_curves_prim_idx, curve_idx + 1u, active) - 1u;
+
+        return { dr::select(at_end, last_segment_idx, first_segment_idx), at_end };
+    }
+
+    /// Silhouette point on the rim of a segment, at the azimuth `u`
+    SilhouetteSample3f project_rim(const Point3f &viewpoint,
+                                   const UInt32 &prim_idx, const Mask &at_end,
+                                   const Float &u, Mask active) const {
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        Float local_v = dr::select(at_end, 1.f, 0.f);
+        ss.prim_index = prim_idx;
+        // Primitive parameterization (segment-local `v`, azimuth)
+        ss.uv = Point2f(local_v, u);
+
+        // Map UV parameterization to point on surface
+        Point3f c;
+        Vector3f dc_dv, dc_dvv;
+        Float radius, dr_dv;
+        std::tie(c, dc_dv, dc_dvv, std::ignore, radius, dr_dv, std::ignore) =
+            cubic_interpolation(local_v, prim_idx, active);
+        Vector3f dc_dv_normalized = dr::normalize(dc_dv);
+
+        Vector3f u_rot, u_rad;
+        std::tie(u_rot, u_rad) = local_frame(dc_dv_normalized);
+        auto [sin_u, cos_u] = dr::sincos(u * dr::TwoPi<Float>);
+
+        ss.p = c + cos_u * u_rad * radius + sin_u * u_rot * radius;
+        ss.d = dr::normalize(ss.p - viewpoint);
+        ss.silhouette_d =
+            dr::cross(dr::normalize(cos_u * u_rad + sin_u * u_rot),
+                      dr::normalize(dc_dv));
+        ss.n = dr::normalize(dr::cross(ss.d, ss.silhouette_d));
+
+        // Because of backface culling, we only consider the set of
+        // directions which are seeing the outside of the curve
+        Vector3f rad_vec = ss.p - c;
+        Float correction = dr::dot(rad_vec, dc_dvv); // curvature correction
+        Normal3f n = dr::normalize(
+            (dr::squared_norm(dc_dv) - correction) * rad_vec -
+            (dr_dv * radius) * dc_dv);
+        Mask success = dr::dot(n, ss.d) < 0;
+
+        // `ss.n` points from the surface (foreground) to the background:
+        // flip it if it points along the surface tangent into the tube
+        // The radial frame also bends along the curve. Its component
+        // along the rim tangent does not affect this orientation test.
+        Vector3f into_tube = ((1.f - correction / dr::squared_norm(dc_dv)) *
+                              dc_dv + dr_dv * (rad_vec / radius)) *
+                             dr::select(at_end, -1.f, 1.f);
+        dr::masked(ss.n, dr::dot(into_tube, ss.n) > 0.f) *= -1.f;
+
+        ss.discontinuity_type =
+            dr::select(success,
+                       (uint32_t) DiscontinuityFlags::PerimeterType,
+                       (uint32_t) DiscontinuityFlags::Empty);
+        ss.shape = this;
+        ss.offset = silhouette_offset;
+
+        return ss;
+    }
+
+    /**
+     * Silhouette point on the cross-section at (`segment_idx`, `v_local`): a
+     * root of `silhouette_eq`, the second one if `seed >= 0.5`
+     */
+    SilhouetteSample3f project_interior(const Point3f &viewpoint,
+                                        const UInt32 &segment_idx,
+                                        const Float &v_local, const Float &seed,
+                                        Mask active) const {
+        SilhouetteSample3f ss = dr::zeros<SilhouetteSample3f>();
+
+        // Find a silhouette point by fixing `v` (along the curve) and
+        // bisecting the azimuth. The number of roots is stored in
+        // `ss.projection_index` for the pdf.
+        CrossSection cs = cross_section(v_local, segment_idx, viewpoint, active);
+        auto [u_lo0, u_hi0, u_lo1, u_hi1, sign_changes] =
+            silhouette_brackets(cs, active);
+        UInt32 root_count = dr::minimum(sign_changes, UInt32(2u));
+
+        Mask use_second = (seed >= 0.5f) && (root_count >= 2u),
+             success    = active && (root_count > 0u);
+        ss.projection_index = dr::select(success, root_count, 0u);
+        ss.discontinuity_type =
+            dr::select(success,
+                       (uint32_t) DiscontinuityFlags::InteriorType,
+                       (uint32_t) DiscontinuityFlags::Empty);
+
+        Float u = bisect_silhouette(cs, dr::select(use_second, u_lo1, u_lo0),
+                                    dr::select(use_second, u_hi1, u_hi0),
+                                    success);
+        dr::masked(u, u < 0.f) += 1.f;
+        dr::masked(u, u > 1.f) -= 1.f;
+
+        SurfaceInteraction3f si = eval_primitive_parameterization(
+            segment_idx, v_local, u, RayFlags::Default | RayFlags::DetachShape,
+            active);
+        ss.p = si.p;
+        ss.n = si.n;
+        ss.d = dr::normalize(ss.p - viewpoint);
+        ss.prim_index = segment_idx;
+        // Primitive parameterization (segment-local `v`, azimuth)
+        ss.uv = Point2f(v_local, u);
+
+        Vector3f dp_du, dp_dv, dn_du, dn_dv;
+        Float L, M, N;
+        std::tie(dp_du, dp_dv, dn_du, dn_dv, L, M, N) =
+            partials(segment_idx, v_local, u, active);
+        // Decompose `ss.d` in the (non-orthogonal) surface basis
+        Float E = dr::squared_norm(dp_du),
+              F = dr::dot(dp_du, dp_dv),
+              G = dr::squared_norm(dp_dv);
+        Float det = dr::maximum(E * G - dr::square(F), 1e-12f);
+        Float a = (G * dr::dot(ss.d, dp_du) - F * dr::dot(ss.d, dp_dv)) / det,
+              b = (E * dr::dot(ss.d, dp_dv) - F * dr::dot(ss.d, dp_du)) / det;
+        ss.silhouette_d =
+            dr::normalize(dr::cross(ss.n, a * dn_du + b * dn_dv));
+
+        // `ss.n` points from foreground to background: flip it at concave
+        // folds (positive normal curvature along `ss.d`)
+        Float kappa_n = L * a * a + 2.f * M * a * b + N * b * b;
+        dr::masked(ss.n, success && (kappa_n > 0.f)) *= -1.f;
+
+        ss.shape = this;
+        ss.offset = silhouette_offset;
+
+        return ss;
+    }
+
+    /// Length of a segment's center line (3-point Gauss-Legendre)
+    Float segment_length(const UInt32 &segment_idx, Mask active) const {
+        constexpr ScalarFloat Nodes[3]   = { 0.1127016654f, 0.5f, 0.8872983346f },
+                              Weights[3] = { 5.f / 18.f, 8.f / 18.f, 5.f / 18.f };
+        Float length = 0.f;
+        for (uint32_t k = 0; k < 3; ++k) {
+            Vector3f dc_dv;
+            std::tie(std::ignore, dc_dv, std::ignore, std::ignore, std::ignore,
+                     std::ignore, std::ignore) =
+                cubic_interpolation(Nodes[k], segment_idx, active);
+            length += Weights[k] * dr::norm(dc_dv);
+        }
+
+        return length;
     }
 
     /**
