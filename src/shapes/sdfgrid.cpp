@@ -665,18 +665,18 @@ private:
             FloatP k1 = s100 - s000;
             FloatP k2 = s010 - s000;
             FloatP k3 = s110 - s010 - k1;
-            FloatP k4 = k0 - s001;
-            FloatP k5 = k1 - a;
-            FloatP k6 = k2 - (s011 - s001);
-            FloatP k7 = k3 - (s111 - s011 - a);
+            FloatP k4 = s001 - k0;
+            FloatP k5 = a - k1;
+            FloatP k6 = (s011 - s001) - k2;
+            FloatP k7 = (s111 - s011 - a) - k3;
             FloatP m0 = o_x * o_y;
             FloatP m1 = d_x * d_y;
             FloatP m2 = dr::fmadd(o_x, d_y, o_y * d_x);
-            FloatP m3 = dr::fmadd(k5, o_z, -k1);
-            FloatP m4 = dr::fmadd(k6, o_z, -k2);
-            FloatP m5 = dr::fmadd(k7, o_z, -k3);
+            FloatP m3 = dr::fmadd(k5, o_z, k1);
+            FloatP m4 = dr::fmadd(k6, o_z, k2);
+            FloatP m5 = dr::fmadd(k7, o_z, k3);
 
-            c0 = dr::fmadd(k4, o_z, -k0) +
+            c0 = dr::fmadd(k4, o_z, k0) +
                  dr::fmadd(o_x, m3, dr::fmadd(o_y, m4, m0 * m5));
             c1 = dr::fmadd(d_x, m3, d_y * m4) + m2 * m5 +
                  d_z * (k4 + dr::fmadd(k5, o_x, dr::fmadd(k6, o_y, k7 * m0)));
@@ -708,56 +708,19 @@ private:
     sdf_solve_cubic(FloatP t_end, FloatP f_beg, FloatP f_end,
                     FloatP c3, FloatP c2, FloatP c1, FloatP c0,
                     dr::mask_t<FloatP> active) const {
-        using MaskP = dr::mask_t<FloatP>;
+        using MaskP   = dr::mask_t<FloatP>;
+        using UInt32P = dr::uint32_array_t<FloatP>;
+
+        // Coefficients of the derivative
+        FloatP d2 = c3 * 3.f, d1 = c2 * 2.f;
 
         MaskP has_derivative_roots;
         FloatP root_0, root_1;
         std::tie(has_derivative_roots, root_0, root_1) =
-            math::solve_quadratic(c3 * 3.f, c2 * 2.f, c1);
+            math::solve_quadratic(d2, d1, c1);
 
-        auto eval_sdf = [&](FloatP t_) -> FloatP {
-            return -dr::fmadd(dr::fmadd(dr::fmadd(c3, t_, c2), t_, c1), t_, c0);
-        };
-
-        // One regula falsi step
-        auto refine = [&](FloatP &t, FloatP &t_near, FloatP &t_far,
-                          FloatP &f_near, FloatP &f_far) {
-            t = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
-            FloatP f_t = eval_sdf(t);
-            MaskP bracket = f_t * f_near <= 0.f;
-            t_far  = dr::select(bracket, t, t_far);
-            f_far  = dr::select(bracket, f_t, f_far);
-            t_near = dr::select(bracket, t_near, t);
-            f_near = dr::select(bracket, f_near, f_t);
-        };
-
-        auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
-                                   FloatP f_far, MaskP active) -> FloatP {
-            static constexpr uint32_t num_solve_max_iter = 50;
-
-            using UInt32P = dr::uint32_array_t<FloatP>;
-            FloatP t = 0;
-            UInt32P i = 0;
-            // Lanes without a bracketed root do not iterate
-            MaskP done = !active;
-
-            // Runs as a plain loop in scalar variants and symbolically otherwise
-            dr::tie(t, t_near, t_far, f_near, f_far, i, done) = dr::while_loop(
-                dr::make_tuple(t, t_near, t_far, f_near, f_far, i, done),
-                [](const FloatP &, const FloatP &, const FloatP &,
-                   const FloatP &, const FloatP &, const UInt32P &,
-                   const MaskP &done) { return !done; },
-                [&](FloatP &t, FloatP &t_near, FloatP &t_far,
-                    FloatP &f_near, FloatP &f_far, UInt32P &i,
-                    MaskP &done) {
-                    refine(t, t_near, t_far, f_near, f_far);
-                    i += 1;
-                    done = (dr::abs(t_near - t_far) < NumSolveEpsilon) ||
-                           (num_solve_max_iter < i);
-                },
-                "SDFGrid::numerical_solve");
-
-            return t;
+        auto eval_sdf = [&](FloatP t) -> FloatP {
+            return dr::fmadd(dr::fmadd(dr::fmadd(c3, t, c2), t, c1), t, c0);
         };
 
         FloatP t_near = 0.f, t_far = t_end,
@@ -780,9 +743,47 @@ private:
 
         active &= f_near * f_far <= 0.f;
 
-        FloatP t = dr::select(
-            active, numerical_solve(t_near, t_far, f_near, f_far, active),
-            dr::Infinity<Float>);
+        // Start from the secant estimate, falling back to the midpoint if
+        // both endpoints vanish or rounding puts the estimate outside
+        FloatP t = t_near + (t_far - t_near) * (-f_near / (f_far - f_near));
+        t = dr::select(t >= t_near && t <= t_far, t, .5f * (t_near + t_far));
+
+        // Newton's method, safeguarded by bisection of the bracketing
+        // interval. Only the sign of f_near is needed below, and it does
+        // not change as the bracket shrinks. Lanes without a bracketed
+        // root do not iterate.
+        static constexpr uint32_t num_solve_max_iter = 50;
+        UInt32P i = 0;
+        MaskP done = !active;
+
+        // Runs as a plain loop in scalar variants and symbolically otherwise
+        dr::tie(t, t_near, t_far, i, done) = dr::while_loop(
+            dr::make_tuple(t, t_near, t_far, i, done),
+            [](const FloatP &, const FloatP &, const FloatP &,
+               const UInt32P &, const MaskP &done) { return !done; },
+            [&](FloatP &t, FloatP &t_near, FloatP &t_far, UInt32P &i,
+                MaskP &done) {
+                FloatP f_t = eval_sdf(t);
+                MaskP left = f_t * f_near <= 0.f;
+                t_far  = dr::select(left, t, t_far);
+                t_near = dr::select(left, t_near, t);
+
+                // Bisect when the Newton step leaves the bracket or is NaN.
+                // An exact root ends the iteration at its position.
+                FloatP deriv = dr::fmadd(dr::fmadd(d2, t, d1), t, c1),
+                       t_next = t - f_t / deriv;
+                MaskP root = f_t == 0.f,
+                      inside = t_next > t_near && t_next < t_far;
+                t_next = dr::select(root, t,
+                    dr::select(inside, t_next, .5f * (t_near + t_far)));
+
+                i += 1;
+                // Negated comparison so that NaN lanes terminate
+                done = !(dr::abs(t_next - t) >= NumSolveEpsilon) ||
+                       (num_solve_max_iter < i);
+                t = t_next;
+            },
+            "SDFGrid::numerical_solve");
 
         return { active, t };
     }
