@@ -570,9 +570,32 @@ MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::MonteCarloIntegrator(const Pro
         Throw("\"rr_depth\" must be set to a value greater than zero!");
 
     m_rr_depth = (uint32_t) rr_depth;
+
+    // Limits on the mean channel value of a single path contribution, zero
+    // disables them (see clamp_contribution())
+    m_clamp_direct = props.get<ScalarFloat>("clamp_direct", 0.f);
+    m_clamp_indirect = props.get<ScalarFloat>("clamp_indirect", 0.f);
+    if (m_clamp_direct < 0.f || m_clamp_indirect < 0.f)
+        Throw("\"clamp_direct\" and \"clamp_indirect\" must be >= 0");
 }
 
 MI_VARIANT MonteCarloIntegrator<Float, Spectrum>::~MonteCarloIntegrator() { }
+
+MI_VARIANT Spectrum MonteCarloIntegrator<Float, Spectrum>::clamp_contribution(
+    const Spectrum &value, const Mask &direct) const {
+    if (m_clamp_direct == 0.f && m_clamp_indirect == 0.f)
+        return value;
+
+    ScalarFloat limit_direct   = m_clamp_direct   > 0.f ? m_clamp_direct   : dr::Infinity<ScalarFloat>,
+                limit_indirect = m_clamp_indirect > 0.f ? m_clamp_indirect : dr::Infinity<ScalarFloat>;
+
+    UnpolarizedSpectrum u = unpolarized_spectrum(value);
+    Float mean  = dr::sum(dr::abs(u)) / (ScalarFloat) dr::size_v<UnpolarizedSpectrum>,
+          limit = dr::select(direct, Float(limit_direct), Float(limit_indirect)),
+          scale = dr::detach(dr::select(mean > limit, limit / mean, 1.f));
+
+    return dr::select(dr::isfinite(mean), value * scale, dr::zeros<Spectrum>());
+}
 
 // -----------------------------------------------------------------------------
 

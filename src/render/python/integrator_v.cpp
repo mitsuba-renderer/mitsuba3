@@ -55,17 +55,26 @@ ScopedSignalHandler::~ScopedSignalHandler() {
 #endif
 }
 
-/// Trampoline for derived types implemented in Python
-MI_VARIANT class PySamplingIntegrator : public SamplingIntegrator<Float, Spectrum> {
+/**
+ * \brief Trampoline for derived types implemented in Python
+ *
+ * \tparam Base_
+ *     Either \ref SamplingIntegrator or \ref MonteCarloIntegrator. The latter
+ *     declares no virtual methods of its own, hence both share this body.
+ */
+template <typename Float, typename Spectrum, typename Base_>
+class PySamplingIntegratorImpl : public Base_ {
 public:
-    MI_IMPORT_TYPES(SamplingIntegrator, Scene, Sensor, Sampler, Medium)
-    NB_TRAMPOLINE(SamplingIntegrator);
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium)
+    using Base = Base_;
+    NB_TRAMPOLINE(Base);
 
-    PySamplingIntegrator(const Properties &props) : SamplingIntegrator(props) {
+    PySamplingIntegratorImpl(const Properties &props) : Base(props) {
         if constexpr (!dr::is_jit_v<Float>) {
-            Log(Warn, "SamplingIntegrator Python implementations will have "
-                      "terrible performance in scalar_* modes. It is strongly "
-                      "recommended to switch to a cuda_* or llvm_* mode");
+            Log(Warn, "%s Python implementations will have terrible "
+                      "performance in scalar_* modes. It is strongly "
+                      "recommended to switch to a cuda_* or llvm_* mode",
+                Base::ClassName);
         }
     }
 
@@ -130,6 +139,24 @@ public:
     void parameters_changed(const std::vector<std::string> &keys) override {
         NB_OVERRIDE(parameters_changed, keys);
     }
+};
+
+template <typename Float, typename Spectrum>
+using PySamplingIntegrator =
+    PySamplingIntegratorImpl<Float, Spectrum, SamplingIntegrator<Float, Spectrum>>;
+
+/// Trampoline that additionally grants access to the recursive sampling fields
+MI_VARIANT class PyMonteCarloIntegrator
+    : public PySamplingIntegratorImpl<Float, Spectrum,
+                                      MonteCarloIntegrator<Float, Spectrum>> {
+public:
+    using Base = PySamplingIntegratorImpl<Float, Spectrum,
+                                          MonteCarloIntegrator<Float, Spectrum>>;
+    using Base::Base;
+    using Base::m_max_depth;
+    using Base::m_rr_depth;
+    using Base::m_clamp_direct;
+    using Base::m_clamp_indirect;
 };
 
 /// Trampoline for derived types implemented in Python
@@ -305,6 +332,7 @@ public:
 MI_PY_EXPORT(Integrator) {
     MI_PY_IMPORT_TYPES()
     using PySamplingIntegrator = PySamplingIntegrator<Float, Spectrum>;
+    using PyMonteCarloIntegrator = PyMonteCarloIntegrator<Float, Spectrum>;
     using PyAdjointIntegrator = PyAdjointIntegrator<Float, Spectrum>;
     using CppADIntegrator = CppADIntegrator<Float, Spectrum>;
     using PyADIntegrator = PyADIntegrator<Float, Spectrum>;
@@ -405,7 +433,17 @@ MI_PY_EXPORT(Integrator) {
 
     drjit::bind_traverse(sampling_integrator);
 
-    MI_PY_CLASS(MonteCarloIntegrator, SamplingIntegrator);
+    auto monte_carlo_integrator = MI_PY_TRAMPOLINE_CLASS(
+            PyMonteCarloIntegrator, MonteCarloIntegrator, SamplingIntegrator)
+        .def(nb::init<const Properties &>())
+        .def_method(MonteCarloIntegrator, clamp_contribution, "value"_a,
+                    "direct"_a)
+        .def_rw("max_depth", &PyMonteCarloIntegrator::m_max_depth)
+        .def_rw("rr_depth", &PyMonteCarloIntegrator::m_rr_depth)
+        .def_rw("clamp_direct", &PyMonteCarloIntegrator::m_clamp_direct)
+        .def_rw("clamp_indirect", &PyMonteCarloIntegrator::m_clamp_indirect);
+
+    drjit::bind_traverse(monte_carlo_integrator);
 
     auto cpp_ad_integrator = nb::class_<CppADIntegrator, SamplingIntegrator, PyADIntegrator>(
         m, "CppADIntegrator")

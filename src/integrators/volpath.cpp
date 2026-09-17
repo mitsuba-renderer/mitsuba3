@@ -30,6 +30,12 @@ Volumetric path tracer (:monosp:`volpath`)
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
 
+ * - clamp_direct, clamp_indirect
+   - |float|
+   - Upper limits on the mean channel value of a single direct or indirect light contribution,
+     with the same semantics as in the :ref:`path <integrator-path>` plugin. Zero disables the
+     clamp. (Default: 0)
+
 This plugin provides a volumetric path tracer that can be used to compute approximate solutions
 of the radiative transfer equation. Its implementation makes use of multiple importance sampling
 to combine BSDF and phase function sampling with direct illumination sampling strategies. On
@@ -67,7 +73,8 @@ template <typename Float, typename Spectrum>
 class VolumetricPathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth,
+                   m_clamp_direct, m_clamp_indirect, clamp_contribution)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
@@ -279,8 +286,11 @@ public:
                 if (dr::any_or<true>(active_e)) {
                     auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
                     auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
-                    dr::masked(result, active_e) += throughput * phase_val * emitted *
-                                                    mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf));
+                    // 'depth' already counts this scattering event
+                    dr::masked(result, active_e) += clamp_contribution(
+                        throughput * phase_val * emitted *
+                            mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf)),
+                        depth == 1u);
                 }
 
                 // ------------------ Phase function sampling -----------------
@@ -327,7 +337,7 @@ public:
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = dr::select(count_direct, throughput * emitted,
                                                   throughput * mis_weight(last_scatter_direction_pdf, emitter_pdf) * emitted);
-                    dr::masked(result, active_e) += contrib;
+                    dr::masked(result, active_e) += clamp_contribution(contrib, depth <= 1u);
                 }
             }
             active_surface &= si.is_valid();
@@ -348,7 +358,9 @@ public:
                     // Determine probability of having sampled that same
                     // direction using BSDF sampling.
                     Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
-                    result[active_e] += throughput * bsdf_val * mis_weight(ds.pdf, dr::select(ds.delta, 0.f, bsdf_pdf)) * emitted;
+                    dr::masked(result, active_e) += clamp_contribution(
+                        throughput * bsdf_val * mis_weight(ds.pdf, dr::select(ds.delta, 0.f, bsdf_pdf)) * emitted,
+                        depth == 0u);
                 }
 
                 // ----------------------- BSDF sampling ----------------------
@@ -558,9 +570,12 @@ public:
     std::string to_string() const override {
         return tfm::format("VolumetricSimplePathIntegrator[\n"
                            "  max_depth = %i,\n"
-                           "  rr_depth = %i\n"
+                           "  rr_depth = %i,\n"
+                           "  clamp_direct = %f,\n"
+                           "  clamp_indirect = %f\n"
                            "]",
-                           m_max_depth, m_rr_depth);
+                           m_max_depth, m_rr_depth, m_clamp_direct,
+                           m_clamp_indirect);
     }
 
     Float mis_weight(Float pdf_a, Float pdf_b) const {

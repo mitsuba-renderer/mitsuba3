@@ -122,8 +122,10 @@ def rect_at(z, bsdf, flip=False, scale=1.0, **extra):
 def estimate(shapes, max_depth=6, spp=1, integrator='path', radiance=1.0, **env):
     """Mean radiance of the +z ray from the origin under a constant
     environment with the given radiance and extra properties ``env``. The
+    integrator is named by a string or described by a dictionary, and the
     direct integrator ignores ``max_depth``."""
-    integrator = dict(type=integrator)
+    integrator = dict(type=integrator) if isinstance(integrator, str) \
+                 else dict(integrator)
     if integrator['type'] != 'direct':
         integrator['max_depth'] = max_depth
     scene = mi.load_dict(dict(
@@ -361,3 +363,31 @@ def test10_specular_visibility_class(variants_all_rgb, integrator):
     for bsdf, slab, primary in cases:
         red, blue = pane_scene(bsdf, integrator, slab)
         assert (red > 0, blue > 0) == (primary, not primary), (bsdf, slab)
+
+
+# ---------------------------------------------------------------------------
+# Clamping of individual path contributions
+# ---------------------------------------------------------------------------
+
+@pytest.mark.parametrize('integrator', ['path', 'volpath', 'volpathmis'])
+def test11_clamp(variants_vec_backends_once_rgb, integrator):
+    def run(shapes, max_depth, spp=1, radiance=1.0, **clamp):
+        return estimate(shapes, max_depth=max_depth, spp=spp, radiance=radiance,
+                        integrator=dict(type=integrator, **clamp))
+
+    # Emission seen by the camera ray is a direct contribution. The limit
+    # bounds the mean channel value, so a purely red environment of mean
+    # radiance 4 is scaled as a whole instead of being clipped per channel.
+    red = {'type': 'rgb', 'value': [12, 0, 0]}
+    assert run({}, 1, radiance=red) == 4
+    assert run({}, 1, radiance=red, clamp_indirect=2) == 4
+    assert run({}, 1, radiance=red, clamp_direct=2) == 2
+
+    # Two diffuse panes facing each other. The near one receives direct light
+    # only, the far one is reached after an extra scattering event.
+    panes = dict(near=rect_at(1, dict(type='diffuse'), flip=True),
+                 far=rect_at(-1, dict(type='diffuse')))
+    ref_2, ref_4 = (run(panes, d, spp=1024) for d in (2, 4))
+    assert run(panes, 2, spp=1024, clamp_indirect=1e-3) == ref_2
+    assert run(panes, 4, spp=1024, clamp_indirect=1e6) == ref_4
+    assert run(panes, 4, spp=1024, clamp_indirect=1e-3) < 0.95 * ref_4

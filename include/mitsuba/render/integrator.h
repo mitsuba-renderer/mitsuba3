@@ -452,19 +452,31 @@ protected:
  * Abstract integrator that performs *recursive* Monte Carlo sampling
  * starting from the sensor
  *
- * This class is almost identical to `SamplingIntegrator`. It stores two
+ * This class is almost identical to `SamplingIntegrator`. It stores
  * additional fields that are helpful for recursive Monte Carlo techniques:
- * the maximum path depth, and the depth at which the Russian Roulette path
- * termination technique should start to become active.
+ * the maximum path depth, the depth at which the Russian Roulette path
+ * termination technique should start to become active, and optional limits
+ * on the magnitude of individual path contributions.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB MonteCarloIntegrator
     : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
+    MI_IMPORT_TYPES()
 
     /// Destructor
     ~MonteCarloIntegrator();
+
+    /**
+     * Clamp a single path contribution.
+     *
+     * Scales ``value`` down so that the mean of its absolute channel values
+     * stays within ``clamp_direct`` (where ``direct`` is set) or
+     * ``clamp_indirect``. Non-finite contributions are replaced by zero, and
+     * a limit of zero disables the corresponding clamp.
+     */
+    Spectrum clamp_contribution(const Spectrum &value, const Mask &direct) const;
 
 protected:
     /// Create an integrator
@@ -474,6 +486,8 @@ protected:
 protected:
     uint32_t m_max_depth;
     uint32_t m_rr_depth;
+    ScalarFloat m_clamp_direct;
+    ScalarFloat m_clamp_indirect;
 
     MI_TRAVERSE_CB(Base)
 };

@@ -35,6 +35,12 @@ Volumetric path tracer with spectral MIS (:monosp:`volpathmis`)
    - Specifies the minimum path depth, after which the implementation will start to use the
      *russian roulette* path termination criterion. (Default: 5)
 
+ * - clamp_direct, clamp_indirect
+   - |float|
+   - Upper limits on the mean channel value of a single direct or indirect light contribution,
+     with the same semantics as in the :ref:`path <integrator-path>` plugin. Zero disables the
+     clamp. (Default: 0)
+
 This plugin provides a volumetric path tracer that can be used to compute approximate solutions
 of the radiative transfer equation. Its implementation performs MIS both for directional sampling
 as well as free-flight distance sampling. In particular, this integrator is well suited
@@ -64,7 +70,8 @@ template <typename Float, typename Spectrum>
 class VolumetricMisPathIntegrator final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth,
+                   m_clamp_direct, m_clamp_indirect, clamp_contribution)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
@@ -95,7 +102,8 @@ template <typename Float, typename Spectrum, bool SpectralMis>
 class VolpathMisIntegratorImpl final : public MonteCarloIntegrator<Float, Spectrum> {
 
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth,
+                   m_clamp_direct, m_clamp_indirect, clamp_contribution)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
                      Medium, MediumPtr, PhaseFunctionContext)
 
@@ -333,7 +341,9 @@ public:
 
                         update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(phase_val), channel, active_e);
                         update_weights(p_over_f_end, dr::select(ds.delta, 0.f, phase_pdf), unpolarized_spectrum(phase_val), channel, active_e);
-                        dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
+                        // 'depth' already counts this scattering event
+                        dr::masked(result, active_e) += clamp_contribution(
+                            mis_weight(p_over_f_nee_end, p_over_f_end) * emitted, depth == 1u);
                     }
 
                     // In a real interaction: reset p_over_f_nee
@@ -384,7 +394,7 @@ public:
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = dr::select(count_direct, mis_weight(p_over_f) * emitted,
                                                             mis_weight(p_over_f, p_over_f_nee) * emitted);
-                    dr::masked(result, active_e) += contrib;
+                    dr::masked(result, active_e) += clamp_contribution(contrib, depth <= 1u);
                 }
             }
 
@@ -401,7 +411,8 @@ public:
                     auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo_local, active_e);
                     update_weights(p_over_f_nee_end, 1.0f, unpolarized_spectrum(bsdf_val), channel, active_e);
                     update_weights(p_over_f_end, dr::select(ds.delta, 0.f, bsdf_pdf), unpolarized_spectrum(bsdf_val), channel, active_e);
-                    dr::masked(result, active_e) += mis_weight(p_over_f_nee_end, p_over_f_end) * emitted;
+                    dr::masked(result, active_e) += clamp_contribution(
+                        mis_weight(p_over_f_nee_end, p_over_f_end) * emitted, depth == 0u);
                 }
 
                 // ----------------------- BSDF sampling ----------------------
@@ -675,9 +686,12 @@ public:
     std::string to_string() const override {
         return tfm::format("VolumetricMisPathIntegrator[\n"
                            "  max_depth = %i,\n"
-                           "  rr_depth = %i\n"
+                           "  rr_depth = %i,\n"
+                           "  clamp_direct = %f,\n"
+                           "  clamp_indirect = %f\n"
                            "]",
-                           m_max_depth, m_rr_depth);
+                           m_max_depth, m_rr_depth, m_clamp_direct,
+                           m_clamp_indirect);
     }
 
     MI_DECLARE_CLASS(VolpathMisIntegratorImpl)

@@ -30,6 +30,17 @@ Path tracer (:monosp:`path`)
      1, then path generation may randomly cease after encountering directly
      visible surfaces. (Default: 5)
 
+ * - clamp_direct
+   - |float|
+   - Upper limit on individual *direct* light contribution. Setting this
+     parameter to a typical value (e.g., 3-10) will scale larger contributions
+     to this limit and trade sampling variance for energy loss.
+     A value of zero disables the clamp. (Default: 0)
+
+ * - clamp_indirect
+   - |float|
+   - Similar to the above, but for *indirect* contributions. (Default: 0)
+
 This integrator implements a basic path tracer and is a **good default choice**
 when there is no strong reason to prefer another method.
 
@@ -82,7 +93,8 @@ paths of arbitrary length to compute both direct and indirect illumination.
 template <typename Float, typename Spectrum>
 class PathIntegrator : public MonteCarloIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth)
+    MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth,
+                   m_clamp_direct, m_clamp_indirect, clamp_contribution)
     MI_IMPORT_TYPES(Scene, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
 
     PathIntegrator(const Properties &props) : Base(props) { }
@@ -189,9 +201,10 @@ public:
                 // Compute MIS weight for emitter sample from previous bounce
                 Float mis_bsdf = mis_weight(ls.vertex.bsdf_pdf, em_pdf);
 
-                // Accumulate, being careful with polarization (see spec_fma)
-                ls.result = spec_fma(ls.throughput,
-                                     emitter->eval(si) * mis_bsdf, ls.result);
+                // Accumulate and potentially clamp outliers
+                ls.result += clamp_contribution(
+                    ls.throughput * (emitter->eval(si) * mis_bsdf),
+                    /* direct = */ ls.vertex.depth <= 1);
             }
 
             if (dr::none_or<false>(si.is_valid())) {
@@ -251,9 +264,10 @@ public:
                 Float mis_em =
                     dr::select(ds.delta, 1.f, mis_weight(ds.pdf, bsdf_pdf));
 
-                // Accumulate, being careful with polarization (see spec_fma)
-                ls.result[active_em] = spec_fma(
-                    ls.throughput, bsdf_val * em_weight * mis_em, ls.result);
+                // Accumulate and potentially clamp outliers
+                dr::masked(ls.result, active_em) += clamp_contribution(
+                    ls.throughput * (bsdf_val * em_weight * mis_em),
+                    ls.vertex.depth == 0);
             }
 
             // ---------------------- BSDF sampling ----------------------
@@ -330,8 +344,10 @@ public:
     std::string to_string() const override {
         return tfm::format("PathIntegrator[\n"
             "  max_depth = %u,\n"
-            "  rr_depth = %u\n"
-            "]", m_max_depth, m_rr_depth);
+            "  rr_depth = %u,\n"
+            "  clamp_direct = %f,\n"
+            "  clamp_indirect = %f\n"
+            "]", m_max_depth, m_rr_depth, m_clamp_direct, m_clamp_indirect);
     }
 
     /// Compute a multiple importance sampling weight using the power heuristic
@@ -340,18 +356,6 @@ public:
         pdf_b *= pdf_b;
         Float w = pdf_a / (pdf_a + pdf_b);
         return dr::detach(dr::select(dr::isfinite(w), w, 0.f));
-    }
-
-    /**
-     * Perform a Mueller matrix multiplication in polarized modes, and a
-     * fused multiply-add otherwise.
-     */
-    Spectrum spec_fma(const Spectrum &a, const Spectrum &b,
-                      const Spectrum &c) const {
-        if constexpr (is_polarized_v<Spectrum>)
-            return a * b + c;
-        else
-            return dr::fmadd(a, b, c);
     }
 
     MI_DECLARE_CLASS(PathIntegrator)
