@@ -544,28 +544,33 @@ private:
         // Scalar variants read host memory. JIT variants gather from the
         // evaluated buffers, which the recorded intersection function captures.
         Ray3fP ray;
-        UInt32P voxel_index;
+        UInt32P grid_index;
         Vector3fP voxel_size;
         if constexpr (dr::is_jit_v<FloatP>) {
             ray = m_to_world.value().inverse() * ray_;
-            voxel_index = dr::gather<UInt32P>(m_jit_voxel_indices, prim_index, active);
+            grid_index = dr::gather<UInt32P>(m_jit_voxel_indices, prim_index, active);
             voxel_size = m_voxel_size.value();
         } else {
             ray = m_to_world.scalar().inverse() * ray_;
-            voxel_index = m_voxel_indices_ptr[prim_index];
+            grid_index = m_voxel_indices_ptr[prim_index];
             voxel_size = m_voxel_size.scalar();
         }
 
-        auto grid_value = [&](const Vector3uP &v) -> FloatP {
+        // Sample index of the voxel's lower corner, which also serves as the
+        // base address of the eight corner loads
+        UInt32P yz = grid_index / shape_v[0];
+        Vector3uP voxel_pos(grid_index % shape_v[0], yz % shape_v[1],
+                            yz / shape_v[1]);
+        Vector3fP voxel_pos_f(voxel_pos);
+
+        auto grid_value = [&](uint32_t x, uint32_t y, uint32_t z) -> FloatP {
+            UInt32P index = grid_index + ((z * shape_v[1] + y) * shape_v[0] + x);
             if constexpr (dr::is_jit_v<FloatP>)
                 return FloatP(dr::gather<Value>(m_grid_texture.tensor().array(),
-                                                to_voxel_index(v), active));
+                                                index, active));
             else
-                return FloatP(m_host_grid_data[to_voxel_index(v)]);
+                return FloatP(m_host_grid_data[index]);
         };
-
-        Vector3uP voxel_pos = to_voxel_position(voxel_index);
-        Vector3fP voxel_pos_f(voxel_pos);
 
         // Voxel AABB in object space
         BoundingBox<Point3fP> bbox_local(
@@ -606,14 +611,14 @@ private:
         ray.o = Point3fP(Vector3fP(ray.o) * grid_scale - voxel_pos_f);
         ray.d = ray.d * grid_scale;
 
-        FloatP s000 = grid_value(voxel_pos);
-        FloatP s100 = grid_value(voxel_pos + Vector3uP(1, 0, 0));
-        FloatP s010 = grid_value(voxel_pos + Vector3uP(0, 1, 0));
-        FloatP s110 = grid_value(voxel_pos + Vector3uP(1, 1, 0));
-        FloatP s001 = grid_value(voxel_pos + Vector3uP(0, 0, 1));
-        FloatP s101 = grid_value(voxel_pos + Vector3uP(1, 0, 1));
-        FloatP s011 = grid_value(voxel_pos + Vector3uP(0, 1, 1));
-        FloatP s111 = grid_value(voxel_pos + Vector3uP(1, 1, 1));
+        FloatP s000 = grid_value(0, 0, 0);
+        FloatP s100 = grid_value(1, 0, 0);
+        FloatP s010 = grid_value(0, 1, 0);
+        FloatP s110 = grid_value(1, 1, 0);
+        FloatP s001 = grid_value(0, 0, 1);
+        FloatP s101 = grid_value(1, 0, 1);
+        FloatP s011 = grid_value(0, 1, 1);
+        FloatP s111 = grid_value(1, 1, 1);
 
         Vector3fP p_beg = ray(t_bbox_beg), p_end = ray(t_bbox_end);
 
@@ -788,41 +793,6 @@ private:
         return { active, t };
     }
 
-    /* Given an index of the flat SDFGrid data (voxel corners), return
-     * the associated voxel position
-     */
-    template <typename Index>
-    MI_INLINE Vector<Index, 3> to_voxel_position(Index index) const {
-        auto shape = m_grid_texture.tensor().shape();
-        // Data is packed [Z, Y, X, C]
-        uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
-                                (uint32_t) shape[0] };
-
-        uint32_t resolution_x = shape_v[0] - 1;
-        uint32_t resolution_y = shape_v[1] - 1;
-
-        Index x = index % resolution_x;
-        Index y = ((index - x) / resolution_x) % resolution_y;
-        Index z =
-            (index - x - y * resolution_x) / (resolution_x * resolution_y);
-
-        return { x, y, z };
-    }
-
-    /* Given a voxel position, returns the corresponding voxel index
-     * relative to the flat array of SDFGrid data. In particular, the returned
-     * index maps to the bottom-left corner of the associated voxel
-     */
-    template <typename Index>
-    MI_INLINE Index to_voxel_index(const Vector<Index, 3> &v) const {
-        auto shape = m_grid_texture.tensor().shape();
-        // Data is packed [Z, Y, X, C]
-        uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
-                                (uint32_t) shape[0] };
-
-        return v.z() * shape_v[1] * shape_v[0] + v.y() * shape_v[0] + v.x();
-    }
-
     /* Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
      * its corresponding point in the texture. This is usually necessary because
      * dr::Texture objects assume that the value of a pixel is positionned in
@@ -937,8 +907,9 @@ private:
     };
 
     /* Only computes AABBs for voxel that contain a surface in it.
-     * Returns a pointer to the array of AABBs, a pointer to an array of voxel
-     * indices of the former AABBs and the count of voxels with surface in them.
+     * Returns a pointer to the array of AABBs, a pointer to an array with the
+     * sample-grid index of each voxel's lower corner, and the count of voxels
+     * with surface in them.
      *
      * Depending on the variant used, the pointer returned is either host or
      * device visible
@@ -969,9 +940,7 @@ private:
             auto [occupied, bbox] = compute_tight_bbox(
                 grid, shape_v, m_voxel_size.value(), to_world, x, y, z);
 
-            UInt32 voxel_idx = x +
-                               y * (shape_v[0] - 1) +
-                               z * (shape_v[0] - 1) * (shape_v[1] - 1);
+            UInt32 grid_index = (z * shape_v[1] + y) * shape_v[0] + x;
 
             UInt32 counter = UInt32(0);
             UInt32 slot = dr::scatter_inc(counter, UInt32(0), occupied);
@@ -990,7 +959,7 @@ private:
             dr::scatter(m_jit_bboxes, bbox.max.x(), stride * (2 * slot + 1) + 0, occupied, ReduceMode::NoConflicts);
             dr::scatter(m_jit_bboxes, bbox.max.y(), stride * (2 * slot + 1) + 1, occupied, ReduceMode::NoConflicts);
             dr::scatter(m_jit_bboxes, bbox.max.z(), stride * (2 * slot + 1) + 2, occupied, ReduceMode::NoConflicts);
-            dr::scatter(m_jit_voxel_indices, voxel_idx, slot, occupied, ReduceMode::NoConflicts);
+            dr::scatter(m_jit_voxel_indices, grid_index, slot, occupied, ReduceMode::NoConflicts);
             dr::eval(m_jit_voxel_indices, m_jit_bboxes);
 
             aabbs_ptr = (void *) m_jit_bboxes.data();
@@ -1015,11 +984,8 @@ private:
                         if (!occupied)
                             continue;
 
-                        uint32_t voxel_idx = x +
-                                             y * (shape_v[0] - 1) +
-                                             z * (shape_v[0] - 1) * (shape_v[1] - 1);
-
-                        voxel_indices_ptr[count] = voxel_idx;
+                        voxel_indices_ptr[count] =
+                            (z * shape_v[1] + y) * shape_v[0] + x;
                         ScalarBoundingBox3f *ptr = (ScalarBoundingBox3f *) aabbs_ptr;
                         ptr[count] = ScalarBoundingBox3f(bbox);
                         count++;
@@ -1088,7 +1054,7 @@ private:
     // guarded by a global state lock
     float *m_host_grid_data = nullptr;
 
-    // Non-empty bounding boxes and corresponding indices
+    // Non-empty bounding boxes and sample-grid indices of their lower corners
     InputFloat m_jit_bboxes;
     UInt32 m_jit_voxel_indices;
 
