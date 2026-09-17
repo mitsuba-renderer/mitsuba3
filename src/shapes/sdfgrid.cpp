@@ -14,7 +14,6 @@
 #include <mitsuba/render/volumegrid.h>
 
 #include <drjit/tensor.h>
-#include <drjit/texture.h>
 
 #if defined(MI_ENABLE_EMBREE)
 #  include <embree3/rtcore.h>
@@ -111,9 +110,8 @@ public:
     /// Termination threshold of the numerical root finder, in ray parameter units
     static constexpr float NumSolveEpsilon = 1e-5f;
 
-    // Grid texture is always stored in single precision
+    // The grid is always stored in single precision
     using InputFloat     = dr::replace_scalar_t<Float, float>;
-    using InputTexture3f = dr::Texture<InputFloat, 3>;
     using InputPoint3f   = Point<InputFloat, 3>;
     using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
     using InputBoundingBox3f = BoundingBox<InputPoint3f>;
@@ -152,11 +150,9 @@ public:
                 Throw("SDF grid data source \"%s\" has %lu channels, expected 1.",
                       file_path, vol_grid.channel_count());
 
-            m_grid_texture = InputTexture3f(
-                InputTensorXf(vol_grid.data(), { (size_t) res.z(),
-                                                 (size_t) res.y(),
-                                                 (size_t) res.x(), 1 }),
-                true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            m_grid = InputTensorXf(vol_grid.data(), { (size_t) res.z(),
+                                                     (size_t) res.y(),
+                                                     (size_t) res.x(), 1 });
         } else if (props.has_property("grid")) {
             const TensorXf& tensor = props.get_any<TensorXf>("grid");
             if (tensor.ndim() != 4)
@@ -165,9 +161,7 @@ public:
             if (tensor.shape(3) != 1)
                 Throw("SDF grid shape at index 3 is %lu, expected 1",
                       tensor.shape(3));
-            m_grid_texture = InputTexture3f(
-                (const typename InputTexture3f::TensorXf &) tensor,
-                true, dr::FilterMode::Linear, dr::WrapMode::Clamp);
+            m_grid = InputTensorXf(tensor);
         } else {
             Throw("The SDF values must be specified with either the "
                   "\"filename\" or \"grid\" parameter!");
@@ -197,19 +191,12 @@ public:
 
 
         // The tensor is packed [Z, Y, X, C]
-        auto shape = m_grid_texture.tensor().shape();
+        auto shape = m_grid.shape();
         Vector3f voxel_size(0.f);
-        for (uint32_t i = 0; i < 3; ++i) {
-            m_inv_shape[i] = 1.f / shape[2 - i];
+        for (uint32_t i = 0; i < 3; ++i)
             voxel_size[i] = 1.f / (shape[2 - i] - 1);
-        }
         m_voxel_size = voxel_size;
-        dr::make_opaque(m_inv_shape, m_voxel_size);
-
-        if constexpr (!dr::is_cuda_v<Float>) {
-            dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
-            m_host_grid_data = m_grid_texture.tensor().data();
-        }
+        dr::make_opaque(m_voxel_size);
 
         if constexpr (!dr::is_jit_v<Float>){
             jit_free(m_bboxes_ptr);
@@ -227,7 +214,7 @@ public:
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         cb->put("to_world", m_to_world,              ParamFlags::NonDifferentiable);
-        cb->put("grid",     m_grid_texture.tensor(), ParamFlags::NonDifferentiable);
+        cb->put("grid",     m_grid,                  ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -239,7 +226,6 @@ public:
                 dr::sync_thread();
 
             m_to_world = m_to_world.value().update();
-            m_grid_texture.update_inplace();
 
             update();
         }
@@ -347,7 +333,7 @@ public:
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
-                                      m_grid_texture.value());
+                                      m_grid.array());
 
         // Sample index of the intersected voxel's lower corner. Using it
         // instead of reconstructing the voxel from the hit point avoids
@@ -360,7 +346,8 @@ public:
             grid_index = m_voxel_indices_ptr[pi.prim_index];
 
         Point3f local_p = dr::detach(to_object * ray(pi.t));
-        Vector3f local_grad = dr::detach(sdf_grad(local_p, grid_index, active));
+        auto [sdf_value, sdf_grad] = sdf_eval(local_p, grid_index, active);
+        Vector3f local_grad = dr::detach(sdf_grad);
         Normal3f local_n = dr::normalize(local_grad);
 
         // Detached normal for the error bound, written so that its primal
@@ -381,8 +368,6 @@ public:
             // Position at the detached parameterization. Only a motion of the
             // entire shape truly glues the interaction point to the surface:
             // for a single voxel the motion is ambiguous.
-            Float sdf_value = m_grid_texture.template eval<dr::Array<Float, 1>>(
-                rescale_point(local_p)).x();
             Point3f local_motion =
                 sdf_value * (-local_n) / dr::dot(local_n, local_grad);
             p_att = to_world * dr::replace_grad(local_p, local_motion);
@@ -397,8 +382,8 @@ public:
         if constexpr (dr::is_diff_v<Float>)
             local_p_att = dr::replace_grad(local_p, to_object * si.p);
 
-        si.n = dr::normalize(
-            to_world * Normal3f(sdf_grad(local_p_att, grid_index, active)));
+        si.n = dr::normalize(to_world * Normal3f(
+            sdf_eval(local_p_att, grid_index, active).second));
 
         if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
@@ -430,7 +415,7 @@ public:
     Normal3f smooth(const Point3f &p, Mask active) const {
         using Mask3 = dr::mask_t<Vector3f>;
 
-        auto shape = m_grid_texture.tensor().shape();
+        auto shape = m_grid.shape();
         int32_t nx = (int32_t) shape[2], ny = (int32_t) shape[1],
                 nz = (int32_t) shape[0];
         Vector3f resolution(nx - 1.f, ny - 1.f, nz - 1.f);
@@ -451,29 +436,25 @@ public:
                                    Point3i(nx - 2, ny - 2, nz - 2));
         Vector3f w = scaled_p - Vector3f(cell);
 
-        const auto &grid = m_grid_texture.tensor().array();
         auto sample = [&](const Point3i &q) -> Float {
             Point3i qc = dr::minimum(dr::maximum(q, 0), Point3i(nx - 1, ny - 1, nz - 1));
             return Float(dr::gather<InputFloat>(
-                grid, UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active));
+                m_grid.array(), UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active));
         };
 
         // Interpolant on the plane with sample index 'q' along axis 'a', at
         // the position of 'p' along the other two axes
         auto plane = [&](int a, const Int32 &q) -> Float {
             int b = (a + 1) % 3, c = (a + 2) % 3;
-            Float f[2][2];
-            for (int j = 0; j < 2; ++j) {
-                for (int k = 0; k < 2; ++k) {
-                    Point3i idx;
-                    idx[a] = q;
-                    idx[b] = cell[b] + j;
-                    idx[c] = cell[c] + k;
-                    f[j][k] = sample(idx);
-                }
+            Float f[4];
+            for (int i = 0; i < 4; ++i) {
+                Point3i idx;
+                idx[a] = q;
+                idx[b] = cell[b] + (i & 1);
+                idx[c] = cell[c] + (i >> 1);
+                f[i] = sample(idx);
             }
-            return dr::lerp(dr::lerp(f[0][0], f[1][0], w[b]),
-                            dr::lerp(f[0][1], f[1][1], w[b]), w[c]);
+            return bilerp(f, w[b], w[c]);
         };
 
         // Differences of the voxels with the lower ('d0') and upper ('d1')
@@ -554,7 +535,7 @@ private:
         using Point3fP  = Point<FloatP, 3>;
         using Value     = dr::float32_array_t<FloatP>;
 
-        auto shape = m_grid_texture.tensor().shape();
+        auto shape = m_grid.shape();
         // Data is packed [Z, Y, X, C]
         uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
                                 (uint32_t) shape[0] };
@@ -581,14 +562,12 @@ private:
                             yz / shape_v[1]);
         Vector3fP voxel_pos_f(voxel_pos);
 
-        auto grid_value = [&](uint32_t x, uint32_t y, uint32_t z) -> FloatP {
-            UInt32P index = grid_index + ((z * shape_v[1] + y) * shape_v[0] + x);
-            if constexpr (dr::is_jit_v<FloatP>)
-                return FloatP(dr::gather<Value>(m_grid_texture.tensor().array(),
-                                                index, active));
-            else
-                return FloatP(m_host_grid_data[index]);
-        };
+        // Corner values, indexed as x + 2y + 4z relative to the lower corner
+        FloatP s[8];
+        for (uint32_t i = 0; i < 8; ++i) {
+            uint32_t offset = ((i >> 2) * shape_v[1] + ((i >> 1) & 1)) * shape_v[0] + (i & 1);
+            s[i] = FloatP(dr::gather<Value>(m_grid.array(), grid_index + offset, active));
+        }
 
         // Voxel AABB in object space
         BoundingBox<Point3fP> bbox_local(
@@ -629,39 +608,20 @@ private:
         ray.o = Point3fP(Vector3fP(ray.o) * grid_scale - voxel_pos_f);
         ray.d = ray.d * grid_scale;
 
-        FloatP s000 = grid_value(0, 0, 0);
-        FloatP s100 = grid_value(1, 0, 0);
-        FloatP s010 = grid_value(0, 1, 0);
-        FloatP s110 = grid_value(1, 1, 0);
-        FloatP s001 = grid_value(0, 0, 1);
-        FloatP s101 = grid_value(1, 0, 1);
-        FloatP s011 = grid_value(0, 1, 1);
-        FloatP s111 = grid_value(1, 1, 1);
-
         Vector3fP p_beg = ray(t_bbox_beg), p_end = ray(t_bbox_end);
 
         // SDF values where the ray enters and exits the voxel. The coordinate
-        // of the crossed face is snapped to 0 or 1, and the (1 - u) * a + u * b
-        // form of the interpolation is exact at both endpoints. Two neighboring
-        // voxels therefore compute bitwise identical values on their shared
-        // face. Evaluating the cubic below at these points instead can yield
-        // opposite signs in the two voxels when the surface passes close to
-        // the face, in which case neither voxel reports the intersection.
-        auto trilinear = [&](Vector3fP p) {
-            p = dr::clip(p, 0.f, 1.f);
-            auto lerp = [](const FloatP &a, const FloatP &b, const FloatP &u) {
-                return (1.f - u) * a + u * b;
-            };
-            FloatP e00 = lerp(s000, s100, p.x()), e10 = lerp(s010, s110, p.x()),
-                   e01 = lerp(s001, s101, p.x()), e11 = lerp(s011, s111, p.x());
-            return lerp(lerp(e00, e10, p.y()), lerp(e01, e11, p.y()), p.z());
-        };
-
+        // of the crossed face is snapped to 0 or 1, where the interpolation
+        // is exact, so that two neighboring voxels compute bitwise identical
+        // values on their shared face. Evaluating the cubic below at these
+        // points instead can yield opposite signs in the two voxels when the
+        // surface passes close to the face, in which case neither voxel
+        // reports the intersection.
         Vector3fP zero(0.f), one(1.f);
-        FloatP f_beg = trilinear(dr::select(on_beg_face,
-                                   dr::select(d_pos, zero, one), p_beg)),
-               f_end = trilinear(dr::select(on_end_face,
-                                   dr::select(d_pos, one, zero), p_end));
+        FloatP f_beg = trilerp(s, dr::clip(dr::select(on_beg_face,
+                                   dr::select(d_pos, zero, one), p_beg), 0.f, 1.f)),
+               f_end = trilerp(s, dr::clip(dr::select(on_end_face,
+                                   dr::select(d_pos, one, zero), p_end), 0.f, 1.f));
 
         /**
            Voxel intersection expressed as solution of cubic polynomial:
@@ -683,15 +643,15 @@ private:
             FloatP d_y = ray.d.y();
             FloatP d_z = ray.d.z();
 
-            FloatP a  = s101 - s001;
-            FloatP k0 = s000;
-            FloatP k1 = s100 - s000;
-            FloatP k2 = s010 - s000;
-            FloatP k3 = s110 - s010 - k1;
-            FloatP k4 = s001 - k0;
+            FloatP a  = s[5] - s[4];
+            FloatP k0 = s[0];
+            FloatP k1 = s[1] - s[0];
+            FloatP k2 = s[2] - s[0];
+            FloatP k3 = s[3] - s[2] - k1;
+            FloatP k4 = s[4] - k0;
             FloatP k5 = a - k1;
-            FloatP k6 = (s011 - s001) - k2;
-            FloatP k7 = (s111 - s011 - a) - k3;
+            FloatP k6 = (s[6] - s[4]) - k2;
+            FloatP k7 = (s[7] - s[6] - a) - k3;
             FloatP m0 = o_x * o_y;
             FloatP m1 = d_x * d_y;
             FloatP m2 = dr::fmadd(o_x, d_y, o_y * d_x);
@@ -811,18 +771,34 @@ private:
         return { active, t };
     }
 
-    /* Offsets and rescales an point in [0, 1] x [0, 1] x [0, 1] to
-     * its corresponding point in the texture. This is usually necessary because
-     * dr::Texture objects assume that the value of a pixel is positionned in
-     * the middle of the pixel. For a 3D grid, this means that values are not
-     * at the corners, but in the middle of the voxels.
-     */
-    MI_INLINE Point3f rescale_point(const Point3f &p) const {
-        return {
-            p[0] * (1 - m_inv_shape[0]) +  (m_inv_shape[0] / 2.f),
-            p[1] * (1 - m_inv_shape[1]) +  (m_inv_shape[1] / 2.f),
-            p[2] * (1 - m_inv_shape[2]) +  (m_inv_shape[2] / 2.f)
-        };
+    /// Bilinear interpolant of the values 'f' (indexed u + 2v) at (u, v).
+    /// dr::lerp() reproduces the endpoint values exactly at 0 and 1, which
+    /// the face-consistent evaluation of the intersection routine relies on.
+    template <typename Value>
+    static MI_INLINE Value bilerp(const Value (&f)[4], const Value &u,
+                                  const Value &v) {
+        return dr::lerp(dr::lerp(f[0], f[1], u), dr::lerp(f[2], f[3], u), v);
+    }
+
+    /// Trilinear interpolant of the corner values 'f' (indexed x + 2y + 4z)
+    /// at a position within the unit cube
+    template <typename Value, typename Vec3>
+    static MI_INLINE Value trilerp(const Value (&f)[8], const Vec3 &p) {
+        Value f0[4] = { f[0], f[1], f[2], f[3] },
+              f1[4] = { f[4], f[5], f[6], f[7] };
+        return dr::lerp(bilerp(f0, p.x(), p.y()), bilerp(f1, p.x(), p.y()), p.z());
+    }
+
+    /// Gradient of the trilinear interpolant, whose partial derivatives are
+    /// bilinear interpolants of the differences along the four parallel edges
+    template <typename Value, typename Vec3>
+    static MI_INLINE Vec3 trilerp_grad(const Value (&f)[8], const Vec3 &p) {
+        Value dx[4] = { f[1] - f[0], f[3] - f[2], f[5] - f[4], f[7] - f[6] },
+              dy[4] = { f[2] - f[0], f[3] - f[1], f[6] - f[4], f[7] - f[5] },
+              dz[4] = { f[4] - f[0], f[5] - f[1], f[6] - f[2], f[7] - f[3] };
+        return Vec3(bilerp(dx, p.y(), p.z()),
+                    bilerp(dy, p.x(), p.z()),
+                    bilerp(dz, p.x(), p.y()));
     }
 
     /* Given the voxel position, returns tight bounding box around the
@@ -912,13 +888,13 @@ private:
      * device visible
      */
     std::tuple<void *, uint32_t *, uint32_t> build_bboxes() {
-        auto shape = m_grid_texture.tensor().shape();
+        auto shape = m_grid.shape();
         uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]),
                                  static_cast<uint32_t>(shape[1]),
                                  static_cast<uint32_t>(shape[0]) };
         ScalarAffineTransform4f to_world = m_to_world.scalar();
 
-        dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
+        dr::eval(m_grid.array());
 
         void *aabbs_ptr = nullptr;
         uint32_t *voxel_indices_ptr = nullptr;
@@ -926,7 +902,7 @@ private:
         uint32_t count = 0;
 
         if constexpr (dr::is_jit_v<Float>) {
-            InputFloat grid = m_grid_texture.tensor().array();
+            InputFloat grid = m_grid.array();
 
             auto [z, y, x] = dr::meshgrid(dr::arange<UInt32>(shape[0] - 1),
                                           dr::arange<UInt32>(shape[1] - 1),
@@ -973,7 +949,7 @@ private:
             voxel_indices_ptr = (uint32_t *) jit_malloc(
                 JitBackend::None, sizeof(uint32_t) * max_voxel_count);
 
-            FloatStorage grid = m_grid_texture.tensor().array();
+            FloatStorage grid = m_grid.array();
             ScalarVector3f voxel_size = m_voxel_size.scalar();
 
             for (uint32_t z = 0; z < shape[0] - 1; ++z) {
@@ -1007,11 +983,12 @@ private:
         return { aabbs_ptr, voxel_indices_ptr, count };
     }
 
-    /// Gradient of the trilinear interpolant within the voxel whose lower
-    /// corner has the given sample index
-    Vector3f sdf_grad(const Point3f &p, const UInt32 &grid_index,
-                      Mask active) const {
-        auto shape = m_grid_texture.tensor().shape();
+    /// Value and gradient of the trilinear interpolant within the voxel
+    /// whose lower corner has the given sample index
+    std::pair<Float, Vector3f> sdf_eval(const Point3f &p,
+                                        const UInt32 &grid_index,
+                                        Mask active) const {
+        auto shape = m_grid.shape();
         uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
         Vector3f resolution(nx - 1.f, ny - 1.f, shape[0] - 1.f);
 
@@ -1020,22 +997,12 @@ private:
         Vector3f w = dr::clip(p * resolution - voxel, 0.f, 1.f);
 
         Float f[8];
-        const auto &grid = m_grid_texture.tensor().array();
         for (uint32_t i = 0; i < 8; ++i) {
             uint32_t offset = (i & 1u) + nx * (((i >> 1) & 1u) + ny * (i >> 2));
-            f[i] = Float(dr::gather<InputFloat>(grid, grid_index + offset, active));
+            f[i] = Float(dr::gather<InputFloat>(m_grid.array(), grid_index + offset, active));
         }
 
-        // Each partial derivative is a bilinear interpolant of four edge
-        // differences
-        Float dx = dr::lerp(dr::lerp(f[1] - f[0], f[3] - f[2], w.y()),
-                            dr::lerp(f[5] - f[4], f[7] - f[6], w.y()), w.z());
-        Float dy = dr::lerp(dr::lerp(f[2] - f[0], f[3] - f[1], w.x()),
-                            dr::lerp(f[6] - f[4], f[7] - f[5], w.x()), w.z());
-        Float dz = dr::lerp(dr::lerp(f[4] - f[0], f[5] - f[1], w.x()),
-                            dr::lerp(f[6] - f[2], f[7] - f[3], w.x()), w.y());
-
-        return Vector3f(dx, dy, dz) * resolution;
+        return { trilerp(f, w), trilerp_grad(f, w) * resolution };
     }
 
     enum NormalMethod {
@@ -1043,18 +1010,10 @@ private:
         Smooth,
     };
 
-    /// SDF data
-    InputTexture3f m_grid_texture;
-    /// Inverse resolution (1 / tensor_shape)
-    Vector3f m_inv_shape;
+    /// SDF samples, packed [Z, Y, X, 1]
+    InputTensorXf m_grid;
     /// Local voxel sizes (1 / (tensor_shape - 1))
     field<Vector<InputFloat, 3>> m_voxel_size;
-
-    // Weak pointer to underlying grid texture data. Only used for llvm/scalar
-    // variants. We store this because during raytracing, we don't want to call
-    // Texture3f::tensor().data() which internally calls jit_var_ptr and is
-    // guarded by a global state lock
-    float *m_host_grid_data = nullptr;
 
     // Non-empty bounding boxes and sample-grid indices of their lower corners
     InputFloat m_jit_bboxes;
@@ -1069,7 +1028,7 @@ private:
     uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
 
-    MI_TRAVERSE_CB(Base, m_grid_texture, m_inv_shape, m_voxel_size,
+    MI_TRAVERSE_CB(Base, m_grid, m_voxel_size,
                    m_jit_bboxes, m_jit_voxel_indices)
 };
 
