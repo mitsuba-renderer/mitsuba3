@@ -601,3 +601,42 @@ def test16_gradient_at_voxel_boundary(variants_all_rgb):
             assert matches_right
         else:
             assert matches_left or matches_right
+
+
+def test17_smooth_normals(variants_all_rgb):
+    # Smooth normals of a sphere grid are accurate and continuous across grid
+    # planes, where the analytic normals of neighboring voxels differ
+    pytest.importorskip("numpy")
+    import numpy as np
+
+    res = 64
+    t = np.linspace(0, 1, res)
+    z, y, x = np.meshgrid(t, t, t, indexing='ij')
+    f = (np.sqrt((x - 0.5)**2 + (y - 0.5)**2 + (z - 0.5)**2) - 0.45).astype(np.float32)
+    scene = mi.load_dict({'type': 'scene', 'sdf': {
+        'type': 'sdfgrid', 'normals': 'smooth',
+        'grid': mi.TensorXf(f.reshape(res, res, res, 1))}})
+
+    def trace(o):
+        if mi.variant().startswith('scalar'):
+            n = [scene.ray_intersect(mi.Ray3f(mi.Point3f(*oi), mi.Vector3f(0, 0, -1))).sh_frame.n
+                 for oi in o.T.tolist()]
+            return np.array(n).T
+        ray = mi.Ray3f(mi.Point3f(np.ascontiguousarray(o)), mi.Vector3f(0, 0, -1))
+        return np.array(scene.ray_intersect(ray).sh_frame.n)
+
+    rng = np.random.default_rng(0)
+    xy = rng.uniform(0.2, 0.8, (2, 200))
+    o = np.concatenate([xy, np.full((1, 200), 1.5)]).astype(np.float32)
+    n = trace(o)
+    p = np.concatenate([xy, 0.5 + np.sqrt(0.45**2 - np.sum((xy - 0.5)**2, axis=0))[None]])
+    ref = (p - 0.5) / np.linalg.norm(p - 0.5, axis=0, keepdims=True)
+    angle = np.degrees(np.arccos(np.clip(np.sum(n * ref, axis=0), -1, 1)))
+    assert angle.max() < 0.1
+
+    # Rays hitting the sphere on both sides of the grid plane x = 32 / 63
+    o[0, :100] = 32 / 63 - 1e-5
+    o[0, 100:] = 32 / 63 + 1e-5
+    o[1, 100:] = o[1, :100]
+    n = trace(o)
+    assert np.linalg.norm(n[:, :100] - n[:, 100:], axis=0).max() < 2e-4

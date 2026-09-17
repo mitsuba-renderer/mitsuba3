@@ -406,7 +406,7 @@ public:
                     si.sh_frame.n = si.n;
                     break;
                 case Smooth:
-                    si.sh_frame.n = smooth(local_p_att);
+                    si.sh_frame.n = smooth(local_p_att, active);
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -420,91 +420,98 @@ public:
         return si;
     }
 
-    Normal3f smooth_sh(const Point3f &p, const Float *u_ptr, const Float *v_ptr,
-                       const Float *w_ptr) const {
-        /**
-           Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
-           Tracing of Signed Distance Function Grids, Journal of Computer
-           Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
-        */
+    /**
+     * Smooth shading normal following
+     *
+     * Herman Hansson-Söderlund, Alex Evans, and Tomas Akenine-Möller, Ray
+     * Tracing of Signed Distance Function Grids, Journal of Computer
+     * Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
+     */
+    Normal3f smooth(const Point3f &p, Mask active) const {
+        using Mask3 = dr::mask_t<Vector3f>;
+
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
+        int32_t nx = (int32_t) shape[2], ny = (int32_t) shape[1],
+                nz = (int32_t) shape[0];
+        Vector3f resolution(nx - 1.f, ny - 1.f, nz - 1.f);
         Point3f scaled_p = p * resolution;
 
-        Point3i v000 = Point3i(round(scaled_p)) + Vector3i(-1, -1, -1);
-        Point3i v100 = v000 + Vector3i(1, 0, 0);
-        Point3i v010 = v000 + Vector3i(0, 1, 0);
-        Point3i v110 = v000 + Vector3i(1, 1, 0);
-        Point3i v001 = v000 + Vector3i(0, 0, 1);
-        Point3i v101 = v000 + Vector3i(1, 0, 1);
-        Point3i v011 = v000 + Vector3i(0, 1, 1);
-        Point3i v111 = v000 + Vector3i(1, 1, 1);
+        // The normal blends the gradients of the eight voxels around the grid
+        // vertex nearest to 'p'. 'v' is the lower corner of these voxels, and
+        // 'uvw' is the position of 'p' relative to their centers.
+        Point3i v = Point3i(dr::round(scaled_p)) - 1;
+        Vector3f uvw = scaled_p - Vector3f(v) - .5f;
 
-        // Detect voxels that are outside of the grid, their normals will not
-        // be used in the interpolation
-        Bool s000 = !dr::any(v000 < 0);
-        Bool s100 = !dr::any(v100 < 0);
-        Bool s010 = !dr::any(v010 < 0);
-        Bool s110 = !dr::any(v110 < 0);
-        Bool s001 = !dr::any(v001 < 0);
-        Bool s101 = !dr::any(v101 < 0);
-        Bool s011 = !dr::any(v011 < 0);
-        Bool s111 = !dr::any(v111 < 0);
+        // Each voxel's gradient consists of finite differences of the
+        // interpolant across the voxel's extent along one axis, evaluated at
+        // the position of 'p' along the other two. A difference thus only
+        // depends on the voxel's index along its axis, and it is a bilinear
+        // interpolant of grid samples within the cell containing 'p'.
+        Point3i cell = dr::minimum(dr::maximum(Point3i(dr::floor(scaled_p)), 0),
+                                   Point3i(nx - 2, ny - 2, nz - 2));
+        Vector3f w = scaled_p - Vector3f(cell);
 
-        Vector3f n000 =
-            dr::select(s000, dr::normalize(voxel_grad(p, v000)), Vector3f(0.f));
-        Vector3f n100 =
-            dr::select(s100, dr::normalize(voxel_grad(p, v100)), Vector3f(0.f));
-        Vector3f n010 =
-            dr::select(s010, dr::normalize(voxel_grad(p, v010)), Vector3f(0.f));
-        Vector3f n110 =
-            dr::select(s110, dr::normalize(voxel_grad(p, v110)), Vector3f(0.f));
-        Vector3f n001 =
-            dr::select(s001, dr::normalize(voxel_grad(p, v001)), Vector3f(0.f));
-        Vector3f n101 =
-            dr::select(s101, dr::normalize(voxel_grad(p, v101)), Vector3f(0.f));
-        Vector3f n011 =
-            dr::select(s011, dr::normalize(voxel_grad(p, v011)), Vector3f(0.f));
-        Vector3f n111 =
-            dr::select(s111, dr::normalize(voxel_grad(p, v111)), Vector3f(0.f));
+        const auto &grid = m_grid_texture.tensor().array();
+        auto sample = [&](const Point3i &q) -> Float {
+            Point3i qc = dr::minimum(dr::maximum(q, 0), Point3i(nx - 1, ny - 1, nz - 1));
+            return Float(dr::gather<InputFloat>(
+                grid, UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active));
+        };
 
-        Vector3f diff = scaled_p - Vector3f(v111) + Vector3f(0.5);
-        Float &u      = diff[0];
-        Float &v      = diff[1];
-        Float &w      = diff[2];
-        if (u_ptr)
-            u = *u_ptr;
-        if (v_ptr)
-            v = *v_ptr;
-        if (w_ptr)
-            w = *w_ptr;
+        // Interpolant on the plane with sample index 'q' along axis 'a', at
+        // the position of 'p' along the other two axes
+        auto plane = [&](int a, const Int32 &q) -> Float {
+            int b = (a + 1) % 3, c = (a + 2) % 3;
+            Float f[2][2];
+            for (int j = 0; j < 2; ++j) {
+                for (int k = 0; k < 2; ++k) {
+                    Point3i idx;
+                    idx[a] = q;
+                    idx[b] = cell[b] + j;
+                    idx[c] = cell[c] + k;
+                    f[j][k] = sample(idx);
+                }
+            }
+            return dr::lerp(dr::lerp(f[0][0], f[1][0], w[b]),
+                            dr::lerp(f[0][1], f[1][1], w[b]), w[c]);
+        };
 
-        // Disable weighting on invalid axis
-        Bool invalid_x_0 = !s000 && !s010 && !s001 && !s011;
-        Bool invalid_x_1 = !s100 && !s110 && !s101 && !s111;
-        Bool invalid_y_0 = !s000 && !s100 && !s001 && !s101;
-        Bool invalid_y_1 = !s010 && !s110 && !s011 && !s111;
-        Bool invalid_z_0 = !s000 && !s100 && !s010 && !s110;
-        Bool invalid_z_1 = !s001 && !s101 && !s011 && !s111;
+        // Differences of the voxels with the lower ('d0') and upper ('d1')
+        // index along each axis. One of them spans the cell, the other one
+        // extends to the neighboring sample plane on the side of the other
+        // voxel. That difference vanishes at the grid boundary, where the
+        // sample index is clamped.
+        Vector3f d0, d1;
+        for (int a = 0; a < 3; ++a) {
+            Mask upper = cell[a] != v[a];
+            Float g0 = plane(a, cell[a]),
+                  g1 = plane(a, cell[a] + 1),
+                  gq = plane(a, cell[a] + dr::select(upper, -1, 2)),
+                  dc = g1 - g0,
+                  dq = dr::select(upper, g0 - gq, gq - g1);
+            d0[a] = dr::select(upper, dq, dc) * resolution[a];
+            d1[a] = dr::select(upper, dc, dq) * resolution[a];
+        }
 
-        u = dr::select(invalid_x_0, 1, u);
-        u = dr::select(invalid_x_1, 0, u);
-        v = dr::select(invalid_y_0, 1, v);
-        v = dr::select(invalid_y_1, 0, v);
-        w = dr::select(invalid_z_0, 1, w);
-        w = dr::select(invalid_z_1, 0, w);
+        // Voxels outside of the grid do not contribute, and the blending
+        // weight along an axis is set so that they receive weight zero
+        Mask3 inside = v >= 0;
+        uvw = dr::select(inside, uvw, 1.f);
 
-        Normal3f n = (1 - w) * ((1 - v) * ((1 - u) * n000 + u * n100) +
-                                v * ((1 - u) * n010 + u * n110)) +
-                           w * ((1 - v) * ((1 - u) * n001 + u * n101) +
-                                v * ((1 - u) * n011 + u * n111));
+        Vector3f n[8];
+        for (int i = 0; i < 8; ++i) {
+            Mask3 hi((i & 1) != 0, (i & 2) != 0, (i & 4) != 0);
+            n[i] = dr::select(dr::all(hi || inside),
+                              dr::normalize(dr::select(hi, d1, d0)),
+                              Vector3f(0.f));
+        }
 
-        return n;
-    };
+        Vector3f result = dr::lerp(
+            dr::lerp(dr::lerp(n[0], n[1], uvw.x()), dr::lerp(n[2], n[3], uvw.x()), uvw.y()),
+            dr::lerp(dr::lerp(n[4], n[5], uvw.x()), dr::lerp(n[6], n[7], uvw.x()), uvw.y()),
+            uvw.z());
 
-    Normal3f smooth(const Point3f &p) const {
-        Normal3f n = smooth_sh(p, nullptr, nullptr, nullptr);
-        return dr::normalize(m_to_world.value() * Normal3f(n));
+        return dr::normalize(m_to_world.value() * Normal3f(result));
     }
 
     bool parameters_grad_enabled() const override {
@@ -1019,37 +1026,6 @@ private:
         }
 
         return { aabbs_ptr, voxel_indices_ptr, count };
-    }
-
-    /// Computes the SDF gradient for a given point and its containing voxel
-    Vector3f voxel_grad(const Point3f &p, const Point3i &voxel_index) const {
-        Float f[6];
-        Point3f query;
-        using Data1 = dr::Array<Float, 1>;
-
-        Point3f voxel_size = m_voxel_size.value();
-        Point3f p000 = Point3f(voxel_index) * voxel_size;
-
-        query = rescale_point(Point3f(p000[0] + voxel_size[0], p[1], p[2]));
-        f[0] = m_grid_texture.template eval<Data1>(query).x();
-        query = rescale_point(Point3f(p000[0], p[1], p[2]));
-        f[1] = m_grid_texture.template eval<Data1>(query).x();
-
-        query = rescale_point(Point3f(p[0], p000[1] + voxel_size[1], p[2]));
-        f[2] = m_grid_texture.template eval<Data1>(query).x();
-        query = rescale_point(Point3f(p[0], p000[1], p[2]));
-        f[3] = m_grid_texture.template eval<Data1>(query).x();
-
-        query = rescale_point(Point3f(p[0], p[1], p000[2] + voxel_size[2]));
-        f[4] = m_grid_texture.template eval<Data1>(query).x();
-        query = rescale_point(Point3f(p[0], p[1], p000[2] ));
-        f[5] = m_grid_texture.template eval<Data1>(query).x();
-
-        Float dx = (Float(f[0]) - Float(f[1])) / voxel_size.x(); // f(1, y, z) - f(0, y, z)
-        Float dy = (Float(f[2]) - Float(f[3])) / voxel_size.y(); // f(x, 1, z) - f(x, 0, z)
-        Float dz = (Float(f[4]) - Float(f[5])) / voxel_size.z(); // f(x, y, 1) - f(x, y, 0)
-
-        return Vector3f(dx, dy, dz);
     }
 
     /// Gradient of the trilinear interpolant within the voxel whose lower
