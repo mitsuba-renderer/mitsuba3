@@ -349,8 +349,18 @@ public:
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
                                       m_grid_texture.value());
 
+        // Sample index of the intersected voxel's lower corner. Using it
+        // instead of reconstructing the voxel from the hit point avoids
+        // selecting a neighbor when rounding places the point across a
+        // grid plane.
+        UInt32 grid_index;
+        if constexpr (dr::is_jit_v<Float>)
+            grid_index = dr::gather<UInt32>(m_jit_voxel_indices, pi.prim_index, active);
+        else
+            grid_index = m_voxel_indices_ptr[pi.prim_index];
+
         Point3f local_p = dr::detach(to_object * ray(pi.t));
-        Vector3f local_grad = dr::detach(sdf_grad(local_p));
+        Vector3f local_grad = dr::detach(sdf_grad(local_p, grid_index, active));
         Normal3f local_n = dr::normalize(local_grad);
 
         // Detached normal for the error bound, written so that its primal
@@ -387,7 +397,8 @@ public:
         if constexpr (dr::is_diff_v<Float>)
             local_p_att = dr::replace_grad(local_p, to_object * si.p);
 
-        si.n = dr::normalize(to_world * Normal3f(sdf_grad(local_p_att)));
+        si.n = dr::normalize(
+            to_world * Normal3f(sdf_grad(local_p_att, grid_index, active)));
 
         if (likely(has_flag(ray_flags, RayFlags::Shading))) {
             switch (m_normal_method) {
@@ -1041,12 +1052,35 @@ private:
         return Vector3f(dx, dy, dz);
     }
 
-    Vector3f sdf_grad(const Point3f &p) const {
+    /// Gradient of the trilinear interpolant within the voxel whose lower
+    /// corner has the given sample index
+    Vector3f sdf_grad(const Point3f &p, const UInt32 &grid_index,
+                      Mask active) const {
         auto shape = m_grid_texture.tensor().shape();
-        Vector3f resolution = Vector3f(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
-        Point3i min_voxel_index(p * resolution);
+        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
+        Vector3f resolution(nx - 1.f, ny - 1.f, shape[0] - 1.f);
 
-        return voxel_grad(p, min_voxel_index);
+        UInt32 yz = grid_index / nx;
+        Vector3f voxel(Float(grid_index % nx), Float(yz % ny), Float(yz / ny));
+        Vector3f w = dr::clip(p * resolution - voxel, 0.f, 1.f);
+
+        Float f[8];
+        const auto &grid = m_grid_texture.tensor().array();
+        for (uint32_t i = 0; i < 8; ++i) {
+            uint32_t offset = (i & 1u) + nx * (((i >> 1) & 1u) + ny * (i >> 2));
+            f[i] = Float(dr::gather<InputFloat>(grid, grid_index + offset, active));
+        }
+
+        // Each partial derivative is a bilinear interpolant of four edge
+        // differences
+        Float dx = dr::lerp(dr::lerp(f[1] - f[0], f[3] - f[2], w.y()),
+                            dr::lerp(f[5] - f[4], f[7] - f[6], w.y()), w.z());
+        Float dy = dr::lerp(dr::lerp(f[2] - f[0], f[3] - f[1], w.x()),
+                            dr::lerp(f[6] - f[4], f[7] - f[5], w.x()), w.z());
+        Float dz = dr::lerp(dr::lerp(f[4] - f[0], f[5] - f[1], w.x()),
+                            dr::lerp(f[6] - f[2], f[7] - f[3], w.x()), w.y());
+
+        return Vector3f(dx, dy, dz) * resolution;
     }
 
     enum NormalMethod {

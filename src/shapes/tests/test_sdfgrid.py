@@ -516,3 +516,88 @@ def test13_empty_grid(variants_all_rgb):
         with pytest.raises(RuntimeError, match='at least.*non-empty voxel'):
             mi.load_dict({'type': 'sdfgrid',
                           'grid': mi.TensorXf([value] * 60, shape=(3, 4, 5, 1))})
+
+
+def test14_trilinear_gradient(variants_all_rgb):
+    # A trilinear polynomial with a varying normal and all mixed terms,
+    # sampled on a rectangular grid under nonuniform scaling
+    nx, ny, nz = 8, 5, 4
+    values = [z + x * y + 0.25 * y * z + 0.5 * z * x + 0.125 * x * y * z - 0.6
+              for z in [i / (nz - 1) for i in range(nz)]
+              for y in [i / (ny - 1) for i in range(ny)]
+              for x in [i / (nx - 1) for i in range(nx)]]
+    to_world = mi.ScalarTransform4f().translate([-3, 2, 1]).scale([2, 3, 4])
+    scene = mi.load_dict({'type': 'scene', 'sdf': {
+        'type': 'sdfgrid', 'normals': 'analytic', 'to_world': to_world,
+        'grid': mi.TensorXf(values, shape=(nz, ny, nx, 1))}})
+    to_world = mi.Transform4f(to_world)
+
+    # Include grid planes and the outer x faces
+    for x, y in [(0.13, 0.2), (0.32, 0.41), (0.71, 0.78),
+                 (3 / 7, 0.5), (0, 0.25), (1, 0.2)]:
+        z = (0.6 - x * y) / (1 + 0.25 * y + 0.5 * x + 0.125 * x * y)
+        ray = mi.Ray3f(to_world @ mi.Point3f(x, y, 1),
+                       to_world @ mi.Vector3f(0, 0, -1))
+        si = scene.ray_intersect(ray)
+        assert dr.all(si.is_valid())
+        assert dr.allclose(si.t, 1 - z, atol=1e-5)
+        gradient = mi.Normal3f(y + 0.5 * z + 0.125 * y * z,
+                               x + 0.25 * z + 0.125 * x * z,
+                               1 + 0.25 * y + 0.5 * x + 0.125 * x * y)
+        normal = dr.normalize(to_world @ gradient)
+        assert dr.allclose(si.n, normal, atol=2e-5)
+        assert dr.allclose(si.sh_frame.n, normal, atol=2e-5)
+
+
+@pytest.mark.parametrize('source', ['grid', 'ray'])
+def test15_trilinear_gradient_derivatives(variants_all_ad_rgb, source):
+    theta = mi.Float(0)
+    dr.enable_grad(theta)
+    a = 1 + theta if source == 'grid' else mi.Float(1)
+    x = 0.37 + theta if source == 'ray' else mi.Float(0.37)
+    y = 0.43
+    gx = mi.Float([0, 1, 0, 1, 0, 1, 0, 1])
+    gy = mi.Float([0, 0, 1, 1, 0, 0, 1, 1])
+    gz = mi.Float([0, 0, 0, 0, 1, 1, 1, 1])
+    values = gz + a * gx * gy + 0.25 * gy * gz + 0.5 * gz * gx + 0.125 * gx * gy * gz - 0.6
+    scene = mi.load_dict({'type': 'scene', 'sdf': {
+        'type': 'sdfgrid', 'normals': 'analytic',
+        'grid': mi.TensorXf(values, shape=(2, 2, 2, 1))}})
+
+    ray = mi.Ray3f(mi.Point3f(x, y, 1), mi.Vector3f(0, 0, -1))
+    si = scene.ray_intersect(ray)
+    assert dr.all(si.is_valid())
+
+    z = (0.6 - a * x * y) / (1 + 0.25 * y + 0.5 * x + 0.125 * x * y)
+    expected_p = mi.Point3f(x, y, z)
+    expected_n = dr.normalize(mi.Normal3f(a * y + 0.5 * z + 0.125 * y * z,
+                                          a * x + 0.25 * z + 0.125 * x * z,
+                                          1 + 0.25 * y + 0.5 * x + 0.125 * x * y))
+    dr.forward(theta, flags=dr.ADFlag.ClearEdges)
+    assert dr.allclose(dr.grad(si.p), dr.grad(expected_p), atol=2e-5)
+    assert dr.allclose(dr.grad(si.n), dr.grad(expected_n), atol=2e-5)
+
+
+def test16_gradient_at_voxel_boundary(variants_all_rgb):
+    # The field is continuous, but its x derivative jumps from 1 to 3 at the
+    # shared face. The geometric normal is the one-sided normal of the
+    # intersected voxel.
+    values = [z + (x if x <= 0.5 else 3 * x - 1) + 0.2 * y - 0.8
+              for z in (0, 1) for y in (0, 1) for x in (0, 0.5, 1)]
+    scene = mi.load_dict({'type': 'scene', 'sdf': {
+        'type': 'sdfgrid', 'normals': 'analytic',
+        'grid': mi.TensorXf(values, shape=(2, 2, 3, 1))}})
+    left = dr.normalize(mi.Normal3f(1, 0.2, 1))
+    right = dr.normalize(mi.Normal3f(3, 0.2, 1))
+    for x in (0.5 - 2e-7, 0.5, 0.5 + 2e-7):
+        ray = mi.Ray3f(mi.Point3f(x, 0.25, 1), mi.Vector3f(0, 0, -1))
+        si = scene.ray_intersect(ray)
+        assert dr.all(si.is_valid())
+        matches_left = dr.allclose(si.n, left, atol=1e-6)
+        matches_right = dr.allclose(si.n, right, atol=1e-6)
+        if x < 0.5:
+            assert matches_left
+        elif x > 0.5:
+            assert matches_right
+        else:
+            assert matches_left or matches_right
