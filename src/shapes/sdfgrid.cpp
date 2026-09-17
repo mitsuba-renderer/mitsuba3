@@ -919,8 +919,6 @@ private:
         uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]),
                                  static_cast<uint32_t>(shape[1]),
                                  static_cast<uint32_t>(shape[0]) };
-        uint32_t max_voxel_count =
-            (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
         ScalarAffineTransform4f to_world = m_to_world.scalar();
 
         dr::eval(m_grid_texture.value()); // Make sure the SDF data is evaluated
@@ -945,14 +943,20 @@ private:
             UInt32 counter = UInt32(0);
             UInt32 slot = dr::scatter_inc(counter, UInt32(0), occupied);
             dr::eval(slot);
+            count = counter[0];
 
-            m_jit_voxel_indices = dr::zeros<UInt32>(max_voxel_count);
+            // The caller reports the error for grids without any surface
+            if (count == 0)
+                return { nullptr, nullptr, 0 };
+
+            // Only the occupied voxels are stored
+            m_jit_voxel_indices = dr::zeros<UInt32>(count);
 
             uint32_t stride = 3; // BBox's Point3f corner stride (floats per corner)
             if constexpr (dr::is_llvm_v<Float>)
                 stride = sizeof(InputScalarBoundingBox3f) / sizeof(float) / 2u; // Typically 4-wide
 
-            m_jit_bboxes = dr::zeros<InputFloat>(2 * stride * max_voxel_count);
+            m_jit_bboxes = dr::zeros<InputFloat>(2 * stride * count);
             dr::scatter(m_jit_bboxes, bbox.min.x(), stride * (2 * slot + 0) + 0, occupied, ReduceMode::NoConflicts);
             dr::scatter(m_jit_bboxes, bbox.min.y(), stride * (2 * slot + 0) + 1, occupied, ReduceMode::NoConflicts);
             dr::scatter(m_jit_bboxes, bbox.min.z(), stride * (2 * slot + 0) + 2, occupied, ReduceMode::NoConflicts);
@@ -964,9 +968,9 @@ private:
 
             aabbs_ptr = (void *) m_jit_bboxes.data();
             voxel_indices_ptr = (uint32_t*) m_jit_voxel_indices.data();
-
-            count = counter[0];
         } else {
+            uint32_t max_voxel_count =
+                (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
             aabbs_ptr = (ScalarBoundingBox3f*) jit_malloc(
                 JitBackend::None, sizeof(ScalarBoundingBox3f) * max_voxel_count);
             voxel_indices_ptr = (uint32_t *) jit_malloc(
@@ -991,6 +995,15 @@ private:
                         count++;
                     }
                 }
+            }
+
+            // The constructor's error for empty grids skips the destructor,
+            // which would otherwise release these buffers
+            if (count == 0) {
+                jit_free(aabbs_ptr);
+                jit_free(voxel_indices_ptr);
+                aabbs_ptr = nullptr;
+                voxel_indices_ptr = nullptr;
             }
         }
 

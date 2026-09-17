@@ -481,3 +481,38 @@ def test11_no_cracks(variants_all_rgb):
     leaks = np.abs(np.array(t) - 1.5) > 1e-3
     assert leaks.sum() == 0, f'{leaks.sum()} of {len(o)} rays passed through the surface'
     assert np.all(np.array(occluded))
+
+
+def test12_occupied_voxel_count_updates(variants_all_rgb):
+    # Grow to full occupancy, then shrink both the occupancy and the resolution
+    scene = None
+    for res, plane, expected_count, expected_x in [(8, 0.4, 49, 0.4),
+                                                   (8, None, 343, 0.5 / 7),
+                                                   (4, 0.75, 9, 0.75)]:
+        values = [x / (res - 1) - plane if plane is not None
+                  else (-1) ** (x + y + z)
+                  for z in range(res) for y in range(res) for x in range(res)]
+        grid = mi.TensorXf(values, shape=(res, res, res, 1))
+        if scene is None:
+            scene = mi.load_dict({'type': 'scene',
+                                  'sdf': {'type': 'sdfgrid', 'grid': grid}})
+        else:
+            params = mi.traverse(scene)
+            params['sdf.grid'] = grid
+            params.update()
+
+        assert scene.shapes()[0].primitive_count() == expected_count
+        ray = mi.Ray3f(mi.Point3f(-1, 0.2, 0.3), mi.Vector3f(1, 0, 0))
+        pi = scene.ray_intersect_preliminary(ray)
+        assert dr.all(pi.is_valid())
+        assert dr.allclose(pi.t, 1 + expected_x, atol=1e-5)
+        for offset in (-0.01, 0.01):
+            ray.maxt = 1 + expected_x + offset
+            assert dr.all(scene.ray_test(ray) == (offset > 0))
+
+
+def test13_empty_grid(variants_all_rgb):
+    for value in (-1, 1):
+        with pytest.raises(RuntimeError, match='at least.*non-empty voxel'):
+            mi.load_dict({'type': 'sdfgrid',
+                          'grid': mi.TensorXf([value] * 60, shape=(3, 4, 5, 1))})
