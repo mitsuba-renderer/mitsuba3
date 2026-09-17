@@ -687,7 +687,7 @@ private:
         }
 
         auto [hit, t] = sdf_solve_cubic(t_bbox_end - t_bbox_beg, f_beg, f_end,
-                                        c3, c2, c1, c0);
+                                        c3, c2, c1, c0, active);
         t += t_bbox_beg;
 
         // The solver keeps t within the voxel, and NaN fails this test
@@ -706,7 +706,8 @@ private:
     template <typename FloatP>
     MI_INLINE std::tuple<dr::mask_t<FloatP>, FloatP>
     sdf_solve_cubic(FloatP t_end, FloatP f_beg, FloatP f_end,
-                    FloatP c3, FloatP c2, FloatP c1, FloatP c0) const {
+                    FloatP c3, FloatP c2, FloatP c1, FloatP c0,
+                    dr::mask_t<FloatP> active) const {
         using MaskP = dr::mask_t<FloatP>;
 
         MaskP has_derivative_roots;
@@ -731,13 +732,14 @@ private:
         };
 
         auto numerical_solve = [&](FloatP t_near, FloatP t_far, FloatP f_near,
-                                   FloatP f_far) -> FloatP {
+                                   FloatP f_far, MaskP active) -> FloatP {
             static constexpr uint32_t num_solve_max_iter = 50;
 
             using UInt32P = dr::uint32_array_t<FloatP>;
             FloatP t = 0;
             UInt32P i = 0;
-            MaskP done = false;
+            // Lanes without a bracketed root do not iterate
+            MaskP done = !active;
 
             // Runs as a plain loop in scalar variants and symbolically otherwise
             dr::tie(t, t_near, t_far, f_near, f_far, i, done) = dr::while_loop(
@@ -776,11 +778,11 @@ private:
         split(root_0);
         split(root_1);
 
-        MaskP active = f_near * f_far <= 0.f;
+        active &= f_near * f_far <= 0.f;
 
-        FloatP t =
-            dr::select(active, numerical_solve(t_near, t_far, f_near, f_far),
-                       dr::Infinity<Float>);
+        FloatP t = dr::select(
+            active, numerical_solve(t_near, t_far, f_near, f_far, active),
+            dr::Infinity<Float>);
 
         return { active, t };
     }
