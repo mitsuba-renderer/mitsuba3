@@ -529,10 +529,10 @@ private:
             dr::mask_t<FloatP> active) const {
         MI_MASK_ARGUMENT(active);
 
-        using MaskP     = dr::mask_t<FloatP>;
         using UInt32P   = dr::uint32_array_t<FloatP>;
         using Vector3uP = Vector<UInt32P, 3>;
         using Vector3fP = Vector<FloatP, 3>;
+        using MaskP3    = dr::mask_t<Vector3fP>;
         using Point3fP  = Point<FloatP, 3>;
         using Value     = dr::float32_array_t<FloatP>;
 
@@ -572,15 +572,32 @@ private:
             Point3fP(voxel_pos_f * voxel_size),
             Point3fP((voxel_pos_f + 1.f) * voxel_size));
 
-        // To determine voxel intersection, we need both near and far AABB
-        // intersections
-        auto [bbox_hit, t_bbox_beg, t_bbox_end] = bbox_local.ray_intersect(ray);
+        // Slab test that also identifies the faces through which the ray
+        // enters and exits the voxel. A ray parallel to a slab has infinite
+        // distances of equal sign when it lies outside, and NaN distances
+        // when it lies exactly in a boundary plane, which counts as inside.
+        // Embree does not always test a ray against the bounding box of a
+        // user primitive before calling its intersection function, which is
+        // why the routine cannot rely on that test.
+        Vector3fP d_rcp = dr::rcp(ray.d);
+        MaskP3 d_pos = d_rcp >= 0;
+        Vector3fP t_slab_min =
+            (dr::select(d_pos, bbox_local.min, bbox_local.max) - ray.o) * d_rcp;
+        Vector3fP t_slab_max =
+            (dr::select(d_pos, bbox_local.max, bbox_local.min) - ray.o) * d_rcp;
+        Vector3fP inf(dr::Infinity<FloatP>);
+        t_slab_min = dr::select(dr::isnan(t_slab_min), -inf, t_slab_min);
+        t_slab_max = dr::select(dr::isnan(t_slab_max), inf, t_slab_max);
 
-        active = active && bbox_hit;
+        FloatP t_bbox_beg = dr::maximum(dr::max(t_slab_min), 0.f),
+               t_bbox_end = dr::min(t_slab_max);
 
-        t_bbox_beg = dr::maximum(t_bbox_beg, decltype(t_bbox_beg)(0.0));
-        MaskP valid_t = t_bbox_beg < t_bbox_end;
-        active &= valid_t;
+        // Rays that start inside the voxel have negative slab entry
+        // distances and therefore do not lie on an entry face
+        MaskP3 on_beg_face = t_slab_min == Vector3fP(t_bbox_beg),
+               on_end_face = t_slab_max == Vector3fP(t_bbox_end);
+
+        active &= t_bbox_beg < t_bbox_end && t_bbox_beg <= ray.maxt;
 
         // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]. The direction
         // is scaled but not normalized, so distances along the ray are unchanged.
@@ -588,6 +605,40 @@ private:
                              (float) (shape_v[2] - 1));
         ray.o = Point3fP(Vector3fP(ray.o) * grid_scale - voxel_pos_f);
         ray.d = ray.d * grid_scale;
+
+        FloatP s000 = grid_value(voxel_pos);
+        FloatP s100 = grid_value(voxel_pos + Vector3uP(1, 0, 0));
+        FloatP s010 = grid_value(voxel_pos + Vector3uP(0, 1, 0));
+        FloatP s110 = grid_value(voxel_pos + Vector3uP(1, 1, 0));
+        FloatP s001 = grid_value(voxel_pos + Vector3uP(0, 0, 1));
+        FloatP s101 = grid_value(voxel_pos + Vector3uP(1, 0, 1));
+        FloatP s011 = grid_value(voxel_pos + Vector3uP(0, 1, 1));
+        FloatP s111 = grid_value(voxel_pos + Vector3uP(1, 1, 1));
+
+        Vector3fP p_beg = ray(t_bbox_beg), p_end = ray(t_bbox_end);
+
+        // SDF values where the ray enters and exits the voxel. The coordinate
+        // of the crossed face is snapped to 0 or 1, and the (1 - u) * a + u * b
+        // form of the interpolation is exact at both endpoints. Two neighboring
+        // voxels therefore compute bitwise identical values on their shared
+        // face. Evaluating the cubic below at these points instead can yield
+        // opposite signs in the two voxels when the surface passes close to
+        // the face, in which case neither voxel reports the intersection.
+        auto trilinear = [&](Vector3fP p) {
+            p = dr::clip(p, 0.f, 1.f);
+            auto lerp = [](const FloatP &a, const FloatP &b, const FloatP &u) {
+                return (1.f - u) * a + u * b;
+            };
+            FloatP e00 = lerp(s000, s100, p.x()), e10 = lerp(s010, s110, p.x()),
+                   e01 = lerp(s001, s101, p.x()), e11 = lerp(s011, s111, p.x());
+            return lerp(lerp(e00, e10, p.y()), lerp(e01, e11, p.y()), p.z());
+        };
+
+        Vector3fP zero(0.f), one(1.f);
+        FloatP f_beg = trilinear(dr::select(on_beg_face,
+                                   dr::select(d_pos, zero, one), p_beg)),
+               f_end = trilinear(dr::select(on_end_face,
+                                   dr::select(d_pos, one, zero), p_end));
 
         /**
            Voxel intersection expressed as solution of cubic polynomial:
@@ -601,19 +652,9 @@ private:
         FloatP c2;
         FloatP c3;
         {
-            FloatP s000 = grid_value(voxel_pos);
-            FloatP s100 = grid_value(voxel_pos + Vector3uP(1, 0, 0));
-            FloatP s010 = grid_value(voxel_pos + Vector3uP(0, 1, 0));
-            FloatP s110 = grid_value(voxel_pos + Vector3uP(1, 1, 0));
-            FloatP s001 = grid_value(voxel_pos + Vector3uP(0, 0, 1));
-            FloatP s101 = grid_value(voxel_pos + Vector3uP(1, 0, 1));
-            FloatP s011 = grid_value(voxel_pos + Vector3uP(0, 1, 1));
-            FloatP s111 = grid_value(voxel_pos + Vector3uP(1, 1, 1));
-
-            Vector<FloatP, 3> ray_p_in_voxel = ray(t_bbox_beg);
-            FloatP o_x = ray_p_in_voxel.x();
-            FloatP o_y = ray_p_in_voxel.y();
-            FloatP o_z = ray_p_in_voxel.z();
+            FloatP o_x = p_beg.x();
+            FloatP o_y = p_beg.y();
+            FloatP o_z = p_beg.z();
 
             FloatP d_x = ray.d.x();
             FloatP d_y = ray.d.y();
@@ -645,18 +686,14 @@ private:
             c3 = k7 * m1 * d_z;
         }
 
-        FloatP t_beg = 0.0;
-        FloatP t_end = t_bbox_end - t_bbox_beg;
+        auto [hit, t] = sdf_solve_cubic(t_bbox_end - t_bbox_beg, f_beg, f_end,
+                                        c3, c2, c1, c0);
+        t += t_bbox_beg;
 
-        auto [hit, t] = sdf_solve_cubic(t_beg, t_end, c3, c2, c1, c0);
+        // The solver keeps t within the voxel, and NaN fails this test
+        active &= hit && t <= ray.maxt;
 
-        active = active &&
-                 bbox_hit &&
-                 hit &&
-                 t_bbox_beg + t >= 0.f &&
-                 t_bbox_beg + t <= ray.maxt;
-
-        return { active, dr::select(active, t_bbox_beg + t, dr::Infinity<FloatP>),
+        return { active, dr::select(active, t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(0.f, 0.f), ((uint32_t) -1), prim_index };
     }
 
@@ -668,12 +705,13 @@ private:
      */
     template <typename FloatP>
     MI_INLINE std::tuple<dr::mask_t<FloatP>, FloatP>
-    sdf_solve_cubic(FloatP t_beg, FloatP t_end, FloatP c3, FloatP c2, FloatP c1,
-                    FloatP c0) const {
-
+    sdf_solve_cubic(FloatP t_end, FloatP f_beg, FloatP f_end,
+                    FloatP c3, FloatP c2, FloatP c1, FloatP c0) const {
         using MaskP = dr::mask_t<FloatP>;
 
-        auto [has_derivative_roots, root_0, root_1] =
+        MaskP has_derivative_roots;
+        FloatP root_0, root_1;
+        std::tie(has_derivative_roots, root_0, root_1) =
             math::solve_quadratic(c3 * 3.f, c2 * 2.f, c1);
 
         auto eval_sdf = [&](FloatP t_) -> FloatP {
@@ -720,28 +758,23 @@ private:
             return t;
         };
 
-        FloatP t_near = t_beg;
-        FloatP t_far  = t_end;
+        FloatP t_near = 0.f, t_far = t_end,
+               f_near = f_beg, f_far = f_end;
 
-        FloatP f_root_0 = eval_sdf(root_0);
-        FloatP f_root_1 = eval_sdf(root_1);
+        // Split the interval at the roots of the derivative so that the
+        // remaining bracket is monotonic
+        auto split = [&](const FloatP &root) {
+            FloatP f_root = eval_sdf(root);
+            MaskP valid = has_derivative_roots && t_near <= root && root <= t_far,
+                  left  = f_near * f_root <= 0.f;
+            dr::masked(t_far,  valid && left)  = root;
+            dr::masked(f_far,  valid && left)  = f_root;
+            dr::masked(t_near, valid && !left) = root;
+            dr::masked(f_near, valid && !left) = f_root;
+        };
 
-        MaskP root_0_valid = t_near <= root_0 && root_0 <= t_far;
-
-        dr::masked(t_far, has_derivative_roots && root_0_valid &&
-                              eval_sdf(t_beg) * f_root_0 <= 0.f) = root_0;
-        dr::masked(t_near, has_derivative_roots && root_0_valid &&
-                               eval_sdf(t_beg) * f_root_0 > 0.f) = root_0;
-
-        MaskP root_1_valid = t_near <= root_1 && root_1 <= t_far;
-
-        dr::masked(t_far, has_derivative_roots && root_1_valid &&
-                              eval_sdf(t_near) * f_root_1 <= 0.f) = root_1;
-        dr::masked(t_near, has_derivative_roots && root_1_valid &&
-                               eval_sdf(t_near) * f_root_1 > 0.f) = root_1;
-
-        FloatP f_near = eval_sdf(t_near);
-        FloatP f_far  = eval_sdf(t_far);
+        split(root_0);
+        split(root_1);
 
         MaskP active = f_near * f_far <= 0.f;
 
@@ -888,6 +921,14 @@ private:
 
         bbox.min = to_world * (bbox.min * voxel_size);
         bbox.max = to_world * (bbox.max * voxel_size);
+
+        // Pad the box. Rounding here and in the ray-box tests of the
+        // acceleration structure could otherwise exclude hits on its boundary.
+        Vector3f pad = dr::abs(to_world * voxel_size) * 1e-3f +
+                       dr::maximum(dr::abs(bbox.min), dr::abs(bbox.max)) *
+                           (8.f * dr::Epsilon<float>);
+        bbox.min -= pad;
+        bbox.max += pad;
 
         return { occupied_mask, bbox };
     };
