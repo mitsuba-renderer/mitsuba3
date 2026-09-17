@@ -7050,10 +7050,11 @@ static const char *__doc_mitsuba_MonteCarloIntegrator =
 R"doc(Abstract integrator that performs *recursive* Monte Carlo sampling
 starting from the sensor
 
-This class is almost identical to `SamplingIntegrator`. It stores two
+This class is almost identical to `SamplingIntegrator`. It stores
 additional fields that are helpful for recursive Monte Carlo techniques:
-the maximum path depth, and the depth at which the Russian Roulette path
-termination technique should start to become active.)doc";
+the maximum path depth, the depth at which the Russian Roulette path
+termination technique should start to become active, and optional limits
+on the magnitude of individual path contributions.)doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_2 = R"doc()doc";
 
@@ -7069,7 +7070,19 @@ static const char *__doc_mitsuba_MonteCarloIntegrator_7 = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_MonteCarloIntegrator = R"doc(Create an integrator)doc";
 
+static const char *__doc_mitsuba_MonteCarloIntegrator_clamp_contribution =
+R"doc(Clamp a single path contribution.
+
+Scales ``value`` down so that the mean of its absolute channel values
+stays within ``clamp_direct`` (where ``direct`` is set) or
+``clamp_indirect``. Non-finite contributions are replaced by zero, and
+a limit of zero disables the corresponding clamp.)doc";
+
 static const char *__doc_mitsuba_MonteCarloIntegrator_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_MonteCarloIntegrator_m_clamp_direct = R"doc()doc";
+
+static const char *__doc_mitsuba_MonteCarloIntegrator_m_clamp_indirect = R"doc()doc";
 
 static const char *__doc_mitsuba_MonteCarloIntegrator_m_max_depth = R"doc()doc";
 
