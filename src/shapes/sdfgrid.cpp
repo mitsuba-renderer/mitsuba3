@@ -391,7 +391,7 @@ public:
                     si.sh_frame.n = si.n;
                     break;
                 case Smooth:
-                    si.sh_frame.n = smooth(local_p_att, active);
+                    si.sh_frame.n = smooth(local_p_att, grid_index, active);
                     break;
                 default:
                     Throw("Unknown normal computation.");
@@ -412,7 +412,8 @@ public:
      * Tracing of Signed Distance Function Grids, Journal of Computer
      * Graphics Techniques (JCGT), vol. 11, no. 3, 94-113, 2022
      */
-    Normal3f smooth(const Point3f &p, Mask active) const {
+    Normal3f smooth(const Point3f &p, const UInt32 &grid_index,
+                    Mask active) const {
         using Mask3 = dr::mask_t<Vector3f>;
 
         auto shape = m_grid.shape();
@@ -431,10 +432,13 @@ public:
         // interpolant across the voxel's extent along one axis, evaluated at
         // the position of 'p' along the other two. A difference thus only
         // depends on the voxel's index along its axis, and it is a bilinear
-        // interpolant of grid samples within the cell containing 'p'.
-        Point3i cell = dr::minimum(dr::maximum(Point3i(dr::floor(scaled_p)), 0),
-                                   Point3i(nx - 2, ny - 2, nz - 2));
+        // interpolant of grid samples within the intersected voxel ('cell'),
+        // whose corner values are shared with the geometric normal.
+        Point3i cell(voxel_coords(grid_index));
         Vector3f w = scaled_p - Vector3f(cell);
+
+        Float c[8];
+        gather_corners(grid_index, active, c);
 
         auto sample = [&](const Point3i &q) -> Float {
             Point3i qc = dr::minimum(dr::maximum(q, 0), Point3i(nx - 1, ny - 1, nz - 1));
@@ -442,19 +446,28 @@ public:
                 m_grid.array(), UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active));
         };
 
-        // Interpolant on the plane with sample index 'q' along axis 'a', at
-        // the position of 'p' along the other two axes
+        // Interpolant on the cell face with coordinate 'hi' along axis 'a',
+        // at the position of 'p' along the other two axes
+        auto cell_plane = [&](int a, int hi) -> Float {
+            int b = (a + 1) % 3, c2 = (a + 2) % 3;
+            Float f[4];
+            for (int i = 0; i < 4; ++i)
+                f[i] = c[(hi << a) | ((i & 1) << b) | ((i >> 1) << c2)];
+            return bilerp(f, w[b], w[c2]);
+        };
+
+        // Interpolant on the plane with sample index 'q' along axis 'a'
         auto plane = [&](int a, const Int32 &q) -> Float {
-            int b = (a + 1) % 3, c = (a + 2) % 3;
+            int b = (a + 1) % 3, c2 = (a + 2) % 3;
             Float f[4];
             for (int i = 0; i < 4; ++i) {
                 Point3i idx;
                 idx[a] = q;
                 idx[b] = cell[b] + (i & 1);
-                idx[c] = cell[c] + (i >> 1);
+                idx[c2] = cell[c2] + (i >> 1);
                 f[i] = sample(idx);
             }
-            return bilerp(f, w[b], w[c]);
+            return bilerp(f, w[b], w[c2]);
         };
 
         // Differences of the voxels with the lower ('d0') and upper ('d1')
@@ -465,8 +478,8 @@ public:
         Vector3f d0, d1;
         for (int a = 0; a < 3; ++a) {
             Mask upper = cell[a] != v[a];
-            Float g0 = plane(a, cell[a]),
-                  g1 = plane(a, cell[a] + 1),
+            Float g0 = cell_plane(a, 0),
+                  g1 = cell_plane(a, 1),
                   gq = plane(a, cell[a] + dr::select(upper, -1, 2)),
                   dc = g1 - g0,
                   dq = dr::select(upper, g0 - gq, gq - g1);
@@ -983,24 +996,38 @@ private:
         return { aabbs_ptr, voxel_indices_ptr, count };
     }
 
+    /// Coordinates of the voxel whose lower corner has the given sample index
+    Vector3u voxel_coords(const UInt32 &grid_index) const {
+        auto shape = m_grid.shape();
+        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
+        UInt32 yz = grid_index / nx;
+        return Vector3u(grid_index % nx, yz % ny, yz / ny);
+    }
+
+    /// Corner values of the voxel whose lower corner has the given sample
+    /// index, indexed as x + 2y + 4z
+    void gather_corners(const UInt32 &grid_index, Mask active,
+                        Float (&f)[8]) const {
+        auto shape = m_grid.shape();
+        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
+        for (uint32_t i = 0; i < 8; ++i) {
+            uint32_t offset = (i & 1u) + nx * (((i >> 1) & 1u) + ny * (i >> 2));
+            f[i] = Float(dr::gather<InputFloat>(m_grid.array(), grid_index + offset, active));
+        }
+    }
+
     /// Value and gradient of the trilinear interpolant within the voxel
     /// whose lower corner has the given sample index
     std::pair<Float, Vector3f> sdf_eval(const Point3f &p,
                                         const UInt32 &grid_index,
                                         Mask active) const {
         auto shape = m_grid.shape();
-        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
-        Vector3f resolution(nx - 1.f, ny - 1.f, shape[0] - 1.f);
-
-        UInt32 yz = grid_index / nx;
-        Vector3f voxel(Float(grid_index % nx), Float(yz % ny), Float(yz / ny));
-        Vector3f w = dr::clip(p * resolution - voxel, 0.f, 1.f);
+        Vector3f resolution(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
+        Vector3f w = dr::clip(p * resolution - Vector3f(voxel_coords(grid_index)),
+                              0.f, 1.f);
 
         Float f[8];
-        for (uint32_t i = 0; i < 8; ++i) {
-            uint32_t offset = (i & 1u) + nx * (((i >> 1) & 1u) + ny * (i >> 2));
-            f[i] = Float(dr::gather<InputFloat>(m_grid.array(), grid_index + offset, active));
-        }
+        gather_corners(grid_index, active, f);
 
         return { trilerp(f, w), trilerp_grad(f, w) * resolution };
     }
