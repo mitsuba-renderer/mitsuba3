@@ -839,79 +839,58 @@ private:
                        UInt32 x,
                        UInt32 y,
                        UInt32 z) {
-        auto value_index = [&](UInt32 x_off,
-                               UInt32 y_off,
-                               UInt32 z_off) {
-            return (x + x_off) + (y + y_off) * shape[0] +
-                   (z + z_off) * shape[0] * shape[1];
+        // Corner 'i' has the offset (i & 1, (i >> 1) & 1, i >> 2)
+        auto corner = [](uint32_t i) {
+            return Point3f((float) (i & 1), (float) ((i >> 1) & 1),
+                           (float) (i >> 2));
         };
-
-        auto voxel_corner_enc = [&](uint32_t x, uint32_t y, uint32_t z) {
-            return x + (y << 1) + (z << 2);
-        };
-
-        auto voxel_corner_dec = [&](uint32_t i) {
-            return Point3u(i & 1, (i >> 1) & 1, (i >> 2) & 1);
-        };
-
-        UInt32 v[8];
-        for (size_t i = 0; i < 8; i++)
-            v[i] = value_index(i & 1, (i >> 1) & 1, (i >> 2) & 1);
 
         InputFloat f[8];
-        for (size_t i = 0; i < 8; i++)
-            f[i] = dr::gather<InputFloat>(grid, v[i]);
+        Mask any_nonneg = false, any_nonpos = false;
+        for (uint32_t i = 0; i < 8; ++i) {
+            UInt32 index = (x + (i & 1)) + (y + ((i >> 1) & 1)) * shape[0] +
+                           (z + (i >> 2)) * shape[0] * shape[1];
+            f[i] = dr::gather<InputFloat>(grid, index);
+            any_nonneg |= f[i] >= 0;
+            any_nonpos |= f[i] <= 0;
+        }
 
-        Mask occupied_mask = !((f[0] > 0 && f[1] > 0 && f[2] > 0 && f[3] > 0 &&
-                                f[4] > 0 && f[5] > 0 && f[6] > 0 && f[7] > 0) ||
-                               (f[0] < 0 && f[1] < 0 && f[2] < 0 && f[3] < 0 &&
-                                f[4] < 0 && f[5] < 0 && f[6] < 0 && f[7] < 0));
+        Mask occupied = any_nonneg && any_nonpos;
 
-        InputBoundingBox3f bbox = dr::zeros<InputBoundingBox3f>();
+        // Empty box, expanded by the corners that lie on the surface and by
+        // the points where the surface crosses an edge
+        InputBoundingBox3f bbox(InputPoint3f(1.f), InputPoint3f(0.f));
         if constexpr (!dr::is_jit_v<Float>)
-            if (!occupied_mask)
+            if (!occupied)
                 return { false, bbox };
 
-        Mask f_Z[8];
-        for (size_t i = 0; i < 8; i++)
-            f_Z[i] = f[i] == 0;
+        for (uint32_t i = 0; i < 8; ++i) {
+            Mask on_surface = f[i] == 0;
+            bbox.min = dr::select(on_surface, dr::minimum(bbox.min, corner(i)), bbox.min);
+            bbox.max = dr::select(on_surface, dr::maximum(bbox.max, corner(i)), bbox.max);
+        }
 
-        bbox.min.x() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)], 0.f, 1.f);
-        bbox.max.x() = dr::select(f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
-        bbox.min.y() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 1)], 0.f, 1.f);
-        bbox.max.y() = dr::select(f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
-        bbox.min.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 0)] || f_Z[voxel_corner_enc(1, 0, 0)] || f_Z[voxel_corner_enc(0, 1, 0)] || f_Z[voxel_corner_enc(1, 1, 0)], 0.f, 1.f);
-        bbox.max.z() = dr::select(f_Z[voxel_corner_enc(0, 0, 1)] || f_Z[voxel_corner_enc(1, 0, 1)] || f_Z[voxel_corner_enc(0, 1, 1)] || f_Z[voxel_corner_enc(1, 1, 1)], 1.f, 0.f);
+        for (uint32_t i = 0; i < 8; ++i) {
+            for (uint32_t axis = 0; axis < 3; ++axis) {
+                if (i & (1u << axis))
+                    continue;
+                uint32_t j = i | (1u << axis);
 
-        // Generates pairs of neighboring corners and checks for intersection on the edge
-        for (uint32_t corner_1 = 0; corner_1 < 8; corner_1++) {
-            for (uint32_t shift = 0; shift < 3; shift++) {
-                if (!(corner_1 & (1u << shift))) {
-                    uint32_t corner_2 = corner_1 | (1u << shift);
+                Mask crossing = f[i] * f[j] <= 0 && f[i] != f[j];
+                if constexpr (!dr::is_jit_v<Float>)
+                    if (!crossing)
+                        continue;
 
-                    Mask intersection_mask = f[corner_1] * f[corner_2] <= 0 && f[corner_1] != f[corner_2];
-
-                    if constexpr (!dr::is_jit_v<Float>) {
-                        if (!intersection_mask)
-                            continue;
-                    }
-
-                    Point3u corner_1_pos = voxel_corner_dec(corner_1);
-                    Point3u corner_2_pos = voxel_corner_dec(corner_2);
-
-                    auto intersection_pos = corner_1_pos + f[corner_1] / (f[corner_1] - f[corner_2]) * (corner_2_pos - corner_1_pos);
-
-                    bbox.min = dr::select(intersection_mask, dr::minimum(bbox.min, intersection_pos), bbox.min);
-                    bbox.max = dr::select(intersection_mask, dr::maximum(bbox.max, intersection_pos), bbox.max);
-                }
+                Point3f p = corner(i);
+                p[axis] = f[i] / (f[i] - f[j]);
+                bbox.min = dr::select(crossing, dr::minimum(bbox.min, p), bbox.min);
+                bbox.max = dr::select(crossing, dr::maximum(bbox.max, p), bbox.max);
             }
         }
 
-        bbox.min += Vector3f(Float(x), Float(y), Float(z));
-        bbox.max += Vector3f(Float(x), Float(y), Float(z));
-
-        bbox.min = to_world * (bbox.min * voxel_size);
-        bbox.max = to_world * (bbox.max * voxel_size);
+        Vector3f offset = Vector3f(Float(x), Float(y), Float(z));
+        bbox.min = to_world * ((bbox.min + offset) * voxel_size);
+        bbox.max = to_world * ((bbox.max + offset) * voxel_size);
 
         // Pad the box. Rounding here and in the ray-box tests of the
         // acceleration structure could otherwise exclude hits on its boundary.
@@ -921,7 +900,7 @@ private:
         bbox.min -= pad;
         bbox.max += pad;
 
-        return { occupied_mask, bbox };
+        return { occupied, bbox };
     };
 
     /* Only computes AABBs for voxel that contain a surface in it.
