@@ -640,3 +640,51 @@ def test17_smooth_normals(variants_all_rgb):
     o[1, 100:] = o[1, :100]
     n = trace(o)
     assert np.linalg.norm(n[:, :100] - n[:, 100:], axis=0).max() < 2e-4
+
+
+def test18_half_precision(variants_all_rgb):
+    # Half precision grids give the same hits as single precision ones
+    pytest.importorskip("numpy")
+    import numpy as np
+
+    res = 32
+    t = np.linspace(0, 1, res)
+    z, y, x = np.meshgrid(t, t, t, indexing='ij')
+    f = (np.sqrt((x - 0.5)**2 + (y - 0.5)**2 + (z - 0.5)**2) - 0.45).astype(np.float32)
+    grid = mi.TensorXf(f.reshape(res, res, res, 1))
+
+    scene_f32 = mi.load_dict({'type': 'scene', 'sdf': {'type': 'sdfgrid', 'grid': grid}})
+    scene_f16 = mi.load_dict({'type': 'scene', 'sdf': {'type': 'sdfgrid', 'grid': mi.TensorXf16(grid)}})
+    assert type(mi.traverse(scene_f16)['sdf.grid']) is mi.TensorXf16
+
+    rng = np.random.default_rng(0)
+    for i in range(50):
+        o = rng.normal(size=3)
+        o = 0.5 + 1.5 * o / np.linalg.norm(o)
+        d = rng.uniform(0, 1, 3) - o
+        ray = mi.Ray3f(mi.Point3f(*o.tolist()), mi.Vector3f(*(d / np.linalg.norm(d)).tolist()))
+        si_f32 = scene_f32.ray_intersect(ray)
+        si_f16 = scene_f16.ray_intersect(ray)
+        assert dr.all(si_f32.is_valid() == si_f16.is_valid())
+        if dr.all(si_f32.is_valid()):
+            assert dr.allclose(si_f32.t, si_f16.t, atol=1e-3)
+            assert dr.allclose(si_f32.sh_frame.n, si_f16.sh_frame.n, atol=1e-3)
+
+
+def test19_half_precision_gradients(variants_all_ad_rgb):
+    # A half precision grid remains differentiable: shifting the SDF of a
+    # diagonal plane moves the hit point along the ray
+    grid = mi.TensorXf16([-1, -1, 0, 0, 0, 0, 1, 1], shape=(2, 2, 2, 1))
+    scene = mi.load_dict({'type': 'scene', 'sdf': {'type': 'sdfgrid', 'grid': grid}})
+    params = mi.traverse(scene)
+
+    theta = mi.Float16(0)
+    dr.enable_grad(theta)
+    params['sdf.grid'] = params['sdf.grid'] - theta
+    params.update()
+
+    ray = mi.Ray3f(mi.Point3f(0.5, 0.5, 2), mi.Vector3f(0, 0, -1))
+    si = scene.ray_intersect(ray)
+    dr.forward(theta)
+    # SDF gradient along the ray direction is -1, so dt/dtheta = -1
+    assert dr.allclose(dr.grad(si.t), -1, atol=1e-2)

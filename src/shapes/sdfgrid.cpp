@@ -38,9 +38,9 @@ SDF Grid (:monosp:`sdfgrid`)
 
  * - grid
    - |tensor|
-   - Tensor array containing the grid data. This parameter can only be specified
-     when building this plugin at runtime from Python or C++ and cannot be
-     specified in the XML scene description.
+   - Tensor array containing the grid data in single or half precision. This
+     parameter can only be specified when building this plugin at runtime from
+     Python or C++ and cannot be specified in the XML scene description.
    - |exposed|, |differentiable|, |discontinuous|
 
  * - normals
@@ -110,14 +110,12 @@ public:
     /// Termination threshold of the numerical root finder, in ray parameter units
     static constexpr float NumSolveEpsilon = 1e-5f;
 
-    // The grid is always stored in single precision
+    // Grid samples are stored in single or half precision
     using InputFloat     = dr::replace_scalar_t<Float, float>;
     using InputPoint3f   = Point<InputFloat, 3>;
     using InputTensorXf  = dr::Tensor<DynamicBuffer<InputFloat>>;
     using InputBoundingBox3f = BoundingBox<InputPoint3f>;
     using InputScalarBoundingBox3f = BoundingBox<Point<float, 3>>;
-
-    using FloatStorage = DynamicBuffer<InputFloat>;
 
     using typename Base::ScalarIndex;
     using typename Base::ScalarSize;
@@ -139,6 +137,15 @@ public:
                   "or \"smooth\"!",
                   normals_mode_str);
 
+        auto check_shape = [](const auto &tensor) {
+            if (tensor.ndim() != 4)
+                Throw("SDF grid tensor has dimension %lu, expected 4",
+                      tensor.ndim());
+            if (tensor.shape(3) != 1)
+                Throw("SDF grid shape at index 3 is %lu, expected 1",
+                      tensor.shape(3));
+        };
+
         if (props.has_property("filename")) {
             FileResolver *fs   = file_resolver();
             fs::path file_path = fs->resolve(props.get<std::string_view>("filename"));
@@ -154,14 +161,18 @@ public:
                                                      (size_t) res.y(),
                                                      (size_t) res.x(), 1 });
         } else if (props.has_property("grid")) {
-            const TensorXf& tensor = props.get_any<TensorXf>("grid");
-            if (tensor.ndim() != 4)
-                Throw("SDF grid tensor has dimension %lu, expected 4",
-                      tensor.ndim());
-            if (tensor.shape(3) != 1)
-                Throw("SDF grid shape at index 3 is %lu, expected 1",
-                      tensor.shape(3));
-            m_grid = InputTensorXf(tensor);
+            const Any &any = props.get<Any>("grid");
+            if (const TensorXf16 *tensor = any_cast<TensorXf16>(&any)) {
+                check_shape(*tensor);
+                m_grid_half = *tensor;
+                m_half = true;
+            } else if (const TensorXf *tensor = any_cast<TensorXf>(&any)) {
+                check_shape(*tensor);
+                m_grid = InputTensorXf(*tensor);
+            } else {
+                Throw("The \"grid\" parameter must be a single or half "
+                      "precision tensor!");
+            }
         } else {
             Throw("The SDF values must be specified with either the "
                   "\"filename\" or \"grid\" parameter!");
@@ -191,12 +202,9 @@ public:
 
 
         // The tensor is packed [Z, Y, X, C]
-        auto shape = m_grid.shape();
-        Vector3f voxel_size(0.f);
-        for (uint32_t i = 0; i < 3; ++i)
-            voxel_size[i] = 1.f / (shape[2 - i] - 1);
-        m_voxel_size = voxel_size;
-        dr::make_opaque(m_voxel_size);
+        const auto &shape = m_half ? m_grid_half.shape() : m_grid.shape();
+        m_res = ScalarVector3u((uint32_t) shape[2], (uint32_t) shape[1],
+                               (uint32_t) shape[0]);
 
         if constexpr (!dr::is_jit_v<Float>){
             jit_free(m_bboxes_ptr);
@@ -214,7 +222,10 @@ public:
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         cb->put("to_world", m_to_world,              ParamFlags::NonDifferentiable);
-        cb->put("grid",     m_grid,                  ParamFlags::NonDifferentiable);
+        if (m_half)
+            cb->put("grid", m_grid_half, ParamFlags::NonDifferentiable);
+        else
+            cb->put("grid", m_grid,      ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys) override {
@@ -333,7 +344,7 @@ public:
         AffineTransform4f to_object = to_world.inverse();
 
         dr::suspend_grad<Float> scope(detach_shape, to_world, to_object,
-                                      m_grid.array());
+                                      m_grid.array(), m_grid_half.array());
 
         // Sample index of the intersected voxel's lower corner. Using it
         // instead of reconstructing the voxel from the hit point avoids
@@ -416,9 +427,8 @@ public:
                     Mask active) const {
         using Mask3 = dr::mask_t<Vector3f>;
 
-        auto shape = m_grid.shape();
-        int32_t nx = (int32_t) shape[2], ny = (int32_t) shape[1],
-                nz = (int32_t) shape[0];
+        int32_t nx = (int32_t) m_res.x(), ny = (int32_t) m_res.y(),
+                nz = (int32_t) m_res.z();
         Vector3f resolution(nx - 1.f, ny - 1.f, nz - 1.f);
         Point3f scaled_p = p * resolution;
 
@@ -442,8 +452,7 @@ public:
 
         auto sample = [&](const Point3i &q) -> Float {
             Point3i qc = dr::minimum(dr::maximum(q, 0), Point3i(nx - 1, ny - 1, nz - 1));
-            return Float(dr::gather<InputFloat>(
-                m_grid.array(), UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active));
+            return gather_grid<Float>(UInt32((qc.z() * ny + qc.y()) * nx + qc.x()), active);
         };
 
         // Interpolant on the cell face with coordinate 'hi' along axis 'a',
@@ -546,27 +555,26 @@ private:
         using Vector3fP = Vector<FloatP, 3>;
         using MaskP3    = dr::mask_t<Vector3fP>;
         using Point3fP  = Point<FloatP, 3>;
-        using Value     = dr::float32_array_t<FloatP>;
 
-        auto shape = m_grid.shape();
-        // Data is packed [Z, Y, X, C]
-        uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
-                                (uint32_t) shape[0] };
+        uint32_t shape_v[3] = { m_res.x(), m_res.y(), m_res.z() };
 
         // Scalar variants read host memory. JIT variants gather from the
         // evaluated buffers, which the recorded intersection function captures.
         Ray3fP ray;
         UInt32P grid_index;
-        Vector3fP voxel_size;
         if constexpr (dr::is_jit_v<FloatP>) {
             ray = m_to_world.value().inverse() * ray_;
             grid_index = dr::gather<UInt32P>(m_jit_voxel_indices, prim_index, active);
-            voxel_size = m_voxel_size.value();
         } else {
             ray = m_to_world.scalar().inverse() * ray_;
             grid_index = m_voxel_indices_ptr[prim_index];
-            voxel_size = m_voxel_size.scalar();
         }
+
+        Vector3fP grid_scale((float) (shape_v[0] - 1), (float) (shape_v[1] - 1),
+                             (float) (shape_v[2] - 1)),
+                  voxel_size(1.f / (float) (shape_v[0] - 1),
+                             1.f / (float) (shape_v[1] - 1),
+                             1.f / (float) (shape_v[2] - 1));
 
         // Sample index of the voxel's lower corner, which also serves as the
         // base address of the eight corner loads
@@ -579,7 +587,7 @@ private:
         FloatP s[8];
         for (uint32_t i = 0; i < 8; ++i) {
             uint32_t offset = ((i >> 2) * shape_v[1] + ((i >> 1) & 1)) * shape_v[0] + (i & 1);
-            s[i] = FloatP(dr::gather<Value>(m_grid.array(), grid_index + offset, active));
+            s[i] = gather_grid<FloatP>(grid_index + offset, active);
         }
 
         // Voxel AABB in object space
@@ -616,8 +624,6 @@ private:
 
         // Convert ray to voxel-space [0, 1] x [0, 1] x [0, 1]. The direction
         // is scaled but not normalized, so distances along the ray are unchanged.
-        Vector3fP grid_scale((float) (shape_v[0] - 1), (float) (shape_v[1] - 1),
-                             (float) (shape_v[2] - 1));
         ray.o = Point3fP(Vector3fP(ray.o) * grid_scale - voxel_pos_f);
         ray.d = ray.d * grid_scale;
 
@@ -821,13 +827,10 @@ private:
      *  Ray Tracer. HANSSON-SÖDERLUND, H., AND AKENINE-MÖLLER, T. 2023.
      */
     std::tuple<Mask, InputBoundingBox3f>
-    compute_tight_bbox(const FloatStorage& grid,
-                       const uint32_t shape[3],
-                       const Vector3f& voxel_size,
-                       const ScalarAffineTransform4f& to_world,
-                       UInt32 x,
-                       UInt32 y,
-                       UInt32 z) {
+    compute_tight_bbox(const ScalarAffineTransform4f& to_world,
+                       UInt32 x, UInt32 y, UInt32 z) {
+        Vector3f voxel_size(1.f / (m_res.x() - 1.f), 1.f / (m_res.y() - 1.f),
+                            1.f / (m_res.z() - 1.f));
         // Corner 'i' has the offset (i & 1, (i >> 1) & 1, i >> 2)
         auto corner = [](uint32_t i) {
             return Point3f((float) (i & 1), (float) ((i >> 1) & 1),
@@ -837,9 +840,9 @@ private:
         InputFloat f[8];
         Mask any_nonneg = false, any_nonpos = false;
         for (uint32_t i = 0; i < 8; ++i) {
-            UInt32 index = (x + (i & 1)) + (y + ((i >> 1) & 1)) * shape[0] +
-                           (z + (i >> 2)) * shape[0] * shape[1];
-            f[i] = dr::gather<InputFloat>(grid, index);
+            UInt32 index = (x + (i & 1)) + (y + ((i >> 1) & 1)) * m_res.x() +
+                           (z + (i >> 2)) * m_res.x() * m_res.y();
+            f[i] = gather_grid<InputFloat>(index);
             any_nonneg |= f[i] >= 0;
             any_nonpos |= f[i] <= 0;
         }
@@ -901,13 +904,10 @@ private:
      * device visible
      */
     std::tuple<void *, uint32_t *, uint32_t> build_bboxes() {
-        auto shape = m_grid.shape();
-        uint32_t shape_v[3]  = { static_cast<uint32_t>(shape[2]),
-                                 static_cast<uint32_t>(shape[1]),
-                                 static_cast<uint32_t>(shape[0]) };
+        uint32_t shape_v[3] = { m_res.x(), m_res.y(), m_res.z() };
         ScalarAffineTransform4f to_world = m_to_world.scalar();
 
-        dr::eval(m_grid.array());
+        dr::eval(m_grid.array(), m_grid_half.array());
 
         void *aabbs_ptr = nullptr;
         uint32_t *voxel_indices_ptr = nullptr;
@@ -915,14 +915,11 @@ private:
         uint32_t count = 0;
 
         if constexpr (dr::is_jit_v<Float>) {
-            InputFloat grid = m_grid.array();
+            auto [z, y, x] = dr::meshgrid(dr::arange<UInt32>(shape_v[2] - 1),
+                                          dr::arange<UInt32>(shape_v[1] - 1),
+                                          dr::arange<UInt32>(shape_v[0] - 1), false);
 
-            auto [z, y, x] = dr::meshgrid(dr::arange<UInt32>(shape[0] - 1),
-                                          dr::arange<UInt32>(shape[1] - 1),
-                                          dr::arange<UInt32>(shape[2] - 1), false);
-
-            auto [occupied, bbox] = compute_tight_bbox(
-                grid, shape_v, m_voxel_size.value(), to_world, x, y, z);
+            auto [occupied, bbox] = compute_tight_bbox(to_world, x, y, z);
 
             UInt32 grid_index = (z * shape_v[1] + y) * shape_v[0] + x;
 
@@ -956,20 +953,17 @@ private:
             voxel_indices_ptr = (uint32_t*) m_jit_voxel_indices.data();
         } else {
             uint32_t max_voxel_count =
-                (uint32_t)((shape[0] - 1) * (shape[1] - 1) * (shape[2] - 1));
+                (shape_v[0] - 1) * (shape_v[1] - 1) * (shape_v[2] - 1);
             aabbs_ptr = (ScalarBoundingBox3f*) jit_malloc(
                 JitBackend::None, sizeof(ScalarBoundingBox3f) * max_voxel_count);
             voxel_indices_ptr = (uint32_t *) jit_malloc(
                 JitBackend::None, sizeof(uint32_t) * max_voxel_count);
 
-            FloatStorage grid = m_grid.array();
-            ScalarVector3f voxel_size = m_voxel_size.scalar();
-
-            for (uint32_t z = 0; z < shape[0] - 1; ++z) {
-                for (uint32_t y = 0; y < shape[1] - 1; ++y) {
-                    for (uint32_t x = 0; x < shape[2] - 1; ++x) {
-                        auto [occupied, bbox] = compute_tight_bbox(
-                            grid, shape_v, voxel_size, to_world, x, y, z);
+            for (uint32_t z = 0; z < shape_v[2] - 1; ++z) {
+                for (uint32_t y = 0; y < shape_v[1] - 1; ++y) {
+                    for (uint32_t x = 0; x < shape_v[0] - 1; ++x) {
+                        auto [occupied, bbox] =
+                            compute_tight_bbox(to_world, x, y, z);
 
                         if (!occupied)
                             continue;
@@ -996,23 +990,31 @@ private:
         return { aabbs_ptr, voxel_indices_ptr, count };
     }
 
+    /// Load grid samples, converting them to the requested type
+    template <typename Value, typename Index>
+    MI_INLINE Value gather_grid(const Index &index,
+                                const dr::mask_t<Value> &active = true) const {
+        if (m_half)
+            return Value(dr::gather<dr::float16_array_t<Value>>(
+                m_grid_half.array(), index, active));
+        else
+            return Value(dr::gather<dr::float32_array_t<Value>>(
+                m_grid.array(), index, active));
+    }
+
     /// Coordinates of the voxel whose lower corner has the given sample index
     Vector3u voxel_coords(const UInt32 &grid_index) const {
-        auto shape = m_grid.shape();
-        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
-        UInt32 yz = grid_index / nx;
-        return Vector3u(grid_index % nx, yz % ny, yz / ny);
+        UInt32 yz = grid_index / m_res.x();
+        return Vector3u(grid_index % m_res.x(), yz % m_res.y(), yz / m_res.y());
     }
 
     /// Corner values of the voxel whose lower corner has the given sample
     /// index, indexed as x + 2y + 4z
     void gather_corners(const UInt32 &grid_index, Mask active,
                         Float (&f)[8]) const {
-        auto shape = m_grid.shape();
-        uint32_t nx = (uint32_t) shape[2], ny = (uint32_t) shape[1];
         for (uint32_t i = 0; i < 8; ++i) {
-            uint32_t offset = (i & 1u) + nx * (((i >> 1) & 1u) + ny * (i >> 2));
-            f[i] = Float(dr::gather<InputFloat>(m_grid.array(), grid_index + offset, active));
+            uint32_t offset = (i & 1u) + m_res.x() * (((i >> 1) & 1u) + m_res.y() * (i >> 2));
+            f[i] = gather_grid<Float>(grid_index + offset, active);
         }
     }
 
@@ -1021,8 +1023,7 @@ private:
     std::pair<Float, Vector3f> sdf_eval(const Point3f &p,
                                         const UInt32 &grid_index,
                                         Mask active) const {
-        auto shape = m_grid.shape();
-        Vector3f resolution(shape[2] - 1.f, shape[1] - 1.f, shape[0] - 1.f);
+        Vector3f resolution(m_res.x() - 1.f, m_res.y() - 1.f, m_res.z() - 1.f);
         Vector3f w = dr::clip(p * resolution - Vector3f(voxel_coords(grid_index)),
                               0.f, 1.f);
 
@@ -1037,10 +1038,12 @@ private:
         Smooth,
     };
 
-    /// SDF samples, packed [Z, Y, X, 1]
+    /// SDF samples, packed [Z, Y, X, 1], in single or half precision
     InputTensorXf m_grid;
-    /// Local voxel sizes (1 / (tensor_shape - 1))
-    field<Vector<InputFloat, 3>> m_voxel_size;
+    TensorXf16 m_grid_half;
+    bool m_half = false;
+    /// Number of samples along the X, Y, and Z axes
+    ScalarVector3u m_res;
 
     // Non-empty bounding boxes and sample-grid indices of their lower corners
     InputFloat m_jit_bboxes;
@@ -1055,7 +1058,7 @@ private:
     uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
 
-    MI_TRAVERSE_CB(Base, m_grid, m_voxel_size,
+    MI_TRAVERSE_CB(Base, m_grid, m_grid_half,
                    m_jit_bboxes, m_jit_voxel_indices)
 };
 
