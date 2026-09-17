@@ -368,3 +368,31 @@ def test09_shape_type(variant_scalar_rgb):
     sdf = mi.load_dict({ "type" : "sdfgrid",
                          "grid" : default_sdf_grid()})
     assert sdf.shape_type() == mi.ShapeType.SDFGrid.value
+
+
+@pytest.mark.parametrize('shape', [(3, 5, 8), (8, 5, 3)])
+def test10_rectangular_grid(variants_all_rgb, shape):
+    # Plane x + 2y + 4z = 3.5 sampled on a grid with distinct dimensions
+    nz, ny, nx = shape
+    grid = [x / (nx - 1) + 2 * y / (ny - 1) + 4 * z / (nz - 1) - 3.5
+            for z in range(nz) for y in range(ny) for x in range(nx)]
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sdf': {
+            'type': 'sdfgrid',
+            'grid': mi.TensorXf(grid, shape=(*shape, 1))
+        }
+    })
+    p = mi.Point3f(0.25, 0.375, 0.625)
+    n = dr.normalize(mi.Normal3f(1, 2, 4))
+    for axis in range(3):
+        for sign in (-1, 1):
+            d = mi.Vector3f(0)
+            d[axis] = sign
+            ray = mi.Ray3f(p - 2 * d, d)
+            si = scene.ray_intersect(ray)
+            assert dr.all(si.is_valid())
+            assert dr.allclose(si.t, 2, atol=1e-5)
+            assert dr.allclose(si.n, n, atol=1e-5)
+            assert dr.allclose(si.sh_frame.n, n, atol=1e-5)
+            assert dr.all(scene.ray_test(ray))

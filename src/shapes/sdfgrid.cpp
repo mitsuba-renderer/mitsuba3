@@ -196,11 +196,12 @@ public:
                       "instead!");
 
 
+        // The tensor is packed [Z, Y, X, C]
         auto shape = m_grid_texture.tensor().shape();
         Vector3f voxel_size(0.f);
         for (uint32_t i = 0; i < 3; ++i) {
-            m_inv_shape[i] = 1.f / shape[i];
-            voxel_size[i] = 1.f / (shape[i] - 1);
+            m_inv_shape[i] = 1.f / shape[2 - i];
+            voxel_size[i] = 1.f / (shape[2 - i] - 1);
         }
         m_voxel_size = voxel_size;
         dr::make_opaque(m_inv_shape, m_voxel_size);
@@ -761,7 +762,7 @@ private:
         uint32_t shape_v[3] = { (uint32_t) shape[2], (uint32_t) shape[1],
                                 (uint32_t) shape[0] };
 
-        uint32_t resolution_x = shape_v[2] - 1;
+        uint32_t resolution_x = shape_v[0] - 1;
         uint32_t resolution_y = shape_v[1] - 1;
 
         Index x = index % resolution_x;
