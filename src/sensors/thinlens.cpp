@@ -14,7 +14,7 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
 --------------------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 8
+ :extra-rows: 9
 
  * - to_world
    - |transform| or |animation|
@@ -62,6 +62,11 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
    - |float|
    - Distance to the near/far clip planes. (Default: :monosp:`near_clip=1e-2` (i.e. :monosp:`0.01`)
      and :monosp:`far_clip=1e4` (i.e. :monosp:`10000`))
+   - |exposed|
+
+ * - principal_point_offset_x, principal_point_offset_y
+   - |float|
+   - Specifies the position of the camera's principal point relative to the center of the film.
    - |exposed|
 
  * - srf
@@ -165,6 +170,11 @@ public:
 
         check_to_world();
 
+        m_principal_point_offset = ScalarPoint2f(
+            props.get<ScalarFloat>("principal_point_offset_x", 0.f),
+            props.get<ScalarFloat>("principal_point_offset_y", 0.f)
+        );
+
         update_camera_transforms();
 
         m_needs_sample_3 = true;
@@ -175,6 +185,8 @@ public:
         cb->put("aperture_radius", m_aperture_radius, ParamFlags::NonDifferentiable);
         cb->put("focus_distance",  m_focus_distance,  ParamFlags::NonDifferentiable);
         cb->put("x_fov",           m_x_fov,           ParamFlags::NonDifferentiable);
+        cb->put("principal_point_offset_x", m_principal_point_offset.x(), ParamFlags::NonDifferentiable);
+        cb->put("principal_point_offset_y", m_principal_point_offset.y(), ParamFlags::NonDifferentiable);
         traverse_world_transform(cb);
     }
 
@@ -205,12 +217,22 @@ public:
         // Angle subtended by a pixel on the optical axis (see sample_ray())
         m_pixel_spread = m_image_rect.extents().x() / m_resolution.x() * m_cone_scale;
 
+        // Principal point offset expressed in crop window coordinates
+        m_scaled_principal_point_offset =
+            m_principal_point_offset *
+            Vector2f(ScalarVector2f(m_film->size()) /
+                     ScalarVector2f(m_film->crop_size()));
+
         dr::make_opaque(m_sample_to_camera, m_x_fov, m_image_rect,
-                        m_normalization, m_pixel_spread);
+                        m_normalization, m_pixel_spread, m_principal_point_offset,
+                        m_scaled_principal_point_offset);
     }
 
     ProjectiveTransform4f projection_transform() const override {
-        return m_sample_to_camera.inverse();
+        return ProjectiveTransform4f::translate(
+                   Vector3f(-m_scaled_principal_point_offset.x(),
+                            -m_scaled_principal_point_offset.y(), 0.f)) *
+               m_sample_to_camera.inverse();
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -229,7 +251,9 @@ public:
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
-                        Point3f(position_sample.x(), position_sample.y(), 0.f);
+                         Point3f(position_sample.x() + m_scaled_principal_point_offset.x(),
+                                 position_sample.y() + m_scaled_principal_point_offset.y(),
+                                 0.f);
 
         // Aperture position
         Point2f tmp = m_aperture_radius * warp::square_to_uniform_disk_concentric(aperture_sample);
@@ -289,7 +313,7 @@ public:
         // Compute importance value
         Float ct     = Frame3f::cos_theta(local_d),
               inv_ct = dr::rcp(ct);
-        Point3f scr = m_sample_to_camera.inverse() *
+        Point3f scr = projection_transform() *
             (aperture_p + local_d * (m_focus_distance * inv_ct));
         Mask valid = dr::all(scr >= 0.f) && dr::all(scr <= 1.f);
         Float value = dr::select(valid, m_normalization * inv_ct * inv_ct * inv_ct, 0.f);
@@ -339,9 +363,11 @@ private:
     Float m_normalization;
     Float m_x_fov;
     Float m_pixel_spread;
+    Vector2f m_principal_point_offset, m_scaled_principal_point_offset;
 
     MI_TRAVERSE_CB(Base, m_sample_to_camera, m_image_rect, m_aperture_radius,
-                   m_normalization, m_x_fov, m_pixel_spread)
+                   m_normalization, m_x_fov, m_pixel_spread, m_principal_point_offset,
+                   m_scaled_principal_point_offset)
 };
 
 MI_EXPORT_PLUGIN(ThinLensCamera)

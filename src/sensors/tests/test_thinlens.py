@@ -258,3 +258,27 @@ def test06_ray_cone(variants_all_backends_once):
     assert dr.allclose(ray.cone.spread, pixel, rtol=1e-5)
     assert dr.allclose(ray.cone.width, 0.5 * pixel, rtol=1e-5)
     assert dr.allclose(ray.cone.propagate(4 - 0.5).width, 4 * pixel, rtol=1e-4)
+
+
+def test07_principal_point_offset(variants_vec_rgb):
+    params = {
+        'fov': 60, 'near_clip': 0.5, 'principal_point_offset_x': 0.2,
+        'principal_point_offset_y': -0.1,
+        'film': {'type': 'hdrfilm', 'width': 64, 'height': 32}
+    }
+    camera = mi.load_dict({'type': 'thinlens', 'aperture_radius': 0.1,
+                           'focus_distance': 4, **params})
+    pinhole = mi.load_dict({'type': 'perspective', **params})
+
+    # Rays through the aperture center follow the pinhole camera
+    pos = mi.Point2f([0.1, 0.5, 0.9], [0.2, 0.5, 0.7])
+    ray, _ = camera.sample_ray(0, 0.5, pos, [0.5, 0.5])
+    ray_ref, _ = pinhole.sample_ray(0, 0.5, pos, [0.5, 0.5])
+    assert dr.allclose(ray.d, ray_ref.d)
+
+    # sample_direction() maps a point on the focal plane back to its pixel
+    ray, _ = camera.sample_ray(0, 0.5, pos, [0.3, 0.8])
+    it = dr.zeros(mi.Interaction3f)
+    it.p = ray(4 / ray.d.z - 0.5 / ray.d.z)
+    ds, _ = camera.sample_direction(it, [0.5, 0.5])
+    assert dr.allclose(ds.uv, pos * mi.ScalarVector2f(64, 32), rtol=1e-4)
