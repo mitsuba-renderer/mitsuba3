@@ -487,4 +487,116 @@ enum class PackedMeshFlags : uint32_t {
     FaceNormals = 0x0010
 };
 
+
+NAMESPACE_BEGIN(detail)
+
+// ---------------------------------------------------------------------------
+// Helpers to unify JIT and scalar code paths of mesh computations
+// ---------------------------------------------------------------------------
+
+/// Invoke ``func(UInt32)`` for every index in ``[0, count)``.
+template <typename UInt32, typename Func>
+void foreach_index(size_t count, Func &&func) {
+    if constexpr (dr::is_jit_v<UInt32>) {
+        func(dr::arange<UInt32>(count));
+    } else {
+        for (uint32_t i = 0; i < (uint32_t) count; ++i)
+            func(i);
+    }
+}
+
+/// Evaluate map[idx], treating an empty map as the identity
+template <typename Index, typename Buffer>
+DRJIT_INLINE Index gather_map(const Buffer &map, const Index &idx) {
+    if (map.empty())
+        return idx;
+
+    if constexpr (std::is_integral_v<Index>)
+        return map.data()[idx];
+    else
+        return dr::gather<Index>(map, idx);
+}
+
+/// Construct the array [func(i/dim, i%dim) for i in range(rows*dim)],
+/// where ``func`` returns one lane
+template <typename Buf, typename F>
+Buf element_view(size_t rows, uint32_t dim, F &&func) {
+    if (rows == 0)
+        return Buf();
+    if constexpr (dr::is_jit_v<Buf>) {
+        using UInt32 = dr::uint32_array_t<Buf>;
+        UInt32 j    = dr::arange<UInt32>(rows * dim),
+               r    = j / dim,
+               lane = j - r * dim;
+        return func(r, lane);
+    } else {
+        Buf result = dr::empty<Buf>(rows * dim);
+        auto *dst = result.data();
+        for (size_t r = 0; r < rows; ++r)
+            for (uint32_t lane = 0; lane < dim; ++lane)
+                *dst++ = func((uint32_t) r, lane);
+        return result;
+    }
+}
+
+/// Selects how `interleaved()` evaluates in JIT variants
+enum Eval { Eager, Symbolic };
+
+/// Construct the array [func(i/N)[i%N] for i in range(count*N)], where
+/// ``func`` returns a whole row. ``Eager`` scatters into fresh storage,
+/// ``Symbolic`` builds an unevaluated lane selection.
+template <size_t N, typename Buf, Eval E = Eager, typename Func>
+Buf interleaved(size_t count, Func &&func) {
+    using UInt32 = dr::uint32_array_t<Buf>;
+    if constexpr (dr::is_jit_v<Buf> && E == Symbolic) {
+        if (count == 0)
+            return Buf();
+        UInt32 j    = dr::arange<UInt32>(count * N),
+               r    = j / (uint32_t) N,
+               lane = j - r * (uint32_t) N;
+        auto v = func(r);
+        Buf result = v[N - 1];
+        for (size_t k = N - 1; k-- > 0; )
+            result = dr::select(lane == (uint32_t) k, v[k], result);
+        return result;
+    } else {
+        Buf result = dr::empty<Buf>(count * N);
+        if constexpr (dr::is_jit_v<Buf>) {
+            UInt32 i = dr::arange<UInt32>(count);
+            dr::scatter(result, func(i), i, true, ReduceMode::NoConflicts);
+        } else {
+            auto *dst = result.data();
+            for (uint32_t i = 0; i < (uint32_t) count; ++i)
+                dr::store(dst + N * (size_t) i, func(i));
+        }
+        return result;
+    }
+}
+
+/// Gather the ``Dim``-wide row ``idx`` of an interleaved tensor or buffer
+template <size_t Dim, typename Source, typename Index>
+DRJIT_INLINE auto deinterleave(const Source &src, const Index &idx) {
+    if constexpr (dr::is_tensor_v<Source>) {
+        return deinterleave<Dim>(src.array(), idx);
+    } else if constexpr (std::is_integral_v<Index>) {
+        using Value = dr::scalar_t<Source>;
+        return dr::load<dr::Array<Value, Dim>>(src.data() + Dim * idx);
+    } else {
+        return dr::gather<dr::Array<Source, Dim>>(src, idx);
+    }
+}
+
+/// Add ``value`` to the ``Dim``-wide row ``idx`` of the interleaved buffer ``buf``
+template <size_t Dim, typename Buffer, typename Value, typename Index,
+          typename Mask>
+DRJIT_INLINE void interleaved_add(Buffer &buf, const Value &value,
+                                  const Index &idx, const Mask &active) {
+    Index base = Dim * idx;
+    for (size_t k = 0; k < Dim; ++k)
+        dr::scatter_reduce(ReduceOp::Add, buf, value[k],
+                           Index(base + (uint32_t) k), active);
+}
+
+NAMESPACE_END(detail)
+
 NAMESPACE_END(mitsuba)

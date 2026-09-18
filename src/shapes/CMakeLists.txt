@@ -17,6 +17,7 @@ add_plugin(linearcurve  linearcurve.cpp)
 add_plugin(shapegroup   shapegroup.cpp)
 add_plugin(instance     instance.cpp)
 add_plugin(merge        merge.cpp)
+add_plugin(displace     displace.cpp)
 
 add_plugin(ellipsoids ellipsoids.cpp)
 add_plugin(ellipsoidsmesh ellipsoidsmesh.cpp)

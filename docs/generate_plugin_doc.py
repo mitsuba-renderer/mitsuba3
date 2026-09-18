@@ -22,6 +22,7 @@ SHAPE_ORDERING = [
     'sdfgrid',
     'shapegroup',
     'instance',
+    'displace',
     'ellipsoids',
     'ellipsoidsmesh'
 ]

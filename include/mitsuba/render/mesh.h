@@ -670,6 +670,9 @@ public:
      */
     void remove_attribute(std::string_view name) override;
 
+    /// Copy the custom attributes of a mesh with the same vertex and face count
+    void copy_attributes(const Mesh &other);
+
     // =========================================================================
 
     // =========================================================================
