@@ -1,5 +1,6 @@
 """Mitsuba detail module - internal implementation details."""
 
+import itertools
 import os
 import typing
 
@@ -85,6 +86,43 @@ def load_plugins() -> None:
                           'the module "%s":\n%s'
                           % (ep.name, ep.value, traceback.format_exc()),
                           stacklevel=2)
+
+
+_import_counter = itertools.count()
+
+
+def import_scene_extensions(filenames: typing.List[str]) -> None:
+    """
+    Execute the Python files imported by a scene. The directory of each file
+    becomes a package with a fresh name, which enables relative imports among
+    its files and lets different scenes use conflicting versions of a module.
+    The modules are removed from ``sys.modules`` afterwards, and the garbage
+    collector frees them once no plugin refers to them anymore.
+    """
+    import importlib, importlib.machinery, importlib.util, sys
+
+    prefix = f'_mitsuba_import_{next(_import_counter)}_'
+    packages = {}
+    try:
+        for filename in filenames:
+            dirname, basename = os.path.split(os.path.abspath(filename))
+            package = packages.get(dirname)
+            if package is None:
+                package = packages[dirname] = prefix + str(len(packages))
+                init = os.path.join(dirname, '__init__.py')
+                if os.path.isfile(init):
+                    spec = importlib.util.spec_from_file_location(package, init)
+                else:
+                    spec = importlib.machinery.ModuleSpec(package, None, is_package=True)
+                    spec.submodule_search_locations = [dirname]
+                module = importlib.util.module_from_spec(spec)
+                sys.modules[package] = module
+                spec.loader.exec_module(module)
+            if basename != '__init__.py':
+                importlib.import_module(f'{package}.{os.path.splitext(basename)[0]}')
+    finally:
+        for name in [n for n in sys.modules if n.startswith(prefix)]:
+            del sys.modules[name]
 
 
 class TransformWrapper:

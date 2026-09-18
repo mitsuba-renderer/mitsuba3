@@ -159,6 +159,9 @@ struct MI_EXPORT_LIB ParserState {
     /// Search paths for files referenced by the scene
     ref<FileResolver> resolver;
 
+    /// Python files that the scene imports via ``<import filename=".."/>``
+    std::vector<std::string> imports;
+
     /// Current include depth (for preventing infinite recursion)
     int depth = 0;
 
@@ -200,6 +203,8 @@ struct MI_EXPORT_LIB ParserState {
  * representation. It handles
  *
  * - File includes via ``<include>`` tags
+ * - Python extensions declared via ``<import>`` tags (see
+ *   `ParserState.imports`)
  * - Parameter substitution using the provided parameter list
  * - Basic structural validation
  * - Source location tracking for error reporting
@@ -452,6 +457,8 @@ extern MI_EXPORT_LIB std::string file_location(const ParserState &state,
  * - Object expansion (`mitsuba.Object.expand`)
  * - Installing `ParserState.resolver` as the global file resolver, so that
  *   plugins can locate the files referenced by the scene
+ * - Executing the Python files in `ParserState.imports` via the handler
+ *   installed with `set_import_handler()` before any plugin is created
  *
  * This function creates plugins with variant `ParserConfig.variant`, using
  * parallelism if requested (`ParserConfig.parallel`). It will usually
@@ -514,6 +521,15 @@ extern MI_EXPORT_LIB void write_file(const ParserState &state,
  */
 extern MI_EXPORT_LIB std::string write_string(const ParserState &state,
                                               bool add_section_headers = false);
+
+/// Callback that executes the Python files imported by a scene
+using ImportHandler = void (*)(const std::vector<fs::path> &filenames);
+
+/// Install the ImportHandler callback
+extern MI_EXPORT_LIB void set_import_handler(ImportHandler handler);
+
+/// Return the callback installed with `set_import_handler()`, if any
+extern MI_EXPORT_LIB ImportHandler import_handler();
 
 NAMESPACE_END(parser)
 NAMESPACE_END(mitsuba)

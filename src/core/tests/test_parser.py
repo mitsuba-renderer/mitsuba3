@@ -2519,3 +2519,171 @@ def test67_dict_resource_path_management(variant_scalar_rgb, tmp_path):
                 "type": "resources"
             }
         })
+
+
+def write_import_plugin(path, version):
+    """Write a Python file registering a BSDF whose to_string() reports ``version``"""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(f'''import mitsuba as mi
+
+version = '{version}'
+
+class ImportTestBSDF(mi.BSDF):
+    def to_string(self):
+        return 'ImportTestBSDF[' + version + ']'
+
+mi.register_bsdf('import_test_bsdf', ImportTestBSDF)
+''')
+
+
+@pytest.mark.parametrize('format', ['xml', 'dict'])
+def test68_import_versions(variant_scalar_rgb, tmp_path, format):
+    """Each load re-registers its plugins, preserving earlier objects and globals"""
+    files = []
+    for version in ('v1', 'v2'):
+        write_import_plugin(tmp_path / version / 'plugins' / 'bsdf.py', version)
+        files.append(tmp_path / version / 'scene.xml')
+        files[-1].write_text('''<scene version="3.0.0">
+            <import filename="plugins/bsdf.py"/>
+            <import filename="plugins/bsdf.py"/>
+            <bsdf type="import_test_bsdf"/>
+        </scene>''')
+
+    scenes = []
+    for version, scene_file in (('v1', files[0]), ('v2', files[1]),
+                                ('v1', files[0]), ('edited', files[0])):
+        # The edit changes the file size, since Python's bytecode cache only
+        # compares the size and the modification time in seconds
+        if version == 'edited':
+            write_import_plugin(scene_file.parent / 'plugins/bsdf.py', version)
+        scene = mi.load_file(str(scene_file)) if format == 'xml' else mi.load_dict({
+            'type': 'scene',
+            'ext': {'type': 'import', 'filename': str(scene_file.parent / 'plugins/bsdf.py')},
+            'bsdf': {'type': 'import_test_bsdf'}
+        })
+        scenes.append((version, scene))
+        for expected, previous in scenes:
+            assert f'ImportTestBSDF[{expected}]' in str(previous)
+
+
+def test69_import_errors(variant_scalar_rgb, tmp_path):
+    """Missing files and Python exceptions report the imported filename"""
+    with pytest.raises(RuntimeError, match=r'"missing.py" imported by the scene not found'):
+        mi.load_string('''<scene version="3.0.0">
+            <import filename="missing.py"/>
+        </scene>''')
+
+    broken = tmp_path / 'broken.py'
+    broken.write_text('raise ValueError("broken plugin")\n')
+    with pytest.raises(RuntimeError, match='(?s)broken.py.*broken plugin'):
+        mi.load_dict({'type': 'scene', 'ext': {'type': 'import', 'filename': str(broken)}})
+
+
+def test70_import_write_roundtrip(variant_scalar_rgb):
+    """Imports retain their order and are deduplicated across a round trip"""
+    state = mi.parser.parse_dict(config, {
+        'type': 'scene',
+        'a': {'type': 'import', 'filename': 'plugins/a.py'},
+        'shape': {'type': 'sphere'},
+        'b': {'type': 'import', 'filename': 'plugins/b.py'},
+        'c': {'type': 'import', 'filename': 'plugins/a.py'},
+    })
+    assert state.imports == ['plugins/a.py', 'plugins/b.py']
+
+    state2 = mi.parser.parse_string(config, mi.parser.write_string(state))
+    assert state2 == state
+    state2.imports = ['plugins/a.py']
+    assert state2 != state
+
+
+def test71_import_from_include(variant_scalar_rgb, tmp_path):
+    """Imports of an included file are relative to that file"""
+    write_import_plugin(tmp_path / 'sub' / 'plugins' / 'bsdf.py', 'include')
+    (tmp_path / 'sub' / 'part.xml').write_text('''<scene version="3.0.0">
+        <import filename="plugins/bsdf.py"/>
+        <bsdf type="import_test_bsdf"/>
+    </scene>''')
+    main_file = tmp_path / 'main.xml'
+    main_file.write_text('''<scene version="3.0.0">
+        <include filename="sub/part.xml"/>
+    </scene>''')
+
+    scene = mi.load_file(str(main_file))
+    assert 'ImportTestBSDF[include]' in str(scene)
+
+
+def test72_import_requires_python(tmp_path):
+    """The mitsuba executable refuses scenes with imports"""
+    import shutil, subprocess
+    exe = shutil.which('mitsuba')
+    if exe is None:
+        pytest.skip('mitsuba executable not found')
+    scene_file = tmp_path / 'scene.xml'
+    scene_file.write_text('''<scene version="3.0.0">
+        <import filename="bsdf.py"/>
+    </scene>''')
+    result = subprocess.run([exe, '-m', 'scalar_rgb', str(scene_file)],
+                            capture_output=True, text=True)
+    assert result.returncode != 0
+    assert 'custom Python extensions must be loaded from Python' in \
+        result.stdout + result.stderr
+
+
+@pytest.mark.parametrize('init', [True, False])
+def test73_import_relative(variant_scalar_rgb, tmp_path, init):
+    """Imported files share sibling modules via relative imports, scenes keep
+    their own versions of them, and the modules are freed with their objects"""
+    import sys, gc, weakref
+
+    bsdfs = []
+    for version in ('v1', 'v2'):
+        plugins = tmp_path / version / 'plugins'
+        plugins.mkdir(parents=True)
+        if init:
+            (plugins / '__init__.py').write_text('')
+        (plugins / 'common.py').write_text(f"version = '{version}'\nclass Tag: pass\n")
+        (plugins / 'bsdf.py').write_text('''import mitsuba as mi
+from .common import version, Tag
+
+class ImportTestBSDF(mi.BSDF):
+    def to_string(self):
+        return 'ImportTestBSDF[' + version + ']'
+
+mi.register_bsdf('import_test_bsdf', ImportTestBSDF)
+''')
+        (plugins / 'check.py').write_text(
+            'from . import bsdf, common\n'
+            'assert bsdf.Tag is common.Tag\n')
+        bsdfs.append(mi.load_dict({
+            'type': 'import_test_bsdf',
+            'a': {'type': 'import', 'filename': str(plugins / 'bsdf.py')},
+            'b': {'type': 'import', 'filename': str(plugins / 'check.py')}
+        }))
+
+    assert str(bsdfs[0]) == 'ImportTestBSDF[v1]'
+    assert str(bsdfs[1]) == 'ImportTestBSDF[v2]'
+    assert not any(name.startswith('_mitsuba_import_') for name in sys.modules)
+
+    cls = weakref.ref(type(bsdfs[0]))
+    del bsdfs[0]
+    gc.collect()
+    assert cls() is None
+
+
+def test74_import_package(variant_scalar_rgb, tmp_path):
+    """Importing a package's __init__.py executes it once"""
+    plugins = tmp_path / 'plugins'
+    (plugins / 'sub').mkdir(parents=True)
+    (plugins / '__init__.py').write_text(
+        'from .sub import bsdf\n'
+        'bsdf.count += 1\n')
+    write_import_plugin(plugins / 'sub' / 'bsdf.py', 'package')
+    with open(plugins / 'sub' / 'bsdf.py', 'a') as f:
+        f.write('count = 0\n')
+
+    bsdf = mi.load_dict({
+        'type': 'import_test_bsdf',
+        'ext': {'type': 'import', 'filename': str(plugins / '__init__.py')}
+    })
+    assert str(bsdf) == 'ImportTestBSDF[package]'
+    assert type(bsdf).to_string.__globals__['count'] == 1

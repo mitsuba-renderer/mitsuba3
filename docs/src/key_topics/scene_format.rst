@@ -456,6 +456,30 @@ without without having to touch the XML file:
 
     <include filename="nested-scene-$version.xml"/>
 
+Python extensions
+-----------------
+
+A scene can ship the Python plugins it uses as ``.py`` files and declare them
+with ``import`` tags at the top level. This keeps the scene loadable when the
+package that originally provided the plugins changes or is not installed (see
+:ref:`sec-distributing-plugins` for the package-based alternative).
+
+.. code-block:: xml
+
+    <scene version="3.0.0">
+        <import filename="plugins/my_bsdf.py"/>
+        <bsdf type="my_bsdf"/>
+    </scene>
+
+The Python should register its plugins at module scope, e.g. by calling
+:py:func:`mitsuba.register_bsdf`. Mitsuba isolates extensions from each other
+so that multiple scenes referencing different versions of the same plugin can
+coexist within a process.
+
+Mitsuba treats the directory of an imported file as a package, so the file can
+share code with other files in the same directory via relative imports such
+as ``from .common import fresnel``.
+
 Aliases
 -------
 
@@ -720,4 +744,18 @@ relative or absolute.
                 "type": "bitmap",
                 "filename": "my_texture.exr", # relative to the folder defined above
         }
+    }
+
+Python extensions
+-----------------
+
+The equivalent of an XML ``<import>`` tag is an entry of type ``import`` at the
+root of the dictionary. Its key is arbitrary.
+
+.. code-block:: python
+
+    {
+        "type": "scene",
+        "ext": {"type": "import", "filename": "plugins/my_bsdf.py"},
+        "bsdf": {"type": "my_bsdf"}
     }

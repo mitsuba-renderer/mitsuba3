@@ -168,6 +168,19 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
 
                 state.resolver->prepend(resource_path);
                 continue;
+            } else if (type == "import") {
+                if (parent_idx != 0)
+                    Throw("[%s] Python files can only be imported at the root "
+                          "of the dictionary.", path);
+
+                if (!child_dict.contains("filename"))
+                    Throw("[%s] Import is missing 'filename' attribute", path);
+
+                std::string filename = nb::cast<std::string>(nb::str(child_dict["filename"]));
+                if (std::find(state.imports.begin(), state.imports.end(),
+                              filename) == state.imports.end())
+                    state.imports.push_back(std::move(filename));
+                continue;
             }
 
             // Register the object for cross-referencing only when 'id' is
@@ -322,6 +335,21 @@ MI_PY_EXPORT(parser) {
     // Create parser submodule
     auto parser = m.def_submodule("parser", "Scene parsing infrastructure");
 
+    // Python files imported by scenes are executed by mitsuba.detail
+    set_import_handler([](const std::vector<fs::path> &filenames) {
+        nb::gil_scoped_acquire gil;
+        nb::list list;
+        for (const fs::path &filename : filenames)
+            list.append(filename.string());
+        try {
+            nb::module_::import_("mitsuba.detail")
+                .attr("import_scene_extensions")(list);
+        } catch (nb::python_error &e) {
+            Throw("Error while importing the Python extensions of the scene:\n%s",
+                  e.what());
+        }
+    });
+
     // Export ParserConfig
     nb::class_<ParserConfig>(parser, "ParserConfig", D(parser, ParserConfig))
         .def(nb::init<std::string_view>(), "variant"_a,
@@ -364,6 +392,9 @@ MI_PY_EXPORT(parser) {
         .def_rw("node_paths", &ParserState::node_paths, D(parser, ParserState, node_paths))
         .def_rw("files", &ParserState::files, D(parser, ParserState, files))
         .def_rw("resolver", &ParserState::resolver, D(parser, ParserState, resolver))
+        .def_rw("imports", &ParserState::imports,
+                "Python files that the scene imports, as written in the scene "
+                "description. They are executed before the scene is instantiated.")
         .def_prop_rw("id_to_index",
             [](const ParserState &s) {
                 nb::dict result;

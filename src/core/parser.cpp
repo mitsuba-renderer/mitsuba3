@@ -38,8 +38,20 @@ using ScalarAffineTransform4d = AffineTransform<ScalarPoint4d>;
 enum class TagType {
     Boolean, Integer, Float, String, Point, Vector, Spectrum, RGB,
     Transform, Translate, Matrix, Rotate, Scale, LookAt, Object,
-    NamedReference, Include, Alias, Default, Resource, Animation, Invalid
+    NamedReference, Include, Import, Alias, Default, Resource, Animation,
+    Invalid
 };
+
+static ImportHandler import_handler_ptr = nullptr;
+
+void set_import_handler(ImportHandler handler) { import_handler_ptr = handler; }
+ImportHandler import_handler() { return import_handler_ptr; }
+
+/// Append ``filename`` to ``imports`` unless it is already present
+static void add_import(std::vector<std::string> &imports, std::string filename) {
+    if (std::find(imports.begin(), imports.end(), filename) == imports.end())
+        imports.push_back(std::move(filename));
+}
 
 /**
  * Structure to track parameter substitutions during XML parsing
@@ -156,6 +168,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
         case 'i':
             if (str == "integer") return {TagType::Integer, ObjectType::Unknown};
             if (str == "include") return {TagType::Include, ObjectType::Unknown};
+            if (str == "import") return {TagType::Import, ObjectType::Unknown};
             if (str == "integrator") return {TagType::Object, ObjectType::Integrator};
             break;
         case 'l':
@@ -855,6 +868,12 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
                 fail(state, scene_node, "while processing <include>:\n%s", e.what());
             }
 
+            // Imports of the included file are relative to its directory
+            for (const std::string &file : inc_state.imports) {
+                fs::path path = inc_state.resolver->resolve(file);
+                add_import(state.imports, fs::exists(path) ? path.string() : file);
+            }
+
             // Merge the included nodes into our state
             if (!inc_state.empty()) {
                 const SceneNode& inc_root = inc_state.root();
@@ -1029,6 +1048,23 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
             // Add the alias mapping to id_to_index
             state.id_to_index[std::string(alias_dst)] = it_src->second;
 
+            break;
+        }
+
+        case TagType::Import: {
+            check_attributes(state, scene_node, node, {"!filename"sv});
+
+            if (state.empty() || parent_idx != 0)
+                fail(state, scene_node, "<import> can only be a child of the root element");
+
+            std::string_view filename = node.attribute("filename").value();
+            if (!import_handler())
+                fail(state, scene_node,
+                     "the scene imports the Python file \"%s\". Scenes that "
+                     "use custom Python extensions must be loaded from "
+                     "Python, e.g. via mitsuba.load_file()", filename);
+
+            add_import(state.imports, std::string(filename));
             break;
         }
 
@@ -1908,6 +1944,24 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, const ParserSta
     if (state.empty())
         Throw("No nodes to instantiate");
 
+    if (!state.imports.empty()) {
+        ImportHandler handler = import_handler();
+        if (!handler)
+            Throw("The scene imports the Python file \"%s\". Scenes that use "
+                  "custom Python extensions must be loaded from Python, e.g. "
+                  "via mitsuba.load_file()", state.imports[0]);
+
+        std::vector<fs::path> paths;
+        for (const std::string &name : state.imports) {
+            fs::path path = state.resolver ? state.resolver->resolve(name)
+                                           : fs::path(name);
+            if (!fs::exists(path))
+                Throw("Python file \"%s\" imported by the scene not found", name);
+            paths.push_back(path);
+        }
+        handler(paths);
+    }
+
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
     // Flush pending side effects here and now, to avoid potentially dirty
     // user-provided Dr.Jit arrays/tensor from being propagated to plugin
@@ -2395,6 +2449,10 @@ static pugi::xml_document generate_xml_document(const ParserState &state, bool a
         node.append_attribute("value").set_value(param.value);
     }
 
+    // Imports come first, since they provide plugins used by the scene
+    for (auto it = state.imports.rbegin(); it != state.imports.rend(); ++it)
+        root.prepend_child("import").append_attribute("filename").set_value(*it);
+
     // Add newlines to improve readability of the document
     add_xml_newlines(doc, 0);
 
@@ -2461,7 +2519,7 @@ bool SceneNode::operator==(const SceneNode &other) const {
 
 bool ParserState::operator==(const ParserState &other) const {
     // Compare all the members that affect the scene structure
-    if (nodes.size() != other.nodes.size())
+    if (nodes.size() != other.nodes.size() || imports != other.imports)
         return false;
 
     // Compare nodes
