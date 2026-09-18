@@ -92,7 +92,7 @@ def test03_sample_eval_pdf(variant_scalar_rgb):
                         assert dr.allclose(e_value, v_eval_pdf[0])
                         assert dr.allclose(p_pdf, v_eval_pdf[1])
 
-def test04_eval_diffuse_reflectance(variants_vec_rgb):
+def test04_features(variants_vec_rgb):
     bsdf_front = mi.load_dict({
         'type': 'diffuse',
         'reflectance': {
@@ -127,10 +127,10 @@ def test04_eval_diffuse_reflectance(variants_vec_rgb):
                                                       v / float(n-1)])
             up = mi.Frame3f.cos_theta(si.wi) > 0.0
 
-            value = bsdf.eval_diffuse_reflectance(si)
-            value_front = bsdf_front.eval_diffuse_reflectance(si)
+            value = bsdf.eval_features(si).albedo
+            value_front = bsdf_front.eval_features(si).albedo
             si.wi.z *= -1
-            value_back = bsdf_back.eval_diffuse_reflectance(si)
+            value_back = bsdf_back.eval_features(si).albedo
 
             assert dr.allclose(dr.select(up, value - value_front, 0), 0.0)
             assert dr.allclose(dr.select(up, 0, value - value_back), 0.0)

@@ -79,8 +79,8 @@ are meaningless whenever there is only partial pixel coverage or when using a
 wide pixel reconstruction filter as it will result in fractional values.
 
 The :monosp:`albedo` AOV will evaluate the diffuse reflectance
-(`BSDF::eval_diffuse_reflectance()`) of the material. Note that depending on
-the material, this value might only be an approximation.
+(`BSDF::eval_features()`) of the material. Note that depending on the material,
+this value might only be an approximation.
  */
 
 template <typename Float, typename Spectrum>
@@ -159,6 +159,10 @@ public:
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
         }
+
+        for (AOVType type : m_aov_types)
+            m_needs_features |= type == AOVType::Albedo ||
+                                type == AOVType::ShadingNormal;
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
@@ -174,6 +178,11 @@ public:
             scene->ray_intersect(ray, +RayFlags::Default, /* coherent = */ true,
                                  +RayMask::Primary, active);
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
+
+        // The albedo and shading normal AOVs are both answered by this record
+        BSDFFeatures3f features = dr::zeros<BSDFFeatures3f>();
+        if (m_needs_features && dr::any_or<true>(si.is_valid()))
+            features = si.bsdf()->eval_features(si, active && si.is_valid());
 
         auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
             DRJIT_MARK_USED(active);
@@ -194,17 +203,10 @@ public:
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
                 case AOVType::Albedo: {
+                        Mask valid = active && si.is_valid();
                         Color3f rgb(0.f);
-                        if (dr::any_or<true>(si.is_valid()))
-                        {
-                            Mask valid = active && si.is_valid();
-                            BSDFPtr m_bsdf = si.bsdf();
-
-                            Spectrum spec =
-                                m_bsdf->eval_diffuse_reflectance(si, valid);
-                            dr::masked(rgb, valid) =
-                                spectrum_to_color3f(spec, ray, valid);
-                        }
+                        dr::masked(rgb, valid) =
+                            spectrum_to_color3f(features.albedo, ray, valid);
 
                         *aovs++ = rgb.r();
                         *aovs++ = rgb.g();
@@ -233,16 +235,10 @@ public:
                     break;
 
                 case AOVType::ShadingNormal: {
-                        Frame3f sh_frame = dr::zeros<Frame3f>();
-                        if (dr::any_or<true>(si.is_valid()))
-                        {
-                            Mask valid = active && si.is_valid();
-                            BSDFPtr m_bsdf = si.bsdf();
-                            sh_frame = m_bsdf->sh_frame(si, valid);
-                        }
-                        *aovs++ = sh_frame.n.x();
-                        *aovs++ = sh_frame.n.y();
-                        *aovs++ = sh_frame.n.z();
+                        const Normal3f &n = features.sh_frame.n;
+                        *aovs++ = n.x();
+                        *aovs++ = n.y();
+                        *aovs++ = n.z();
                     }
                     break;
 
@@ -320,6 +316,7 @@ private:
     std::vector<AOVType> m_aov_types;
     std::vector<std::string> m_aov_names;
     bool m_has_shape_index_aov = false;
+    bool m_needs_features = false;
     std::unordered_map<const Shape*, uint32_t> m_shape_to_idx;
 };
 

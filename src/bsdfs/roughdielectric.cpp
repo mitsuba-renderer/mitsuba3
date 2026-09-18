@@ -619,6 +619,18 @@ public:
                  dr::select(active, pdf * dr::abs(dwh_dwo), 0.f) };
     }
 
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        // What a denoiser sees at a transparent surface is mostly whatever
+        // lies behind it, tinted by the transmittance
+        UnpolarizedSpectrum albedo = 1.f;
+        if (m_specular_transmittance)
+            albedo = m_specular_transmittance->eval(si, active);
+        MicrofacetDistribution distr = distribution(si, active);
+        return { albedo, si.sh_frame,
+                 dr::maximum(distr.alpha_u(), distr.alpha_v()) };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughDielectric[" << std::endl

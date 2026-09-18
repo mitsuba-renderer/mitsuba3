@@ -225,11 +225,16 @@ public:
         return dr::clip(m_weight->eval_1(si, active), 0.f, 1.f);
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                     Mask active) const override {
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
         Float weight = eval_weight(si, active);
-        return m_nested_bsdf[0]->eval_diffuse_reflectance(si, active) * (1 - weight) +
-               m_nested_bsdf[1]->eval_diffuse_reflectance(si, active) * weight;
+        BSDFFeatures3f f0 = m_nested_bsdf[0]->eval_features(si, active),
+                       f1 = m_nested_bsdf[1]->eval_features(si, active);
+        // The frame of the dominant component, since interpolating two
+        // shading frames is not meaningful
+        return { dr::lerp(f0.albedo, f1.albedo, weight),
+                 dr::select(weight < 0.5f, f0.sh_frame, f1.sh_frame),
+                 dr::maximum(f0.roughness, f1.roughness) };
     }
 
     Spectrum eval_null(const SurfaceInteraction3f &si,

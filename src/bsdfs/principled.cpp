@@ -438,9 +438,16 @@ public:
         return { depolarizer<Spectrum>(value) & active, pdf, bs, weight };
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_base_color->eval(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        Float roughness  = m_roughness->eval_1(si, active),
+              metallic   = m_has_metallic ? m_metallic->eval_1(si, active) : 0.f,
+              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.f;
+        // However smooth the specular lobe is, a diffuse component leaves no
+        // sharp image of the surroundings behind
+        Float diffuse = (1.f - metallic) * (1.f - spec_trans);
+        return { m_base_color->eval(si, active), si.sh_frame,
+                 dr::lerp(roughness, 1.f, diffuse) };
     }
 
     std::string to_string() const override {

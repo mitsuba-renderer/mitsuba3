@@ -247,6 +247,47 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
 
 
 /**
+ * Surface appearance summary used to guide image denoisers
+ *
+ * Denoisers separate texture and geometric detail from Monte Carlo noise
+ * using noise-free albedo and shading normal images. The purpose of this data
+ * structure is to efficiently return multiple such properties in one
+ * operation.
+ */
+template <typename Float, typename Spectrum> struct BSDFFeatures {
+    // =============================================================
+    // Type declarations
+    // =============================================================
+
+    using Frame3f             = mitsuba::Frame<Float>;
+    using UnpolarizedSpectrum = unpolarized_spectrum_t<Spectrum>;
+
+    // =============================================================
+
+    // =============================================================
+    // Fields
+    // =============================================================
+
+    /// Diffuse reflectance estimate for the direction `si.wi`, in [0, 1]
+    UnpolarizedSpectrum albedo;
+
+    /// Shading frame including perturbations applied by the BSDF, in world space
+    Frame3f sh_frame;
+
+    /// Roughness of the roughest lobe, where 0 means perfectly specular
+    Float roughness;
+
+    // =============================================================
+
+    BSDFFeatures(const UnpolarizedSpectrum &albedo, const Frame3f &sh_frame,
+                 const Float &roughness)
+        : albedo(albedo), sh_frame(sh_frame), roughness(roughness) { }
+
+    DRJIT_STRUCT(BSDFFeatures, albedo, sh_frame, roughness);
+};
+
+
+/**
  * Bidirectional Scattering Distribution Function (BSDF) interface
  *
  * This class provides an abstract interface to all BSDF plugins in Mitsuba.
@@ -558,36 +599,21 @@ public:
     }
 
     /**
-     * Evaluate the diffuse reflectance
+     * Summarize the appearance of the material for a denoiser
      *
-     * This method approximates the total diffuse reflectance for a given
-     * direction. For some materials, an exact value can be computed
-     * inexpensively.
-     * When this is not possible, the value is approximated by
-     * evaluating the BSDF for a normal outgoing direction and returning this
-     * value multiplied by pi. This is the default behaviour of this method.
+     * The returned record holds the diffuse reflectance, the shading frame
+     * including any perturbation that the BSDF applies internally, and a
+     * roughness estimate. The default implementation approximates the
+     * reflectance by evaluating the BSDF for a normal outgoing direction,
+     * passes the shading frame of `si` through unchanged, and derives the
+     * roughness from the component flags.
      *
      * Args:
      *     si: A surface interaction data structure describing the underlying
      *         surface position.
      */
-    virtual Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                              Mask active = true) const;
-
-    /**
-     * Returns the shading frame accounting for any perturbations that may
-     * be performed by the BSDF during evaluation.
-     *
-     * Args:
-     *     si: Surface interaction associated with the query
-     *
-     * Returns:
-     *     The perturbed shading frame. By default simply returns the surface
-     *     interaction shading frame.
-     */
-    virtual Frame3f sh_frame(const SurfaceInteraction3f &si, Mask /*active*/) const {
-        return si.sh_frame;
-    }
+    virtual BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                         Mask active = true) const;
 
     /// Return a human-readable representation of the BSDF
     std::string to_string() const override = 0;
@@ -647,12 +673,11 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::BSDF)
     DRJIT_CALL_METHOD(pdf)
     DRJIT_CALL_METHOD(eval_pdf)
     DRJIT_CALL_METHOD(eval_pdf_sample)
-    DRJIT_CALL_METHOD(eval_diffuse_reflectance)
+    DRJIT_CALL_METHOD(eval_features)
     DRJIT_CALL_METHOD(has_attribute)
     DRJIT_CALL_METHOD(eval_attribute)
     DRJIT_CALL_METHOD(eval_attribute_1)
     DRJIT_CALL_METHOD(eval_attribute_3)
-    DRJIT_CALL_METHOD(sh_frame)
     DRJIT_CALL_GETTER(flags)
     auto has_flag(mitsuba::BSDFFlags f) const { return mitsuba::has_flag(flags(), f); }
 DRJIT_CALL_END()

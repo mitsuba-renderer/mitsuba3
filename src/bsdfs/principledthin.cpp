@@ -361,9 +361,12 @@ public:
         return { depolarizer<Spectrum>(value) & active, pdf, bs, weight };
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_base_color->eval(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        Float roughness  = m_roughness->eval_1(si, active),
+              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.f;
+        return { m_base_color->eval(si, active), si.sh_frame,
+                 dr::lerp(roughness, 1.f, 1.f - spec_trans) };
     }
 
     std::string to_string() const override {

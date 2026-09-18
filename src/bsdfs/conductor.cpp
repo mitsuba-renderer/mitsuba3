@@ -316,6 +316,17 @@ public:
         return 0.f;
     }
 
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        dr::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
+                                             m_k->eval(si, active));
+        // Denoisers expect the reflectance at normal incidence from metals
+        UnpolarizedSpectrum albedo =
+            m_specular_reflectance->eval(si, active) *
+            fresnel_conductor(UnpolarizedSpectrum(1.f), eta);
+        return { albedo, si.sh_frame, 0.f };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothConductor[" << std::endl

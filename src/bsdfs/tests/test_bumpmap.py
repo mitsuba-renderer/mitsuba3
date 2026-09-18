@@ -32,8 +32,9 @@ def test01_flat_texture(variants_vec_backends_once_rgb):
 
 
 def test02_shading_frame_is_world_space(variants_vec_backends_once_rgb):
-    """The ``aov`` integrator writes ``BSDF::sh_frame()`` out as a shading
-    normal, which has to be in world coordinates."""
+    """The ``aov`` integrator writes the shading frame of
+    ``BSDF::eval_features()`` out as a shading normal, which has to be in
+    world coordinates."""
     to_world = mi.ScalarTransform4f().rotate([1, 0, 0], 90)
     scene = mi.load_dict({
         'type': 'scene',

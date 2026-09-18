@@ -281,25 +281,25 @@ public:
         }
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si_,
-                                      Mask active) const override {
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si_,
+                                 Mask active) const override {
         SurfaceInteraction3f si(si_);
 
         if (m_brdf[0] == m_brdf[1]) {
             si.wi.z() = dr::abs(si.wi.z());
-            return m_brdf[0]->eval_diffuse_reflectance(si, active);
+            return m_brdf[0]->eval_features(si, active);
         } else {
-            Spectrum result = 0.f;
+            BSDFFeatures3f result(0.f, si_.sh_frame, 0.f);
             Mask front_side = Frame3f::cos_theta(si.wi) > 0.f && active,
                  back_side  = Frame3f::cos_theta(si.wi) < 0.f && active;
 
             if (dr::any_or<true>(front_side))
-                result = m_brdf[0]->eval_diffuse_reflectance(si, front_side);
+                result = m_brdf[0]->eval_features(si, front_side);
 
             if (dr::any_or<true>(back_side)) {
                 si.wi.z() *= -1.f;
                 dr::masked(result, back_side) =
-                    m_brdf[1]->eval_diffuse_reflectance(si, back_side);
+                    m_brdf[1]->eval_features(si, back_side);
             }
 
             return result;
@@ -366,7 +366,7 @@ public:
 
     Color3f eval_attribute_3(const std::string &name,
                             const SurfaceInteraction3f &si_,
-                            Mask active) const override {
+                                 Mask active) const override {
         SurfaceInteraction3f si(si_);
         if (m_brdf[0] == m_brdf[1]) {
             si.wi.z() = dr::abs(si.wi.z());

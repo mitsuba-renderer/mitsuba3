@@ -226,9 +226,9 @@ public:
         return dr::clip(m_opacity->eval_1(si, active), 0.f, 1.f);
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_nested_bsdf->eval_diffuse_reflectance(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        return m_nested_bsdf->eval_features(si, active);
     }
 
     std::string to_string() const override {
