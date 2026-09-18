@@ -386,6 +386,16 @@ public:
         return 0.f;
     }
 
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        // What a denoiser sees at a transparent surface is mostly whatever
+        // lies behind it, tinted by the transmittance
+        UnpolarizedSpectrum albedo = 1.f;
+        if (m_specular_transmittance)
+            albedo = m_specular_transmittance->eval(si, active);
+        return { albedo, si.sh_frame, 0.f };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SmoothDielectric[" << std::endl;

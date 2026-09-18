@@ -39,6 +39,7 @@ template <typename Float, typename Spectrum> class MeshAttribute;
 template <typename Float, typename Spectrum> struct DirectionSample;
 template <typename Float, typename Spectrum> struct PositionSample;
 template <typename Float, typename Spectrum> struct BSDFSample3;
+template <typename Float, typename Spectrum> struct BSDFFeatures;
 template <typename Float, typename Spectrum> struct SilhouetteSample;
 template <typename Float, typename Spectrum> struct PhaseFunctionContext;
 template <typename Float, typename Spectrum> struct Interaction;
@@ -106,6 +107,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using PositionSample3f          = PositionSample<Float, Spectrum>;
     using DirectionSample3f         = DirectionSample<Float, Spectrum>;
     using BSDFSample3f              = BSDFSample3<Float, Spectrum>;
+    using BSDFFeatures3f            = BSDFFeatures<Float, Spectrum>;
     using SilhouetteSample3f        = SilhouetteSample<Float, Spectrum>;
     using PhaseFunctionContext      = mitsuba::PhaseFunctionContext<Float, Spectrum>;
     using Interaction3f             = Interaction<Float, Spectrum>;
@@ -198,6 +200,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
     using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
+    using BSDFFeatures3f            = typename RenderAliases::BSDFFeatures3f;                      \
     using SilhouetteSample3f        = typename RenderAliases::SilhouetteSample3f;                  \
     DRJIT_MAP(MI_IMPORT_TYPES_MACRO, __VA_ARGS__)
 

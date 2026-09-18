@@ -116,13 +116,11 @@ public:
         return { value & active, dr::select(active, pdf, 0.f) };
     }
 
-    Frame3f sh_frame(const SurfaceInteraction3f &si, Mask active) const override {
-        return frames(si, active).second;
-    }
-
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_nested_bsdf->eval_diffuse_reflectance(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        BSDFFeatures3f features = m_nested_bsdf->eval_features(si, active);
+        features.sh_frame = frames(si, active).second;
+        return features;
     }
 
     void traverse(TraversalCallback *cb) override {

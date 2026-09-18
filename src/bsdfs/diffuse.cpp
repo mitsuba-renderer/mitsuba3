@@ -178,9 +178,9 @@ public:
         return { depolarizer<Spectrum>(value) & active, dr::select(active, pdf, 0.f) };
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_reflectance->eval(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        return { m_reflectance->eval(si, active), si.sh_frame, 1.f };
     }
 
     std::string to_string() const override {

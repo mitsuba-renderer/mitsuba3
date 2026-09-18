@@ -149,9 +149,9 @@ public:
         }
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        return m_transmittance->eval(si, active);
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        return { m_transmittance->eval(si, active), si.sh_frame, 0.f };
     }
 
     std::string to_string() const override {

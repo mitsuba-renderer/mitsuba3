@@ -1050,6 +1050,24 @@ static const char *__doc_mitsuba_BSDFContext_type_mask =
 R"doc(Bit mask for requested BSDF component types to be sampled/evaluated
 The default value (equal to `BSDFFlags.All`) enables all components.)doc";
 
+static const char *__doc_mitsuba_BSDFFeatures =
+R"doc(Surface appearance summary used to guide image denoisers
+
+Denoisers separate texture and geometric detail from Monte Carlo noise
+using noise-free albedo and shading normal images. The purpose of this data
+structure is to efficiently return multiple such properties in one
+operation.)doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_BSDFFeatures = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_BSDFFeatures_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_albedo = R"doc(Diffuse reflectance estimate for the direction `si.wi`, in [0, 1])doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_roughness = R"doc(Roughness of the roughest lobe, where 0 means perfectly specular)doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_sh_frame = R"doc(Shading frame including perturbations applied by the BSDF, in world space)doc";
+
 static const char *__doc_mitsuba_BSDFFlags =
 R"doc(This list of flags is used to classify the different types of lobes
 that are implemented in a BSDF instance.
@@ -1234,20 +1252,6 @@ Args:
 Returns:
     A trichromatic intensity or reflectance value)doc";
 
-static const char *__doc_mitsuba_BSDF_eval_diffuse_reflectance =
-R"doc(Evaluate the diffuse reflectance
-
-This method approximates the total diffuse reflectance for a given
-direction. For some materials, an exact value can be computed
-inexpensively.
-When this is not possible, the value is approximated by
-evaluating the BSDF for a normal outgoing direction and returning this
-value multiplied by pi. This is the default behaviour of this method.
-
-Args:
-    si: A surface interaction data structure describing the underlying
-        surface position.)doc";
-
 static const char *__doc_mitsuba_BSDF_eval_null =
 R"doc(Evaluate un-scattered transmission component of the BSDF
 
@@ -1316,6 +1320,20 @@ Args:
 
     sample2: A uniformly distributed sample on :math:`[0,1]^2`. It is
         used to generate the sampled direction.)doc";
+
+static const char *__doc_mitsuba_BSDF_eval_features =
+R"doc(Summarize the appearance of the material for a denoiser
+
+The returned record holds the diffuse reflectance, the shading frame
+including any perturbation that the BSDF applies internally, and a
+roughness estimate. The default implementation approximates the
+reflectance by evaluating the BSDF for a normal outgoing direction,
+passes the shading frame of `si` through unchanged, and derives the
+roughness from the component flags.
+
+Args:
+    si: A surface interaction data structure describing the underlying
+        surface position.)doc";
 
 static const char *__doc_mitsuba_BSDF_flags = R"doc(Flags for all components combined.)doc";
 
@@ -1399,17 +1417,6 @@ Returns:
       (multiplied by the cosine foreshortening factor when a non-delta
       component is sampled). A zero spectrum indicates that sampling
       failed.)doc";
-
-static const char *__doc_mitsuba_BSDF_sh_frame =
-R"doc(Returns the shading frame accounting for any perturbations that may
-be performed by the BSDF during evaluation.
-
-Args:
-    si: Surface interaction associated with the query
-
-Returns:
-    The perturbed shading frame. By default simply returns the surface
-    interaction shading frame.)doc";
 
 static const char *__doc_mitsuba_BSDF_to_string = R"doc(Return a human-readable representation of the BSDF)doc";
 

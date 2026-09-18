@@ -17,6 +17,7 @@ MI_PY_EXPORT(BSDFSample) {
     m.def("has_flag", [](uint32_t flags, BSDFFlags f) { return has_flag(flags, f); });
     m.def("has_flag", [](UInt32   flags, BSDFFlags f) { return has_flag(flags, f); });
 
+    {
     auto bs = nb::class_<BSDFSample3f>(m, "BSDFSample3f", D(BSDFSample3))
         .def(nb::init<>())
         .def(nb::init<const Vector3f &>(), "wo"_a, D(BSDFSample3, BSDFSample3))
@@ -31,6 +32,21 @@ MI_PY_EXPORT(BSDFSample) {
         .def_repr(BSDFSample3f);
 
     MI_PY_DRJIT_STRUCT(bs, BSDFSample3f, wo, pdf, eta, sampled_type, sampled_component);
+    }
+
+    {
+    auto bf = nb::class_<BSDFFeatures3f>(m, "BSDFFeatures3f", D(BSDFFeatures))
+        .def(nb::init<>())
+        .def(nb::init<const UnpolarizedSpectrum &, const Frame3f &,
+                      const Float &>(),
+             "albedo"_a, "sh_frame"_a, "roughness"_a)
+        .def(nb::init<const BSDFFeatures3f &>(), "f"_a, "Copy constructor")
+        .def_rw("albedo", &BSDFFeatures3f::albedo, D(BSDFFeatures, albedo))
+        .def_rw("sh_frame", &BSDFFeatures3f::sh_frame, D(BSDFFeatures, sh_frame))
+        .def_rw("roughness", &BSDFFeatures3f::roughness, D(BSDFFeatures, roughness));
+
+    MI_PY_DRJIT_STRUCT(bf, BSDFFeatures3f, albedo, sh_frame, roughness);
+    }
 }
 
 /// Trampoline for derived types implemented in Python
@@ -69,14 +85,14 @@ public:
         NB_OVERRIDE(eval_pdf, ctx, si, wo, active);
     }
 
-    Spectrum eval_diffuse_reflectance(const SurfaceInteraction3f &si,
-                                      Mask active) const override {
-        NB_OVERRIDE(eval_diffuse_reflectance, si, active);
-    }
-
     Spectrum eval_null(const SurfaceInteraction3f &si,
                        Mask active) const override {
         NB_OVERRIDE(eval_null, si, active);
+    }
+
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        NB_OVERRIDE(eval_features, si, active);
     }
 
     Mask has_attribute(const std::string &name, Mask active) const override {
@@ -146,10 +162,10 @@ template <typename Ptr, typename Cls> void bind_bsdf_generic(Cls &cls) {
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
                  return bsdf->eval_null(si, active);
              }, "si"_a, "active"_a = true, D(BSDF, eval_null))
-        .def("eval_diffuse_reflectance",
+        .def("eval_features",
              [](Ptr bsdf, const SurfaceInteraction3f &si, Mask active) {
-                 return bsdf->eval_diffuse_reflectance(si, active);
-             }, "si"_a, "active"_a = true, D(BSDF, eval_diffuse_reflectance))
+                 return bsdf->eval_features(si, active);
+             }, "si"_a, "active"_a = true, D(BSDF, eval_features))
              .def("has_attribute",
             [](Ptr bsdf, const std::string &name, const Mask &active) {
                 return bsdf->has_attribute(name, active);

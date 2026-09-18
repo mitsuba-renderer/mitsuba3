@@ -534,6 +534,20 @@ public:
         return { F * value & active, dr::select(active, pdf, 0.f) };
     }
 
+    BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
+                                 Mask active) const override {
+        dr::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
+                                             m_k->eval(si, active));
+        // Denoisers expect the reflectance at normal incidence from metals
+        UnpolarizedSpectrum albedo =
+            fresnel_conductor(UnpolarizedSpectrum(1.f), eta);
+        if (m_specular_reflectance)
+            albedo *= m_specular_reflectance->eval(si, active);
+        MicrofacetDistribution distr = distribution(si, active);
+        return { albedo, si.sh_frame,
+                 dr::maximum(distr.alpha_u(), distr.alpha_v()) };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "RoughConductor[" << std::endl

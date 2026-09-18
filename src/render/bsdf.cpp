@@ -14,7 +14,7 @@ MI_VARIANT std::pair<Spectrum, Float>
 BSDF<Float, Spectrum>::eval_pdf(const BSDFContext &ctx,
                                 const SurfaceInteraction3f &si,
                                 const Vector3f &wo,
-                                Mask active) const {
+                                     Mask active) const {
     return { eval(ctx, si, wo, active), pdf(ctx, si, wo, active) };
 }
 
@@ -35,11 +35,17 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null(
     return 0.f;
 }
 
-MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_diffuse_reflectance(
-    const SurfaceInteraction3f &si, Mask active) const {
+MI_VARIANT typename BSDF<Float, Spectrum>::BSDFFeatures3f
+BSDF<Float, Spectrum>::eval_features(const SurfaceInteraction3f &si,
+                                     Mask active) const {
     Vector3f wo = Vector3f(0.0f, 0.0f, 1.0f);
     BSDFContext ctx;
-    return eval(ctx, si, wo, active) * dr::Pi<Float>;
+    BSDFFeatures3f features;
+    features.albedo =
+        unpolarized_spectrum(eval(ctx, si, wo, active)) * dr::Pi<Float>;
+    features.sh_frame  = si.sh_frame;
+    features.roughness = has_flag(BSDFFlags::Smooth) ? 1.f : 0.f;
+    return features;
 }
 
 template <typename Texture, typename Type>
