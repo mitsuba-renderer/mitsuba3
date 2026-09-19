@@ -33,6 +33,15 @@ Smooth dielectric material (:monosp:`dielectric`)
    - Optional factor that can be used to modulate the specular transmission component. Note that for physical realism, this parameter should never be touched. (Default: 1.0)
    - |exposed|, |differentiable|
 
+ * - eta_scale
+   - |bool|
+   - Refraction compresses the solid angle of a ray bundle, which scales the radiance
+     crossing the interface by the squared ratio of the refractive indices. The plugin
+     applies this factor when tracing radiance. Some production renderers (incorrectly)
+     omit this scale, which can lead to inconsistencies, e.g., when rendering glass
+     panels with only one sheet. Set this flag to :monosp:`false` to emulate their
+     behavior. (Default: |true|)
+
  * - eta
    - |float|
    - Relative index of refraction from the exterior to the interior
@@ -226,10 +235,15 @@ public:
         if (props.has_property("specular_transmittance"))
             m_specular_transmittance = props.get_texture<Texture>("specular_transmittance", 1.f);
 
+        m_eta_scale = props.get<bool>("eta_scale", true);
+
         m_components.push_back(BSDFFlags::DeltaReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide);
-        m_components.push_back(BSDFFlags::DeltaTransmission | BSDFFlags::FrontSide |
-                               BSDFFlags::BackSide | BSDFFlags::NonSymmetric);
+        uint32_t f = BSDFFlags::DeltaTransmission | BSDFFlags::FrontSide |
+                     BSDFFlags::BackSide;
+        if (m_eta_scale)
+            f = f | BSDFFlags::NonSymmetric;
+        m_components.push_back(f);
 
         m_flags = m_components[0] | m_components[1];
 
@@ -289,7 +303,7 @@ public:
                            reflect(si.wi),
                            refract(si.wi, cos_theta_t, eta_ti));
 
-        bs.eta = dr::select(selected_r, Float(1.f), eta_it);
+        bs.eta = m_eta_scale ? dr::select(selected_r, Float(1.f), eta_it) : Float(1.f);
 
         UnpolarizedSpectrum reflectance = 1.f, transmittance = 1.f;
         if (m_specular_reflectance)
@@ -366,7 +380,7 @@ public:
                 weight[selected_t] *= transmittance;
         }
 
-        if (dr::any_or<true>(selected_t)) {
+        if (m_eta_scale && dr::any_or<true>(selected_t)) {
             // For transmission, radiance must be scaled to account for the solid
             // angle compression that occurs when crossing the interface.
             Float factor = (ctx.mode == TransportMode::Radiance) ? eta_ti : Float(1.f);
@@ -411,6 +425,7 @@ public:
     MI_DECLARE_CLASS(SmoothDielectric)
 private:
     Float m_eta, m_inv_eta;
+    bool m_eta_scale;
     ref<Texture> m_specular_reflectance;
     ref<Texture> m_specular_transmittance;
 
