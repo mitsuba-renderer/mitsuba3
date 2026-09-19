@@ -2,6 +2,7 @@ set(MI_PLUGIN_PREFIX "textures")
 
 add_plugin(bitmap         bitmap.cpp)
 add_plugin(checkerboard   checkerboard.cpp)
+add_plugin(lut            lut.cpp)
 
 # The target name avoids a clash with an Embree-internal "math" target
 add_plugin(math_tex       math.cpp)
