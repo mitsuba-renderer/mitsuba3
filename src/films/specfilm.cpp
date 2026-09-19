@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/texture.h>
@@ -54,6 +55,11 @@ Spectral film (:monosp:`specfilm`)
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
    - |exposed|
 
+ * - (Nested plugin)
+   - :paramtype:`postprocess`
+   - Zero or more post-processing stages, applied in order (see
+     :ref:`hdrfilm <film-hdrfilm>`). (Default: none)
+
  * - size
    - ``Vector2u``
    - Width and height of the camera sensor in pixels
@@ -70,8 +76,8 @@ Spectral film (:monosp:`specfilm`)
    - |exposed|
 
 This plugin stores one or several spectral bands as a multichannel spectral image in a high dynamic
-range OpenEXR file and tries to preserve the rendering as much as possible by not performing any
-kind of post-processing, such as gamma correction---the output file will record linear radiance values.
+range OpenEXR file. Unless :monosp:`postprocess` stages are specified, it does not perform any kind
+of post-processing, such as gamma correction---the output file will record linear radiance values.
 
 Given one or several spectral sensor response functions (SRFs), the film will store in each channel
 the captured radiance weighted by one of the SRFs (which do not have to be limited to the range of
@@ -136,7 +142,8 @@ template <typename Float, typename Spectrum>
 class SpecFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_flags, m_srf, set_crop_window)
+                   m_postprocess, apply_postprocess, m_filter, m_flags, m_srf,
+                   set_crop_window)
     MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
 
@@ -336,7 +343,14 @@ public:
             m_storage->clear();
     }
 
-    TensorXf develop(bool raw = false) const override {
+    std::vector<std::string> channels() const override {
+        // The last entry of 'm_channels' is the sample weight
+        if (m_channels.empty())
+            return {};
+        return { m_channels.begin(), m_channels.end() - 1 };
+    }
+
+    TensorXf develop(bool raw = false, bool postprocess = true) const override {
         if (m_channels.empty())
             Throw("develop(): channel information unavailable, prepare() must "
                   "be called first.");
@@ -381,27 +395,30 @@ public:
             // Perform the weight division unless the weight is zero
             values /= dr::select(weight == 0.f, 1.f, weight);
 
-            return TensorXf(values, { (size_t) size.y(), (size_t) size.x(),
-                                      target_ch });
-        } else {
-            ref<Bitmap> source = bitmap();
-            ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::prod(size);
-            auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
+            TensorXf image(values, { (size_t) size.y(), (size_t) size.x(),
+                                     target_ch });
 
-            return TensorXf(data, { (size_t) source->height(),
-                                    (size_t) source->width(),
-                                    source->channel_count() });
+            if (!postprocess || m_postprocess.empty())
+                return image;
+
+            return apply_postprocess(image, channels());
+        } else {
+            // The post-processing stages are applied by bitmap()
+            ref<Bitmap> source = bitmap(false, postprocess);
+
+            return TensorXf(source->data(), { (size_t) source->height(),
+                                              (size_t) source->width(),
+                                              source->channel_count() });
         }
     }
 
 
-    ref<Bitmap> bitmap(bool raw = false) const override {
+    ref<Bitmap> bitmap(bool raw = false, bool postprocess = true) const override {
         if (m_channels.empty())
             Throw("bitmap(): channel information unavailable, prepare() must "
                   "be called first.");
 
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
@@ -428,10 +445,16 @@ public:
 
         source->convert(target);
 
-        return target;
+        if (!postprocess)
+            return target;
+
+        // Don't hold the lock while running the post-processing stages
+        lock.unlock();
+
+        return apply_postprocess(target);
     }
 
-    void write(const fs::path &path) const override {
+    void write(const fs::path &path, bool postprocess = true) const override {
         fs::path filename = path;
         std::string proper_extension = ".exr";
 
@@ -445,19 +468,16 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        ref<Bitmap> source = bitmap();
+        ref<Bitmap> source = bitmap(false, postprocess);
         if (m_component_format != struct_type_v<ScalarFloat>) {
             // Mismatch between the current format and the one expected by the film
             // Conversion is necessary before saving to disk
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
                 source->size(),
                 source->channel_count(),
-                channel_names);
+                source->channel_names());
             source->convert(target);
 
             target->write(filename, m_file_format);
@@ -481,6 +501,7 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  postprocess = " << m_postprocess << "," << std::endl
             << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)

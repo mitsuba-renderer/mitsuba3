@@ -277,6 +277,9 @@ public:
     /// Return the number of channels used by this bitmap
     size_t channel_count() const { return m_struct.size(); }
 
+    /// Return the names of the channels used by this bitmap
+    std::vector<std::string> channel_names() const;
+
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
         return m_pixel_format == PixelFormat::YA

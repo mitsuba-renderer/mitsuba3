@@ -182,6 +182,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
             if (str == "point") return {TagType::Point, ObjectType::Unknown};
             if (str == "path") return {TagType::Resource, ObjectType::Unknown};
             if (str == "phase") return {TagType::Object, ObjectType::PhaseFunction};
+            if (str == "postprocess") return {TagType::Object, ObjectType::PostProcess};
             break;
         case 'r':
             if (str == "rgb") return {TagType::RGB, ObjectType::Unknown};

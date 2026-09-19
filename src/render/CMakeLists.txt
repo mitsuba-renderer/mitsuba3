@@ -48,6 +48,7 @@ add_library(mitsuba-render OBJECT
   microfacet.cpp   ${INC_DIR}/microfacet.h
                    ${INC_DIR}/mueller.h
   phase.cpp        ${INC_DIR}/phase.h
+  postprocess.cpp  ${INC_DIR}/postprocess.h
   sampler.cpp      ${INC_DIR}/sampler.h
   scene.cpp        ${INC_DIR}/scene.h
   scene_ir.cpp     ${INC_DIR}/scene_ir.h

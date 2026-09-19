@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 
@@ -60,6 +61,10 @@ High dynamic range film (:monosp:`hdrfilm`)
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
      Gaussian filter)
 
+ * - (Nested plugin)
+   - :paramtype:`postprocess`
+   - Zero or more post-processing stages, applied in order (see below). (Default: none)
+
  * - size
    - ``Vector2u``
    - Width and height of the camera sensor in pixels
@@ -75,28 +80,42 @@ High dynamic range film (:monosp:`hdrfilm`)
    - Offset of the sub-rectangle of the output in pixels
    - |exposed|
 
-This is the default film plugin that is used when none is explicitly specified. It stores the
-captured image as a high dynamic range OpenEXR file and tries to preserve the rendering as much as
-possible by not performing any kind of post processing, such as gamma correction---the output file
-will record linear radiance values.
+This film stores the captured image as a high dynamic range image file format.
+It is the default choice and used whenever a camera does not explicitly specify
+a film. When no :monosp:`postprocess` stages are specified, the implementation
+does not perform any kind of post processing (e.g., gamma correction) and writes
+linear output.
 
-When writing OpenEXR files, the film will either produce a luminance, luminance/alpha, RGB(A),
-or XYZ(A) tristimulus bitmap having a :monosp:`float16`,
-:monosp:`float32`, or :monosp:`uint32`-based internal representation based on the chosen parameters.
-The default configuration is RGB with a :monosp:`float16` component format, which is appropriate for
-most purposes.
+When writing OpenEXR files, the film will either produce a luminance,
+luminance/alpha, RGB(A), or XYZ(A) tristimulus bitmap having a
+:monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`-based internal
+representation based on the chosen parameters. The default configuration is RGB
+with a :monosp:`float16` component format, which is appropriate for most
+purposes.
 
-For OpenEXR files, Mitsuba 3 also supports fully general multi-channel output; refer to
-the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>` plugins for
-details on how this works.
+For OpenEXR files, Mitsuba 3 also supports fully general multi-channel output;
+refer to the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>`
+plugins for details on how this works.
 
-The plugin can also write RLE-compressed files in the Radiance RGBE format pioneered by Greg Ward
-(set :monosp:`file_format=rgbe`), as well as the Portable Float Map format
-(set :monosp:`file_format=pfm`). In the former case, the :monosp:`component_format` and
-:monosp:`pixel_format` parameters are ignored, and the output is :monosp:`float8`-compressed RGB
-data. PFM output is restricted to :monosp:`float32`-valued images using the :monosp:`rgb` or
-:monosp:`luminance` pixel formats. Due to the superior accuracy and adoption of OpenEXR, the use of
-these two alternative formats is discouraged however.
+The plugin can also write RLE-compressed files in the Radiance RGBE format
+pioneered by Greg Ward (set :monosp:`file_format=rgbe`), as well as the Portable
+Float Map format (set :monosp:`file_format=pfm`). In the former case, the
+:monosp:`component_format` and :monosp:`pixel_format` parameters are ignored,
+and the output is :monosp:`float8`-compressed RGB data. PFM output is restricted
+to :monosp:`float32`-valued images using the :monosp:`rgb` or
+:monosp:`luminance` pixel formats. Due to the superior accuracy and adoption of
+OpenEXR, the use of these two alternative formats is discouraged however.
+
+Nested :monosp:`postprocess` stages describe image-space operations such as
+film response functions or bloom filters. They are part of the film's output:
+the film runs them in order whenever it develops the image, which includes the
+files it writes and the result of ``mi.render()``. The linear image remains
+available via ``develop(postprocess=False)``. When the output file name carries
+the extension of an 8-bit image format (:monosp:`.png`, :monosp:`.jpg`,
+:monosp:`.jpeg`, :monosp:`.bmp`, :monosp:`.tga`, :monosp:`.ppm`), the film keeps
+the color and alpha channels of the developed image, encodes them with the sRGB
+transfer function and writes 8 bits per component. Stages therefore operate on
+and return linear values.
 
 When RGB(A) output is selected, the measured spectral power distributions are
 converted to linear RGB based on the CIE 1931 XYZ color matching curves and
@@ -122,10 +141,18 @@ The following XML snippet describes a film that writes a full-HD RGBA OpenEXR fi
 
  */
 
+/// Rows of the sRGB -> XYZ matrix, referencing the source channels by name
+static constexpr std::pair<double, const char *> srgb_to_xyz_blend[3][3] = {
+    { { 0.412453, "R" }, { 0.357580, "G" }, { 0.180423, "B" } },
+    { { 0.212671, "R" }, { 0.715160, "G" }, { 0.072169, "B" } },
+    { { 0.019334, "R" }, { 0.119193, "G" }, { 0.950227, "B" } }
+};
+
 template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
+                   m_postprocess, apply_postprocess, is_ldr_format, write_ldr,
                    m_filter, m_flags)
     MI_IMPORT_TYPES(ImageBlock)
 
@@ -245,6 +272,31 @@ public:
         return color_ch + (uint32_t) alpha;
     }
 
+    std::vector<std::string> channels() const override {
+        bool alpha = has_flag(m_flags, FilmFlags::Alpha);
+
+        const char *color_names = "RGB";
+        if (m_pixel_format == Bitmap::PixelFormat::Y ||
+            m_pixel_format == Bitmap::PixelFormat::YA)
+            color_names = "Y";
+        else if (m_pixel_format == Bitmap::PixelFormat::XYZ ||
+                 m_pixel_format == Bitmap::PixelFormat::XYZA)
+            color_names = "XYZ";
+
+        std::vector<std::string> result;
+        for (const char *p = color_names; *p; ++p)
+            result.push_back(std::string(1, *p));
+
+        if (alpha)
+            result.push_back("A");
+
+        // The entries of 'm_channels' following RGBA(W) name the AOVs
+        result.insert(result.end(), m_channels.begin() + (alpha ? 5 : 4),
+                      m_channels.end());
+
+        return result;
+    }
+
     size_t prepare(const std::vector<std::string> &aovs) override {
         bool alpha = has_flag(m_flags, FilmFlags::Alpha);
         size_t base_channels = alpha ? 5 : 4;
@@ -309,7 +361,7 @@ public:
             m_storage->clear();
     }
 
-    TensorXf develop(bool raw = false) const override {
+    TensorXf develop(bool raw = false, bool postprocess = true) const override {
         if (m_channels.empty())
             Throw("develop(): channel information unavailable, prepare() must "
                   "be called first.");
@@ -409,26 +461,29 @@ public:
             // Perform the weight division unless the weight is zero
             values /= dr::select(weight == 0.f, 1.f, weight);
 
-            return TensorXf(values, { (size_t) size.y(), (size_t) size.x(),
-                                      target_ch });
-        } else {
-            ref<Bitmap> source = bitmap();
-            ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::prod(size);
-            auto data = dr::load<DynamicBuffer<ScalarFloat>>(source->data(), width);
+            TensorXf image(values, { (size_t) size.y(), (size_t) size.x(),
+                                     target_ch });
 
-            return TensorXf(data, { (size_t) source->height(),
-                                    (size_t) source->width(),
-                                    source->channel_count() });
+            if (!postprocess || m_postprocess.empty())
+                return image;
+
+            return apply_postprocess(image, channels());
+        } else {
+            // The post-processing stages are applied by bitmap()
+            ref<Bitmap> source = bitmap(false, postprocess);
+
+            return TensorXf(source->data(), { (size_t) source->height(),
+                                              (size_t) source->width(),
+                                              source->channel_count() });
         }
     }
 
-    ref<Bitmap> bitmap(bool raw = false) const override {
+    ref<Bitmap> bitmap(bool raw = false, bool postprocess = true) const override {
         if (m_channels.empty())
             Throw("bitmap(): channel information unavailable, prepare() must "
                   "be called first.");
 
-        std::lock_guard<std::mutex> lock(m_mutex);
+        std::unique_lock<std::mutex> lock(m_mutex);
         auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
@@ -450,8 +505,6 @@ public:
         if (raw)
             return source;
 
-        bool to_rgb    = m_pixel_format == Bitmap::PixelFormat::RGB ||
-                         m_pixel_format == Bitmap::PixelFormat::RGBA;
         bool to_xyz    = m_pixel_format == Bitmap::PixelFormat::XYZ ||
                          m_pixel_format == Bitmap::PixelFormat::XYZA;
         bool to_y      = m_pixel_format == Bitmap::PixelFormat::Y ||
@@ -471,86 +524,41 @@ public:
             source->struct_()[base_ch - 1].flags |=
                 +sj::Flag::Weight;
 
+            std::vector<std::string> names = channels();
             for (size_t i = 0; i < target_ch; ++i) {
                 sj::Field &dest_field = target->struct_()[i];
+                dest_field.name = names[i];
 
-                switch (i) {
-                    case 0:
-                        if (to_rgb) {
-                            dest_field.name = "R";
-                            break;
-                        } else if (to_xyz) {
-                            dest_field.name = "X";
-                            dest_field.blend = {
-                                { 0.412453f, "R" },
-                                { 0.357580f, "G" },
-                                { 0.180423f, "B" }
-                            };
-                            break;
-                        } else if (to_y) {
-                            dest_field.name = "Y";
-                            dest_field.blend = {
-                                { 0.212671f, "R" },
-                                { 0.715160f, "G" },
-                                { 0.072169f, "B" }
-                            };
-                            break;
-                        }
-                        [[fallthrough]];
+                // The color channels of XYZ/Y output blend the source RGB data
+                size_t row = (size_t) -1;
+                if (to_xyz && i < 3)
+                    row = i;
+                else if (to_y && i == 0)
+                    row = 1; // Luminance is the second row of the matrix
 
-                    case 1:
-                        if (to_rgb) {
-                            dest_field.name = "G";
-                            break;
-                        } else if (to_xyz) {
-                            dest_field.name = "Y";
-                            dest_field.blend = {
-                                { 0.212671f, "R" },
-                                { 0.715160f, "G" },
-                                { 0.072169f, "B" }
-                            };
-                            break;
-                        } else if (to_y && alpha) {
-                            dest_field.name = "A";
-                            break;
-                        }
-                        [[fallthrough]];
-
-                    case 2:
-                        if (to_rgb) {
-                            dest_field.name = "B";
-                            break;
-                        } else if (to_xyz) {
-                            dest_field.name = "Z";
-                            dest_field.blend = {
-                                { 0.019334f, "R" },
-                                { 0.119193f, "G" },
-                                { 0.950227f, "B" }
-                            };
-                            break;
-                        }
-                        [[fallthrough]];
-
-                    case 3:
-                        if ((to_rgb || to_xyz) && alpha) {
-                            dest_field.name = "A";
-                            break;
-                        }
-                        [[fallthrough]];
-
-                    default:
-                        dest_field.name = m_channels[base_ch + i - aovs_channel];
-                        break;
-                }
+                if (row != (size_t) -1)
+                    dest_field.blend.assign(std::begin(srgb_to_xyz_blend[row]),
+                                            std::end(srgb_to_xyz_blend[row]));
             }
         }
 
         source->convert(target);
 
-        return target;
+        if (!postprocess)
+            return target;
+
+        // Don't hold the lock while running the post-processing stages
+        lock.unlock();
+
+        return apply_postprocess(target);
     }
 
-    void write(const fs::path &path) const override {
+    void write(const fs::path &path, bool postprocess = true) const override {
+        if (is_ldr_format(path)) {
+            write_ldr(bitmap(false, postprocess), path);
+            return;
+        }
+
         fs::path filename = path;
         std::string proper_extension;
         if (m_file_format == Bitmap::FileFormat::OpenEXR)
@@ -570,19 +578,16 @@ public:
             Log(Info, "Developing \"%s\" ..", filename.string());
         #endif
 
-        ref<Bitmap> source = bitmap();
+        ref<Bitmap> source = bitmap(false, postprocess);
         if (m_component_format != struct_type_v<ScalarFloat>) {
             // Mismatch between the current format and the one expected by the film
             // Conversion is necessary before saving to disk
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
                 source->size(),
                 source->channel_count(),
-                channel_names);
+                source->channel_names());
             source->convert(target);
 
             target->write(filename, m_file_format);
@@ -606,6 +611,7 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  postprocess = " << m_postprocess << "," << std::endl
             << "]";
         return oss.str();
     }

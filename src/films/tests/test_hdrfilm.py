@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import drjit as dr
 import mitsuba as mi
 
@@ -236,3 +237,143 @@ def test07_luminance_alpha_mono(variants_all):
     image = mi.TensorXf(film.bitmap())
 
     assert image.shape[2] == 2
+
+
+def register_affine():
+    """Register a stage that scales and offsets every channel of the
+    developed image, and return the list that records the channel names
+    it was called with"""
+    channels = []
+
+    class Affine(mi.PostProcess):
+        def __init__(self, props):
+            super().__init__(props)
+            self.scale = props.get('scale', 1.0)
+            self.offset = props.get('offset', 0.0)
+
+        def eval(self, image, image_channels):
+            channels.append(image_channels)
+            return mi.TensorXf(image.array * self.scale + self.offset,
+                               image.shape)
+
+    mi.register_postprocess('affine', Affine)
+    return channels
+
+
+def test08_postprocess(variants_all_rgb):
+    channels = register_affine()
+
+    film = mi.load_dict({
+        'type': 'hdrfilm', 'width': 2, 'height': 2, 'pixel_format': 'rgba',
+        'rfilter': {'type': 'box'},
+        'first': {'type': 'affine', 'offset': 0.1},
+        'second': {'type': 'affine', 'scale': 0.5}
+    })
+    film.prepare(['depth'])
+    assert len(film.postprocess()) == 2
+    assert film.channels() == ['R', 'G', 'B', 'A', 'depth']
+
+    # The film is empty, hence the stages in declaration order yield (0+0.1)*0.5
+    assert dr.allclose(film.develop(), 0.05)
+    assert dr.allclose(mi.TensorXf(film.bitmap()), 0.05)
+
+    # Both paths name the channels of the developed image, not the film storage
+    assert channels == [['R', 'G', 'B', 'A', 'depth']] * 4
+
+    # postprocess=False yields the linear image
+    linear = film.develop(postprocess=False)
+    assert linear.shape == (2, 2, 5) and dr.allclose(linear, 0)
+    assert dr.allclose(mi.TensorXf(film.bitmap(postprocess=False)), 0)
+    assert len(channels) == 4
+
+    # raw=True returns the unprocessed storage, which still has a weight channel
+    raw = film.develop(raw=True)
+    assert raw.shape == (2, 2, 6) and dr.allclose(raw, 0)
+
+    # External callers can run the stages on an image of their own
+    image = dr.ones(mi.TensorXf, (2, 2, 5))
+    assert dr.allclose(
+        film.apply_postprocess(image, ['R', 'G', 'B', 'A', 'depth']), 0.55)
+
+
+def test09_postprocess_output(variants_all_rgb, tmp_path):
+    """Rendered images and files carry the stages, 8-bit files are sRGB-encoded"""
+    register_affine()
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'integrator': {'type': 'path', 'max_depth': 2},
+        'emitter': {'type': 'constant', 'radiance': 0.5},
+        'sensor': {
+            'type': 'perspective',
+            'film': {
+                'type': 'hdrfilm', 'width': 3, 'height': 2,
+                'pixel_format': 'rgba', 'rfilter': {'type': 'box'},
+                'stage': {'type': 'affine', 'scale': 0.5}
+            },
+            'sampler': {'type': 'independent', 'sample_count': 4}
+        }
+    })
+    film = scene.sensors()[0].film()
+
+    image = mi.render(scene, spp=4)
+    assert image.shape == (2, 3, 4)
+    assert dr.allclose(image[..., :3], 0.25)
+    assert dr.allclose(film.develop(postprocess=False)[..., :3], 0.5)
+
+    # Storage formats record the developed values as they are
+    exr = str(tmp_path / 'out.exr')
+    film.write(exr)
+    assert np.allclose(np.array(mi.Bitmap(exr))[..., :3], 0.25, atol=1e-3)
+    film.write(exr, postprocess=False)
+    assert np.allclose(np.array(mi.Bitmap(exr))[..., :3], 0.5, atol=1e-3)
+
+    # 8-bit formats receive the sRGB transfer function, JPEG files lose alpha
+    png = str(tmp_path / 'out.png')
+    film.write(png)
+    bitmap = mi.Bitmap(png)
+    assert bitmap.pixel_format() == mi.Bitmap.PixelFormat.RGBA
+    assert bitmap.component_format() == mi.Struct.Type.UInt8
+    decoded = bitmap.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, False)
+    assert np.allclose(np.array(decoded), 0.25, atol=1e-2)
+
+    jpg = str(tmp_path / 'out.jpg')
+    film.write(jpg)
+    assert mi.Bitmap(jpg).pixel_format() == mi.Bitmap.PixelFormat.RGB
+
+
+def test10_postprocess_ad(variants_all_ad_rgb):
+    """Derivatives propagate through the stages, and a stage that detaches the image is rejected"""
+    class Square(mi.PostProcess):
+        def __init__(self, props):
+            super().__init__(props)
+
+        def eval(self, image, channels):
+            return mi.TensorXf(dr.square(image.array), image.shape)
+
+    class Detach(mi.PostProcess):
+        def __init__(self, props):
+            super().__init__(props)
+
+        def eval(self, image, channels):
+            return mi.TensorXf(dr.detach(image.array), image.shape)
+
+    mi.register_postprocess('square', Square)
+    mi.register_postprocess('detach', Detach)
+
+    def make_film(stage):
+        film = mi.load_dict({
+            'type': 'hdrfilm', 'width': 2, 'height': 2,
+            'rfilter': {'type': 'box'}, 'stage': {'type': stage}
+        })
+        film.prepare([])
+        return film
+
+    image = dr.full(mi.TensorXf, 3.0, (2, 2, 3))
+    dr.enable_grad(image)
+    result = make_film('square').apply_postprocess(image, ['R', 'G', 'B'])
+    dr.backward(dr.sum(result.array))
+    assert dr.allclose(dr.grad(image), 6.0)
+
+    with pytest.raises(RuntimeError, match='severed'):
+        make_film('detach').apply_postprocess(image, ['R', 'G', 'B'])

@@ -1,7 +1,13 @@
 #include <mitsuba/render/film.h>
-#include <drjit/idiv.h>
+#include <mitsuba/render/postprocess.h>
+#include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/plugin.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/string.h>
+#include <drjit/idiv.h>
+#include <drjit/tensor.h>
+#include <algorithm>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -33,13 +39,15 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
     // large reconstruction filters.
     m_sample_border = props.get<bool>("sample_border", false);
 
-    // Use the provided reconstruction filter, if any.
+    // Use the provided reconstruction filter and post-processing stages, if any.
     for (auto &prop : props.objects()) {
         if (ReconstructionFilter *rfilter = prop.try_get<ReconstructionFilter>()) {
             if (m_filter)
                 Throw("A film can only have one reconstruction filter.");
 
             m_filter = rfilter;
+        } else if (PostProcess *postprocess = prop.try_get<PostProcess>()) {
+            m_postprocess.push_back(postprocess);
         }
     }
 
@@ -58,6 +66,12 @@ MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *cb) {
     cb->put("size",        m_size,        ParamFlags::NonDifferentiable);
     cb->put("crop_size",   m_crop_size,   ParamFlags::NonDifferentiable);
     cb->put("crop_offset", m_crop_offset, ParamFlags::NonDifferentiable);
+    for (auto &stage : m_postprocess) {
+        std::string_view id = stage->id();
+        if (id.empty() || string::starts_with(id, "_unnamed_"))
+            id = "";
+        cb->put(id, stage, ParamFlags::Differentiable);
+    }
 }
 
 MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -157,9 +171,109 @@ MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
         << "  crop_size = "     << m_crop_size     << "," << std::endl
         << "  crop_offset = "   << m_crop_offset   << "," << std::endl
         << "  sample_border = " << m_sample_border << "," << std::endl
-        << "  m_filter = "      << m_filter        << std::endl
+        << "  m_filter = "      << m_filter        << "," << std::endl
+        << "  postprocess = "   << m_postprocess   << std::endl
         << "]";
     return oss.str();
+}
+
+MI_VARIANT typename Film<Float, Spectrum>::TensorXf
+Film<Float, Spectrum>::apply_postprocess(
+    const TensorXf &image, const std::vector<std::string> &channels) const {
+    TensorXf result = image;
+
+    for (size_t i = 0; i < m_postprocess.size(); ++i) {
+        TensorXf output = m_postprocess[i]->eval(result, channels);
+
+        bool same_shape = output.ndim() == 3;
+        for (size_t j = 0; same_shape && j < 3; ++j)
+            same_shape = output.shape(j) == result.shape(j);
+        if (!same_shape)
+            Throw("apply_postprocess(): post-processing stage %zu changed the "
+                  "shape of the image. Stages must preserve the shape of "
+                  "their input.", i);
+
+        if constexpr (dr::is_diff_v<Float>) {
+            if (dr::grad_enabled(result.array()) &&
+                !dr::grad_enabled(output.array()))
+                Throw("apply_postprocess(): post-processing stage %zu severed "
+                      "the AD graph of the image. In differentiable rendering, "
+                      "stages must compute their output from the input using "
+                      "Dr.Jit operations.", i);
+        }
+
+        result = std::move(output);
+    }
+
+    return result;
+}
+
+MI_VARIANT ref<Bitmap> Film<Float, Spectrum>::apply_postprocess(Bitmap *image) const {
+    if (m_postprocess.empty())
+        return image;
+
+    if (image->component_format() != struct_type_v<ScalarFloat>)
+        Throw("apply_postprocess(): expected a bitmap with %s components",
+              struct_type_v<ScalarFloat>);
+
+    std::vector<std::string> channels = image->channel_names();
+
+    TensorXf tensor(image->data(), { (size_t) image->height(),
+                                     (size_t) image->width(),
+                                     image->channel_count() });
+
+    tensor = apply_postprocess(tensor, channels);
+
+    auto &&storage = dr::migrate(tensor.array(), JitBackend::None);
+    if constexpr (dr::is_jit_v<Float>)
+        dr::sync_thread();
+
+    ref<Bitmap> result =
+        new Bitmap(image->pixel_format(), struct_type_v<ScalarFloat>,
+                   image->size(), image->channel_count(), channels);
+    result->set_srgb_gamma(image->srgb_gamma());
+    result->set_premultiplied_alpha(image->premultiplied_alpha());
+    result->set_metadata(image->metadata());
+    memcpy(result->data(), storage.data(), result->buffer_size());
+
+    return result;
+}
+
+MI_VARIANT bool Film<Float, Spectrum>::is_ldr_format(const fs::path &path) {
+    std::string ext = string::to_lower(path.extension().string());
+    return ext == ".png" || ext == ".jpg" || ext == ".jpeg" ||
+           ext == ".bmp" || ext == ".tga" || ext == ".ppm";
+}
+
+MI_VARIANT void Film<Float, Spectrum>::write_ldr(const Bitmap *image,
+                                                 const fs::path &path) const {
+    if (image->component_format() != struct_type_v<ScalarFloat>)
+        Throw("write_ldr(): expected a bitmap with %s components",
+              struct_type_v<ScalarFloat>);
+
+    #if !defined(_WIN32)
+        Log(Info, "\U00002714  Developing \"%s\" ..", path.string());
+    #else
+        Log(Info, "Developing \"%s\" ..", path.string());
+    #endif
+
+    // 8-bit formats store color and alpha; other channels are dropped
+    std::vector<std::string> channels = image->channel_names();
+    bool mono  = channels[0] == "Y",
+         alpha = std::find(channels.begin(), channels.end(), "A") != channels.end();
+    std::string ext = string::to_lower(path.extension().string());
+    if (ext == ".jpg" || ext == ".jpeg")
+        alpha = false;
+
+    Bitmap::PixelFormat pixel_format =
+        mono ? (alpha ? Bitmap::PixelFormat::YA : Bitmap::PixelFormat::Y)
+             : (alpha ? Bitmap::PixelFormat::RGBA : Bitmap::PixelFormat::RGB);
+
+    ref<Bitmap> target = new Bitmap(pixel_format, struct_type_v<uint8_t>,
+                                    image->size());
+    target->set_srgb_gamma(true);
+    image->convert(target);
+    target->write(path);
 }
 
 MI_IMPLEMENT_TRAVERSE_CB(Film, Object)

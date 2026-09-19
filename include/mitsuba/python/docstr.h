@@ -4350,7 +4350,12 @@ the filter border when \ref sample_border() is set))doc";
 
 static const char *__doc_mitsuba_Film_base_channels_count = R"doc(Return the number of channels for the developed image (excluding AOVs))doc";
 
-static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
+static const char *__doc_mitsuba_Film_bitmap =
+R"doc(\brief Return a bitmap object storing the developed contents of the film
+
+The parameters have the same meaning as in \ref develop().)doc";
+
+static const char *__doc_mitsuba_Film_channels = R"doc(Names of the channels of the developed image (see develop()))doc";
 
 static const char *__doc_mitsuba_Film_class_name = R"doc()doc";
 
@@ -4376,7 +4381,21 @@ static const char *__doc_mitsuba_Film_crop_offset = R"doc(Return the offset of t
 
 static const char *__doc_mitsuba_Film_crop_size = R"doc(Return the size of the crop window)doc";
 
-static const char *__doc_mitsuba_Film_develop = R"doc(Return a image buffer object storing the developed image)doc";
+static const char *__doc_mitsuba_Film_develop =
+R"doc(\brief Return a image buffer object storing the developed image
+
+Developing an image normalizes the accumulated samples, converts them
+to the film's pixel format and runs the post-processing stages on the
+result. In JIT variants, the stages are part of the computation graph
+so that derivatives propagate through them.
+
+Parameter ``raw``:
+    Return the underlying film storage instead, which still contains
+    the sample weights and is not post-processed.
+
+Parameter ``postprocess``:
+    Set to ``False`` to skip the post-processing stages and obtain the
+    linear image.)doc";
 
 static const char *__doc_mitsuba_Film_flags = R"doc(Flags for all properties combined.)doc";
 
@@ -4488,7 +4507,16 @@ static const char *__doc_mitsuba_Film_update_launch_params = R"doc(Rebuild the b
 
 static const char *__doc_mitsuba_Film_variant_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_write = R"doc(Write the developed contents of the film to a file on disk)doc";
+static const char *__doc_mitsuba_Film_write =
+R"doc(\brief Write the developed contents of the film to a file on disk
+
+The file receives the developed image including the output of the
+post-processing stages, unless ``postprocess`` is ``False``. Storage
+formats (OpenEXR, RGBE, PFM) record the floating point values as they
+are. When the file name has the extension of an 8-bit format (PNG,
+JPEG, BMP, TGA, PPM), the film keeps the color and alpha channels,
+encodes them with the sRGB transfer function and writes 8 bits per
+component.)doc";
 
 static const char *__doc_mitsuba_FilterBoundaryCondition =
 R"doc(When resampling data to a different resolution using
@@ -15842,6 +15870,86 @@ static const char *__doc_mitsuba_xyz_to_srgb = R"doc(Convert XYZ tristimulus val
 static const char *__doc_operator_lshift = R"doc(Turns a vector of elements into a human-readable representation)doc";
 
 static const char *__doc_struct_jit_type_id = R"doc(Teach struct-jit's compile-time type trait about Dr.Jit's half type)doc";
+
+static const char *__doc_mitsuba_Film_apply_postprocess =
+R"doc(\brief Apply the post-processing stages to a developed image
+
+\param image
+    Tensor of shape <tt>(height, width, channels)</tt>, e.g. the
+    result of <tt>develop(postprocess=false)</tt>
+
+\param channels
+    Names of the channels along the last axis (e.g. <tt>R, G, B, A</tt>
+    followed by AOV names))doc";
+
+static const char *__doc_mitsuba_Film_apply_postprocess_2 =
+R"doc(\brief Apply the post-processing stages to a developed bitmap
+
+The channel names stored in \c image identify its channels. The
+bitmap is returned unchanged when the film has no stages.)doc";
+
+static const char *__doc_mitsuba_Film_m_postprocess = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_postprocess = R"doc(Post-processing stages declared by the scene, in order)doc";
+
+static const char *__doc_mitsuba_ObjectType_PostProcess = R"doc(Transforms developed images, subclasses `PostProcess`)doc";
+
+static const char *__doc_mitsuba_PostProcess =
+R"doc(\brief Abstract post-processing stage applied to developed images
+
+Post-processing stages are nested within a \ref Film and transform the
+image that it develops, e.g. to apply film response functions, bloom
+filters, etc. The first stage receives the linear radiance values
+measured by the film.
+
+The stages are part of the film's output: \ref Film::develop(), \ref
+Film::bitmap() and \ref Film::write() run them in the order in which
+they were specified, and so does \ref Integrator::render(). These
+functions take a <tt>postprocess=false</tt> argument that skips the
+stages and yields the linear image.
+
+In JIT variants, a stage must compute its output from the input using
+Dr.Jit operations so that derivatives propagate through it when the
+film takes part in differentiable rendering. The film raises an error
+when a stage severs the AD graph, e.g. by converting the image to a
+NumPy array.)doc";
+
+static const char *__doc_mitsuba_PostProcess_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_PostProcess = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_eval =
+R"doc(\brief Transform a developed image
+
+\param image
+    Tensor of shape <tt>(height, width, channels)</tt>
+
+\param channels
+    Names of the channels along the last axis (e.g. <tt>R, G, B, A</tt>
+    followed by AOV names). Stages typically transform the color
+    channels and pass the others through unchanged.
+
+\return
+    A tensor with the same shape as \c image)doc";
+
+static const char *__doc_mitsuba_PostProcess_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_type = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_variant_name = R"doc()doc";
+
 
 #if defined(__GNUG__)
 #pragma GCC diagnostic pop

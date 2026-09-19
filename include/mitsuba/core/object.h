@@ -44,6 +44,9 @@ enum class ObjectType : uint32_t {
     /// Storage representation of the sensor
     Film,
 
+    /// Transforms developed images, subclasses `PostProcess`
+    PostProcess,
+
     /// Emits radiance, subclasses `Emitter`
     Emitter,
 
@@ -255,6 +258,7 @@ inline constexpr const char* object_type_name(ObjectType ot) {
         case ObjectType::Scene: return "Scene";
         case ObjectType::Sensor: return "Sensor";
         case ObjectType::Film: return "Film";
+        case ObjectType::PostProcess: return "PostProcess";
         case ObjectType::Emitter: return "Emitter";
         case ObjectType::Sampler: return "Sampler";
         case ObjectType::Shape: return "Shape";

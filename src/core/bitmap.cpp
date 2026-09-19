@@ -229,6 +229,14 @@ size_t Bitmap::buffer_size() const {
     return pixel_count() * bytes_per_pixel();
 }
 
+std::vector<std::string> Bitmap::channel_names() const {
+    std::vector<std::string> result;
+    result.reserve(m_struct.size());
+    for (const sj::Field &field : m_struct)
+        result.push_back(field.name);
+    return result;
+}
+
 size_t Bitmap::bytes_per_pixel() const {
     size_t result;
     switch (m_component_format) {

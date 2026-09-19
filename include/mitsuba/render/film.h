@@ -49,7 +49,7 @@ MI_DECLARE_ENUM_OPERATORS(FilmFlags)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Film : public JitObject<Film<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
+    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture, PostProcess)
 
     /// Destructor
     ~Film();
@@ -69,14 +69,71 @@ public:
     /// Clear the film contents to zero.
     virtual void clear() = 0;
 
-    /// Return a image buffer object storing the developed image
-    virtual TensorXf develop(bool raw = false) const = 0;
+    /**
+     * \brief Return a image buffer object storing the developed image
+     *
+     * Developing an image normalizes the accumulated samples, converts them
+     * to the film's pixel format and runs the post-processing stages on the
+     * result. In JIT variants, the stages are part of the computation graph
+     * so that derivatives propagate through them.
+     *
+     * \param raw
+     *     Return the underlying film storage instead, which still contains
+     *     the sample weights and is not post-processed.
+     *
+     * \param postprocess
+     *     Set to \c false to skip the post-processing stages and obtain the
+     *     linear image.
+     */
+    virtual TensorXf develop(bool raw = false, bool postprocess = true) const = 0;
 
-    /// Return a bitmap object storing the developed contents of the film
-    virtual ref<Bitmap> bitmap(bool raw = false) const = 0;
+    /**
+     * \brief Return a bitmap object storing the developed contents of the film
+     *
+     * The parameters have the same meaning as in \ref develop().
+     */
+    virtual ref<Bitmap> bitmap(bool raw = false, bool postprocess = true) const = 0;
 
-    /// Write the developed contents of the film to a file on disk
-    virtual void write(const fs::path &path) const = 0;
+    /**
+     * \brief Write the developed contents of the film to a file on disk
+     *
+     * The file receives the developed image including the output of the
+     * post-processing stages, unless \c postprocess is \c false. Storage
+     * formats (OpenEXR, RGBE, PFM) record the floating point values as they
+     * are. When the file name has the extension of an 8-bit format (PNG,
+     * JPEG, BMP, TGA, PPM), the film keeps the color and alpha channels,
+     * encodes them with the sRGB transfer function and writes 8 bits per
+     * component.
+     */
+    virtual void write(const fs::path &path, bool postprocess = true) const = 0;
+
+    /// Names of the channels of the developed image (see \ref develop())
+    virtual std::vector<std::string> channels() const = 0;
+
+    /// Post-processing stages declared by the scene, in order
+    const std::vector<ref<PostProcess>> &postprocess() const { return m_postprocess; }
+
+    /**
+     * \brief Apply the post-processing stages to a developed image
+     *
+     * \param image
+     *     Tensor of shape <tt>(height, width, channels)</tt>, e.g. the
+     *     result of <tt>develop(postprocess=false)</tt>
+     *
+     * \param channels
+     *     Names of the channels along the last axis (e.g. <tt>R, G, B, A</tt>
+     *     followed by AOV names)
+     */
+    TensorXf apply_postprocess(const TensorXf &image,
+                               const std::vector<std::string> &channels) const;
+
+    /**
+     * \brief Apply the post-processing stages to a developed bitmap
+     *
+     * The channel names stored in \c image identify its channels. The
+     * bitmap is returned unchanged when the film has no stages.
+     */
+    ref<Bitmap> apply_postprocess(Bitmap *image) const;
 
     /// dr::schedule() variables that represent the internal film storage
     virtual void schedule_storage() = 0;
@@ -230,6 +287,18 @@ protected:
     /// Rebuild the buffer underlying \ref launch_params()
     void update_launch_params();
 
+    /// Does the extension of \c path denote an 8-bit image format?
+    static bool is_ldr_format(const fs::path &path);
+
+    /**
+     * \brief Write a developed image as an 8-bit file
+     *
+     * Helper for \ref write() implementations. The color and alpha channels
+     * of \c image (single precision components) are encoded with the sRGB
+     * transfer function, other channels are dropped.
+     */
+    void write_ldr(const Bitmap *image, const fs::path &path) const;
+
 protected:
     ScalarVector2u m_size;
     ScalarVector2u m_crop_size;
@@ -237,11 +306,12 @@ protected:
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
+    std::vector<ref<PostProcess>> m_postprocess;
 
     /// Buffer underlying \ref launch_params()
     DynamicBuffer<UInt32> m_launch_params;
 
-    MI_DECLARE_TRAVERSE_CB(m_filter, m_srf, m_launch_params)
+    MI_DECLARE_TRAVERSE_CB(m_filter, m_srf, m_postprocess, m_launch_params)
 };
 
 MI_EXTERN_CLASS(Film)

@@ -3,6 +3,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
@@ -37,16 +38,20 @@ public:
         NB_OVERRIDE_PURE(clear);
     }
 
-    TensorXf develop(bool raw = false) const override {
-        NB_OVERRIDE_PURE(develop, raw);
+    TensorXf develop(bool raw = false, bool postprocess = true) const override {
+        NB_OVERRIDE_PURE(develop, raw, postprocess);
     }
 
-    ref<Bitmap> bitmap(bool raw = false) const override {
-        NB_OVERRIDE_PURE(bitmap, raw);
+    ref<Bitmap> bitmap(bool raw = false, bool postprocess = true) const override {
+        NB_OVERRIDE_PURE(bitmap, raw, postprocess);
     }
 
-    void write(const fs::path &path) const override {
-        NB_OVERRIDE_PURE(write, path);
+    void write(const fs::path &path, bool postprocess = true) const override {
+        NB_OVERRIDE_PURE(write, path, postprocess);
+    }
+
+    std::vector<std::string> channels() const override {
+        NB_OVERRIDE_PURE(channels);
     }
 
     void schedule_storage() override {
@@ -100,9 +105,10 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, clear)
-        .def_method(Film, develop, "raw"_a = false)
-        .def_method(Film, bitmap, "raw"_a = false)
-        .def_method(Film, write, "path"_a)
+        .def_method(Film, develop, "raw"_a = false, "postprocess"_a = true)
+        .def_method(Film, bitmap, "raw"_a = false, "postprocess"_a = true)
+        .def_method(Film, write, "path"_a, "postprocess"_a = true)
+        .def_method(Film, channels)
         .def_method(Film, sample_border)
         .def_method(Film, base_channels_count)
         // Make sure to return a copy of those members as they might also be
@@ -119,6 +125,14 @@ MI_PY_EXPORT(Film) {
              [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); },
              D(Film, crop_offset))
         .def_method(Film, rfilter)
+        .def_method(Film, postprocess)
+        .def("apply_postprocess",
+             nb::overload_cast<const TensorXf &, const std::vector<std::string> &>(
+                 &Film::apply_postprocess, nb::const_),
+             "image"_a, "channels"_a, D(Film, apply_postprocess))
+        .def("apply_postprocess",
+             nb::overload_cast<Bitmap *>(&Film::apply_postprocess, nb::const_),
+             "image"_a, D(Film, apply_postprocess, 2))
         .def("prepare_sample",
             [] (const Film *film, const UnpolarizedSpectrum &spec,
                 const Wavelength &wavelengths, size_t channel_count,

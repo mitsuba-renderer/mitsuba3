@@ -145,6 +145,9 @@ the available object types:
         * - `integrator`
           - Integrators implement rendering techniques for solving the light transport equation
           - `path`, `direct`, `depth`
+        * - `postprocess`
+          - Post-processing stages transform the image developed by the `film`, e.g. to apply film response functions, bloom filters, etc.
+          - (Python plugins)
         * - `rfilter`
           - Reconstruction filters control how the `film` converts a set of samples into the output image
           - `box`, `gaussian`
