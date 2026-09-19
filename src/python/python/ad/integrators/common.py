@@ -79,6 +79,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
+                medium=sensor.get_medium(),
                 depth=mi.UInt32(0),
                 δL=None,
                 δaovs=None,
@@ -137,6 +138,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
+                    medium=sensor.get_medium(),
                     active=mi.Bool(True)
                 )
 
@@ -190,6 +192,7 @@ class ADIntegrator(mi.CppADIntegrator):
                     scene=scene,
                     sampler=sampler,
                     ray=ray,
+                    medium=sensor.get_medium(),
                     active=mi.Bool(True)
                 )
 
@@ -577,6 +580,7 @@ class RBIntegrator(ADIntegrator):
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
+                medium=sensor.get_medium(),
                 depth=mi.UInt32(0),
                 δL=None,
                 state_in=None,
@@ -589,6 +593,7 @@ class RBIntegrator(ADIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
+                medium=sensor.get_medium(),
                 depth=mi.UInt32(0),
                 δL=None,
                 δaovs=None,
@@ -753,6 +758,7 @@ class RBIntegrator(ADIntegrator):
                 scene=scene,
                 sampler=sampler.clone(),
                 ray=ray,
+                medium=sensor.get_medium(),
                 depth=mi.UInt32(0),
                 δL=None,
                 δaovs=None,
@@ -766,6 +772,7 @@ class RBIntegrator(ADIntegrator):
                 scene=scene,
                 sampler=sampler,
                 ray=ray,
+                medium=sensor.get_medium(),
                 depth=mi.UInt32(0),
                 δL=δL,
                 δaovs=δaovs,
