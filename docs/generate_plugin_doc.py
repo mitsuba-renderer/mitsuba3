@@ -73,6 +73,8 @@ SENSOR_ORDERING = [
 TEXTURE_ORDERING = [
     'bitmap',
     'checkerboard',
+    'lut',
+    'math',
     'mesh_attribute',
     'volume'
 ]
