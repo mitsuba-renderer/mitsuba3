@@ -61,27 +61,23 @@ The language provides
 - Binary and ternary functions: ``min``, ``max``, ``pow``, ``atan2``,
   ``fmod``, ``lerp(a, b, t)``, ``clip(x, lo, hi)``, ``fma(a, b, c)``.
 
-- Color handling: ``rgb(r, g, b)`` assembles a trichromatic value, and the
-  suffixes ``.r``, ``.g``, and ``.b`` extract a single channel of an
-  expression and broadcast it to all channels. The functions ``mean`` and
-  ``luminance`` reduce a value to its channel average or ITU-R BT.709
-  luminance, which they likewise broadcast to all channels.
+- Color handling: The suffixes ``.r``, ``.g``, and ``.b`` extract a single
+  channel of an expression and broadcast it to all channels. The functions
+  ``mean`` and ``luminance`` similarly broadcast the channel average or ITU-R
+  BT.709 luminance. ``rgb(r, g, b)`` assembles a trichromatic value from
+  monochromatic inputs. Given RGB inputs ``v0``.., ``v2``, ``rgb(v0, v1, v2)``
+  is equivalent to ``rgb(v0.r, v1.g, v2.b)``.
 
 - Floating point literals and the constants ``pi`` and ``e``.
 
 Operator precedence follows the C language. The language only supports floating
 point values and represents Boolean values as ``0.0`` and ``1.0``.
-Monochromatic, trichromatic, and spectral texture queries apply the expression
-separately to each input channel.
 
-The color handling operations are the exception to the last rule. Channel
-``k`` of ``rgb(r, g, b)`` evaluates to channel ``k`` of its ``k``-th argument,
-and the component suffixes copy one channel to all others. In monochromatic
-queries, component extraction and ``luminance`` return their argument
-unchanged, and ``rgb`` reduces to the luminance of its three arguments.
-Spectral queries in spectral variants process wavelength samples that lack a
-channel interpretation. There, ``mean`` averages the wavelength samples, while
-``rgb``, component extraction, and ``luminance`` raise an error.
+Evaluation is independent per color channel, except for the *color handling*
+operations listed above that move information between channels. When a ``math``
+texture using color handling operations is used in a monochromatic context
+(e.g., bump map height), Mitsuba evaluates it trichromatically and then reduces
+the result to the scalar luminance.
 
 The plugin compiles the expression into a compact stack machine bytecode
 representation that is interpreted during texture evaluation. In JIT-compiled
@@ -530,6 +526,10 @@ public:
             m_consts.push_back((ScalarFloat) value);
         m_tmp_count = parser.n_tmp;
         m_stack_size = parser.stack_size;
+
+        for (Inst inst : m_code)
+            m_color_ops |= inst.op == Op::Rgb || inst.op == Op::Chan ||
+                           inst.op == Op::Mean || inst.op == Op::Luminance;
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -540,11 +540,18 @@ public:
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        if constexpr (is_monochromatic_v<Spectrum>) {
+            if (m_color_ops)
+                return UnpolarizedSpectrum(luminance(eval_3(si, active)));
+        }
         return run([&](uint32_t i) { return m_inputs[i]->eval(si, active); });
     }
 
     Float eval_1(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
+        // Channel operations need the three channels of the inputs
+        if (m_color_ops)
+            return luminance(eval_3(si, active));
         return run([&](uint32_t i) { return m_inputs[i]->eval_1(si, active); });
     }
 
@@ -670,6 +677,8 @@ protected:
     std::vector<Inst> m_code;
     std::vector<ScalarFloat> m_consts;
     uint32_t m_tmp_count = 0, m_stack_size = 0;
+    /// Does the expression use rgb(), component access, mean() or luminance()?
+    bool m_color_ops = false;
 
     MI_TRAVERSE_CB(Texture, m_inputs)
 };
