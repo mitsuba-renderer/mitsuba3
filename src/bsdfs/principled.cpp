@@ -90,6 +90,15 @@ The Principled BSDF (:monosp:`principled`)
      gets glossier as the parameter increases. (Default:0.0)
    - |exposed|, |differentiable|, |discontinuous|
 
+ * - eta_scale
+   - |bool|
+   - Refraction compresses the solid angle of a ray bundle, which scales the radiance
+     crossing the interface by the squared ratio of the refractive indices. The
+     transmission lobe applies this factor when tracing radiance. Some production
+     renderers (incorrectly) omit this scale, which can lead to inconsistencies, e.g.,
+     when rendering glass panels with only one sheet. Set this flag to :monosp:`false`
+     to emulate their behavior. (Default: |true|)
+
 The principled BSDF is a complex BSDF with numerous reflective and transmissive
 lobes. It is able to produce great number of material types ranging from metals
 to rough dielectrics. Moreover, the set of input parameters are designed to be
@@ -178,6 +187,7 @@ public:
         m_has_anisotropic = get_flag("anisotropic", props);
         m_anisotropic = props.get_texture<Texture>("anisotropic", 0.0f);
         m_has_spec_trans = get_flag("spec_trans", props);
+        m_eta_scale = props.get<bool>("eta_scale", true);
         m_spec_trans = props.get_texture<Texture>("spec_trans", 0.0f);
         m_has_sheen = get_flag("sheen", props);
         m_sheen = props.get_texture<Texture>("sheen", 0.0f);
@@ -290,7 +300,9 @@ public:
         // Specular transmission lobe
         if (m_has_spec_trans) {
             uint32_t f = BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
-                         BSDFFlags::BackSide | BSDFFlags::NonSymmetric;
+                         BSDFFlags::BackSide;
+            if (m_eta_scale)
+                f = f | BSDFFlags::NonSymmetric;
             if (m_has_anisotropic)
                 f = f | BSDFFlags::Anisotropic;
             m_spec_trans_index = (uint32_t) m_components.size();
@@ -693,7 +705,7 @@ private:
             if (dr::any_or<true>(spec_trans_active)) {
                 // Account for the solid angle compression when tracing
                 // radiance. This is necessary for bidirectional methods.
-                Float scale = (ctx.mode == TransportMode::Radiance)
+                Float scale = (ctx.mode == TransportMode::Radiance && m_eta_scale)
                                   ? dr::square(inv_eta_path)
                                   : Float(1.0f);
 
@@ -836,7 +848,8 @@ private:
                 m_spec_trans_index;
             dr::masked(bs.sampled_type, sample_spec_trans) =
                 +BSDFFlags::GlossyTransmission;
-            dr::masked(bs.eta, sample_spec_trans) = eta_it;
+            if (m_eta_scale)
+                dr::masked(bs.eta, sample_spec_trans) = eta_it;
 
             // Discard refractions into the wrong hemisphere
             Mask refract = cos_theta_i * Frame3f::cos_theta(wo) < 0.0f;
@@ -907,6 +920,7 @@ private:
     bool m_has_clearcoat;
     bool m_has_sheen;
     bool m_has_spec_trans;
+    bool m_eta_scale;
     bool m_has_metallic;
     bool m_has_spec_tint;
     bool m_has_sheen_tint;

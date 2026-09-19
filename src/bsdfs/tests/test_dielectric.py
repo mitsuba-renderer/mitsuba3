@@ -27,6 +27,21 @@ def test01_create(variant_scalar_rgb):
         mi.load_dict({'type': 'dielectric', 'int_ior': -0.5})
 
 
+def test01b_eta_scale(variant_scalar_rgb):
+    si = mi.SurfaceInteraction3f()
+    si.wi = [0, 0, 1]
+    ctx = mi.BSDFContext(mi.TransportMode.Radiance)
+    b = mi.load_dict({'type': 'dielectric', 'int_ior': 1.5, 'ext_ior': 1.0, 'eta_scale': False})
+    assert not mi.has_flag(b.flags(), mi.BSDFFlags.NonSymmetric)
+    bs_s, w_s = b.sample(ctx, si, 0.9, [0.5, 0.5])
+    bs_d, w_d = example_bsdf(transmittance=1.0).sample(ctx, si, 0.9, [0.5, 0.5])
+    assert dr.allclose(w_s[0] / w_d[0], 1.5 ** 2)
+
+    # Without the scale factor, there is no eta bookkeeping left for the
+    # integrator to undo in its Russian roulette weighting
+    assert dr.allclose(bs_s.eta, 1.0) and dr.allclose(bs_d.eta, 1.5)
+
+
 def test02_sample(variant_scalar_rgb):
     si = mi.SurfaceInteraction3f()
     si.wi = [0, 0, 1]

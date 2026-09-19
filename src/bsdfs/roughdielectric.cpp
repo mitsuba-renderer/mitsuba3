@@ -60,6 +60,15 @@ Rough dielectric material (:monosp:`roughdielectric`)
      focuses computation on the visible parts of the microfacet normal distribution, considerably
      reducing variance in some cases. (Default: |true|, i.e. use visible normal sampling)
 
+ * - eta_scale
+   - |bool|
+   - Refraction compresses the solid angle of a ray bundle, which scales the radiance
+     crossing the interface by the squared ratio of the refractive indices. The plugin
+     applies this factor when tracing radiance. Some production renderers (incorrectly)
+     omit this scale, which can lead to inconsistencies, e.g., when rendering glass
+     panels with only one sheet. Set this flag to :monosp:`false` to emulate their
+     behavior. (Default: |true|)
+
  * - eta
    - |float|
    - Relative index of refraction from the exterior to the interior
@@ -196,6 +205,7 @@ public:
         }
 
         m_sample_visible = props.get<bool>("sample_visible", true);
+        m_eta_scale = props.get<bool>("eta_scale", true);
 
         if (props.has_property("alpha_u") || props.has_property("alpha_v")) {
             if (!props.has_property("alpha_u") || !props.has_property("alpha_v"))
@@ -213,8 +223,11 @@ public:
             (m_alpha_u != m_alpha_v) ? (uint32_t) BSDFFlags::Anisotropic : 0u;
         m_components.push_back(BSDFFlags::GlossyReflection | BSDFFlags::FrontSide |
                                BSDFFlags::BackSide | extra);
-        m_components.push_back(BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
-                               BSDFFlags::BackSide | BSDFFlags::NonSymmetric | extra);
+        uint32_t f = BSDFFlags::GlossyTransmission | BSDFFlags::FrontSide |
+                     BSDFFlags::BackSide | extra;
+        if (m_eta_scale)
+            f = f | BSDFFlags::NonSymmetric;
+        m_components.push_back(f);
         m_flags = m_components[0] | m_components[1];
 
         parameters_changed();
@@ -329,7 +342,9 @@ public:
 
         selected_t = !selected_r && active;
 
-        bs.eta               = dr::select(selected_r, Float(1.f), eta_it);
+        bs.eta               = m_eta_scale
+                                   ? dr::select(selected_r, Float(1.f), eta_it)
+                                   : Float(1.f);
         bs.sampled_component = dr::select(selected_r, UInt32(0), UInt32(1));
         bs.sampled_type      = dr::select(selected_r,
                                       UInt32(+BSDFFlags::GlossyReflection),
@@ -356,7 +371,8 @@ public:
 
             // For transmission, radiance must be scaled to account for the solid
             // angle compression that occurs when crossing the interface.
-            UnpolarizedSpectrum factor = (ctx.mode == TransportMode::Radiance) ? dr::square(eta_ti) : Float(1.f);
+            UnpolarizedSpectrum factor =
+                (ctx.mode == TransportMode::Radiance && m_eta_scale) ? dr::square(eta_ti) : Float(1.f);
 
             if (m_specular_transmittance)
                 factor *= m_specular_transmittance->eval(si, selected_t);
@@ -365,8 +381,8 @@ public:
 
             // Jacobian of the half-direction mapping
             dr::masked(dwh_dwo, selected_t) =
-                (dr::square(bs.eta) * dr::dot(bs.wo, m)) /
-                 dr::square(dr::dot(si.wi, m) + bs.eta * dr::dot(bs.wo, m));
+                (dr::square(eta_it) * dr::dot(bs.wo, m)) /
+                 dr::square(dr::dot(si.wi, m) + eta_it * dr::dot(bs.wo, m));
         }
 
         if (likely(m_sample_visible))
@@ -437,7 +453,8 @@ public:
             // Missing term in the original paper: account for the solid angle
             // compression when tracing radiance -- this is necessary for
             // bidirectional methods.
-            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance && m_eta_scale)
+                              ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = dr::abs(
@@ -585,7 +602,8 @@ public:
             // Missing term in the original paper: account for the solid angle
             // compression when tracing radiance -- this is necessary for
             // bidirectional methods.
-            Float scale = (ctx.mode == TransportMode::Radiance) ? dr::square(inv_eta) : Float(1.f);
+            Float scale = (ctx.mode == TransportMode::Radiance && m_eta_scale)
+                              ? dr::square(inv_eta) : Float(1.f);
 
             // Compute the total amount of transmission
             UnpolarizedSpectrum value = dr::abs(
@@ -663,6 +681,7 @@ private:
     ref<Texture> m_alpha_u, m_alpha_v;
     Float m_eta, m_inv_eta;
     bool m_sample_visible;
+    bool m_eta_scale;
     /// Precomputed distribution, valid when both roughness textures are uniform
     MicrofacetDistribution m_distr;
     bool m_uniform_alpha = false;
