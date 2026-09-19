@@ -309,6 +309,16 @@ Mitsuba 3.10.0
   ``params['emitter.to_world']`` and a translation. The ``position`` scene
   description property is unchanged.
 
+- **Python integration**. Scenes can now bundle custom Python plugins
+  (e.g., light sources, shapes, etc.) and import them with ``<import>`` tags
+  from scene XML files. See the
+  :ref:`documentation <sec-python-extensions>` for details.
+
+  A new Python entry point (``python -m mitsuba <...>``) behaves identically to
+  the previously existing ``mitsuba`` C++ binary and can process scenes with
+  custom Python extensions. When Mitsuba is installed through :monosp:`pip`,
+  the ``mitsuba`` command refers to this Python frontend.
+
 - **Textured area emitters** are now uniformly sampled by default, as the
   importance sampling routine was very expensive and had numerous drawbacks.
   To importance sample the texture, set the ``sample_texture`` parameter.

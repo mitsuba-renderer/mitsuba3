@@ -1060,9 +1060,9 @@ static void parse_xml_node(const ParserConfig &config, ParserState &state,
             std::string_view filename = node.attribute("filename").value();
             if (!import_handler())
                 fail(state, scene_node,
-                     "the scene imports the Python file \"%s\". Scenes that "
-                     "use custom Python extensions must be loaded from "
-                     "Python, e.g. via mitsuba.load_file()", filename);
+                     "the scene imports the Python file \"%s\" and therefore "
+                     "needs a Python interpreter to run. Render it with the "
+                     "command \"python -m mitsuba <scene.xml>\".", filename);
 
             add_import(state.imports, std::string(filename));
             break;
@@ -1947,9 +1947,10 @@ std::vector<ref<Object>> instantiate(const ParserConfig &config, const ParserSta
     if (!state.imports.empty()) {
         ImportHandler handler = import_handler();
         if (!handler)
-            Throw("The scene imports the Python file \"%s\". Scenes that use "
-                  "custom Python extensions must be loaded from Python, e.g. "
-                  "via mitsuba.load_file()", state.imports[0]);
+            Throw("The scene imports the Python file \"%s\" and therefore "
+                  "needs a Python interpreter to run. Render it with the "
+                  "command \"python -m mitsuba <scene.xml>\".",
+                  state.imports[0]);
 
         std::vector<fs::path> paths;
         for (const std::string &name : state.imports) {

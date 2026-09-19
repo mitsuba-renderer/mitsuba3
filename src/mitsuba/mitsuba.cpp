@@ -95,26 +95,8 @@ Options:
 
  === The following options are only relevant for JIT (CUDA/LLVM) modes ===
 
-    -O [0-5]
-        Enables successive optimizations (default: -O5):
-          (0. all disabled, 1: de-duplicate virtual functions,
-           2: constant propagation, 3. value numbering,
-           4. virtual call optimizations, 5. loop optimizations)
-
     -S
         Dump the PTX or LLVM intermediate representation to the console
-
-    -W
-        Instead of compiling a megakernel, perform rendering using a
-        series of wavefronts. Specify twice to unroll both loops *and*
-        virtual function calls.
-
-    -V <width>
-        Override the vector width of the LLVM backend ('width' must be
-        a power of two). Values of 4/8/16 cause SSE/NEON, AVX, or AVX512
-        registers being used (if supported). Going beyond the natively
-        supported width is legal and causes arithmetic operations to be
-        replicated multiple times.
 
 )";
 }
@@ -191,10 +173,7 @@ int main(int argc, char *argv[]) {
     auto arg_extra     = parser.add("", true);
 
     // Specialized flags for the JIT compiler
-    auto arg_optim_lev = parser.add(StringVec{ "-O" }, true);
-    auto arg_wavefront = parser.add(StringVec{ "-W" });
     auto arg_source    = parser.add(StringVec{ "-S" });
-    auto arg_vec_width = parser.add(StringVec{ "-V" }, true);
 
     parser::ParameterList params;
     std::string error_msg, mode;
@@ -287,45 +266,13 @@ int main(int argc, char *argv[]) {
         bool jit   = cuda || llvm || metal;
 
 #if defined(MI_ENABLE_LLVM) || defined(MI_ENABLE_CUDA) || defined(MI_ENABLE_METAL)
-        if (jit) {
-            if (*arg_optim_lev) {
-                int lev = arg_optim_lev->as_int();
-                jit_set_flag(JitFlag::ConstantPropagation, lev > 1);
-                jit_set_flag(JitFlag::ValueNumbering, lev > 2);
-                jit_set_flag(JitFlag::VCallOptimize, lev > 3);
-                jit_set_flag(JitFlag::LoopOptimize, lev > 4);
-            }
-
-            if (*arg_wavefront) {
-                jit_set_flag(JitFlag::LoopRecord, false);
-                if (arg_wavefront->next())
-                    jit_set_flag(JitFlag::VCallRecord, false);
-            }
-
-            if (*arg_source)
-                jit_set_flag(JitFlag::PrintIR, true);
-
-            if (*arg_vec_width && llvm) {
-                uint32_t width = arg_vec_width->as_int();
-                if (!math::is_power_of_two(width))
-                    Throw("Value specified to the -V argument must be a power of two!");
-
-                std::string target_cpu = jit_llvm_target_cpu(),
-                            target_features = jit_llvm_target_features();
-
-                jit_llvm_set_target(target_cpu.c_str(),
-                                    target_features.c_str(),
-                                    (uint32_t) width);
-            }
-        }
+        if (jit && *arg_source)
+            jit_set_flag(JitFlag::PrintIR, true);
 #else
-        DRJIT_MARK_USED(arg_wavefront);
-        DRJIT_MARK_USED(arg_optim_lev);
         DRJIT_MARK_USED(arg_source);
 #endif
 
-        if (!jit &&
-            (*arg_optim_lev || *arg_wavefront || *arg_source || *arg_vec_width))
+        if (!jit && *arg_source)
             Throw("Specified an argument that only makes sense in a JIT (LLVM/CUDA/Metal) mode!");
 
         Profiler::static_initialization();

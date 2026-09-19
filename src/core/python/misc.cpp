@@ -11,6 +11,11 @@ MI_PY_EXPORT(misc) {
         .def("mem_string", &util::mem_string, D(util, mem_string), "size"_a, "precise"_a = false)
         .def("trap_debugger", &util::trap_debugger, D(util, trap_debugger));
 
+    nb::module_::import_("mitsuba.detail")
+        .def("info_build", &util::info_build, D(util, info_build), "thread_count"_a)
+        .def("info_copyright", &util::info_copyright, D(util, info_copyright))
+        .def("info_features", &util::info_features, D(util, info_features));
+
     // Bind util::Version struct
     nb::class_<util::Version>(m, "Version")
         .def(nb::init<>())
