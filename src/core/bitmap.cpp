@@ -783,7 +783,30 @@ Bitmap::FileFormat Bitmap::detect_file_format(Stream *stream) {
     return format;
 }
 
+/// Determine the file format that the extension of ``path`` implies
+static Bitmap::FileFormat format_from_extension(const fs::path &path) {
+    std::string extension = string::to_lower(path.extension().string());
+    if (extension == ".exr")
+        return Bitmap::FileFormat::OpenEXR;
+    else if (extension == ".png")
+        return Bitmap::FileFormat::PNG;
+    else if (extension == ".jpg" || extension == ".jpeg")
+        return Bitmap::FileFormat::JPEG;
+    else if (extension == ".hdr" || extension == ".rgbe")
+        return Bitmap::FileFormat::RGBE;
+    else if (extension == ".pfm")
+        return Bitmap::FileFormat::PFM;
+    else if (extension == ".ppm")
+        return Bitmap::FileFormat::PPM;
+    else
+        Throw("Bitmap::write(): unsupported bitmap file extension \"%s\"",
+              extension);
+}
+
 void Bitmap::write(const fs::path &path, FileFormat format, int quality) const {
+    // Resolve the format before opening the file, which would truncate it
+    if (format == FileFormat::Auto)
+        format = format_from_extension(path);
     ref<FileStream> fs = new FileStream(path, FileStream::ETruncReadWrite);
     write(fs, format, quality);
 }
@@ -795,22 +818,7 @@ void Bitmap::write(Stream *stream, FileFormat format, int quality) const {
         if (!fs)
             Throw("Bitmap::write(): can't decide file format based on filename "
                   "since the target stream is not a file stream");
-        std::string extension = string::to_lower(fs->path().extension().string());
-        if (extension == ".exr")
-            format = FileFormat::OpenEXR;
-        else if (extension == ".png")
-            format = FileFormat::PNG;
-        else if (extension == ".jpg" || extension == ".jpeg")
-            format = FileFormat::JPEG;
-        else if (extension == ".hdr" || extension == ".rgbe")
-            format = FileFormat::RGBE;
-        else if (extension == ".pfm")
-            format = FileFormat::PFM;
-        else if (extension == ".ppm")
-            format = FileFormat::PPM;
-        else
-            Throw("Bitmap::write(): unsupported bitmap file extension \"%s\"",
-                  extension);
+        format = format_from_extension(fs->path());
     }
 
     Log(Debug, "Writing %s file \"%s\" (%ix%i, %s, %s) ..",
