@@ -42,7 +42,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Film : public JitObject<Film<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture)
+    MI_IMPORT_TYPES(ImageBlock, ReconstructionFilter, Texture, PostProcess)
 
     /// Destructor
     ~Film();
@@ -98,9 +98,13 @@ public:
      * Return a image buffer object storing the developed image
      *
      * Developing an image normalizes the accumulated samples by the weight
-     * channel.
+     * channel and runs post-processing filters (if any) on the result.
+     *
+     * Args:
+     *     postprocess: Set this to ``False`` to skip the post-processing
+     *         filters and return the linear image.
      */
-    TensorXf develop() const;
+    TensorXf develop(bool postprocess = true) const;
 
     /**
      * Return the accumulated samples, i.e. the channels of the developed
@@ -108,16 +112,39 @@ public:
      */
     TensorXf storage() const;
 
-    /// Return a bitmap object storing the developed contents of the film
-    ref<Bitmap> bitmap() const;
+    /**
+     * Return a bitmap object storing the developed contents of the film
+     *
+     * The parameter has the same meaning as in `develop()`.
+     */
+    ref<Bitmap> bitmap(bool postprocess = true) const;
 
     /**
-     * Write the developed contents of the film to a file on disk
+     * Write the developed and post-processed contents of the film to a file on disk
      *
      * When writing 8-bit files (e.g. ``.png``), this operation additionally
      * converts to sRGB gamma.
      */
     virtual void write(const fs::path &path) const;
+
+    /// Post-processing filters declared by the scene, in order
+    const std::vector<ref<PostProcess>> &postprocess() const { return m_postprocess; }
+
+    /**
+     * Apply the post-processing filters to a developed image
+     *
+     * Args:
+     *     image: Tensor of shape ``(height, width, channels)``, e.g. the
+     *         result of ``develop(postprocess=False)``.
+     *
+     *     channels: Names of the channels along the last axis (e.g. ``R``,
+     *         ``G``, ``B``, ``A`` followed by AOV names).
+     *
+     * Returns:
+     *     A tensor with the same shape as ``image``.
+     */
+    TensorXf apply_postprocess(const TensorXf &image,
+                               const std::vector<std::string> &channels) const;
 
     /**
      * Return an `ImageBlock` instance, whose internal representation
@@ -246,6 +273,7 @@ protected:
     bool m_sample_border;
     ref<ReconstructionFilter> m_filter;
     ref<Texture> m_srf;
+    std::vector<ref<PostProcess>> m_postprocess;
 
     /// File and component format used by `write()`
     Bitmap::FileFormat m_file_format;
@@ -261,7 +289,7 @@ protected:
     /// Buffer underlying \ref launch_params()
     DynamicBuffer<UInt32> m_launch_params;
 
-    MI_DECLARE_TRAVERSE_CB(m_filter, m_srf, m_storage, m_launch_params)
+    MI_DECLARE_TRAVERSE_CB(m_filter, m_srf, m_postprocess, m_storage, m_launch_params)
 };
 
 MI_EXTERN_CLASS(Film)

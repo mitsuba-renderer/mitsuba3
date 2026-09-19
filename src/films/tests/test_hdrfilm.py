@@ -246,10 +246,56 @@ def test07_luminance_alpha_mono(variants_all):
     assert image.shape[2] == 2
 
 
+def register_affine():
+    """Register a filter that scales and offsets every channel of the image
+    and remembers the channel names it was called with"""
+    class Affine(mi.PostProcess):
+        def __init__(self, props):
+            super().__init__(props)
+            self.scale = props.get('scale', 1.0)
+            self.offset = props.get('offset', 0.0)
+
+        def eval(self, image, channels):
+            self.channels = channels
+            return mi.TensorXf(image.array * self.scale + self.offset,
+                               image.shape)
+
+    mi.register_postprocess('affine', Affine)
 
 
-def test08_write(variants_all_rgb, tmp_path):
-    """Rendered images match the written files, 8-bit files are sRGB-encoded"""
+def test08_postprocess(variants_all_rgb):
+    """Filters run in declaration order on the developed image"""
+    register_affine()
+
+    film = mi.load_dict({
+        'type': 'hdrfilm', 'width': 2, 'height': 2, 'pixel_format': 'rgba',
+        'rfilter': {'type': 'box'},
+        'first': {'type': 'affine', 'offset': 0.1},
+        'second': {'type': 'affine', 'scale': 0.5}
+    })
+    film.prepare(['depth'])
+    filters = film.postprocess()
+    assert len(filters) == 2
+    assert film.channels() == ['R', 'G', 'B', 'A', 'depth']
+
+    # The film is empty, hence the filters yield (0 + 0.1) * 0.5
+    assert dr.allclose(film.develop(), 0.05)
+    assert filters[0].channels == ['R', 'G', 'B', 'A', 'depth']
+    assert dr.allclose(mi.TensorXf(film.bitmap()), 0.05)
+    assert filters[1].channels == ['R', 'G', 'B', 'A', 'depth']
+
+    # The linear image and the raw storage (which includes the weight channel)
+    assert dr.allclose(film.develop(postprocess=False), 0)
+    assert film.storage().shape == (2, 2, 6)
+
+    image = dr.ones(mi.TensorXf, (2, 2, 5))
+    assert dr.allclose(film.apply_postprocess(image, film.channels()), 0.55)
+
+
+def test09_postprocess_write(variants_all_rgb, tmp_path):
+    """Rendered images and files carry the filters, 8-bit files are sRGB-encoded"""
+    register_affine()
+
     scene = mi.load_dict({
         'type': 'scene',
         'integrator': {'type': 'path', 'max_depth': 2},
@@ -258,7 +304,8 @@ def test08_write(variants_all_rgb, tmp_path):
             'type': 'perspective',
             'film': {
                 'type': 'hdrfilm', 'width': 3, 'height': 2,
-                'pixel_format': 'rgba', 'rfilter': {'type': 'box'}
+                'pixel_format': 'rgba', 'rfilter': {'type': 'box'},
+                'filter': {'type': 'affine', 'scale': 0.5}
             },
             'sampler': {'type': 'independent', 'sample_count': 4}
         }
@@ -267,12 +314,14 @@ def test08_write(variants_all_rgb, tmp_path):
 
     image = mi.render(scene, spp=4)
     assert image.shape == (2, 3, 4)
+    assert dr.allclose(image[..., :3], 0.25)
+
+    image = mi.render(scene, spp=4, postprocess=False)
     assert dr.allclose(image[..., :3], 0.5)
-    assert film.storage().shape == (2, 3, 5)
 
     exr = str(tmp_path / 'out.exr')
     film.write(exr)
-    assert np.allclose(np.array(mi.Bitmap(exr))[..., :3], 0.5, atol=1e-3)
+    assert np.allclose(np.array(mi.Bitmap(exr))[..., :3], 0.25, atol=1e-3)
 
     png = str(tmp_path / 'out.png')
     film.write(png)
@@ -280,7 +329,7 @@ def test08_write(variants_all_rgb, tmp_path):
     assert bitmap.pixel_format() == mi.Bitmap.PixelFormat.RGBA
     assert bitmap.component_format() == mi.Struct.Type.UInt8
     decoded = bitmap.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, False)
-    assert np.allclose(np.array(decoded), 0.5, atol=1e-2)
+    assert np.allclose(np.array(decoded), 0.25, atol=1e-2)
 
     # JPEG files have no alpha channel
     jpg = str(tmp_path / 'out.jpg')
@@ -288,8 +337,10 @@ def test08_write(variants_all_rgb, tmp_path):
     assert mi.Bitmap(jpg).pixel_format() == mi.Bitmap.PixelFormat.RGB
 
 
-def test09_aov(variants_all_rgb):
-    """The output of the AOV integrator matches the developed film"""
+def test10_postprocess_aov(variants_all_rgb):
+    """The output of the AOV integrator matches the film, filters included"""
+    register_affine()
+
     scene = mi.load_dict({
         'type': 'scene',
         'integrator': {
@@ -303,7 +354,8 @@ def test09_aov(variants_all_rgb):
             'type': 'perspective',
             'film': {
                 'type': 'hdrfilm', 'width': 3, 'height': 2,
-                'rfilter': {'type': 'box'}
+                'rfilter': {'type': 'box'},
+                'filter': {'type': 'affine', 'scale': 0.5}
             },
             'sampler': {'type': 'independent', 'sample_count': 4}
         }
@@ -315,3 +367,7 @@ def test09_aov(variants_all_rgb):
                                'secondary.B', 'dd.y.T']
     assert image.shape == (2, 3, 7)
     assert dr.allclose(image, film.develop())
+
+    # The filter scales every channel of the linear image
+    linear = mi.render(scene, spp=4, postprocess=False)
+    assert dr.allclose(image, linear * 0.5)

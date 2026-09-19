@@ -219,6 +219,7 @@ std::string_view plugin_type_name(ObjectType ot) {
         case ObjectType::Scene: return "scene";
         case ObjectType::Sensor: return "sensor";
         case ObjectType::Film: return "film";
+        case ObjectType::PostProcess: return "postprocess";
         case ObjectType::Emitter: return "emitter";
         case ObjectType::Sampler: return "sampler";
         case ObjectType::Shape: return "shape";

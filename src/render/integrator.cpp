@@ -109,7 +109,7 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             uint32_t spp) {
     auto forward_gradients = [&]() -> TensorXf {
         render(scene, sensor, seed, spp, false, false);
-        TensorXf image = sensor->film()->develop();
+        TensorXf image = sensor->film()->develop(false);
 
         // The image may not depend on any differentiable parameter, e.g.
         // when an integrator only produces geometric AOVs
@@ -141,7 +141,7 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              uint32_t spp) {
     auto backward_gradients = [&]() -> void {
         render(scene, sensor, seed, spp, false, false);
-        TensorXf image = sensor->film()->develop();
+        TensorXf image = sensor->film()->develop(false);
         dr::backward_from((image * grad_in).array(),
                           dr::ADFlag::Default | dr::ADFlag::AllowNoGrad);
     };

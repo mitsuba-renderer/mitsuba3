@@ -288,16 +288,22 @@ class _RenderOp(dr.CustomOp):
         self.seed = seed
         self.spp = spp
 
+        film = sensor.film()
+
+        # The custom operation works with the linear image. The caller applies
+        # the film's post-processing filters, which are then differentiated by
+        # ordinary AD.
         with dr.suspend_grad():
-            res = self.integrator.render(
+            self.integrator.render(
                 scene=self.scene,
                 sensor=sensor,
                 seed=seed[0],
                 spp=spp[0],
-                develop=True,
+                develop=False,
                 evaluate=False
             )
-            return res
+
+            return film.develop(postprocess=False)
 
     def forward(self):
         self.set_grad_out(
@@ -318,7 +324,8 @@ def render(scene: mi.Scene,
            seed: mi.UInt32 = 0,
            seed_grad: int = 0,
            spp: int = 0,
-           spp_grad: int = 0) -> mi.TensorXf:
+           spp_grad: int = 0,
+           postprocess: bool = True) -> mi.TensorXf:
     """
     This function provides a convenient high-level interface to differentiable
     rendering algorithms in Mi. The function returns a rendered image that can
@@ -330,7 +337,10 @@ def render(scene: mi.Scene,
     Under the hood, the differentiation operation will be intercepted and routed
     to `mitsuba.SamplingIntegrator.render_forward` or `mitsuba.SamplingIntegrator.render_backward`,
     which evaluate the derivative using either naive AD or a more specialized
-    differential simulation.
+    differential simulation. These functions operate on the linear image. The
+    film's post-processing filters (if any) are applied afterwards and
+    differentiated by ordinary AD. Pass ``postprocess=False`` to skip the
+    filters and obtain the linear image.
 
     Note the default implementation of this functionality relies on naive
     automatic differentiation (AD), which records a computation graph of the
@@ -387,6 +397,9 @@ def render(scene: mi.Scene,
         spp_grad: This parameter is analogous to the ``seed`` parameter but
             targets the differential simulation phase. If not specified, the
             implementation will copy the value from ``spp``.
+
+        postprocess: Set this to ``False`` to skip the film's post-processing
+            filters and return the linear image.
     """
 
     if params is not None and not isinstance(params, mi.SceneParameters):
@@ -425,21 +438,29 @@ def render(scene: mi.Scene,
                         'to ensure unbiased gradient computation!')
 
     if 'scalar' in mi.variant():
-        return integrator.render(
-                scene=scene,
-                sensor=sensor,
-                seed=seed,
-                spp=spp,
-                develop=True,
-                evaluate=False
-            )
+        integrator.render(
+            scene=scene,
+            sensor=sensor,
+            seed=seed,
+            spp=spp,
+            develop=False,
+            evaluate=False
+        )
+
+        return sensor.film().develop(postprocess=postprocess)
 
     # Both `dict_params` and `params` are passed. The former is necessary
     # because it allows the custom operation to detect any attached input
     # arguments. The latter is necessary because it will not be automatically
     # detached by the custom operation.
-    return dr.custom(_RenderOp, scene, sensor, dict_params, params, integrator,
-                     (seed, seed_grad), (spp, spp_grad))
+    image = dr.custom(_RenderOp, scene, sensor, dict_params, params, integrator,
+                      (seed, seed_grad), (spp, spp_grad))
+
+    film = sensor.film()
+    if postprocess and film.postprocess():
+        image = film.apply_postprocess(image, film.channels())
+
+    return image
 
 # ------------------------------------------------------------------------------
 

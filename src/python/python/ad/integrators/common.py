@@ -152,7 +152,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
                 # Perform the weight division
                 film.put_block(block)
-                result_img = film.develop()
+                result_img = film.develop(postprocess=False)
 
                 # Propagate the gradients to the image tensor. Keep the input
                 # gradients, integrators that compose several passes (e.g.
@@ -215,7 +215,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
                 # This step launches a kernel
                 dr.schedule(block.tensor())
-                image = film.develop()
+                image = film.develop(postprocess=False)
 
                 # Differentiate sample splatting and weight division steps to
                 # retrieve the adjoint radiance
@@ -604,7 +604,7 @@ class RBIntegrator(ADIntegrator):
             del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
                 valid_2, params, state_out, state_out_2, block
 
-            result_grad = film.develop()
+            result_grad = film.develop(postprocess=False)
 
         return result_grad
 
@@ -703,7 +703,7 @@ class RBIntegrator(ADIntegrator):
 
                 film.put_block(block)
 
-                image = film.develop()
+                image = film.develop(postprocess=False)
 
                 dr.set_grad(image, grad_in)
                 dr.enqueue(dr.ADMode.Backward, image)
@@ -994,7 +994,7 @@ class PSIntegrator(ADIntegrator):
             )
 
             film.put_block(block)
-            result_img += film.develop()
+            result_img += film.develop(postprocess=False)
 
         return result_img
 
@@ -1140,7 +1140,7 @@ class PSIntegrator(ADIntegrator):
         )
         film.put_block(block)
 
-        return film.develop()
+        return film.develop(postprocess=False)
 
     #################### Indirect discontinuous derivatives ####################
 
@@ -1256,7 +1256,7 @@ class PSIntegrator(ADIntegrator):
             )
             film.put_block(block)
 
-        return film.develop()
+        return film.develop(postprocess=False)
 
     ########################### Integrator interface ###########################
 

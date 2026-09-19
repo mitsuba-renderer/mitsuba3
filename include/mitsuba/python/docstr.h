@@ -4364,13 +4364,29 @@ static const char *__doc_mitsuba_Film_LaunchParams_width_shift =
 R"doc(``dr::divisor`` constants for the row width (crop width plus twice
 the filter border when \ref sample_border() is set))doc";
 
+static const char *__doc_mitsuba_Film_apply_postprocess =
+R"doc(Apply the post-processing filters to a developed image
+
+Args:
+    image: Tensor of shape ``(height, width, channels)``, e.g. the
+        result of ``develop(postprocess=False)``.
+
+    channels: Names of the channels along the last axis (e.g. ``R``,
+        ``G``, ``B``, ``A`` followed by AOV names).
+
+Returns:
+    A tensor with the same shape as ``image``.)doc";
+
 static const char *__doc_mitsuba_Film_base_channels =
 R"doc(Names of the base channels of the developed image.
 
 Subclasses set these in their constructor. The default is ``R``,
 ``G``, ``B``.)doc";
 
-static const char *__doc_mitsuba_Film_bitmap = R"doc(Return a bitmap object storing the developed contents of the film)doc";
+static const char *__doc_mitsuba_Film_bitmap =
+R"doc(Return a bitmap object storing the developed contents of the film
+
+The parameter has the same meaning as in `develop()`.)doc";
 
 static const char *__doc_mitsuba_Film_channels = R"doc(Names of the channels of the developed image (see `develop()`))doc";
 
@@ -4402,7 +4418,11 @@ static const char *__doc_mitsuba_Film_develop =
 R"doc(Return a image buffer object storing the developed image
 
 Developing an image normalizes the accumulated samples by the weight
-channel.)doc";
+channel and runs post-processing filters (if any) on the result.
+
+Args:
+    postprocess: Set this to ``False`` to skip the post-processing
+        filters and return the linear image.)doc";
 
 static const char *__doc_mitsuba_Film_launch_params =
 R"doc(\brief Return the crop window and related constants as JIT variables,
@@ -4416,6 +4436,8 @@ static const char *__doc_mitsuba_Film_m_filter = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_launch_params = R"doc(Buffer underlying \ref launch_params())doc";
 
+static const char *__doc_mitsuba_Film_m_postprocess = R"doc()doc";
+
 static const char *__doc_mitsuba_Film_m_sample_border = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
@@ -4423,6 +4445,8 @@ static const char *__doc_mitsuba_Film_m_size = R"doc()doc";
 static const char *__doc_mitsuba_Film_m_srf = R"doc()doc";
 
 static const char *__doc_mitsuba_Film_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_Film_postprocess = R"doc(Post-processing filters declared by the scene, in order)doc";
 
 static const char *__doc_mitsuba_Film_prepare =
 R"doc(Configure the film for rendering a specified set of extra channels (AOVs).
@@ -4503,7 +4527,11 @@ static const char *__doc_mitsuba_Film_update_launch_params = R"doc(Rebuild the b
 
 static const char *__doc_mitsuba_Film_variant_name = R"doc()doc";
 
-static const char *__doc_mitsuba_Film_write = R"doc(Write the developed contents of the film to a file on disk)doc";
+static const char *__doc_mitsuba_Film_write =
+R"doc(Write the developed and post-processed contents of the film to a file on disk
+
+When writing 8-bit files (e.g. ``.png``), this operation additionally
+converts to sRGB gamma.)doc";
 
 static const char *__doc_mitsuba_FilterBoundaryCondition =
 R"doc(When resampling data to a different resolution using
@@ -7152,6 +7180,8 @@ static const char *__doc_mitsuba_ObjectType_Medium = R"doc(A participating mediu
 
 static const char *__doc_mitsuba_ObjectType_PhaseFunction = R"doc(A phase function characterizing scattering in volumes)doc";
 
+static const char *__doc_mitsuba_ObjectType_PostProcess = R"doc(Transforms developed images, subclasses `PostProcess`)doc";
+
 static const char *__doc_mitsuba_ObjectType_ReconstructionFilter = R"doc(A filter used to reconstruct/resample images)doc";
 
 static const char *__doc_mitsuba_ObjectType_Sampler = R"doc(Generates sample positions and directions, subclasses `Sampler`)doc";
@@ -8127,6 +8157,50 @@ In some uses of this record, a sampled position may be associated with
 an important 2D quantity, such as the texture coordinates on a triangle
 mesh or a position on the aperture of a sensor. When applicable, such
 positions are stored in the ``uv`` attribute.)doc";
+
+static const char *__doc_mitsuba_PostProcess =
+R"doc(Abstract post-processing filter applied to developed images
+
+Instances of this class implement image post-processing functions such as
+film response functions, bloom filters, or white balancing.
+
+The `Film` class holds an arbitrary number of `PostProcess` instances and
+runs them sequentially in `Film::develop()`.)doc";
+
+static const char *__doc_mitsuba_PostProcess_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_3 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_4 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_5 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_6 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_7 = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_PostProcess = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_class_name = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_eval =
+R"doc(Transform a developed image
+
+Args:
+    image: Tensor of shape ``(height, width, channels)``.
+
+    channels: Names of the channels along the last axis (e.g. ``R``,
+        ``G``, ``B``, ``A`` followed by AOV names). Filters typically
+        transform the color channels and pass the others without change.
+
+Returns:
+    A tensor with the same shape as ``image``.)doc";
+
+static const char *__doc_mitsuba_PostProcess_to_string = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_type = R"doc()doc";
+
+static const char *__doc_mitsuba_PostProcess_variant_name = R"doc()doc";
 
 static const char *__doc_mitsuba_PreliminaryIntersection =
 R"doc(Stores preliminary information related to a ray intersection

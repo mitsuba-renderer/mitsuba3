@@ -239,6 +239,13 @@ MI_PY_EXPORT(Scene) {
           "name"_a, "constructor"_a,
           "Register a Python film plugin");
 
+    m.def("register_postprocess",
+          [](const std::string &name, nb::object constructor) {
+              register_typed_plugin(name, constructor, ObjectType::PostProcess);
+          },
+          "name"_a, "constructor"_a,
+          "Register a Python post-processing plugin");
+
     m.def("register_rfilter",
           [](const std::string &name, nb::object constructor) {
               register_typed_plugin(name, constructor, ObjectType::ReconstructionFilter);

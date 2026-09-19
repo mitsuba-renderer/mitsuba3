@@ -8,6 +8,7 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/phase.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/texture.h>
@@ -39,6 +40,7 @@ static nb::object caster(Object *o) {
 
     PY_TRY_CAST(BSDF);
     PY_TRY_CAST(Film);
+    PY_TRY_CAST(PostProcess);
 
     PY_TRY_CAST(MonteCarloIntegrator);
     PY_TRY_CAST(SamplingIntegrator);
@@ -102,6 +104,7 @@ MI_PY_DECLARE(MicroflakeDistribution);
 MI_PY_DECLARE(OptixDenoiser);
 MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
+MI_PY_DECLARE(PostProcess);
 MI_PY_DECLARE(DirectionSample);
 MI_PY_DECLARE(Sampler);
 MI_PY_DECLARE(Scene);
@@ -232,6 +235,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(MicroflakeDistribution);
     MI_PY_IMPORT(OptixDenoiser);
     MI_PY_IMPORT(PhaseFunction);
+    MI_PY_IMPORT(PostProcess);
     MI_PY_IMPORT(Sampler);
     MI_PY_IMPORT(Sensor);
 //    MI_PY_IMPORT(ShapeKDTree);

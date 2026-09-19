@@ -14,6 +14,7 @@ template <typename Float, typename Spectrum> class OptixDenoiser;
 template <typename Float, typename Spectrum> class Emitter;
 template <typename Float, typename Spectrum> class Endpoint;
 template <typename Float, typename Spectrum> class Film;
+template <typename Float, typename Spectrum> class PostProcess;
 template <typename Float, typename Spectrum> class ImageBlock;
 template <typename Float, typename Spectrum> class Integrator;
 template <typename Float, typename Spectrum> class SamplingIntegrator;
@@ -136,6 +137,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Medium                 = mitsuba::Medium<Float, Spectrum>;
     using PhaseFunction          = mitsuba::PhaseFunction<Float, Spectrum>;
     using Film                   = mitsuba::Film<Float, Spectrum>;
+    using PostProcess            = mitsuba::PostProcess<Float, Spectrum>;
     using ImageBlock             = mitsuba::ImageBlock<Float, Spectrum>;
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
     using Texture                = mitsuba::Texture<Float, Spectrum>;
@@ -224,6 +226,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using Medium                 = typename RenderAliases::Medium;                                 \
     using PhaseFunction          = typename RenderAliases::PhaseFunction;                          \
     using Film                   = typename RenderAliases::Film;                                   \
+    using PostProcess            = typename RenderAliases::PostProcess;                            \
     using ImageBlock             = typename RenderAliases::ImageBlock;                             \
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \
     using Texture                = typename RenderAliases::Texture;                                \

@@ -3,6 +3,7 @@
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/core/rfilter.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/spiral.h>
@@ -74,8 +75,8 @@ MI_PY_EXPORT(Film) {
         .def_method(Film, prepare, "aovs"_a)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, clear)
-        .def_method(Film, develop)
-        .def_method(Film, bitmap)
+        .def_method(Film, develop, "postprocess"_a = true)
+        .def_method(Film, bitmap, "postprocess"_a = true)
         .def_method(Film, storage)
         .def_method(Film, write, "path"_a)
         .def_method(Film, channels)
@@ -95,6 +96,11 @@ MI_PY_EXPORT(Film) {
              [] (const Film *film) { return ScalarPoint2u(film->crop_offset()); },
              D(Film, crop_offset))
         .def_method(Film, rfilter)
+        .def_method(Film, postprocess)
+        .def("apply_postprocess",
+             nb::overload_cast<const TensorXf &, const std::vector<std::string> &>(
+                 &Film::apply_postprocess, nb::const_),
+             "image"_a, "channels"_a, D(Film, apply_postprocess))
         .def("prepare_sample",
             [] (const Film *film, const UnpolarizedSpectrum &spec,
                 const Wavelength &wavelengths, Mask valid, Mask active) {

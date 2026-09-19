@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 
@@ -58,6 +59,12 @@ High dynamic range film (:monosp:`hdrfilm`)
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
      Gaussian filter)
 
+ * - (Nested plugin)
+   - :paramtype:`postprocess`
+   - Nested :monosp:`postprocess` filters describe image-space operations such as
+     film response functions, bloom filters, or white balancing.
+     If provided, they are applied in order while developing the image. (Default: none)
+
  * - size
    - ``Vector2u``
    - Width and height of the camera sensor in pixels
@@ -73,28 +80,31 @@ High dynamic range film (:monosp:`hdrfilm`)
    - Offset of the sub-rectangle of the output in pixels
    - |exposed|
 
-This is the default film plugin that is used when none is explicitly specified. It stores the
-captured image as a high dynamic range OpenEXR file and tries to preserve the rendering as much as
-possible by not performing any kind of post processing, such as gamma correction---the output file
-will record linear radiance values.
+This film stores the captured image as a high dynamic range image file format.
+It is the default choice and used whenever a camera does not explicitly specify
+a film. When no :monosp:`postprocess` filters are specified, the implementation
+does not perform any kind of post processing (e.g., gamma correction) and writes
+linear output.
 
-When writing OpenEXR files, the film will either produce a luminance, luminance/alpha, RGB(A),
-or XYZ(A) tristimulus bitmap having a :monosp:`float16`,
-:monosp:`float32`, or :monosp:`uint32`-based internal representation based on the chosen parameters.
-The default configuration is RGB with a :monosp:`float16` component format, which is appropriate for
-most purposes.
+When writing OpenEXR files, the film will either produce a luminance,
+luminance/alpha, RGB(A), or XYZ(A) tristimulus bitmap having a
+:monosp:`float16`, :monosp:`float32`, or :monosp:`uint32`-based internal
+representation based on the chosen parameters. The default configuration is RGB
+with a :monosp:`float16` component format, which is appropriate for most
+purposes.
 
-For OpenEXR files, Mitsuba 3 also supports fully general multi-channel output; refer to
-the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>` plugins for
-details on how this works.
+For OpenEXR files, Mitsuba 3 also supports fully general multi-channel output;
+refer to the :ref:`aov <integrator-aov>` or :ref:`stokes <integrator-stokes>`
+plugins for details on how this works.
 
-The plugin can also write RLE-compressed files in the Radiance RGBE format pioneered by Greg Ward
-(set :monosp:`file_format=rgbe`), as well as the Portable Float Map format
-(set :monosp:`file_format=pfm`). In the former case, the :monosp:`component_format` and
-:monosp:`pixel_format` parameters are ignored, and the output is :monosp:`float8`-compressed RGB
-data. PFM output is restricted to :monosp:`float32`-valued images using the :monosp:`rgb` or
-:monosp:`luminance` pixel formats. Due to the superior accuracy and adoption of OpenEXR, the use of
-these two alternative formats is discouraged however.
+The plugin can also write RLE-compressed files in the Radiance RGBE format
+pioneered by Greg Ward (set :monosp:`file_format=rgbe`), as well as the Portable
+Float Map format (set :monosp:`file_format=pfm`). In the former case, the
+:monosp:`component_format` and :monosp:`pixel_format` parameters are ignored,
+and the output is :monosp:`float8`-compressed RGB data. PFM output is restricted
+to :monosp:`float32`-valued images using the :monosp:`rgb` or
+:monosp:`luminance` pixel formats. Due to the superior accuracy and adoption of
+OpenEXR, the use of these two alternative formats is discouraged however.
 
 When RGB(A) output is selected, the measured spectral power distributions are
 converted to linear RGB based on the CIE 1931 XYZ color matching curves and
@@ -141,7 +151,7 @@ template <typename Float, typename Spectrum>
 class HDRFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_file_format,
+                   m_postprocess, m_filter, m_file_format,
                    m_component_format, m_base_channels, alloc_storage)
     MI_IMPORT_TYPES(ImageBlock)
 
@@ -239,6 +249,7 @@ public:
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_format->format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  postprocess = " << m_postprocess << "," << std::endl
             << "]";
         return oss.str();
     }

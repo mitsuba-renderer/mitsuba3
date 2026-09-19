@@ -1,5 +1,6 @@
 #include <mitsuba/render/film.h>
 #include <mitsuba/render/imageblock.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/core/bitmap.h>
 #include <mitsuba/core/filesystem.h>
 #include <mitsuba/core/plugin.h>
@@ -41,13 +42,15 @@ MI_VARIANT Film<Float, Spectrum>::Film(const Properties &props)
     // large reconstruction filters.
     m_sample_border = props.get<bool>("sample_border", false);
 
-    // Use the provided reconstruction filter, if any.
+    // Use the provided reconstruction filter and post-processing filters, if any.
     for (auto &prop : props.objects()) {
         if (ReconstructionFilter *rfilter = prop.try_get<ReconstructionFilter>()) {
             if (m_filter)
                 Throw("A film can only have one reconstruction filter.");
 
             m_filter = rfilter;
+        } else if (PostProcess *postprocess = prop.try_get<PostProcess>()) {
+            m_postprocess.push_back(postprocess);
         }
     }
 
@@ -99,6 +102,12 @@ MI_VARIANT void Film<Float, Spectrum>::traverse(TraversalCallback *cb) {
     cb->put("size",        m_size,        ParamFlags::NonDifferentiable);
     cb->put("crop_size",   m_crop_size,   ParamFlags::NonDifferentiable);
     cb->put("crop_offset", m_crop_offset, ParamFlags::NonDifferentiable);
+    for (auto &postprocess : m_postprocess) {
+        std::string_view id = postprocess->id();
+        if (id.empty() || string::starts_with(id, "_unnamed_"))
+            id = "";
+        cb->put(id, postprocess, ParamFlags::Differentiable);
+    }
 }
 
 MI_VARIANT void Film<Float, Spectrum>::parameters_changed(const std::vector<std::string> &keys) {
@@ -228,7 +237,7 @@ Film<Float, Spectrum>::storage() const {
 }
 
 MI_VARIANT typename Film<Float, Spectrum>::TensorXf
-Film<Float, Spectrum>::develop() const {
+Film<Float, Spectrum>::develop(bool postprocess) const {
     using Array = typename TensorXf::Array;
 
     TensorXf raw = storage();
@@ -261,11 +270,16 @@ Film<Float, Spectrum>::develop() const {
         }
     }
 
-    return TensorXf(values, { height, width, (size_t) target_ch });
+    TensorXf image(values, { height, width, (size_t) target_ch });
+
+    if (!postprocess || m_postprocess.empty())
+        return image;
+
+    return apply_postprocess(image, m_channels);
 }
 
-MI_VARIANT ref<Bitmap> Film<Float, Spectrum>::bitmap() const {
-    TensorXf image = develop();
+MI_VARIANT ref<Bitmap> Film<Float, Spectrum>::bitmap(bool postprocess) const {
+    TensorXf image = develop(postprocess);
 
     auto &&host = dr::migrate(image.array(), JitBackend::None);
     if constexpr (dr::is_jit_v<Float>)
@@ -339,6 +353,28 @@ MI_VARIANT void Film<Float, Spectrum>::write(const fs::path &path) const {
     } else {
         source->write(filename, m_file_format);
     }
+}
+
+MI_VARIANT typename Film<Float, Spectrum>::TensorXf
+Film<Float, Spectrum>::apply_postprocess(
+    const TensorXf &image, const std::vector<std::string> &channels) const {
+    TensorXf result = image;
+
+    for (size_t i = 0; i < m_postprocess.size(); ++i) {
+        TensorXf output = m_postprocess[i]->eval(result, channels);
+
+        bool same_shape = output.ndim() == 3;
+        for (size_t j = 0; same_shape && j < 3; ++j)
+            same_shape = output.shape(j) == result.shape(j);
+        if (!same_shape)
+            Throw("apply_postprocess(): post-processing filter %zu changed the "
+                  "shape of the image. Filters must preserve the shape of "
+                  "their input.", i);
+
+        result = std::move(output);
+    }
+
+    return result;
 }
 
 // -----------------------------------------------------------------------------
@@ -417,7 +453,8 @@ MI_VARIANT std::string Film<Float, Spectrum>::to_string() const {
         << "  crop_size = "     << m_crop_size     << "," << std::endl
         << "  crop_offset = "   << m_crop_offset   << "," << std::endl
         << "  sample_border = " << m_sample_border << "," << std::endl
-        << "  m_filter = "      << m_filter        << std::endl
+        << "  m_filter = "      << m_filter        << "," << std::endl
+        << "  postprocess = "   << m_postprocess   << std::endl
         << "]";
     return oss.str();
 }

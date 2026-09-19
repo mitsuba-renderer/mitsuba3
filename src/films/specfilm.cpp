@@ -4,6 +4,7 @@
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/render/film.h>
+#include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/imageblock.h>
 #include <mitsuba/render/texture.h>
@@ -52,6 +53,12 @@ Spectral film (:monosp:`specfilm`)
    - One or several Sensor Response Functions (SRF) used to compute different spectral bands
    - |exposed|
 
+ * - (Nested plugin)
+   - :paramtype:`postprocess`
+   - Nested :monosp:`postprocess` filters describe image-space operations such as
+     film response functions, bloom filters, or white balancing.
+     If provided, they are applied in order while developing the image. (Default: none)
+
  * - size
    - ``Vector2u``
    - Width and height of the camera sensor in pixels
@@ -68,8 +75,8 @@ Spectral film (:monosp:`specfilm`)
    - |exposed|
 
 This plugin stores one or several spectral bands as a multichannel spectral image in a high dynamic
-range OpenEXR file and tries to preserve the rendering as much as possible by not performing any
-kind of post-processing, such as gamma correction---the output file will record linear radiance values.
+range OpenEXR file. Unless :monosp:`postprocess` filters are specified, it does not perform any kind
+of post-processing, such as gamma correction---the output file will record linear radiance values.
 
 Given one or several spectral sensor response functions (SRFs), the film will store in each channel
 the captured radiance weighted by one of the SRFs (which do not have to be limited to the range of
@@ -133,7 +140,7 @@ template <typename Float, typename Spectrum>
 class SpecFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_srf, m_file_format,
+                   m_postprocess, m_filter, m_srf, m_file_format,
                    m_component_format, m_base_channels, alloc_storage)
     MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
@@ -254,6 +261,7 @@ public:
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
+            << "  postprocess = " << m_postprocess << "," << std::endl
             << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
         for (size_t c=0; c<m_srfs.size(); ++c)
