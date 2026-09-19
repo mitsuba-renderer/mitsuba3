@@ -271,7 +271,7 @@ int main(int argc, char *argv[]) {
             init_variant_backend(mode);
         } else if (*arg_extra && !*arg_help) {
             // Pick the most capable variant whose backend is available
-            for (const std::string &v : string::tokenize(MI_VARIANT_PRIORITY, "\n")) {
+            for (const std::string &v : string::tokenize(MI_VARIANTS, "\n")) {
                 if (init_variant_backend(v)) {
                     mode = v;
                     break;

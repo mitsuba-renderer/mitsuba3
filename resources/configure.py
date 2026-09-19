@@ -80,17 +80,9 @@ def write_core_config_cpp(f, enabled):
         f.write('#include <drjit/autodiff.h>\n')
     f.write('\n')
 
-    f.write('/// List of enabled Mitsuba variants\n')
+    f.write('/// List of enabled Mitsuba variants, ordered by descending preference\n')
     w('#define MI_VARIANTS')
     for index, (name, float_, spectrum) in enumerate(enabled):
-        w('    "%s\\n"' % name)
-    f.write('\n')
-
-    f.write('/// Compiled-in variants ordered by descending preference, used by\n')
-    f.write('/// the "mitsuba" executable to auto-select a default variant\n')
-    w('#define MI_VARIANT_PRIORITY')
-    priority = sorted((v[0] for v in enabled), key=variant_score, reverse=True)
-    for name in priority:
         w('    "%s\\n"' % name)
     f.write('\n')
 
@@ -197,6 +189,10 @@ if __name__ == '__main__':
     if not enabled:
         raise ValueError('mitsuba.conf: there must be at least one '
                          'enabled build configuration!')
+
+    # Order the variants by descending preference. Consumers that pick a
+    # default variant can then simply walk the list from front to back.
+    enabled.sort(key=lambda v: variant_score(v[0]), reverse=True)
 
     # The 'scalar_rgb' variant is mandatory: some core components (e.g. the
     # plugin manager's variant-agnostic type queries) rely on it always being
