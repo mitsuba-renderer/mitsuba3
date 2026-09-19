@@ -456,6 +456,8 @@ without without having to touch the XML file:
 
     <include filename="nested-scene-$version.xml"/>
 
+.. _sec-python-extensions:
+
 Python extensions
 -----------------
 
@@ -479,6 +481,14 @@ coexist within a process.
 Mitsuba treats the directory of an imported file as a package, so the file can
 share code with other files in the same directory via relative imports such
 as ``from .common import fresnel``.
+
+Such a scene needs a Python interpreter and therefore cannot be rendered by the
+``mitsuba`` C++ binary. Load it with :py:func:`mitsuba.load_file` or render it
+on the command line with
+
+.. code-block:: bash
+
+    python -m mitsuba scene.xml
 
 Aliases
 -------

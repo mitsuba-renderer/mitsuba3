@@ -286,6 +286,19 @@ renders with a specific variant that was previously enabled in
 :monosp:`mitsuba.conf`. Call ``mitsuba --help`` to print additional information
 about the various possible command line options.
 
+Mitsuba ships with a second command line frontend written in Python that
+behaves the same way and accepts the same options:
+
+.. code-block:: bash
+
+    python -m mitsuba scene.xml
+
+It is needed to render scenes that use
+:ref:`custom Python plugins <sec-python-extensions>` extending Mitsuba with
+additional functionality, which the C++ binary cannot load. When Mitsuba is
+installed through :monosp:`pip`, the ``mitsuba`` command refers to this Python
+frontend.
+
 
 GPU variants
 ------------

@@ -2625,8 +2625,7 @@ def test72_import_requires_python(tmp_path):
     result = subprocess.run([exe, '-m', 'scalar_rgb', str(scene_file)],
                             capture_output=True, text=True)
     assert result.returncode != 0
-    assert 'custom Python extensions must be loaded from Python' in \
-        result.stdout + result.stderr
+    assert 'python -m mitsuba' in result.stdout + result.stderr
 
 
 @pytest.mark.parametrize('init', [True, False])
