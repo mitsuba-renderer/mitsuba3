@@ -205,16 +205,25 @@ def test11_color_ops(variants_all_rgb):
     ref = mi.load_dict(srgb)
     rc = mi.Color3f(ref.eval_3(si))
 
+    # Monochromatic queries of channel expressions reduce the trichromatic
+    # result instead of evaluating the inputs monochromatically
     tex = make('in[0].g', srgb)
     dr.assert_allclose(mi.Color3f(tex.eval_3(si)), mi.Color3f(rc[1]))
-    dr.assert_allclose(tex.eval_1(si), ref.eval_1(si))
+    dr.assert_allclose(tex.eval_1(si), rc[1])
 
     tex = make('rgb(in[0].b, in[0].g, in[0].r)', srgb)
     dr.assert_allclose(mi.Color3f(tex.eval_3(si)),
                        mi.Color3f(rc[2], rc[1], rc[0]))
+    dr.assert_allclose(tex.eval_1(si),
+                       mi.luminance(mi.Color3f(rc[2], rc[1], rc[0])))
 
     tex = make('mean(in[0])', srgb)
     dr.assert_allclose(mi.Color3f(tex.eval_3(si)), mi.Color3f(dr.mean(rc)))
+    dr.assert_allclose(tex.eval_1(si), dr.mean(rc))
+
+    tex = make('tmp[0] = in[0] * in[1]; tmp[0].r + tmp[0].g + tmp[0].b',
+               srgb, srgb)
+    dr.assert_allclose(tex.eval_1(si), dr.dot(rc, rc))
 
     tex = make('luminance(in[0])', srgb)
     dr.assert_allclose(mi.Color3f(tex.eval_3(si)),
