@@ -246,6 +246,10 @@ def test12_color_ops_spectral(variant_scalar_spectral):
     with pytest.raises(RuntimeError, match='luminance'):
         make('luminance(in[0])', 0.5).eval(si)
 
+    # Inputs that undergo spectral upsampling still report their sRGB color
+    srgb = make('in[0].r', { 'type': 'srgb', 'color': [0.2, 0.5, 0.8] })
+    dr.assert_allclose(srgb.eval_1(si), 0.2)
+
 
 @pytest.mark.parametrize('expr, error', [
     ('', 'must end with a result expression'),

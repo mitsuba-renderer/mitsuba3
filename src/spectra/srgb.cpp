@@ -21,7 +21,7 @@ sRGB spectrum (:monosp:`srgb`)
 
  * - value
    - :paramtype:`color`
-   - Spectral upsampling model coefficients of the srgb color value.
+   - The sRGB color value, exposed for differentiation and parameter updates.
    - |exposed|, |differentiable|
 
 In spectral render modes, this smooth spectrum is the result of the
@@ -56,47 +56,52 @@ public:
             Throw("Invalid RGB reflectance value %s, must be in the range [0, 1]!", color);
         props.mark_queried("unbounded");
 
-        if constexpr (is_spectral_v<Spectrum>)
-            m_value = srgb_model_fetch(color);
-        else if constexpr (is_rgb_v<Spectrum>)
-            m_value = color;
-        else
-            m_value = luminance(color);
+        m_color = color;
+        dr::make_opaque(m_color);
 
-        dr::make_opaque(m_value);
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_coeff = SRGBModel<Float, Spectrum>::fetch(color);
+            dr::make_opaque(m_coeff);
+        }
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("value", m_value, ParamFlags::Differentiable);
+        cb->put("value", m_color, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        dr::make_opaque(m_value);
+        dr::make_opaque(m_color);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_coeff = SRGBModel<Float, Spectrum>::fetch(m_color);
+            dr::make_opaque(m_coeff);
+        }
     }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>)
-            return srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
+            return srgb_model_eval<UnpolarizedSpectrum>(m_coeff, si.wavelengths);
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            return eval_1(si, active);
         else
-            return m_value;
+            return m_color;
     }
 
     Color3f eval_3(const SurfaceInteraction3f &/*si*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
-        if constexpr (is_monochromatic_v<Spectrum>)
-            return Color3f(m_value[0]);
-        else
-            return m_value;
+        return m_color;
     }
 
     Float eval_1(const SurfaceInteraction3f & /*it*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::mean(srgb_model_mean(m_value));
+            return dr::mean(srgb_model_mean(m_coeff));
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            return luminance(m_color);
         else
-            return dr::mean(dr::mean(m_value));
+            return dr::mean(m_color);
     }
 
     std::pair<Wavelength, UnpolarizedSpectrum>
@@ -119,30 +124,30 @@ public:
 
     ScalarFloat max() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::max_nested(srgb_model_mean(m_value));
+            return dr::max_nested(srgb_model_mean(m_coeff));
+        else if constexpr (is_monochromatic_v<Spectrum>)
+            return dr::max_nested(luminance(m_color));
         else
-            return dr::max_nested(m_value);
+            return dr::max_nested(m_color);
     }
 
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SRGBReflectanceSpectrum[" << std::endl
-            << "  value = " << string::indent(m_value) << std::endl
+            << "  value = " << string::indent(m_color) << std::endl
             << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS(SRGBReflectanceSpectrum)
 protected:
-    /**
-     * Depending on the compiled variant, this plugin either stores coefficients
-     * for a spectral upsampling model, or a plain RGB/monochromatic value.
-     */
-    static constexpr size_t ChannelCount = is_monochromatic_v<Spectrum> ? 1 : 3;
+    /// The sRGB color, which is the authoritative representation
+    Color<Float, 3> m_color;
 
-    Color<Float, ChannelCount> m_value;
+    /// Spectral upsampling coefficients, derived from \ref m_color
+    dr::Array<Float, 3> m_coeff;
 
-    MI_TRAVERSE_CB(Texture, m_value)
+    MI_TRAVERSE_CB(Texture, m_color, m_coeff)
 };
 
 MI_EXPORT_PLUGIN(SRGBReflectanceSpectrum)

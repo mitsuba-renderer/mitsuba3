@@ -249,7 +249,7 @@ public:
                     ScalarFloat scale = dr::max(rgb) * 2.f;
                     ScalarColor3f rgb_norm =
                         rgb / dr::maximum((ScalarFloat) 1e-8, scale);
-                    ScalarVector3f coeff = srgb_model_fetch(rgb_norm);
+                    ScalarVector3f coeff = SRGBModel<Float, Spectrum>::fetch(rgb_norm);
                     max = dr::maximum(max, scale);
                     dr::store(scaled_data_ptr,
                               dr::concat(coeff, dr::Array<ScalarFloat, 1>(scale)));

@@ -35,14 +35,37 @@ MI_INLINE dr::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
 }
 
 /**
- * Look up the model coefficients for a sRGB color value
+ * \brief Spectral upsampling model for sRGB colors
  *
- * Args:
- *     c: An sRGB color value where all components are in [0, 1].
- *
- * Returns:
- *     Coefficients for use with `srgb_model_eval`
+ * Each variant loads its own copy of the model when it is first needed. JIT
+ * variants additionally upload the coefficient table to the device so that
+ * colors which are only known at render time (e.g. following a parameter
+ * update) can be upsampled as well.
  */
-MI_EXPORT_LIB dr::Array<float, 3> srgb_model_fetch(const Color<float, 3> &);
+template <typename Float, typename Spectrum> struct MI_EXPORT_LIB SRGBModel {
+    /**
+     * \brief Look up the model coefficients of an sRGB color value
+     *
+     * The color components must be in the range [0, 1]. A color of type
+     * \c float is processed on the host, while a color of type \c Float
+     * is processed on the device in JIT variants. In the latter case,
+     * gradients propagate from the returned coefficients to \c color.
+     */
+    template <typename T> static dr::Array<T, 3> fetch(const Color<T, 3> &color) {
+        if constexpr (dr::is_jit_v<T>)
+            return fetch_jit(color);
+        else
+            return fetch_scalar(color);
+    }
+
+    /// Release the model and its device-resident copy
+    static void static_shutdown();
+
+private:
+    static dr::Array<float, 3> fetch_scalar(const Color<float, 3> &color);
+    static dr::Array<Float, 3> fetch_jit(const Color<Float, 3> &color);
+};
+
+MI_EXTERN_STRUCT(SRGBModel)
 
 NAMESPACE_END(mitsuba)

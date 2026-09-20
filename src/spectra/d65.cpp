@@ -17,7 +17,7 @@ D65 spectrum (:monosp:`d65`)
 
  * - color
    - :paramtype:`color`
-   - The corresponding sRGB color value.
+   - An sRGB color value to be composed with the D65 spectrum.
 
  * - scale
    - |float|
@@ -28,9 +28,9 @@ D65 spectrum (:monosp:`d65`)
    - Underlying texture/spectra to be multiplied by D65.
    - |exposed|, |differentiable|
 
- * - color
+ * - value
    - :paramtype:`color`
-   - Spectral upsampling model coefficients of the srgb color value.
+   - The sRGB color value, exposed for differentiation and parameter updates.
    - |exposed|, |differentiable|
 
 
@@ -94,23 +94,16 @@ public:
                       "the same time.");
 
             ScalarColor3f color = props.get<ScalarColor3f>("color");
+            m_color = color;
+            dr::make_opaque(m_color);
 
             if constexpr (is_spectral_v<Spectrum>) {
-                // Evaluate the spectral upsampling model. This requires a
-                // reflectance value (colors in [0, 1]) which is accomplished here by
-                // scaling. We use a color where the highest component is 50%,
-                // which generally yields a fairly smooth spectrum.
-                ScalarFloat factor = dr::max(color) * 2.f;
-                if (factor != 0.f)
-                    color /= factor;
-                m_scale *= factor;
-
-                m_value = srgb_model_fetch(color);
-            } else {
-                m_value = color;
+                ScalarFloat factor = normalization(color);
+                m_factor = factor;
+                m_coeff = SRGBModel<Float, Spectrum>::fetch(color / factor);
+                dr::make_opaque(m_factor, m_coeff);
             }
 
-            dr::make_opaque(m_value);
             m_has_value = true;
         }
 
@@ -132,13 +125,28 @@ public:
         if (m_nested_texture)
             cb->put("nested_texture", m_nested_texture, ParamFlags::Differentiable);
         if (m_has_value)
-            cb->put("value", m_value, ParamFlags::Differentiable);
+            cb->put("value", m_color, ParamFlags::Differentiable);
         cb->put("d65", m_d65, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        if (m_has_value)
-            dr::make_opaque(m_value);
+        if (!m_has_value)
+            return;
+
+        dr::make_opaque(m_color);
+
+        if constexpr (is_spectral_v<Spectrum>) {
+            m_factor = normalization(m_color);
+            m_coeff = SRGBModel<Float, Spectrum>::fetch(m_color / m_factor);
+            dr::make_opaque(m_factor, m_coeff);
+        }
+    }
+
+    /// Compute a normalization factor for use with the spectral upsampling
+    /// model that keeps the brightest RGB component at 50%
+    template <typename Color> static dr::value_t<Color> normalization(const Color &color) {
+        dr::value_t<Color> factor = dr::max(color) * 2.f;
+        return dr::select(factor == 0.f, 1.f, factor);
     }
 
     std::vector<ref<Object>> expand() const override {
@@ -153,7 +161,7 @@ public:
             Properties props;
             if (m_has_value) {
                 props.set_plugin_name("srgb");
-                props.set("color", dr::slice(m_value) * m_scale);
+                props.set("color", dr::slice(m_color) * m_scale);
                 props.set("unbounded", true);
             } else {
                 props.set_plugin_name("uniform");
@@ -172,7 +180,8 @@ public:
             if (m_nested_texture)
                 d65_val *= m_nested_texture->eval(si, active);
             else if (m_has_value)
-                d65_val *= srgb_model_eval<UnpolarizedSpectrum>(m_value, si.wavelengths);
+                d65_val *= srgb_model_eval<UnpolarizedSpectrum>(
+                               m_coeff, si.wavelengths) * m_factor;
             return d65_val;
         } else {
             DRJIT_MARK_USED(si);
@@ -262,7 +271,7 @@ public:
     }
 
     ScalarFloat spectral_resolution() const override {
-        return (MI_CIE_MAX - MI_CIE_MAX) / (MI_CIE_SAMPLES - 1);
+        return (MI_CIE_MAX - MI_CIE_MIN) / (MI_CIE_SAMPLES - 1);
     }
 
     ScalarVector2f wavelength_range() const override {
@@ -277,7 +286,7 @@ public:
             if (m_nested_texture)
                 return m_nested_texture->max();
             else if (m_has_value)
-                return dr::max_nested(srgb_model_mean(m_value));
+                return dr::max_nested(srgb_model_mean(m_coeff) * m_factor);
             else
                 return 1.f;
         } else {
@@ -299,14 +308,22 @@ public:
         if (m_nested_texture)
             oss << "  nested_texture = " << string::indent(m_nested_texture) << std::endl;
         if (m_has_value)
-            oss << "  value = " << m_value << std::endl;
+            oss << "  value = " << m_color << std::endl;
         oss << "]";
         return oss.str();
     }
 
     MI_DECLARE_CLASS(D65Spectrum)
 private:
-    Color<Float, 3> m_value;
+    /// The sRGB color
+    Color<Float, 3> m_color;
+
+    /// Spectral upsampling coefficients
+    dr::Array<Float, 3> m_coeff;
+
+    /// Normalization factor for 'm_coeff'
+    Float m_factor = 1.f;
+
     ref<Base> m_nested_texture;
     ref<Base> m_d65;
 
@@ -314,7 +331,7 @@ private:
 
     bool m_has_value = false;
 
-    MI_TRAVERSE_CB(Base, m_value, m_nested_texture, m_d65)
+    MI_TRAVERSE_CB(Base, m_color, m_coeff, m_factor, m_nested_texture, m_d65)
 };
 
 MI_EXPORT_PLUGIN(D65Spectrum)

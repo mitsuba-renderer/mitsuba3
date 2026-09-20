@@ -11,6 +11,7 @@
 #include <mitsuba/render/postprocess.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/sensor.h>
+#include <mitsuba/render/srgb.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
 
@@ -253,6 +254,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
             Thread::wait_for_tasks();
         }
         color_management_static_shutdown();
+        SRGBModel<Float, Spectrum>::static_shutdown();
         Scene::static_accel_shutdown();
     }));
 

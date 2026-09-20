@@ -13,6 +13,7 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/render/srgb.h>
 #include <functional>
 
 #if !defined(_WIN32)
@@ -115,6 +116,11 @@ void scene_static_accel_initialization() {
 template <typename Float, typename Spectrum>
 void scene_static_accel_shutdown() {
     Scene<Float, Spectrum>::static_accel_shutdown();
+}
+
+template <typename Float, typename Spectrum>
+void srgb_model_static_shutdown() {
+    SRGBModel<Float, Spectrum>::static_shutdown();
 }
 
 template <typename Float, typename Spectrum>
@@ -360,6 +366,7 @@ int main(int argc, char *argv[]) {
     }
 
     MI_INVOKE_VARIANT(mode, scene_static_accel_shutdown);
+    MI_INVOKE_VARIANT(mode, srgb_model_static_shutdown);
     color_management_static_shutdown();
     Profiler::static_shutdown();
     Bitmap::static_shutdown();
