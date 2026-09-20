@@ -217,7 +217,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     TensorXf result;
     if constexpr (!dr::is_jit_v<Float>) {
         // Render on the CPU using a spiral pattern
-        uint32_t n_threads = (uint32_t) (pool_size() + 1);
+        uint32_t n_threads = (uint32_t) pool_size();
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             film_size.x(), film_size.y(), spp, spp == 1 ? "" : "s",
@@ -673,7 +673,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
     TensorXf result;
     if constexpr (!dr::is_jit_v<Float>) {
-        size_t n_threads = pool_size() + 1;
+        size_t n_threads = pool_size();
 
         Log(Info, "Starting render job (%ux%u, %u sample%s,%s %u thread%s)",
             crop_size.x(), crop_size.y(), spp, spp == 1 ? "" : "s",

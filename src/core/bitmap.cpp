@@ -963,7 +963,7 @@ private:
 class EXRThreadPool : public IlmThread::ThreadPoolProvider {
 public:
     int numThreads() const override {
-        return std::max(1, (int) pool_size());
+        return (int) pool_size();
     }
 
     void setNumThreads(int) override {
@@ -977,7 +977,8 @@ public:
             delete task;
             group->finishOneTask();
         });
-        if (pool_size() == 0)
+        // Without worker threads, the task must run on the calling thread
+        if (pool_size() == 1)
             task_wait_and_release(t);
         else
             task_release(t);
