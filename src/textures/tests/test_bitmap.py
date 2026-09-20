@@ -196,14 +196,14 @@ def test05_eval_spectral(variants_vec_backends_once_spectral):
     si.wavelengths = np.linspace(mi.MI_CIE_MIN, mi.MI_CIE_MAX, mi.MI_WAVELENGTH_SAMPLES)
     si.uv = [x, y]
 
-    with pytest.raises(RuntimeError):
-        mono = bitmap.eval_1(si)
-    with pytest.raises(RuntimeError):
-        color = bitmap.eval_3(si)
     spec = bitmap.eval(si)
-
     expected = [0.0023, 0.1910, 0.0059, 0.0003]
     assert dr.allclose(expected, spec, atol=1e-04)
+
+    # The sRGB data remains available alongside the upsampled spectrum
+    color = bitmap.eval_3(si)
+    assert dr.allclose([0.0012, 0.1946, 0.0242], color, atol=1e-04)
+    assert dr.allclose(mi.luminance(color), bitmap.eval_1(si), atol=1e-04)
 
     # Grayscale image
     bitmap = mi.load_dict({
@@ -309,14 +309,26 @@ def test09_eval_u8(variants_vec_backends_once_rgb):
 
 
 @fresolver_append_path
-def test10_u8_unsupported_in_spectral(variants_vec_backends_once_spectral):
-    # 8-bit storage cannot hold spectral upsampling coefficients
-    with pytest.raises(RuntimeError):
-        mi.load_dict({
-            'type'     : 'bitmap',
-            'filename' : 'resources/data/common/textures/carrot.png',
-            'format'   : 'uint8'
-        })
+def test10_eval_u8_spectral(variants_vec_backends_once_spectral):
+    # The upsampling coefficients derived from 8-bit sRGB storage should match
+    # those of the float path
+    common = {
+        'type'     : 'bitmap',
+        'filename' : 'resources/data/common/textures/carrot.png'
+    }
+    tex_ref = mi.load_dict({ **common, 'format' : 'variant' })
+    tex_u8  = mi.load_dict({ **common, 'format' : 'uint8' })
+
+    x_res, y_res = tex_ref.resolution()
+    x = (1 / x_res) * 7 + (1 / (2 * x_res))
+    y = (1 / y_res) * 1 + (1 / (2 * y_res))
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wavelengths = [450., 550., 600., 650.]
+    si.uv = [x, y]
+
+    assert dr.allclose(tex_ref.eval(si), tex_u8.eval(si), atol=2e-3)
+    assert dr.allclose(tex_ref.eval_3(si), tex_u8.eval_3(si), atol=2e-3)
 
 
 def test11_u8_small_bitmap_upsample(variants_vec_backends_once_rgb, tmpdir):
@@ -465,3 +477,37 @@ def test14_packed_container(variants_all_rgb, tmp_path, filter_type):
     tex = mi.load_dict({'type': 'bitmap', 'filename': fname, 'raw': True,
                         'name': 'chain', 'filter_type': filter_type})
     assert dr.allclose(tex.eval_1(si), 102 / 255, atol=1e-3)
+
+
+def test15_forward_ad_spectral(variants_all_ad_spectral):
+    """Gradients reach the sRGB data through the spectral upsampling model"""
+    import numpy as np
+
+    def make(green):
+        image = np.full((4, 4, 3), [0.2, green, 0.8], dtype=np.float32)
+        return mi.load_dict({'type': 'bitmap', 'bitmap': mi.Bitmap(image),
+                             'raw': False})
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wavelengths = type(si.wavelengths)(450., 550., 600., 650.)
+    si.uv = mi.Point2f(0.5, 0.5)
+
+    tex = make(0.5)
+    params = mi.traverse(tex)
+    dr.enable_grad(params['data'])
+    params.update()
+
+    # The exposed data is the sRGB image, not the upsampling coefficients
+    dr.assert_allclose(tex.eval_3(si), [0.2, 0.5, 0.8])
+
+    value = tex.eval(si)
+    seed = np.zeros((4, 4, 3), dtype=np.float32)
+    seed[:, :, 1] = 1
+    dr.set_grad(params['data'], mi.TensorXf(seed))
+    dr.forward_to(value)
+
+    eps = 1e-3
+    finite_diff = (np.array(make(0.5 + eps).eval(si)) -
+                   np.array(make(0.5 - eps).eval(si))).ravel() / (2 * eps)
+
+    dr.assert_allclose(dr.grad(value), finite_diff, atol=1e-3)

@@ -185,7 +185,7 @@ public:
                     // is 50%, which generally yields a fairly smooth spectrum.
                     ScalarFloat scale = dr::max(rgb) * 2.f;
                     ScalarColor3f rgb_norm = rgb / dr::maximum(1e-8f, scale);
-                    coeff = dr::concat((ScalarColor3f) srgb_model_fetch(rgb_norm),
+                    coeff = dr::concat((ScalarColor3f) SRGBModel<Float, Spectrum>::fetch(rgb_norm),
                                        dr::Array<ScalarFloat, 1>(scale));
                 }
 

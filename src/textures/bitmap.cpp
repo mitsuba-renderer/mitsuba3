@@ -25,17 +25,17 @@ Bitmap texture (:monosp:`bitmap`)
 
  * - filename
    - |string|
-   - Filename of the bitmap to be loaded. A ``.packed`` file selects a
-     container of block-compressed textures (see below).
+   - Filename of the bitmap to be loaded.
 
  * - index
    - |int|
-   - Index of the texture to load from a ``.packed`` container. (Default: 0)
+   - When :monosp:`filename` refers to a ``.packed`` texture container,
+     this parameter can optionally be used to select a file by index. (Default: 0)
 
  * - name
    - |string|
-   - Alternatively, the name of the texture to load from a ``.packed``
-     container.
+   - When :monosp:`filename` refers to a ``.packed`` texture container,
+     this parameter can optionally be used to select a file by name.
 
  * - bitmap
    - :monosp:`Bitmap object`
@@ -46,8 +46,10 @@ Bitmap texture (:monosp:`bitmap`)
  * - data
    - |tensor|
    - Tensor array containing the texture data. Similarly to the
-     :paramtype:`bitmap` parameter, this field can only be used at runtime. The
-     :paramtype:`raw` parameter must also be set to :monosp:`true`.
+     :paramtype:`bitmap` parameter, this field can only be used at runtime.
+     The data is assumed to be linear. Unless :paramtype:`raw` is set,
+     spectral variants upsample three-channel tensors like any other
+     color texture.
    - |exposed|, |differentiable|
 
  * - filter_type
@@ -94,10 +96,8 @@ Bitmap texture (:monosp:`bitmap`)
      - ``auto`` (default): Match the storage precision to the source: use 8 bits
          per channel for 8-bit images, half precision for 16-bit images, and
          otherwise the native floating point representation of the Mitsuba
-         variant. For variants using a spectral color representation this option
-         is the same as `variant`. Note that 8-bit storage is not
-         differentiable; request ``float16`` or ``variant`` to optimize such
-         textures.
+         variant. Note that 8-bit storage is not differentiable. Request
+         ``float16`` or ``variant`` to optimize such textures.
 
      - ``variant``: Use the corresponding native floating point representation
          of the Mitsuba variant
@@ -107,8 +107,7 @@ Bitmap texture (:monosp:`bitmap`)
      - ``uint8``: Store the texture using 8 bits per channel. When the source
          image is sRGB-encoded and :paramtype:`raw` is :monosp:`false`, the
          values are linearized on each lookup. This mode is the most memory
-         efficient, but not that the texture is *not* differentiable. It is also
-         incompatible with spectral variants of Mitsuba.
+         efficient, but note that the texture is *not* differentiable.
 
  * - raw
    - |bool|
@@ -138,8 +137,7 @@ representation for the renderer:
 
 * In :monosp:`rgb` modes, sRGB textures are converted into a linear color space.
 * In :monosp:`spectral` modes, sRGB textures are *spectrally upsampled* to
-  plausible smooth spectra :cite:`Jakob2019Spectral` and stored an intermediate
-  representation that enables efficient queries at render time.
+  plausible smooth spectra :cite:`Jakob2019Spectral`.
 * In :monosp:`monochrome` modes, sRGB textures are converted to grayscale.
 
 These conversions can alternatively be disabled with the :paramtype:`raw` flag,
@@ -169,11 +167,12 @@ quality. Filtering currently only affects directly visible surfaces, and the
 
 **Block-compressed textures.** The plugin supports block-compressed texture
 formats (BC4, BC5, and BC7), which greatly reduce memory usage when rendering
-large textured assets on a GPU. The Metal and CUDA backends decode such
-textures in hardware, while the LLVM backend unpacks them into regular
-textures. Block-compressed textures use 8 bits per channel, are not
-differentiable, and ignore the :paramtype:`format` parameter. The
-``trilinear`` and ``anisotropic`` filters require a container entry with a
+large textured assets on a GPU. The Metal and CUDA backends decode such textures
+in hardware, while the LLVM backend unpacks them into regular textures. Spectral
+variants unpack color textures, since the spectral upsampling step is
+incompatible with block compression. Block-compressed textures use 8 bits per
+channel, are not differentiable, and ignore the :paramtype:`format` parameter.
+The ``trilinear`` and ``anisotropic`` filters require a container entry with a
 complete MIP chain and otherwise fall back to ``bilinear``.
 
 To use this feature, run ``python -m mitsuba.pack_tex <scene.xml>``, which
@@ -201,7 +200,7 @@ an entry via :paramtype:`index`.
 */
 
 // Forward declaration of specialized bitmap texture
-template <typename Float, typename Spectrum, typename StoredType>
+template <typename Float, typename Spectrum, typename StoredType, bool Upsample>
 class BitmapTextureImpl;
 
 NAMESPACE_BEGIN(detail)
@@ -223,13 +222,14 @@ constexpr const char *bitmap_class_name() {
 }
 
 /// Header of a block-compressed texture entry in a ``.packed`` container
-struct BCTextureEntry {
+struct BCHeader {
     uint8_t format = 0, srgb = 0, n_levels = 0, channels = 0;
     uint32_t width = 0, height = 0;
 
     /// Bytes of the compressed representation of MIP level ``level``
     size_t level_bytes(uint32_t level) const {
-        size_t w = std::max(width >> level, 1u), h = std::max(height >> level, 1u);
+        size_t w = std::max(width >> level, 1u),
+               h = std::max(height >> level, 1u);
         return ((w + 3) / 4) * ((h + 3) / 4) * (format == 4 ? 8 : 16);
     }
 
@@ -314,12 +314,6 @@ public:
             else
                 Throw("Invalid format \"%s\", must be one of: \"auto\", "
                       "\"variant\", \"float16\", or \"uint8\"!", format_str);
-
-            if constexpr (is_spectral_v<Spectrum>)
-                if (m_format == Format::UInt8)
-                    Throw("format=\"uint8\" is not supported in spectral variants "
-                          "(8-bit storage cannot hold spectral upsampling "
-                          "coefficients).");
         }
 
         // Store
@@ -370,7 +364,7 @@ protected:
         if (m_bc_levels)
             return load_blocks();
 
-        // The `data` tensor path: native float storage, already linear
+        // A tensor was provided by the user
         if (!m_bitmap)
             return instantiate<Float>(std::move(m_tensor), /* srgb = */ false);
 
@@ -385,41 +379,22 @@ protected:
         }
     }
 
-    /**
-     * Resolve `Format::Auto` to a concrete storage precision
-     *
-     * ``auto`` matches the storage to the source bit depth: 8-bit sources are
-     * stored losslessly as 8-bit (and decoded from sRGB on lookup), 16-bit
-     * sources as half precision, and everything else at the variant's native
-     * precision. Spectral variants always use the native precision required for
-     * upsampling.
-     */
+    /// Resolve `Format::Auto` to a concrete storage precision
     Format resolve_format() const {
         if (m_format != Format::Auto)
             return m_format;
-        if constexpr (is_spectral_v<Spectrum>) {
+        size_t bytes_per_channel =
+            m_bitmap->bytes_per_pixel() / m_bitmap->channel_count();
+        if (bytes_per_channel == 1)
+            return Format::UInt8;
+        else if (bytes_per_channel == 2)
+            return Format::Float16;
+        else
             return Format::Variant;
-        } else {
-            size_t bytes_per_channel =
-                m_bitmap->bytes_per_pixel() / m_bitmap->channel_count();
-            if (bytes_per_channel == 1)
-                return Format::UInt8;
-            else if (bytes_per_channel == 2)
-                return Format::Float16;
-            else
-                return Format::Variant;
-        }
     }
 
-    /**
-     * Load the bitmap into a tensor of the given storage type and build
-     * the implementation object
-     *
-     * ``StoredType`` fixes the storage precision; the sRGB strategy follows from
-     * it and the source encoding: 8-bit storage keeps the sRGB-encoded bytes and
-     * lets the texture decode them on lookup, while float/half storage is
-     * decoded to linear here, at load time.
-     */
+    /// Load the bitmap into a tensor of the given storage type and build
+    /// the implementation object
     template <typename StoredType> Object *load_bitmap() const {
         using StoredScalar = dr::scalar_t<StoredType>;
         constexpr bool IsUInt8 = std::is_same_v<StoredScalar, uint8_t>;
@@ -435,27 +410,16 @@ protected:
         m_bitmap = prepare_bitmap(pf, struct_type_v<StoredScalar>,
                                   /* keep_srgb_gamma = */ srgb);
 
-        // Spectral variants store smooth-spectrum coefficients (float/half only)
-        if constexpr (is_spectral_v<Spectrum>)
-            if (!m_raw)
-                upsample_spectral<StoredScalar>(m_bitmap.get());
-
         ScalarVector2i res(m_bitmap->size());
-        dr::replace_scalar_t<TensorXf, StoredScalar> tensor(
-            m_bitmap->data(),
-            { (size_t) res.y(), (size_t) res.x(), m_bitmap->channel_count() });
+        using StoredTensorXf = dr::replace_scalar_t<TensorXf, StoredScalar>;
+        size_t shape[3] = { (size_t) res.y(), (size_t) res.x(),
+                            m_bitmap->channel_count() };
 
-        return instantiate<StoredType>(std::move(tensor), srgb);
+        return instantiate<StoredType>(
+            StoredTensorXf(m_bitmap->data(), 3, shape), srgb);
     }
 
-    /**
-     * Bring the source bitmap into the exact format the texture needs
-     *
-     * The (potentially expensive) `Bitmap::convert()` is skipped entirely
-     * when the bitmap already matches the target pixel format, component type,
-     * and gamma -- e.g. an sRGB 8-bit PNG stored as ``uint8``. Sub-2x2 images are
-     * up-sampled so that bilinear interpolation has at least one cell.
-     */
+    /// Bring the source bitmap into the exact format the texture needs
     ref<Bitmap> prepare_bitmap(Bitmap::PixelFormat pf, sj::Type ct,
                                bool keep_srgb_gamma) const {
         ref<Bitmap> bitmap = m_bitmap;
@@ -492,11 +456,6 @@ protected:
 
     /// Read the selected entry of a ``.packed`` texture container
     void load_container(const Properties &props, const fs::path &file_path) {
-        if constexpr (is_spectral_v<Spectrum>)
-            Throw("Block-compressed textures are not supported in spectral "
-                  "variants (8-bit storage cannot hold spectral upsampling "
-                  "coefficients).");
-
         ref<PackedFile> file = PackedFile::open(file_path);
 
         size_t index;
@@ -532,7 +491,7 @@ protected:
         if (entry.read<uint32_t>() != 1)
             fail("unsupported texture entry version");
 
-        detail::BCTextureEntry &e = m_bc_entry;
+        detail::BCHeader &e = m_bc_header;
         e.format   = entry.read<uint8_t>();
         e.srgb     = entry.read<uint8_t>();
         e.n_levels = entry.read<uint8_t>();
@@ -550,7 +509,7 @@ protected:
         // A filtered lookup needs the complete MIP chain from the container.
         // Only the levels that will be used are decompressed.
         m_bc_levels = 1;
-        if (m_mip_filter != dr::MipFilter::Disabled) {
+        if (m_mip_filter != dr::MipFilter::Disabled && !decompress_bc()) {
             if (e.n_levels == e.full_mip_levels())
                 m_bc_levels = e.n_levels;
             else
@@ -589,92 +548,122 @@ protected:
             m_bc_blocks = BlockStorage::map_(ptr, size, /* free = */ true);
     }
 
+    /// Decompress block-compressed RGB inputs in spectral variants
+    bool decompress_bc() const {
+        return is_spectral_v<Spectrum> && !m_raw && m_bc_header.channels >= 3;
+    }
+
     /// Build the implementation object from a container entry
     Object *load_blocks() const {
         using StoredType = dr::replace_scalar_t<Float, uint8_t>;
+        using StoredTensorXf = dr::replace_scalar_t<TensorXf, uint8_t>;
         using StoredTexture2f = dr::Texture<StoredType, 2>;
-        const detail::BCTextureEntry &e = m_bc_entry;
+        const detail::BCHeader &e = m_bc_header;
 
-        bool filtered = m_bc_levels > 1;
+        bool filtered = m_bc_levels > 1, decode = decompress_bc();
         // Color data keeps its sRGB encoding, which the texture decodes on lookup
         bool srgb = e.srgb && !m_raw;
         size_t shape[2] = { e.height, e.width },
                channels = e.channels == 4 ? 3 : e.channels;
 
+        // Without hardware acceleration, the texture decodes on the host
         StoredTexture2f texture(
             shape, channels, (dr::BlockFormat) e.format, m_bc_blocks,
-            m_bc_levels, m_accel, m_filter_mode, m_wrap_mode, srgb,
+            m_bc_levels, m_accel && !decode, m_filter_mode, m_wrap_mode, srgb,
             filtered ? m_mip_filter : dr::MipFilter::Disabled,
             filtered ? m_max_aniso : 1);
 
-        return new BitmapTextureImpl<Float, Spectrum, StoredType>(
+        if (decode) {
+            StoredTensorXf tensor = texture.tensor();
+            dr::eval(tensor);
+            return instantiate<StoredType>(std::move(tensor), srgb);
+        }
+
+        return new BitmapTextureImpl<Float, Spectrum, StoredType, false>(
             Properties(), m_name, m_transform, m_raw, srgb, std::move(texture));
     }
 
     /// Construct the concrete `BitmapTextureImpl` for the chosen storage type
     template <typename StoredType, typename Tensor>
     Object *instantiate(Tensor &&tensor, bool srgb) const {
-        dr::MipFilter mip_filter = m_mip_filter;
-        uint32_t max_aniso = m_max_aniso;
-
-        // Spectral upsampling coefficients don't MIP map style linear averaging
         if constexpr (is_spectral_v<Spectrum>) {
-            if (!m_raw && tensor.shape()[2] == 3 &&
-                mip_filter != dr::MipFilter::Disabled) {
-                Log(Warn, "Bitmap texture \"%s\": filtered lookups are "
-                          "unsupported for color textures in spectral "
-                          "variants, falling back to \"bilinear\".", m_name);
-                mip_filter = dr::MipFilter::Disabled;
-                max_aniso = 1;
+            if (!m_raw && tensor.shape()[2] == 3) {
+                // Spectral upsampling is nonlinear, which rules out MIP mapping
+                if (m_mip_filter != dr::MipFilter::Disabled)
+                    Log(Warn, "Bitmap texture \"%s\": filtered lookups are "
+                              "unsupported for color textures in spectral "
+                              "variants, falling back to \"bilinear\".", m_name);
+
+                return new BitmapTextureImpl<Float, Spectrum, StoredType, true>(
+                    Properties(), m_name, m_transform, m_filter_mode,
+                    m_wrap_mode, dr::MipFilter::Disabled, 1, m_raw, m_accel,
+                    srgb, std::forward<Tensor>(tensor));
             }
         }
 
-        Properties props;
-        return new BitmapTextureImpl<Float, Spectrum, StoredType>(
-            props, m_name, m_transform, m_filter_mode, m_wrap_mode,
-            mip_filter, max_aniso, m_raw, m_accel, srgb,
+        return new BitmapTextureImpl<Float, Spectrum, StoredType, false>(
+            Properties(), m_name, m_transform, m_filter_mode, m_wrap_mode,
+            m_mip_filter, m_max_aniso, m_raw, m_accel, srgb,
             std::forward<Tensor>(tensor));
     }
 
 private:
-    /// Convert linear RGB pixels to smooth-spectrum coefficients in place
-    template <typename StoredScalar> void upsample_spectral(Bitmap *bitmap) const {
-        if (bitmap->channel_count() != 3)
-            return;
-        StoredScalar *ptr = (StoredScalar *) bitmap->data();
-        size_t pixel_count = bitmap->pixel_count();
-        for (size_t i = 0; i < pixel_count; ++i, ptr += 3) {
-            ScalarColor3f rgb((float) ptr[0], (float) ptr[1], (float) ptr[2]);
-            ScalarColor3f coeff = srgb_model_fetch(rgb);
-            ptr[0] = (StoredScalar) coeff[0];
-            ptr[1] = (StoredScalar) coeff[1];
-            ptr[2] = (StoredScalar) coeff[2];
-        }
-    }
-
+    // Requested storage precision
     Format m_format;
 
+    // Use hardware-accelerated texture lookups when available?
     bool m_accel;
+
+    // Disable color transformations (sRGB decoding, spectral upsampling)?
     bool m_raw;
+
+    // Transformation applied to UV coordinates
     ScalarAffineTransform3f m_transform;
+
+    // Name used in diagnostics
     std::string m_name;
+
+    // Interpolation mode within a MIP level
     dr::FilterMode m_filter_mode;
+
+    // Handling of lookups outside of [0, 1]
     dr::WrapMode m_wrap_mode;
+
+    // MIP level selection of filtered lookups
     dr::MipFilter m_mip_filter;
+
+    // Upper bound on the taps of anisotropic filtering
     uint32_t m_max_aniso;
+
+    // Source image, when loaded from a file or passed via 'bitmap'
     mutable ref<Bitmap> m_bitmap;
+
+    // Source tensor, when passed via 'data'
     TensorXf m_tensor;
 
-    // Block-compressed data from a packed texture container
     using BlockStorage = DynamicBuffer<dr::replace_scalar_t<Float, uint8_t>>;
-    detail::BCTextureEntry m_bc_entry;
+
+    // Header of the selected entry of a packed texture container
+    detail::BCHeader m_bc_header;
+
+    // Block-compressed data of that entry
     BlockStorage m_bc_blocks;
+
+    // Number of MIP levels in 'm_bc_blocks' (zero if not block-compressed)
     uint32_t m_bc_levels = 0;
 
     MI_TRAVERSE_CB(Texture, m_bitmap, m_tensor)
 };
 
-template <typename Float, typename Spectrum, typename StoredType>
+/**
+ * Bitmap texture with a given storage type
+ *
+ * With ``Upsample`` set, the texture holds sRGB data that is spectrally upsampled
+ * for rendering. The sRGB data then resides in ``m_rgb``, and ``m_texture``
+ * stores the derived upsampling coefficients. Otherwise, ``m_texture`` stores
+ * the data itself.
+ */
+template <typename Float, typename Spectrum, typename StoredType, bool Upsample>
 class BitmapTextureImpl final : public Texture<Float, Spectrum> {
 public:
     MI_IMPORT_TYPES(Texture)
@@ -682,8 +671,11 @@ public:
     using StoredScalar           = dr::scalar_t<StoredType>;
     using StoredColor3f          = Color<StoredType, 3>;
     using StoredTensorXf         = dr::replace_scalar_t<TensorXf, StoredScalar>;
-    using StoredTexture2f        = dr::Texture<StoredType, 2>;
     static constexpr bool IsUInt8 = std::is_same_v<StoredScalar, uint8_t>;
+
+    // Upsampling coefficients always use variant precision storage
+    using TexelType              = std::conditional_t<Upsample, Float, StoredType>;
+    using TexelTexture2f         = dr::Texture<TexelType, 2>;
 
     template <typename Tensor>
     BitmapTextureImpl(const Properties &props,
@@ -706,9 +698,15 @@ public:
         // The sampling distribution is built on first use
         rebuild_internals(tensor, false, true);
 
-        m_texture = StoredTexture2f(std::forward<Tensor>(tensor), accel,
-                                    filter_mode, wrap_mode, srgb, mip_filter,
-                                    max_aniso);
+        if constexpr (Upsample) {
+            m_rgb = std::forward<Tensor>(tensor);
+            m_texture = TexelTexture2f(upsample(), accel, filter_mode,
+                                       wrap_mode);
+        } else {
+            m_texture = TexelTexture2f(std::forward<Tensor>(tensor), accel,
+                                       filter_mode, wrap_mode, srgb,
+                                       mip_filter, max_aniso);
+        }
     }
 
     /// Wrap an existing (block-compressed, hence 8-bit) texture
@@ -717,7 +715,7 @@ public:
                       const ScalarAffineTransform3f& transform,
                       bool raw,
                       bool srgb,
-                      StoredTexture2f &&texture) :
+                      TexelTexture2f &&texture) :
         Texture(props),
         m_name(name),
         m_transform(transform),
@@ -729,8 +727,7 @@ public:
     }
 
     void traverse(TraversalCallback *cb) override {
-        // 8-bit textures store integers and are therefore not differentiable
-        cb->put("data", m_texture.tensor(),
+        cb->put("data", data(),
                 IsUInt8 ? ParamFlags::NonDifferentiable
                         : ParamFlags::Differentiable);
         cb->put("to_uv", m_transform, ParamFlags::NonDifferentiable);
@@ -738,19 +735,29 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
-            const size_t channels = m_texture.channel_count();
-            if (channels != 1 && channels != 2 && channels != 3)
-                Throw("parameters_changed(): The bitmap texture \"%s\" was changed "
-                      "to have %d channels, only textures with 1, 2, or 3 "
+            const dr::vector<size_t> &shape = data().shape();
+            const size_t channels = shape[2];
+            if (Upsample && channels != 3)
+                Throw("parameters_changed(): The bitmap texture \"%s\" changed "
+                      "to %d channels, but spectral upsampling requires "
+                      "3 channels!",
+                      m_name, channels);
+            else if (channels != 1 && channels != 2 && channels != 3)
+                Throw("parameters_changed(): The bitmap texture \"%s\" changed "
+                      "to %d channels, only textures with 1, 2, or 3 "
                       "channels are supported!",
                       m_name, channels);
-            else if (m_texture.shape()[0] < 2 || m_texture.shape()[1] < 2)
-                Throw("parameters_changed(): The bitmap texture \"%s\" was changed,"
-                      " it must be at least 2x2 pixels in size!",
-                      m_name);
+            else if (shape[0] < 2 || shape[1] < 2)
+                Throw("parameters_changed(): The bitmap texture \"%s\" changed "
+                      "to %zux%zu, but it must be at least 2x2 pixels in size!",
+                      m_name, shape[0], shape[1]);
 
-            m_texture.update_inplace();
-            rebuild_internals(m_texture.tensor(), m_distr2d != nullptr, true);
+            if constexpr (Upsample)
+                m_texture.set_tensor(upsample());
+            else
+                m_texture.update_inplace();
+
+            rebuild_internals(data(), m_distr2d != nullptr, true);
         }
 
         if ((keys.empty() || string::contains(keys, "to_uv")) && m_distr2d)
@@ -762,11 +769,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.channel_count();
-        if (channels == 3 && is_spectral_v<Spectrum> && m_raw)
+        if (is_spectral_v<Spectrum> && !Upsample && channels != 1)
             Throw("eval(): The bitmap texture \"%s\" was queried for a spectrum, "
-                  "but texture conversion into spectra was explicitly "
-                  "disabled! (raw=true)",
-                  m_name);
+                  "but its %zu-channel data does not undergo spectral "
+                  "upsampling (raw=%s)!",
+                  m_name, channels, m_raw ? "true" : "false");
 
         if (dr::none_or<false>(active))
             return dr::zeros<UnpolarizedSpectrum>();
@@ -774,11 +781,14 @@ public:
         if constexpr (is_monochromatic_v<Spectrum>) {
             // Identical to eval_1() in this variant
             return eval_1(si, active);
+        } else if constexpr (Upsample) {
+            return interpolate_spectral(si, active);
+        } else if constexpr (is_spectral_v<Spectrum>) {
+            // Only monochromatic textures reach this point (see above)
+            return interpolate_1(si, active);
         } else {
             if (channels == 1)
                 return interpolate_1(si, active);
-            else if constexpr (is_spectral_v<Spectrum>)
-                return interpolate_spectral(si, active);
             else
                 return interpolate_3(si, active);
         }
@@ -789,12 +799,6 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.channel_count();
-        if (stores_spectral_coeffs(channels))
-            Throw("eval_1(): The bitmap texture \"%s\" was queried for a "
-                  "monochromatic value, but texture conversion to color "
-                  "spectra had previously been requested! (raw=false)",
-                  m_name);
-
         if (dr::none_or<false>(active))
             return dr::zeros<Float>();
 
@@ -809,13 +813,6 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         const size_t channels = m_texture.channel_count();
-        if (stores_spectral_coeffs(channels))
-            Throw(
-                "eval_1_grad(): The bitmap texture \"%s\" was queried for a "
-                "monochromatic gradient value, but texture conversion to color "
-                "spectra had previously been requested! (raw=false)",
-                m_name);
-
         if (dr::none_or<false>(active))
             return dr::zeros<Vector2f>();
 
@@ -827,9 +824,17 @@ public:
             active = true;
 
         Point2f uv = m_transform * si.uv;
+        BilinearWeights bw = bilinear_weights(uv);
+        const Point2f &w0 = bw.w0, &w1 = bw.w1;
 
         Float f00, f10, f01, f11;
-        if (channels == 1) {
+        if constexpr (Upsample) {
+            dr::Array<Color3f, 4> c = fetch_rgb(bw.i, active);
+            f00 = luminance(c[0]);
+            f10 = luminance(c[1]);
+            f01 = luminance(c[2]);
+            f11 = luminance(c[3]);
+        } else if (channels == 1) {
             using Data1 = dr::Array<Float, 1>;
             dr::Array<Data1, 4> c =
                 m_texture.template eval_fetch<Data1>(uv, active);
@@ -850,9 +855,6 @@ public:
             f01 = luminance(c[2]);
             f11 = luminance(c[3]);
         }
-
-        BilinearWeights bw = bilinear_weights(uv);
-        const Point2f &w0 = bw.w0, &w1 = bw.w1;
 
         // Partials w.r.t. pixel coordinate x and y
         Vector2f df_xy{
@@ -880,12 +882,6 @@ public:
             Throw("eval_3(): The bitmap texture \"%s\" was queried for a RGB "
                   "value, but it is monochromatic!",
                   m_name);
-        if (stores_spectral_coeffs(channels))
-            Throw("eval_3(): The bitmap texture \"%s\" was queried for a RGB "
-                  "value, but texture conversion to color spectra had "
-                  "previously been requested! (raw=false)",
-                  m_name);
-
         if (dr::none_or<false>(active))
             return dr::zeros<Color3f>();
 
@@ -1017,16 +1013,65 @@ public:
     std::string_view class_name() const override { return ClassName; }
 
 protected:
-    /**
-     * Do the stored values represent spectral upsampling coefficients
-     * rather than plain RGB?
-     *
-     * This is the case for a 3-channel texture in a spectral variant with color
-     * conversion enabled (``raw=false``). Such textures can only answer spectral
-     * queries; monochromatic and RGB lookups are rejected.
-     */
-    bool stores_spectral_coeffs(size_t channels) const {
-        return is_spectral_v<Spectrum> && !m_raw && channels == 3;
+    /// The texture data exposed by ``traverse()``
+    StoredTensorXf &data() {
+        if constexpr (Upsample)
+            return m_rgb;
+        else
+            return m_texture.tensor();
+    }
+
+    /// Derive the spectral upsampling coefficients from the sRGB data
+    TensorXf upsample() const {
+        const dr::vector<size_t> &s = m_rgb.shape();
+        size_t shape[3] = { s[0], s[1], 3 };
+        DynamicBuffer<Float> coeff;
+
+        if constexpr (dr::is_jit_v<Float>) {
+            Color3f rgb(decode(dr::unravel<StoredColor3f>(m_rgb.array())));
+            coeff = dr::ravel(SRGBModel<Float, Spectrum>::fetch(rgb));
+        } else {
+            size_t size = s[0] * s[1] * 3;
+            coeff = dr::empty<DynamicBuffer<Float>>(size);
+            const StoredScalar *in = m_rgb.data();
+            ScalarFloat *out = coeff.data();
+            for (size_t i = 0; i < size; i += 3) {
+                Color3f rgb(decode(in[i]), decode(in[i + 1]), decode(in[i + 2]));
+                dr::Array<Float, 3> c = SRGBModel<Float, Spectrum>::fetch(rgb);
+                out[i] = c[0];
+                out[i + 1] = c[1];
+                out[i + 2] = c[2];
+            }
+        }
+
+        return TensorXf(std::move(coeff), 3, shape);
+    }
+
+    /// Look up a texel of the sRGB data, applying the wrap mode
+    Color3f rgb_texel(const Vector2i &p, Mask active) const {
+        Vector2i q = m_texture.wrap(p);
+        UInt32 index = UInt32(q.y() * resolution().x() + q.x());
+        return Color3f(
+            decode(dr::gather<StoredColor3f>(m_rgb.array(), index, active)));
+    }
+
+    /// Fetch the four sRGB texels of a bilinear lookup with base texel ``i``,
+    /// in the order of ``Texture::eval_fetch()``
+    dr::Array<Color3f, 4> fetch_rgb(const Vector2i &i, Mask active) const {
+        return { rgb_texel(i, active),
+                 rgb_texel(i + Vector2i(1, 0), active),
+                 rgb_texel(i + Vector2i(0, 1), active),
+                 rgb_texel(i + Vector2i(1, 1), active) };
+    }
+
+    /// Interpolate the sRGB data
+    Color3f interpolate_rgb(const Point2f &uv, Mask active) const {
+        if (m_texture.filter_mode() == dr::FilterMode::Linear) {
+            BilinearWeights bw = bilinear_weights(uv);
+            return bilerp(bw, fetch_rgb(bw.i, active));
+        } else {
+            return rgb_texel(dr::floor2int<Vector2i>(uv * resolution()), active);
+        }
     }
 
     /// Interpolation weights (and base texel) of a bilinear lookup
@@ -1034,6 +1079,15 @@ protected:
         Vector2i i;        ///< Lower-left integer texel coordinate
         Point2f w0, w1;    ///< Weights toward the lower / upper texel
     };
+
+    /// Blend four texels given in the order of ``Texture::eval_fetch()``
+    template <typename Value>
+    static Value bilerp(const BilinearWeights &bw, const dr::Array<Value, 4> &v) {
+        const Point2f &w0 = bw.w0, &w1 = bw.w1;
+        Value v0 = dr::fmadd(w0.x(), v[0], w1.x() * v[1]),
+              v1 = dr::fmadd(w0.x(), v[2], w1.x() * v[3]);
+        return dr::fmadd(w0.y(), v0, w1.y() * v1);
+    }
 
     /**
      * Compute the bilinear interpolation weights for a texture-space
@@ -1080,19 +1134,11 @@ protected:
             dr::Array<Color3f, 4> v =
                 m_texture.template eval_fetch<Color3f>(uv, active);
 
-            UnpolarizedSpectrum c00, c10, c01, c11, c0, c1;
-            c00 = srgb_model_eval<UnpolarizedSpectrum>(v[0], si.wavelengths);
-            c10 = srgb_model_eval<UnpolarizedSpectrum>(v[1], si.wavelengths);
-            c01 = srgb_model_eval<UnpolarizedSpectrum>(v[2], si.wavelengths);
-            c11 = srgb_model_eval<UnpolarizedSpectrum>(v[3], si.wavelengths);
+            dr::Array<UnpolarizedSpectrum, 4> s;
+            for (size_t i = 0; i < 4; ++i)
+                s[i] = srgb_model_eval<UnpolarizedSpectrum>(v[i], si.wavelengths);
 
-            BilinearWeights bw = bilinear_weights(uv);
-            const Point2f &w0 = bw.w0, &w1 = bw.w1;
-
-            c0 = dr::fmadd(w0.x(), c00, w1.x() * c10);
-            c1 = dr::fmadd(w0.x(), c01, w1.x() * c11);
-
-            return dr::fmadd(w0.y(), c0, w1.y() * c1);
+            return bilerp(bilinear_weights(uv), s);
         } else {
             Color3f out = m_texture.template eval<Color3f>(uv, active);
 
@@ -1133,6 +1179,9 @@ protected:
             active = true;
 
         Point2f uv = m_transform * si.uv;
+
+        if constexpr (Upsample)
+            return interpolate_rgb(uv, active);
 
         if (m_texture.channel_count() == 2) {
             Vector2f xy;
@@ -1218,10 +1267,7 @@ protected:
                 StoredColor3f stored = dr::gather<StoredColor3f>(
                     tensor.array(), dr::arange<UInt32>(pixel_count));
                 Color<FloatStorage, 3> c3(decode(stored));
-                if (is_spectral_v<Spectrum> && !m_raw)
-                    values = srgb_model_mean(c3);
-                else
-                    values = luminance(c3);
+                values = luminance(c3);
             } else {
                 values = decode(tensor.array());
             }
@@ -1252,8 +1298,6 @@ protected:
                 reduce([&](StoredScalar *&p) {
                     Color3f c3(decode(p[0]), decode(p[1]), decode(p[2]));
                     p += 3;
-                    if (is_spectral_v<Spectrum> && !m_raw)
-                        return ScalarFloat(srgb_model_mean(c3));
                     return ScalarFloat(luminance(c3));
                 });
             } else {
@@ -1281,7 +1325,7 @@ protected:
             check_sampling_transform();
             dr::scoped_eval_scope<Float> guard;
             auto self = const_cast<BitmapTextureImpl *>(this);
-            self->rebuild_internals(m_texture.tensor(), true, false);
+            self->rebuild_internals(self->data(), true, false);
         }
     }
 
@@ -1306,18 +1350,33 @@ protected:
                   m_name, m_transform);
     }
 
+    // Name used in diagnostics
     std::string m_name;
-    ScalarAffineTransform3f m_transform;
-    bool m_raw;
-    bool m_srgb;
-    StoredTexture2f m_texture;
 
-    // The sampling distribution is built on first use, under 'm_mutex'
-    // since textures may be shared between threads
+    // Transformation applied to UV coordinates
+    ScalarAffineTransform3f m_transform;
+
+    // Were color transformations (sRGB decoding, spectral upsampling) disabled?
+    bool m_raw;
+
+    // Does 8-bit data need sRGB decoding?
+    bool m_srgb;
+
+    // Texture used for lookups, which stores upsampling coefficients if
+    // 'Upsample' is set and the texture data otherwise
+    TexelTexture2f m_texture;
+
+    // sRGB data from which 'm_texture' is derived if 'Upsample' is set
+    StoredTensorXf m_rgb;
+
+    // Guards the construction of 'm_distr2d', since textures may be shared
+    // between threads
     mutable std::mutex m_mutex;
+
+    // Sampling distribution, built on first use
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 
-    MI_TRAVERSE_CB(Texture, m_texture, m_distr2d)
+    MI_TRAVERSE_CB(Texture, m_texture, m_rgb, m_distr2d)
 };
 
 MI_EXPORT_PLUGIN(BitmapTexture)

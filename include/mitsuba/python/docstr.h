@@ -9370,6 +9370,24 @@ static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_assign_2 = R"d
 
 static const char *__doc_mitsuba_SGGXPhaseFunctionParams_operator_const_Array = R"doc()doc";
 
+static const char *__doc_mitsuba_SRGBModel =
+R"doc(\brief Spectral upsampling model for sRGB colors
+
+Each variant loads its own copy of the model when it is first needed.
+JIT variants additionally upload the coefficient table to the device so
+that colors which are only known at render time (e.g. following a
+parameter update) can be upsampled as well.)doc";
+
+static const char *__doc_mitsuba_SRGBModel_fetch =
+R"doc(\brief Look up the model coefficients of an sRGB color value
+
+The color components must be in the range [0, 1]. A color of type
+``float`` is processed on the host, while a color of type ``Float`` is
+processed on the device in JIT variants. In the latter case, gradients
+propagate from the returned coefficients to ``color``.)doc";
+
+static const char *__doc_mitsuba_SRGBModel_static_shutdown = R"doc(Release the model and its device-resident copy)doc";
+
 static const char *__doc_mitsuba_Sampler =
 R"doc(Base class of all sample generators.
 
@@ -15562,15 +15580,6 @@ Note:
     automatically from the size of the input array.)doc";
 
 static const char *__doc_mitsuba_srgb_model_eval = R"doc()doc";
-
-static const char *__doc_mitsuba_srgb_model_fetch =
-R"doc(Look up the model coefficients for a sRGB color value
-
-Args:
-    c: An sRGB color value where all components are in [0, 1].
-
-Returns:
-    Coefficients for use with `srgb_model_eval`)doc";
 
 static const char *__doc_mitsuba_srgb_model_mean = R"doc()doc";
 

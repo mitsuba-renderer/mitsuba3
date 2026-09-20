@@ -2431,7 +2431,7 @@ Mesh<Float, Spectrum>::to_rgb2spec_coeffs(InputFloat *data, size_t rows) {
     DRJIT_MARK_USED(rows);
     if constexpr (is_spectral_v<Spectrum>) {
         for (size_t i = 0; i < rows; ++i, data += 3)
-            dr::store(data, srgb_model_fetch(
+            dr::store(data, SRGBModel<Float, Spectrum>::fetch(
                                 dr::load<Color<InputFloat, 3>>(data)));
     }
 }

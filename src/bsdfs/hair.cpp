@@ -530,9 +530,9 @@ private:
 
     /// Coefficients for spectral upsampling
     static inline const ScalarVector3f EUMELANIN_SRGB_COEFFS =
-        srgb_model_fetch(EUMELANIN_SIGMA_A);
+        SRGBModel<Float, Spectrum>::fetch(EUMELANIN_SIGMA_A);
     static inline const ScalarVector3f PHEOMELANIN_SRGB_COEFFS =
-        srgb_model_fetch(PHEOMELANIN_SIGMA_A);
+        SRGBModel<Float, Spectrum>::fetch(PHEOMELANIN_SIGMA_A);
 
     using AttenuationCoeffs = dr::Array<UnpolarizedSpectrum, P_MAX + 1>;
 
