@@ -9,7 +9,7 @@ from mitsuba import detail
 
 
 def main(argv=None):
-    thread_count = dr.thread_count() + 1
+    thread_count = dr.thread_count()
     banner = '\n'.join([detail.info_build(thread_count),
                         detail.info_copyright(),
                         detail.info_features()])
@@ -63,7 +63,7 @@ def main(argv=None):
                 mi.Log(mi.LogLevel.Warn, 'Thread count should be greater '
                        'than 0. It will be set to 1 instead.')
                 thread_count = 1
-            dr.set_thread_count(thread_count - 1)
+            dr.set_thread_count(thread_count)
 
         params = {}
         for define in args.define:

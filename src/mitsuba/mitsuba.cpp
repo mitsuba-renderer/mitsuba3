@@ -226,7 +226,7 @@ int main(int argc, char *argv[]) {
 #endif
 
         // Initialize nanothread with the requested number of threads
-        uint32_t thread_count = pool_size() + 1;
+        uint32_t thread_count = pool_size();
         if (*arg_threads) {
             thread_count = arg_threads->as_int();
             if (thread_count < 1) {
@@ -235,7 +235,7 @@ int main(int argc, char *argv[]) {
                 thread_count = 1;
             }
         }
-        pool_set_size(nullptr, thread_count - 1);
+        pool_set_size(nullptr, thread_count);
 
         while (arg_define && *arg_define) {
             std::string value = arg_define->as_string();
@@ -299,9 +299,9 @@ int main(int argc, char *argv[]) {
         }
 
         if (!*arg_extra || *arg_help) {
-            help(pool_size() + 1);
+            help(pool_size());
         } else {
-            Log(Info, "%s", util::info_build(pool_size() + 1));
+            Log(Info, "%s", util::info_build(pool_size()));
             Log(Info, "%s", util::info_copyright());
             Log(Info, "%s", util::info_features());
             Log(Info, "Rendering using the \"%s\" variant.", mode);
