@@ -1,5 +1,6 @@
 #include <mitsuba/core/bsphere.h>
 #include <mitsuba/core/properties.h>
+#include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
 #include <mitsuba/render/emitter.h>
 #include <mitsuba/render/scene.h>
@@ -33,9 +34,23 @@ Distant directional emitter (:monosp:`directional`)
    - Alternative (and exclusive) to `to_world`. Direction towards which the
      emitter is radiating in world coordinates.
 
+ * - angle
+   - |float|
+   - Angular diameter of the emitter in degrees (Default: 0). A positive
+     value spreads the light over a cone of this opening angle around the
+     direction, which turns hard shadows into penumbrae. The sun subtends
+     about 0.53 degrees.
+   - |exposed|
+
 This emitter plugin implements a distant directional source which radiates a
 specified power per unit area along a fixed direction. By default, the emitter
 radiates in the direction of the positive Z axis, i.e. :math:`(0, 0, 1)`.
+
+When ``angle`` is positive, every light sample draws a direction uniformly
+within the cone and receives the full irradiance, so the emitter averages the
+irradiance over the disk. It remains a degenerate emitter that BSDF sampling
+cannot hit, which matches how most production renderers treat a sun with an
+angular diameter.
 
 .. tabs::
     .. code-tab:: xml
@@ -85,15 +100,36 @@ public:
         if (m_irradiance->is_spatially_varying())
             Throw("Expected a non-spatially varying irradiance spectra!");
 
-        m_needs_sample_3 = false;
+        ScalarFloat angle = props.get<ScalarFloat>("angle", 0.f);
+        if (angle < 0.f || angle >= 180.f)
+            Throw("The angular diameter must lie in [0, 180) degrees, got %f!", angle);
+        m_angle = angle;
+
+        // The direction sample is only needed to sample the cone
+        m_needs_sample_3 = angle > 0.f;
 
         m_flags      = EmitterFlags::Infinite | EmitterFlags::DeltaDirection;
+        parameters_changed();
     }
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         cb->put("irradiance",  m_irradiance,  ParamFlags::Differentiable);
+        cb->put("angle",       m_angle,       ParamFlags::NonDifferentiable);
         traverse_world_transform(cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
+        if (keys.empty() || string::contains(keys, "angle")) {
+            m_cos_cutoff = dr::cos(dr::deg_to_rad(m_angle) * 0.5f);
+            dr::make_opaque(m_angle, m_cos_cutoff);
+        }
+        Base::parameters_changed(keys);
+    }
+
+    /// Direction of the light, or a uniformly sampled direction in the cone
+    Vector3f sample_cone(const AffineTransform4f &to_world, const Point2f &sample) const {
+        return to_world * warp::square_to_uniform_cone(sample, m_cos_cutoff);
     }
 
     void set_scene(const Scene *scene) override {
@@ -115,19 +151,19 @@ public:
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
                                           const Point2f &spatial_sample,
-                                          const Point2f & /*direction_sample*/,
+                                          const Point2f &direction_sample,
                                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleRay, active);
 
-        // 1. Sample spatial component
-        Point2f offset =  warp::square_to_uniform_disk_concentric(spatial_sample);
+        // 1. Sample directional component (fixed unless 'angle' is positive)
+        Vector3f d_global = sample_cone(world_transform(time), direction_sample);
 
-        // 2. "Sample" directional component (fixed, no actual sampling required)
-        auto to_world = world_transform(time);
-        Vector3f d_global = to_world * Vector3f{ 0.f, 0.f, 1.f };
-
-        Vector3f perp_offset = to_world * Vector3f{ offset.x(), offset.y(), 0.f };
-        Point3f origin = m_bsphere.center + (perp_offset - d_global) * m_bsphere.radius;
+        // 2. Sample spatial component on a disk perpendicular to the ray
+        //    that covers the scene bounding sphere
+        Point2f offset = warp::square_to_uniform_disk_concentric(spatial_sample);
+        Frame3f frame(d_global);
+        Point3f origin = m_bsphere.center +
+            (frame.s * offset.x() + frame.t * offset.y() - d_global) * m_bsphere.radius;
 
         // 3. Sample spectral component
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
@@ -146,11 +182,11 @@ public:
     }
 
     std::pair<DirectionSample3f, Spectrum>
-    sample_direction(const Interaction3f &it, const Point2f & /*sample*/,
+    sample_direction(const Interaction3f &it, const Point2f &sample,
                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointSampleDirection, active);
 
-        Vector3f d = world_transform(it.time) * Vector3f{ 0.f, 0.f, 1.f };
+        Vector3f d = sample_cone(world_transform(it.time), sample);
         // Needed when the reference point is on the sensor, which is not part of the bbox
         Float radius = dr::maximum(m_bsphere.radius, dr::norm(it.p - m_bsphere.center));
         Float dist = 2.f * radius;
@@ -221,6 +257,7 @@ public:
         oss << "DirectionalEmitter[" << std::endl
             << "  irradiance = " << string::indent(m_irradiance) << ","
             << std::endl
+            << "  angle = " << m_angle << "," << std::endl
             << "  bsphere = " << string::indent(m_bsphere) << "," << std::endl
             << "]";
         return oss.str();
@@ -230,9 +267,10 @@ public:
 
 protected:
     ref<Texture> m_irradiance;
+    Float m_angle, m_cos_cutoff;
     ScalarBoundingSphere3f m_bsphere;
 
-    MI_TRAVERSE_CB(Base, m_irradiance)
+    MI_TRAVERSE_CB(Base, m_irradiance, m_angle, m_cos_cutoff)
 };
 
 MI_EXPORT_PLUGIN(DirectionalEmitter)
