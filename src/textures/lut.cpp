@@ -1,6 +1,8 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/srgb.h>
+#include <mitsuba/core/bitmap.h>
+#include <mitsuba/core/fresolver.h>
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <drjit/tensor.h>
@@ -21,26 +23,24 @@ Lookup table texture (:monosp:`lut`)
    - Texture to be transformed by the lookup table.
    - |exposed|, |differentiable|
 
+ * - filename
+   - |string|
+   - Filename of an image holding the table. Its pixels in scanline order
+     form the entries, and its channel count selects between a scalar
+     (``Y``) and an RGB table (``RGB``). Alpha channels are dropped. Images
+     with 8-bit sRGB-encoded data are converted to linear values.
+
+ * - data
+   - |tensor|
+   - Alternative to :paramtype:`filename` when instantiating the plugin from
+     Python: a Dr.Jit tensor of shape ``(N,)``, ``(N, 1)`` or ``(N, 3)``.
+   - |exposed|, |differentiable|
+
  * - input_min, input_max
    - |float|
-   - These values denote the range of the input texture.
-     Inputs outside of this range are clamped. (Default: 0 and 1)
-
- * - values
-   - |string|
-   - The table entries as whitespace- or comma-separated numbers, listing the
-     channels of each entry in turn. When instantiating the plugin from
-     Python, a Dr.Jit tensor of shape ``(N,)``, ``(N, 1)`` or ``(N, 3)`` can
-     be passed instead.
-   - |exposed|, |differentiable|
-CLAUDE: I much don't like the interface where this is passed as a string. I'd prefer if the LUT is loaded from a 1-D texture file.
-The channel count can then be inferred.
-
- * - channels
-   - |int|
-   - Number of channels of each entry (1 or 3) when ``values`` is a string.
-     (Default: 1)
-CLAUDE: should not be needed.
+   - These values denote the range of the input texture. Inputs outside of
+     this range are clamped. An image file may provide defaults through the
+     ``domain_min`` and ``domain_max`` metadata entries. (Default: 0 and 1)
 
  * - filter_type
    - |string|
@@ -48,11 +48,10 @@ CLAUDE: should not be needed.
      the two enclosing entries, and ``nearest`` returns the closest one.
      (Default: ``linear``)
 
- * - per_channel
+ * - curve
    - |bool|
    - Apply the table to each channel of the input separately (see below).
      (Default: |false|)
-CLAUDE: rename this to curve=true/false and consistently refer to as "curve mode". Can we also support RGB curves?
 
 This texture maps the value of another texture through a table of :math:`N`
 scalar or RGB entries :math:`t_0, \ldots, t_{N-1}`. Given the input range
@@ -63,28 +62,25 @@ is the value of the table at the input
 
     x_i = a + \frac{i}{N - 1} \, (b - a).
 
-By default, the plugin implements a *color ramp*.
-CLAUDE: alternative to "color ramp"? That is a very specific kind of mono->RGB map.
-It evaluates the input as a
-monochromatic quantity and uses it to look up an entry. In spectral variants,
-RGB entries are upsampled to smooth spectra (like in the :ref:`bitmap
-<texture-bitmap>` plugin) before they are interpolated.
+By default, the plugin evaluates the input as a monochromatic quantity and
+uses it to look up an entry. An RGB table then acts as a *color map* that
+assigns a color to each input value. In spectral variants, RGB entries are
+upsampled to smooth spectra (like in the :ref:`bitmap <texture-bitmap>`
+plugin) before they are interpolated.
 
-With ``per_channel`` set to |true|, the plugin implements a *curve* and looks
-up every channel of the input (or every wavelength sample) separately. This
-requires a scalar table.
-
-A table given as a string whose three channels are identical is reduced to a
-scalar table, which is cheaper to evaluate and also qualifies for per-channel
-lookups.
+With ``curve`` set to |true|, the plugin operates in *curve mode* and looks
+up every channel of the input separately. A scalar table then specifies one
+curve that applies to every channel (or to every wavelength sample in
+spectral variants), while an RGB table specifies a separate curve per
+channel. Spectral variants evaluate the latter on the RGB representation of
+the input and upsample the result.
 
 .. tabs::
     .. code-tab:: xml
         :name: lut-texture
 
         <texture type="lut">
-            <string name="values" value="0 0 0.5,  1 0.5 0,  1 1 1"/>
-            <integer name="channels" value="3"/>
+            <string name="filename" value="colormap.exr"/>
             <texture type="bitmap" name="input">
                 <string name="filename" value="mask.png"/>
             </texture>
@@ -93,8 +89,7 @@ lookups.
     .. code-tab:: python
 
         'type': 'lut',
-        'values': '0 0 0.5,  1 0.5 0,  1 1 1',
-        'channels': 3,
+        'data': mi.TensorXf([[0, 0, 0.5], [1, 0.5, 0], [1, 1, 1]]),
         'input': { 'type': 'bitmap', 'filename': 'mask.png' }
 
  */
@@ -106,12 +101,7 @@ public:
 
     LUTTexture(const Properties &props) : Texture(props) {
         m_input = props.get_texture<Texture>("input");
-        m_per_channel = props.get<bool>("per_channel", false);
-        m_input_min = props.get<ScalarFloat>("input_min", 0.f);
-        m_input_max = props.get<ScalarFloat>("input_max", 1.f);
-        if (!(m_input_max > m_input_min))
-            Throw("\"input_max\" (%f) must exceed \"input_min\" (%f)",
-                  m_input_max, m_input_min);
+        m_curve = props.get<bool>("curve", false);
 
         std::string_view filter_type = props.get<std::string_view>("filter_type", "linear");
         m_nearest = filter_type == "nearest";
@@ -119,17 +109,35 @@ public:
             Throw("Invalid filter type \"%s\", must be \"linear\" or \"nearest\"",
                   filter_type);
 
-        m_values = load_table(props);
+        double input_min = 0.0, input_max = 1.0;
+        if (props.has_property("filename")) {
+            if (props.has_property("data"))
+                Throw("Cannot specify both \"filename\" and \"data\"");
+            m_values = load_image(props.get<std::string_view>("filename"),
+                                  input_min, input_max);
+        } else if (props.has_property("data")) {
+            m_values = props.get_any<TensorXf>("data");
+        } else {
+            Throw("The table must be given as \"filename\" or \"data\"");
+        }
+
+        m_input_min = props.get<ScalarFloat>("input_min", (ScalarFloat) input_min);
+        m_input_max = props.get<ScalarFloat>("input_max", (ScalarFloat) input_max);
+        if (!(m_input_max > m_input_min))
+            Throw("\"input_max\" (%f) must exceed \"input_min\" (%f)",
+                  m_input_max, m_input_min);
+
+        prepare_table(m_values);
         update_coefficients();
     }
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("input",  m_input,  ParamFlags::Differentiable);
-        cb->put("values", m_values, ParamFlags::Differentiable);
+        cb->put("input", m_input,  ParamFlags::Differentiable);
+        cb->put("data",  m_values, ParamFlags::Differentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (keys.empty() || string::contains(keys, "values")) {
+        if (keys.empty() || string::contains(keys, "data")) {
             prepare_table(m_values);
             update_coefficients();
         }
@@ -139,7 +147,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
         if constexpr (is_spectral_v<Spectrum>) {
-            if (m_per_channel) {
+            if (m_curve) {
+                if (rgb_table())
+                    return srgb_model_eval<UnpolarizedSpectrum>(
+                        SRGBModel<Float, Spectrum>::fetch(eval_3(si, active)), si.wavelengths);
+
                 UnpolarizedSpectrum result = m_input->eval(si, active);
                 for (size_t i = 0; i < dr::size_v<UnpolarizedSpectrum>; ++i)
                     result[i] = lookup<Float>(result[i], active);
@@ -147,7 +159,7 @@ public:
             }
 
             Float x = m_input->eval_1(si, active);
-            if (m_values.shape(1) == 1)
+            if (!rgb_table())
                 return UnpolarizedSpectrum(lookup<Float>(x, active));
 
             // Upsampling is nonlinear, so the entries are converted to
@@ -165,8 +177,11 @@ public:
     Float eval_1(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
+        if (m_curve && rgb_table())
+            return luminance(eval_3(si, active));
+
         Float x = m_input->eval_1(si, active);
-        if (m_values.shape(1) == 1)
+        if (!rgb_table())
             return lookup<Float>(x, active);
         return luminance(lookup<Color3f>(x, active));
     }
@@ -174,14 +189,21 @@ public:
     Color3f eval_3(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if (m_per_channel) {
+        if (m_curve) {
             Color3f c = m_input->eval_3(si, active);
+            if (rgb_table()) {
+                // Channel k of the input is looked up in column k
+                Color3f result;
+                for (size_t k = 0; k < 3; ++k)
+                    result[k] = lookup<Color3f>(c[k], active)[k];
+                return result;
+            }
             return Color3f(lookup<Float>(c.x(), active),
                            lookup<Float>(c.y(), active),
                            lookup<Float>(c.z(), active));
         } else {
             Float x = m_input->eval_1(si, active);
-            if (m_values.shape(1) == 1)
+            if (!rgb_table())
                 return Color3f(lookup<Float>(x, active));
             return lookup<Color3f>(x, active);
         }
@@ -190,7 +212,7 @@ public:
     Vector2f eval_1_grad(const SurfaceInteraction3f &si, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);
 
-        if (m_values.shape(1) != 1)
+        if (rgb_table())
             Throw("eval_1_grad(): only lut textures with scalar entries "
                   "provide gradients");
 
@@ -223,8 +245,9 @@ public:
         oss << "LUTTexture[" << std::endl
             << "  input = " << string::indent(m_input) << "," << std::endl
             << "  entries = " << m_values.shape(0) << "," << std::endl
+            << "  channels = " << m_values.shape(1) << "," << std::endl
             << "  input_range = [" << m_input_min << ", " << m_input_max << "]," << std::endl
-            << "  per_channel = " << m_per_channel << std::endl
+            << "  curve = " << m_curve << std::endl
             << "]";
         return oss.str();
     }
@@ -234,52 +257,40 @@ public:
 protected:
     using FloatStorage = DynamicBuffer<Float>;
 
-    /// Read the table from the "values" property into a tensor of shape (N, C)
-    TensorXf load_table(const Properties &props) const {
-        TensorXf table;
+    bool rgb_table() const { return m_values.shape(1) == 3; }
 
-        if (props.type("values") == Properties::Type::String) {
-            int64_t channels = props.get<int64_t>("channels", 1);
-            if (channels != 1 && channels != 3)
-                Throw("\"channels\" must be 1 or 3, not %i", channels);
+    /// Read the table from an image file. The input range defaults to the
+    /// file's ``domain_min`` and ``domain_max`` metadata when present.
+    TensorXf load_image(std::string_view filename, double &input_min,
+                        double &input_max) const {
+        fs::path path = file_resolver()->resolve(filename);
+        ref<Bitmap> bitmap = new Bitmap(path);
 
-            std::vector<ScalarFloat> values;
-            for (const std::string &s :
-                 string::tokenize(props.get<std::string_view>("values"), " ,")) {
-                try {
-                    values.push_back(string::stof<ScalarFloat>(s));
-                } catch (...) {
-                    Throw("Could not parse the number \"%s\" in \"values\"", s);
-                }
-            }
-
-            size_t n = values.size() / channels;
-            if (values.size() % channels != 0)
-                Throw("The %zu numbers in \"values\" do not form entries of "
-                      "%i channels", values.size(), channels);
-
-            // A table with identical channels reduces to a scalar table
-            // CLAUDE: we should not need this kind of preprocess anymore the input is properly typed.
-            // This will need a full pass over the blender plugin. Right now we generate lots of RGB curves that are actually monchromatic curves. The simplification should rather be there.
-            if (channels == 3) {
-                bool gray = true;
-                for (size_t i = 0; i < values.size(); i += 3)
-                    gray &= values[i] == values[i + 1] && values[i] == values[i + 2];
-                if (gray) {
-                    for (size_t i = 0; i < n; ++i)
-                        values[i] = values[3 * i];
-                    values.resize(n);
-                    channels = 1;
-                }
-            }
-
-            table = TensorXf(values.data(), { n, (size_t) channels });
-        } else {
-            table = props.get_any<TensorXf>("values");
+        Bitmap::PixelFormat pf;
+        switch (bitmap->pixel_format()) {
+            case Bitmap::PixelFormat::Y:
+            case Bitmap::PixelFormat::YA:
+                pf = Bitmap::PixelFormat::Y;
+                break;
+            case Bitmap::PixelFormat::RGB:
+            case Bitmap::PixelFormat::RGBA:
+            case Bitmap::PixelFormat::XYZ:
+            case Bitmap::PixelFormat::XYZA:
+                pf = Bitmap::PixelFormat::RGB;
+                break;
+            default:
+                Throw("%s: the table needs a known pixel format (Y[A], "
+                      "RGB[A], XYZ[A] are supported)", path.string());
         }
+        bitmap = bitmap->convert(pf, struct_type_v<ScalarFloat>, false);
 
-        prepare_table(table);
-        return table;
+        const Properties &metadata = bitmap->metadata();
+        input_min = metadata.get<double>("domain_min", input_min);
+        input_max = metadata.get<double>("domain_max", input_max);
+
+        size_t shape[2] = { (size_t) bitmap->pixel_count(),
+                            bitmap->channel_count() };
+        return TensorXf((const ScalarFloat *) bitmap->data(), 2, shape);
     }
 
     /// Reshape a table of shape (N,) to (N, 1) and validate it
@@ -290,8 +301,6 @@ protected:
             Throw("The table must have shape (N,), (N, 1) or (N, 3)");
         if (table.shape(0) < 2)
             Throw("The table must have at least two entries");
-        if (m_per_channel && table.shape(1) != 1)
-            Throw("Per-channel lookups require a scalar table");
     }
 
     /**
@@ -302,7 +311,7 @@ protected:
      */
     void update_coefficients() {
         if constexpr (is_spectral_v<Spectrum>) {
-            if (m_values.shape(1) != 3) {
+            if (!rgb_table() || m_curve) {
                 m_coeffs = FloatStorage();
                 return;
             }
@@ -359,12 +368,12 @@ protected:
     ref<Texture> m_input;
     // Table entries (scalar or sRGB) as a tensor of shape (N, C)
     TensorXf m_values;
-    // Upsampling coefficients of an sRGB table (spectral variants only)
+    // Upsampling coefficients of an sRGB color map (spectral variants only)
     FloatStorage m_coeffs;
     // Inputs that map to the first and last entry
     ScalarFloat m_input_min, m_input_max;
     // Look up each input channel separately
-    bool m_per_channel;
+    bool m_curve;
     // Nearest-neighbor lookups instead of linear interpolation
     bool m_nearest;
 
