@@ -1,3 +1,4 @@
+import math
 import pytest
 import drjit as dr
 import mitsuba as mi
@@ -147,3 +148,56 @@ def test_sample_ray(variant_scalar_spectral, direction):
         # Check that ray origin is outside of bounding sphere
         # Bounding sphere is centered at world origin and has radius 1 without scene
         assert dr.norm(ray.o) >= 1.
+
+
+def test_angle(variants_vec_backends_once_rgb):
+    # A positive angle spreads the light samples uniformly over the cone
+    # while the emitter remains a delta light with pdf one
+    import numpy as np
+
+    angle = 10.0
+    cos_cutoff = math.cos(math.radians(angle) / 2)
+    emitter = mi.load_dict({
+        'type': 'directional',
+        'direction': [0, 0, -1],
+        'irradiance': 2.0,
+        'angle': angle,
+    })
+    assert emitter.flags() == int(mi.EmitterFlags.Infinite
+                                  | mi.EmitterFlags.DeltaDirection)
+
+    n = 100000
+    sampler = mi.load_dict({'type': 'independent'})
+    sampler.seed(0, n)
+    it = dr.zeros(mi.Interaction3f, n)
+    ds, spec = emitter.sample_direction(it, sampler.next_2d())
+
+    cos = np.array(ds.d.z)
+    assert cos.min() >= cos_cutoff - 1e-6
+    assert cos.min() < cos_cutoff + 1e-4
+    # A uniform cone has mean cosine (1 + cos_cutoff) / 2
+    assert cos.mean() == pytest.approx((1 + cos_cutoff) / 2, abs=1e-4)
+    assert dr.all(ds.pdf == 1.0)
+    assert dr.all(ds.delta)
+    assert dr.allclose(spec, 2.0)
+    assert dr.allclose(emitter.pdf_direction(it, ds), 0.0)
+
+    # Light tracing rays leave the bounding sphere along cone directions
+    ray, _ = emitter.sample_ray(0.0, 0.5, sampler.next_2d(), sampler.next_2d())
+    assert dr.all(-ray.d.z >= cos_cutoff - 1e-6)
+    assert dr.all(dr.norm(ray.o) >= 1.0 - 1e-6)
+
+    # The angle is exposed and updates the cone
+    params = mi.traverse(emitter)
+    params['angle'] = 60.0
+    params.update()
+    ds, _ = emitter.sample_direction(it, sampler.next_2d())
+    cos = np.array(ds.d.z)
+    assert cos.min() >= math.cos(math.radians(30.0)) - 1e-6
+    assert cos.min() < cos_cutoff
+
+
+def test_invalid_angle(variant_scalar_rgb):
+    for angle in (-1.0, 180.0):
+        with pytest.raises(RuntimeError):
+            mi.load_dict({'type': 'directional', 'angle': angle})
