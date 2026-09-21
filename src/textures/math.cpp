@@ -3,6 +3,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <drjit/texture_impl.h>
+#include <drjit/color.h>
 #include <cctype>
 #include <cstdlib>
 #include <cstring>
@@ -66,7 +67,11 @@ The language provides
   ``mean`` and ``luminance`` similarly broadcast the channel average or ITU-R
   BT.709 luminance. ``rgb(r, g, b)`` assembles a trichromatic value from
   monochromatic inputs. Given RGB inputs ``v0``.., ``v2``, ``rgb(v0, v1, v2)``
-  is equivalent to ``rgb(v0.r, v1.g, v2.b)``.
+  is equivalent to ``rgb(v0.r, v1.g, v2.b)``. The functions ``rgb_to_hsv``,
+  ``hsv_to_rgb``, ``rgb_to_hsl``, and ``hsl_to_rgb`` convert between RGB and
+  the HSV/HSL color spaces. Hue, saturation, and value or lightness occupy the
+  three channels in this order and lie in [0, 1], where a hue of 0 and 1 both
+  denote red and any hue given to the inverse conversions wraps around.
 
 - Floating point literals and the constants ``pi`` and ``e``.
 
@@ -120,6 +125,10 @@ namespace {
 #define MI_MATH_TERNARY_OPS(F)                                                 \
     F(lerp, lerp) F(clip, clip) F(fma, fmadd)
 
+// Color space conversions, which operate on all three channels at once
+#define MI_MATH_COLOR_OPS(F)                                                   \
+    F(rgb_to_hsv) F(hsv_to_rgb) F(rgb_to_hsl) F(hsl_to_rgb)
+
 enum class Op : uint8_t {
     // Push a constant or memory slot, pop the stack top into a memory slot
     Const, Load, Store,
@@ -130,16 +139,23 @@ enum class Op : uint8_t {
     Select,
 
     // Color handling. 'Chan' extracts the channel given by the 'imm' field.
+    // The color operations are contiguous, see 'is_color_op()'.
     Rgb, Chan, Mean, Luminance
 
     #define F1(name) , name
     #define F2(name, drname) , name
+    MI_MATH_COLOR_OPS(F1)
     MI_MATH_UNARY_OPS(F1)
     MI_MATH_BINARY_OPS(F2)
     MI_MATH_TERNARY_OPS(F2)
     #undef F1
     #undef F2
 };
+
+/// Does the instruction interpret its operand's channels as colors?
+constexpr bool is_color_op(Op op) {
+    return op >= Op::Rgb && op <= Op::hsl_to_rgb;
+}
 
 struct Inst { Op op; uint8_t imm; };
 static_assert(sizeof(Inst) == 2);
@@ -150,6 +166,7 @@ static const Fn fn_table[] = {
     #define F1(name)         { #name, Op::name, 1 },
     #define F2(name, drname) { #name, Op::name, 2 },
     #define F3(name, drname) { #name, Op::name, 3 },
+    MI_MATH_COLOR_OPS(F1)
     MI_MATH_UNARY_OPS(F1)
     MI_MATH_BINARY_OPS(F2)
     MI_MATH_TERNARY_OPS(F3)
@@ -528,8 +545,7 @@ public:
         m_stack_size = parser.stack_size;
 
         for (Inst inst : m_code)
-            m_color_ops |= inst.op == Op::Rgb || inst.op == Op::Chan ||
-                           inst.op == Op::Mean || inst.op == Op::Luminance;
+            m_color_ops |= is_color_op(inst.op);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -657,6 +673,17 @@ protected:
                         sp[-1] = T(luminance(sp[-1]));
                     break;
 
+                #define F1(name)                                                                   \
+                    case Op::name:                                                                 \
+                        if constexpr (SpectralQuery)                                               \
+                            Throw("math texture: " #name "() cannot be used in spectral "          \
+                                  "texture queries (expression \"%s\")", m_expression);            \
+                        else if constexpr (dr::size_v<T> == 3)                                     \
+                            sp[-1] = dr::name(sp[-1]);                                             \
+                        break;
+                MI_MATH_COLOR_OPS(F1)
+                #undef F1
+
                 #define F1(name)         case Op::name: sp[-1] = dr::name(sp[-1]); break;
                 #define F2(name, drname) case Op::name: --sp; sp[-1] = dr::drname(sp[-1], sp[0]); break;
                 #define F3(name, drname) case Op::name: sp -= 2; sp[-1] = dr::drname(sp[-1], sp[0], sp[1]); break;
@@ -677,7 +704,7 @@ protected:
     std::vector<Inst> m_code;
     std::vector<ScalarFloat> m_consts;
     uint32_t m_tmp_count = 0, m_stack_size = 0;
-    /// Does the expression use rgb(), component access, mean() or luminance()?
+    /// Does the expression use any of the color handling operations?
     bool m_color_ops = false;
 
     MI_TRAVERSE_CB(Texture, m_inputs)

@@ -245,6 +245,36 @@ def test12_color_ops_spectral(variant_scalar_spectral):
         make('rgb(in[0], in[0], in[0])', 0.5).eval(si)
     with pytest.raises(RuntimeError, match='luminance'):
         make('luminance(in[0])', 0.5).eval(si)
+    with pytest.raises(RuntimeError, match='rgb_to_hsv'):
+        make('rgb_to_hsv(in[0])', 0.5).eval(si)
+
+
+def test13_color_conversions(variants_all_rgb):
+    """HSV and HSL conversions of pure colors, grays, and round trips"""
+    si = dr.zeros(mi.SurfaceInteraction3f)
+
+    def eval_3(expr, *inputs):
+        return mi.Color3f(make(expr, *inputs).eval_3(si))
+
+    for rgb, hsv, hsl in [
+        ([1, 0, 0], [0, 1, 1], [0, 1, 0.5]),
+        ([0, 1, 0], [1 / 3, 1, 1], [1 / 3, 1, 0.5]),
+        ([0, 0, 1], [2 / 3, 1, 1], [2 / 3, 1, 0.5]),
+        ([0.5, 0.5, 0.5], [0, 0, 0.5], [0, 0, 0.5]),
+        ([0.25, 0.5, 0.75], [7 / 12, 2 / 3, 0.75], [7 / 12, 0.5, 0.5]),
+    ]:
+        color = lambda value: { 'type': 'rgb', 'value': value }
+        dr.assert_allclose(eval_3('rgb_to_hsv(in[0])', color(rgb)), hsv)
+        dr.assert_allclose(eval_3('rgb_to_hsl(in[0])', color(rgb)), hsl)
+        dr.assert_allclose(eval_3('hsv_to_rgb(in[0])', color(hsv)), rgb)
+        dr.assert_allclose(eval_3('hsl_to_rgb(in[0])', color(hsl)), rgb)
+
+    # Hue shift with wrap-around, and monochromatic queries of a conversion
+    tex = make('tmp[0] = rgb_to_hsv(in[0]); '
+               'hsv_to_rgb(rgb(tmp[0].r + 4 / 3, tmp[0].g, tmp[0].b))',
+               { 'type': 'rgb', 'value': [1, 0, 0] })
+    dr.assert_allclose(mi.Color3f(tex.eval_3(si)), [0, 1, 0])
+    dr.assert_allclose(tex.eval_1(si), mi.luminance(mi.Color3f(0, 1, 0)))
 
     # Inputs that undergo spectral upsampling still report their sRGB color
     srgb = make('in[0].r', { 'type': 'srgb', 'color': [0.2, 0.5, 0.8] })
