@@ -396,15 +396,11 @@ public:
         film->put_block(image_block);
 
         TensorXf result;
-        if (develop) {
+        if (develop)
             result = film->develop();
-            dr::schedule(result);
-        } else {
-            dr::schedule(film->storage());
-        }
 
         if (evaluate)
-            dr::eval();
+            dr::eval(develop ? result : image_block->tensor());
 
         return result;
     }

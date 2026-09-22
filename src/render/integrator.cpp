@@ -404,15 +404,11 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         film->put_block(block);
 
-        if (develop) {
+        if (develop)
             result = film->develop();
-            dr::schedule(result);
-        } else {
-            dr::schedule(film->storage());
-        }
 
         if (evaluate)
-            dr::eval();
+            dr::eval(develop ? result : block->tensor());
 
         profiler.host_done();
 
@@ -649,9 +645,8 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
         TensorXf result;
         if (develop) {
             result = film->develop();
-            dr::schedule(result);
-        } else {
-            dr::schedule(film->storage());
+            if (evaluate)
+                dr::eval(result);
         }
         return result;
     }
@@ -795,15 +790,11 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         film->put_block(block);
 
-        if (develop) {
+        if (develop)
             result = film->develop();
-            dr::schedule(result);
-        } else {
-            dr::schedule(film->storage());
-        }
 
         if (evaluate)
-            dr::eval();
+            dr::eval(develop ? result : block->tensor());
 
         profiler.host_done();
 

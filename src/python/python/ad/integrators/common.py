@@ -104,8 +104,14 @@ class ADIntegrator(mi.CppADIntegrator):
             film.put_block(block)
 
             # Perform the weight division and return an image tensor
+            result = mi.TensorXf()
             if develop:
-                return film.develop()
+                result = film.develop()
+
+            if evaluate:
+                dr.eval(result if develop else block.tensor())
+
+            return result
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
@@ -213,8 +219,6 @@ class ADIntegrator(mi.CppADIntegrator):
 
                 del valid
 
-                # This step launches a kernel
-                dr.schedule(block.tensor())
                 image = film.develop(postprocess=False)
 
                 # Differentiate sample splatting and weight division steps to
