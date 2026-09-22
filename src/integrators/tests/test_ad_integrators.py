@@ -1549,6 +1549,60 @@ def test04_render_custom_op(variants_all_ad_rgb):
                            epsilon=2e-1, test_type='fwd', save_error_image=True):
         pytest.fail("Gradient values exceeded configuration's tolerances!")
 
+
+@pytest.mark.parametrize('integrator_name', [i[0] for i in INTEGRATORS])
+def test05_postprocess(variants_all_ad_rgb, integrator_name):
+    """Derivatives of a post-processed image account for the film's stages"""
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    class Square(mi.PostProcess):
+        def __init__(self, props):
+            super().__init__(props)
+
+        def eval(self, image, channels):
+            return mi.TensorXf(dr.square(image.array), image.shape)
+
+    mi.register_postprocess('square', Square)
+
+    # The image is the constant radiance, the film's output its square
+    radiance = 0.5
+    integrator = {'type': integrator_name}
+    if integrator_name != 'direct':
+        integrator['max_depth'] = 2
+    scene = mi.load_dict({
+        'type': 'scene',
+        'integrator': integrator,
+        'emitter': {'type': 'constant', 'radiance': {'type': 'rgb', 'value': radiance}},
+        'sensor': {
+            'type': 'perspective',
+            'film': {
+                'type': 'hdrfilm', 'width': 4, 'height': 3,
+                'rfilter': {'type': 'box'}, 'stage': {'type': 'square'}
+            },
+            'sampler': {'type': 'independent', 'sample_count': 4}
+        }
+    })
+    params = mi.traverse(scene)
+    key = 'emitter.radiance.value'
+    pixels = 4 * 3
+
+    image = mi.render(scene, spp=4)
+    assert dr.allclose(image, radiance ** 2)
+
+    # Forward mode: d(r^2)/dr = 2r
+    dr.enable_grad(params[key])
+    params.update()
+    image = mi.render(scene, params, spp=4)
+    dr.forward(params[key])
+    assert dr.allclose(dr.grad(image), 2 * radiance)
+
+    # Reverse mode: the sum over the image yields 2r per pixel
+    dr.set_grad(params[key], 0.0)
+    image = mi.render(scene, params, spp=4)
+    dr.backward(dr.sum(image.array))
+    assert dr.allclose(dr.grad(params[key]), 2 * radiance * pixels)
+
 # -------------------------------------------------------------------
 #                      Generate reference images
 # -------------------------------------------------------------------

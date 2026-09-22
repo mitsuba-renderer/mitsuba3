@@ -58,6 +58,26 @@ class ADIntegrator(mi.CppADIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
+        self._render_primal(scene, sensor, seed, spp)
+
+        return sensor.film().develop()
+
+    def _render_linear(self: mi.SamplingIntegrator,
+                       scene: mi.Scene,
+                       sensor: mi.Sensor,
+                       seed: mi.UInt32,
+                       spp: int) -> mi.TensorXf:
+        """Render the linear image, skipping the film's post-processing stages"""
+        self._render_primal(scene, sensor, seed, spp)
+
+        return sensor.film().develop(postprocess=False)
+
+    def _render_primal(self: mi.SamplingIntegrator,
+                       scene: mi.Scene,
+                       sensor: mi.Sensor,
+                       seed: mi.UInt32,
+                       spp: int) -> None:
+        """Render the scene in primal mode and leave the result in the film"""
         film = sensor.film()
 
         # Disable derivatives in all of the following
@@ -105,10 +125,7 @@ class ADIntegrator(mi.CppADIntegrator):
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid
 
-            # Perform the weight division and return an image tensor
             film.put_block(block)
-
-            return film.develop()
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
@@ -406,6 +423,63 @@ class ADIntegrator(mi.CppADIntegrator):
                 aovs = [rgb.x, rgb.y, rgb.z, weight] + aovs
             block.put(pos, aovs)
 
+    def _develop_linear(film: mi.Film,
+                        pos: mi.Point2f,
+                        value: mi.Spectrum,
+                        alpha: mi.Float,
+                        aovs: Sequence[mi.Float],
+                        wavelengths: mi.Spectrum,
+                        spp: int) -> mi.TensorXf:
+        '''Splat the given samples into the (empty) film and develop the linear
+        image. The film is empty again when the function returns.'''
+        block = film.create_block()
+        block.set_coalesce(block.coalesce() and spp >= 4)
+        ADIntegrator._splat_to_block(
+            block, film, pos,
+            value=value,
+            weight=1.0,
+            alpha=alpha,
+            aovs=aovs,
+            wavelengths=wavelengths
+        )
+        film.put_block(block)
+        image = film.develop(postprocess=False)
+        film.clear()
+        return image
+
+    def _postprocess_tangent(film: mi.Film,
+                             image: mi.TensorXf,
+                             tangent: mi.TensorXf) -> mi.TensorXf:
+        '''Push a tangent of the linear image through the film's
+        post-processing stages, linearized at ``image``'''
+        if not film.postprocess():
+            return tangent
+
+        with dr.resume_grad():
+            image = dr.detach(image)
+            dr.enable_grad(image)
+            dr.set_grad(image, tangent)
+            result = film.apply_postprocess(image, film.channels())
+            dr.forward_to(result)
+            return dr.grad(result)
+
+    def _postprocess_adjoint(film: mi.Film,
+                             image: mi.TensorXf,
+                             grad_in: mi.TensorXf) -> mi.TensorXf:
+        '''Pull a gradient with respect to the post-processed image back to
+        the linear image, linearized at ``image``'''
+        if not film.postprocess():
+            return grad_in
+
+        with dr.resume_grad():
+            image = dr.detach(image)
+            dr.enable_grad(image)
+            result = film.apply_postprocess(image, film.channels())
+            dr.set_grad(result, grad_in)
+            dr.enqueue(dr.ADMode.Backward, result)
+            dr.traverse(dr.ADMode.Backward)
+            return dr.grad(image)
+
 
     def sample(self,
                mode: drjit.ADMode,
@@ -560,6 +634,23 @@ class RBIntegrator(ADIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
+        δimage, image = self._render_forward(scene, sensor, seed, spp)
+
+        return ADIntegrator._postprocess_tangent(sensor.film(), image, δimage)
+
+    def _render_forward(self: mi.SamplingIntegrator,
+                        scene: mi.Scene,
+                        sensor: mi.Sensor,
+                        seed: mi.UInt32,
+                        spp: int) -> Tuple[mi.TensorXf, Optional[mi.TensorXf]]:
+        """
+        Evaluates the forward-mode derivative of the linear image (i.e.
+        without the film's post-processing stages).
+
+        Returns the gradient image and, when the film has post-processing
+        stages, the primal image at which they are to be linearized
+        (``None`` otherwise).
+        """
         film = sensor.film()
 
         # Disable derivatives in all of the following
@@ -612,16 +703,24 @@ class RBIntegrator(ADIntegrator):
                 wavelengths=ray.wavelengths
             )
 
-            # Perform the weight division and return an image tensor
+            # Perform the weight division
             film.put_block(block)
+            δimage = film.develop(postprocess=False)
+
+            # The post-processing stages are linearized at the primal image
+            image = None
+            if film.postprocess():
+                film.clear()
+                image = ADIntegrator._develop_linear(
+                    film, pos, L * weight,
+                    dr.select(valid, mi.Float(1), mi.Float(0)),
+                    aovs, ray.wavelengths, spp)
 
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid, aovs, δL, δaovs, \
-                valid_2, params, state_out, state_out_2, block
+                valid_2, state_out, state_out_2, block
 
-            result_grad = film.develop()
-
-        return result_grad
+        return δimage, image
 
     def render_backward(self: mi.SamplingIntegrator,
                         scene: mi.Scene,
@@ -681,6 +780,22 @@ class RBIntegrator(ADIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
+        self._render_backward(scene, sensor, grad_in, seed, spp,
+                              linear_grad=False)
+
+    def _render_backward(self: mi.SamplingIntegrator,
+                         scene: mi.Scene,
+                         sensor: mi.Sensor,
+                         grad_in: mi.TensorXf,
+                         seed: mi.UInt32,
+                         spp: int,
+                         linear_grad: bool) -> None:
+        """
+        Evaluates the reverse-mode derivative of the rendering step.
+
+        ``grad_in`` is a gradient with respect to the post-processed image,
+        or with respect to the linear image if ``linear_grad`` is set.
+        """
         film = sensor.film()
 
         # Disable derivatives in all of the following
@@ -691,6 +806,28 @@ class RBIntegrator(ADIntegrator):
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
             ray, weight, pos = self.sample_rays(scene, sensor, sampler)
+
+            # Launch the Monte Carlo sampling process in primal mode (1)
+            L, valid, aovs, state_out = self.sample(
+                mode=dr.ADMode.Primal,
+                scene=scene,
+                sampler=sampler.clone(),
+                ray=ray,
+                depth=mi.UInt32(0),
+                δL=None,
+                δaovs=None,
+                state_in=None,
+                active=mi.Bool(True)
+            )
+
+            # The post-processing stages are linearized at the primal image
+            if not linear_grad and film.postprocess():
+                image = ADIntegrator._develop_linear(
+                    film, pos, L * weight,
+                    dr.select(valid, mi.Float(1), mi.Float(0)),
+                    aovs, ray.wavelengths, spp)
+                grad_in = ADIntegrator._postprocess_adjoint(film, image, grad_in)
+                del image
 
             def splatting_and_backward_gradient_image(value: mi.Spectrum,
                                                       weight: mi.Float,
@@ -718,7 +855,7 @@ class RBIntegrator(ADIntegrator):
 
                 film.put_block(block)
 
-                image = film.develop()
+                image = film.develop(postprocess=False)
 
                 dr.set_grad(image, grad_in)
                 dr.enqueue(dr.ADMode.Backward, image)
@@ -746,19 +883,6 @@ class RBIntegrator(ADIntegrator):
 
             # Clear the dummy data splatted on the film above
             film.clear()
-
-            # Launch the Monte Carlo sampling process in primal mode (1)
-            L, valid, aovs, state_out = self.sample(
-                mode=dr.ADMode.Primal,
-                scene=scene,
-                sampler=sampler.clone(),
-                ray=ray,
-                depth=mi.UInt32(0),
-                δL=None,
-                δaovs=None,
-                state_in=None,
-                active=mi.Bool(True)
-            )
 
             # Launch Monte Carlo sampling in backward AD mode (2)
             L_2, valid_2, aovs_2, state_out_2 = self.sample(
@@ -1009,7 +1133,7 @@ class PSIntegrator(ADIntegrator):
             )
 
             film.put_block(block)
-            result_img += film.develop()
+            result_img += film.develop(postprocess=False)
 
         return result_img
 
@@ -1035,8 +1159,9 @@ class PSIntegrator(ADIntegrator):
 
         # Continuous derivative (if RB is used)
         if self.radiative_backprop and sppc > 0:
-            result_grad += RBIntegrator.render_forward(
-                self, scene, None, sensor, seed, sppc)
+            δimage, _ = RBIntegrator._render_forward(
+                self, scene, sensor, seed, sppc)
+            result_grad += δimage
 
         # Discontinuous derivative (and the non-RB continuous derivative)
         if sppp > 0 or sppi > 0 or \
@@ -1053,6 +1178,13 @@ class PSIntegrator(ADIntegrator):
                 grad_img = dr.grad(ad_img)
                 result_grad += grad_img
 
+        # The post-processing stages are linearized at a primal image
+        if film.postprocess():
+            image = self._render_linear(scene, sensor, seed,
+                                        sppc if sppc > 0 else spp)
+            result_grad = ADIntegrator._postprocess_tangent(
+                film, image, result_grad)
+
         return result_grad
 
     def render_backward(self,
@@ -1065,15 +1197,22 @@ class PSIntegrator(ADIntegrator):
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
+        film = sensor.film()
         sampler_spp = sensor.sampler().sample_count()
         sppc = self.override_spp(self.sppc, spp, sampler_spp)
         sppp = self.override_spp(self.sppp, spp, sampler_spp)
         sppi = self.override_spp(self.sppi, spp, sampler_spp)
 
+        # The post-processing stages are linearized at a primal image
+        if film.postprocess():
+            image = self._render_linear(scene, sensor, seed,
+                                        sppc if sppc > 0 else spp)
+            grad_in = ADIntegrator._postprocess_adjoint(film, image, grad_in)
+
         # Continuous derivative (if RB is used)
         if self.radiative_backprop and sppc > 0:
-            RBIntegrator.render_backward(
-                self, scene, None, grad_in, sensor, seed, sppc)
+            RBIntegrator._render_backward(
+                self, scene, sensor, grad_in, seed, sppc, linear_grad=True)
 
         # Discontinuous derivative (and the non-RB continuous derivative)
         if sppp > 0 or sppi > 0 or \
@@ -1153,7 +1292,7 @@ class PSIntegrator(ADIntegrator):
         )
         film.put_block(block)
 
-        return film.develop()
+        return film.develop(postprocess=False)
 
     #################### Indirect discontinuous derivatives ####################
 
@@ -1268,7 +1407,7 @@ class PSIntegrator(ADIntegrator):
             )
             film.put_block(block)
 
-        return film.develop()
+        return film.develop(postprocess=False)
 
     ########################### Integrator interface ###########################
 
