@@ -5090,7 +5090,7 @@ Args:
 
     evaluate: This parameter is only relevant for JIT variants of Mitsuba (LLVM,
         CUDA). If set to ``True``, the rendering step evaluates the generated
-        image and waits for its completion. Otherwise, the returned tensor
+        image. Otherwise, the returned tensor
         (``develop=true``) or modified film (``develop=false``)
         represent the rendering task as an unevaluated computation graph.
 

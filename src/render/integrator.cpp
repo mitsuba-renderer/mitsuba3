@@ -412,11 +412,12 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
         profiler.host_done();
 
-        if (evaluate)
-            dr::sync_thread();
-
-        if (profile)
+        if (profile) {
+            // The device time requires the kernels to finish
+            if (evaluate)
+                dr::sync_thread();
             Log(Info, "Rendering finished (%s)", profiler.summary(evaluate));
+        }
     }
 
     return result;
@@ -798,11 +799,12 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
 
         profiler.host_done();
 
-        if (evaluate)
-            dr::sync_thread();
-
-        if (profile)
+        if (profile) {
+            // The device time requires the kernels to finish
+            if (evaluate)
+                dr::sync_thread();
             Log(Info, "Rendering finished (%s)", profiler.summary(evaluate));
+        }
     }
 
     return result;
