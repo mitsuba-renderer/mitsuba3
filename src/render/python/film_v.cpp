@@ -72,7 +72,8 @@ MI_PY_EXPORT(Film) {
 
     auto film = MI_PY_TRAMPOLINE_CLASS(PyFilm, Film, Object)
         .def(nb::init<const Properties &>(), "props"_a)
-        .def_method(Film, prepare, "aovs"_a)
+        .def_method(Film, prepare, "aovs"_a, "pixel_weight"_a = 0.f)
+        .def_method(Film, pixel_weight)
         .def_method(Film, put_block, "block"_a)
         .def_method(Film, clear)
         .def_method(Film, develop, "postprocess"_a = true)

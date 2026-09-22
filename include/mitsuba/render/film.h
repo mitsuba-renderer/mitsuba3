@@ -29,6 +29,8 @@ NAMESPACE_BEGIN(mitsuba)
  * ``G``, ``B``, and optionally ``A``) followed by the arbitrary output
  * variables (AOVs) of the integrator, such as depth or shading normals. The
  * sample storage holds these channels followed by the weight channel ``W``.
+ * Integrators may omit the weight channel when all pixels receive the same
+ * total weight (see `prepare()`).
  *
  * Subclasses define the base channels via `base_channels()` and convert
  * spectral samples to them in `prepare_sample()`. Everything else (storage,
@@ -83,10 +85,31 @@ public:
 
     /**
      * Configure the film for rendering a specified set of extra channels
-     * (AOVs). Returns the total number of channels that the film will store,
-     * i.e. the base channels, the AOVs, and the weight channel.
+     * (AOVs) and clear its contents.
+     *
+     * Args:
+     *     aovs: Names of the AOV channels that follow the base channels.
+     *
+     *     pixel_weight: Integrators can set this when every pixel will
+     *         receive samples with the same total filter weight, e.g. when
+     *         rendering a fixed number of samples per pixel with a box
+     *         filter. The film then omits the weight channel from its
+     *         storage, and developing the image reduces to a scale factor
+     *         that does not require a separate kernel launch.
+     *
+     * Returns:
+     *     The number of channels per sample that the film stores, i.e. the
+     *     base channels, the AOVs and (unless ``pixel_weight`` is set) the
+     *     weight channel.
      */
-    size_t prepare(const std::vector<std::string> &aovs);
+    size_t prepare(const std::vector<std::string> &aovs,
+                   ScalarFloat pixel_weight = 0.f);
+
+    /**
+     * Return the total filter weight of every pixel passed to `prepare()`,
+     * or zero when the film stores a weight channel
+     */
+    ScalarFloat pixel_weight() const { return m_pixel_weight; }
 
     /// Merge an image block into the film. This method is thread-safe.
     void put_block(const ImageBlock *block);
@@ -266,6 +289,9 @@ protected:
     /// Rebuild the buffer underlying \ref launch_params()
     void update_launch_params();
 
+    /// Divide the channels of a storage tensor by its trailing weight channel
+    TensorXf divide_by_weight(const TensorXf &raw) const;
+
 protected:
     ScalarVector2u m_size;
     ScalarVector2u m_crop_size;
@@ -282,6 +308,9 @@ protected:
     /// Sample storage, see the class documentation for its layout
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
+
+    /// Total filter weight of every pixel, or zero if 'm_storage' has a weight channel
+    ScalarFloat m_pixel_weight = 0.f;
 
     /// Base channels and channels of the developed image
     std::vector<std::string> m_base_channels, m_channels;

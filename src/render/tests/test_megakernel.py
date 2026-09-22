@@ -30,60 +30,48 @@ def write_kernels(*args, output_dir='kernels', scene_fname=None):
                 f.write(entry.source)
 
 
-integrator_name = ['path']
-if hasattr(dr, 'cuda.ad'):
-    integrator_name.append('prb')
-
-@pytest.mark.parametrize('integrator_name', integrator_name)
-def test01_kernel_launches_path(variants_vec_rgb, integrator_name):
+@pytest.mark.parametrize('integrator_name', ['path', 'prb'])
+@pytest.mark.parametrize('rfilter', ['box', 'gaussian'])
+def test01_kernel_launches_path(variants_vec_rgb, integrator_name, rfilter):
     """
     Tests that forward rendering launches the correct number of kernels
     """
-    scene = mi.load_file(find_resource('resources/data/scenes/cbox/cbox.xml'))
+    scene_dict = mi.cornell_box()
+    scene_dict['sensor']['film']['rfilter'] = {'type': rfilter}
+    scene = mi.load_dict(scene_dict)
     film_size = scene.sensors()[0].film().crop_size()
-    spp = 2
+    spp = 1
 
     integrator = mi.load_dict({
         'type': integrator_name,
         'max_depth': 3
     })
 
-    # Perform 3 rendering in a row
-    with dr.kernel_history([dr.KernelType.JIT]) as history_1:
-        integrator.render(scene, seed=0, spp=spp)
-    with dr.kernel_history([dr.KernelType.JIT]) as history_2:
-        integrator.render(scene, seed=0, spp=spp)
-    with dr.kernel_history([dr.KernelType.JIT]) as history_3:
-        integrator.render(scene, seed=0, spp=spp)
+    histories = []
+    for _ in range(2):
+        with dr.kernel_history([dr.KernelType.JIT]) as history:
+            dr.eval(integrator.render(scene, seed=0, spp=spp))
+        histories.append(history)
 
-    # Should only be 2 kernels (rendering, film develop)
-    assert len(history_1) == 2
-    assert len(history_2) == 2
-    assert len(history_3) == 2
-
-    # Only the rendering kernel should use OptiX
-    if mi.variant().startswith('cuda'):
-        assert [e.uses_optix for e in history_1] == [True, False]
-        assert [e.uses_optix for e in history_2] == [True, False]
-        assert [e.uses_optix for e in history_3] == [True, False]
-
-    # Check rendering wavefront size
+    # Every pixel receives a single sample with unit weight when using a box
+    # filter, hence developing the film does not require a separate kernel
     render_wavefront_size = dr.prod(film_size) * spp
-    assert history_1[0].size == render_wavefront_size
-    assert history_2[0].size == render_wavefront_size
-    assert history_3[0].size == render_wavefront_size
+    film_wavefront_size = dr.prod(film_size) * 3 # (RGB)
+    if rfilter == 'box':
+        expected_sizes = [render_wavefront_size]
+    else:
+        expected_sizes = [render_wavefront_size, film_wavefront_size]
 
-    # Check film development wavefront size
-    film_wavefront_size = dr.prod(film_size) * 3 #(RGB)
-    assert history_1[1].size == film_wavefront_size
-    assert history_2[1].size == film_wavefront_size
-    assert history_3[1].size == film_wavefront_size
+    for history in histories:
+        assert [e.size for e in history] == expected_sizes
 
-    # TODO First run produces different kernels for some reason
-    # Kernels should all be identical (reused from the cached)
-    for i in range(len(history_1)):
-        # assert history_1[i].hash == history_2[i].hash # TODO
-        assert history_3[i].hash == history_2[i].hash
+        # Only the rendering kernel should use OptiX
+        if mi.variant().startswith('cuda'):
+            assert [e.uses_optix for e in history] == \
+                [True] + [False] * (len(expected_sizes) - 1)
+
+    # The second render reuses the kernels of the first one
+    assert [e.hash for e in histories[0]] == [e.hash for e in histories[1]]
 
 
 @pytest.mark.parametrize('scene_fname', [

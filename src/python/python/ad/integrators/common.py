@@ -375,7 +375,11 @@ class ADIntegrator(mi.CppADIntegrator):
                 % wavefront_size)
 
         sampler.seed(seed, wavefront_size)
-        film.prepare(aovs)
+
+        # The box filter places each sample in a single pixel with unit
+        # weight, hence every pixel has the same total weight
+        pixel_weight = spp if film.rfilter().is_box_filter() else 0
+        film.prepare(aovs, pixel_weight)
 
         return sampler, spp
 
@@ -388,12 +392,19 @@ class ADIntegrator(mi.CppADIntegrator):
                         aovs: Sequence[mi.Float],
                         wavelengths: mi.Spectrum,
                         active: mi.Bool = True):
-        '''Helper function to splat values to a imageblock'''
+        '''
+        Helper function to splat values to a imageblock. The ``weight`` is
+        ignored when the film omits the weight channel (see
+        `mitsuba.Film.prepare`).
+        '''
         if mi.is_polarized:
             value = mi.unpolarized_spectrum(value)
         values = film.prepare_sample(value, wavelengths,
                                      valid=mi.Mask(alpha > 0))
-        block.put(pos, values + list(aovs) + [mi.Float(weight)], active)
+        values += list(aovs)
+        if film.pixel_weight() == 0:
+            values.append(mi.Float(weight))
+        block.put(pos, values, active)
 
 
     def sample(self,

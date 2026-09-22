@@ -220,8 +220,13 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
 
     uint32_t n_passes = spp / spp_per_pass;
 
-    // Determine output channels and prepare the film with this information
-    size_t n_channels = film->prepare(aov_names());
+    // Determine output channels and prepare the film with this information.
+    // The box filter places each sample in a single pixel with unit weight,
+    // hence every pixel of a vectorized render has the same total weight.
+    ScalarFloat pixel_weight = 0.f;
+    if (dr::is_jit_v<Float> && film->rfilter()->is_box_filter())
+        pixel_weight = (ScalarFloat) spp;
+    size_t n_channels = film->prepare(aov_names(), pixel_weight);
 
     // Start the render timer (used for timeouts & log messages)
     m_render_timer.reset();
@@ -514,13 +519,14 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     const Medium *medium = sensor->medium();
 
-    // The AOVs follow the film's base channels, the sample weight comes last
+    // The AOVs follow the film's base channels, the sample weight (if stored) comes last
     auto [spec, valid] = sample(scene, sampler, ray, medium,
                                 aovs + film->base_channels().size(), active);
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
     film->prepare_sample(spec_u, ray.wavelengths, aovs, valid, active);
-    aovs[block->channel_count() - 1] = 1.f;
+    if (film->pixel_weight() == 0.f)
+        aovs[block->channel_count() - 1] = 1.f;
 
     // With box filter, ignore random offset to prevent numerical instabilities
     block->put(box_filter ? pos : sample_pos, aovs, active);

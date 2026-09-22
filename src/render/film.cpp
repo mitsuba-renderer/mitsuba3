@@ -154,7 +154,12 @@ Film<Float, Spectrum>::prepare_sample(const UnpolarizedSpectrum &spec,
         out[3] = dr::select(valid, Float(1.f), Float(0.f));
 }
 
-MI_VARIANT size_t Film<Float, Spectrum>::prepare(const std::vector<std::string> &aovs) {
+MI_VARIANT size_t Film<Float, Spectrum>::prepare(const std::vector<std::string> &aovs,
+                                                 ScalarFloat pixel_weight) {
+    if (!(pixel_weight >= 0.f))
+        Throw("Film::prepare(): the pixel weight must be nonnegative!");
+
+    m_pixel_weight = pixel_weight;
     m_channels = m_base_channels;
     m_channels.insert(m_channels.end(), aovs.begin(), aovs.end());
 
@@ -165,7 +170,11 @@ MI_VARIANT size_t Film<Float, Spectrum>::prepare(const std::vector<std::string> 
 
     alloc_storage();
 
-    return m_channels.size() + 1;
+    // A newly allocated storage isn't a zero literal. Clearing it lets
+    // put_block() adopt the buffer of the first block without a kernel launch.
+    clear();
+
+    return m_storage->channel_count();
 }
 
 MI_VARIANT void Film<Float, Spectrum>::alloc_storage() {
@@ -177,7 +186,7 @@ MI_VARIANT void Film<Float, Spectrum>::alloc_storage() {
     if (m_channels.empty())
         m_channels = m_base_channels;
 
-    size_t channel_count = m_channels.size() + 1;
+    size_t channel_count = m_channels.size() + (m_pixel_weight > 0.f ? 0 : 1);
 
     std::lock_guard<std::mutex> lock(m_mutex);
     if (m_storage != nullptr &&
@@ -232,15 +241,80 @@ MI_VARIANT void Film<Float, Spectrum>::clear() {
 
 MI_VARIANT typename Film<Float, Spectrum>::TensorXf
 Film<Float, Spectrum>::storage() const {
-    std::lock_guard<std::mutex> lock(m_mutex);
-    return m_storage->tensor();
+    using Array = typename TensorXf::Array;
+
+    TensorXf raw;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        raw = m_storage->tensor();
+    }
+
+    if (m_pixel_weight == 0.f)
+        return raw;
+
+    // Append the weight channel omitted by the storage
+    const Array &data = raw.array();
+    size_t height = raw.shape(0), width = raw.shape(1);
+    uint32_t source_ch = (uint32_t) m_channels.size(),
+             target_ch = source_ch + 1,
+             pixel_count = (uint32_t) (width * height);
+
+    Array values;
+    if constexpr (dr::is_jit_v<Float>) {
+        UInt32 idx         = dr::arange<UInt32>(pixel_count * target_ch),
+               pixel_idx   = idx / target_ch,
+               channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
+
+        Mask is_weight = channel_idx == source_ch;
+        values = dr::select(
+            is_weight, m_pixel_weight,
+            dr::gather<Float>(data, dr::fmadd(pixel_idx, source_ch, channel_idx),
+                              !is_weight));
+    } else {
+        values = dr::empty<Array>((size_t) pixel_count * target_ch);
+        const ScalarFloat *src = data.data();
+        ScalarFloat *dst = values.data();
+
+        for (uint32_t p = 0; p < pixel_count; ++p) {
+            for (uint32_t c = 0; c < source_ch; ++c)
+                dst[p * target_ch + c] = src[p * source_ch + c];
+            dst[p * target_ch + source_ch] = m_pixel_weight;
+        }
+    }
+
+    return TensorXf(values, { height, width, (size_t) target_ch });
 }
 
 MI_VARIANT typename Film<Float, Spectrum>::TensorXf
 Film<Float, Spectrum>::develop(bool postprocess) const {
+    TensorXf raw;
+    {
+        std::lock_guard<std::mutex> lock(m_mutex);
+        raw = m_storage->tensor();
+    }
+
+    TensorXf image;
+    if (m_pixel_weight > 0.f) {
+        // All pixels share the same weight, which reduces the weight division
+        // to a scale factor that fuses into subsequent computation
+        image = raw;
+        if (m_pixel_weight != 1.f)
+            image = TensorXf(raw.array() * (1.f / m_pixel_weight), 3,
+                             raw.shape().data());
+    } else {
+        image = divide_by_weight(raw);
+    }
+
+    if (!postprocess || m_postprocess.empty())
+        return image;
+
+    return apply_postprocess(image, m_channels);
+}
+
+MI_VARIANT typename Film<Float, Spectrum>::TensorXf
+Film<Float, Spectrum>::divide_by_weight(const TensorXf &raw) const {
     using Array = typename TensorXf::Array;
 
-    TensorXf raw = storage();
     const Array &data = raw.array();
     size_t height = raw.shape(0), width = raw.shape(1);
     uint32_t target_ch = (uint32_t) m_channels.size(),
@@ -270,12 +344,7 @@ Film<Float, Spectrum>::develop(bool postprocess) const {
         }
     }
 
-    TensorXf image(values, { height, width, (size_t) target_ch });
-
-    if (!postprocess || m_postprocess.empty())
-        return image;
-
-    return apply_postprocess(image, m_channels);
+    return TensorXf(values, { height, width, (size_t) target_ch });
 }
 
 MI_VARIANT ref<Bitmap> Film<Float, Spectrum>::bitmap(bool postprocess) const {
