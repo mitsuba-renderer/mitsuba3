@@ -277,6 +277,9 @@ public:
     /// Return the number of channels used by this bitmap
     size_t channel_count() const { return m_struct.size(); }
 
+    /// Return the names of the channels used by this bitmap
+    std::vector<std::string> channel_names() const;
+
     /// Return whether this image has an alpha channel
     bool has_alpha() const {
         return m_pixel_format == PixelFormat::YA
@@ -576,6 +579,15 @@ public:
 
     /// Attempt to detect the bitmap file format in a given stream
     static FileFormat detect_file_format(Stream *stream);
+
+    /**
+     * \brief Return the pixel format described by a set of channel names
+     *
+     * The order of the names does not matter. Names that don't spell out
+     * one of the color formats (e.g. ``R``, ``G``, ``B``, ``A``) yield
+     * ``PixelFormat::MultiChannel``.
+     */
+    static PixelFormat pixel_format_from_channels(const std::vector<std::string> &channels);
 
     /// Vertically flip the bitmap
     void vflip();

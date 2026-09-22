@@ -106,8 +106,11 @@ def test04_without_prepare(variant_scalar_spectral):
         }
     })
 
-    with pytest.raises(RuntimeError, match=r'prepare\(\)'):
-        _ = film.develop()
+    # Before prepare(), the film holds an empty image with its base channels
+    assert film.channels() == ['srf_test']
+    image = film.develop()
+    assert image.shape == (2, 3, 1)
+    assert dr.all(image == 0, axis=None)
 
 @pytest.mark.parametrize('develop', [False, True])
 def test05_empty_film(variants_all_spectral, develop):

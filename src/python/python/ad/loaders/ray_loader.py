@@ -267,7 +267,7 @@ class RayDataLoader:
                     f"Target image {i} has {tensor_shape[2]} channels, "
                     f"expected {self.channel_size}"
                 )
-            film_channels = film.base_channels_count()
+            film_channels = len(film.base_channels())
             if film_channels != self.channel_size:
                 raise ValueError(
                     f"Sensor {i} film has {film_channels} channels, "

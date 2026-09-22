@@ -26,19 +26,13 @@ MI_PY_EXPORT(ImageBlock) {
         .def("put_block", &ImageBlock::put_block, D(ImageBlock, put_block),
              "block"_a)
         .def("put",
-             nb::overload_cast<const Point2f &, const wavelength_t<Spectrum> &,
-                               const Spectrum &, Float, Float,
-                               dr::mask_t<Float>>(&ImageBlock::put),
-             "pos"_a, "wavelengths"_a, "value"_a, "alpha"_a = 1.f,
-             "weight"_a = 1, "active"_a = true, D(ImageBlock, put))
-        .def("put",
              [](ImageBlock &ib, const Point2f &pos,
                 const std::vector<Float> &values, Mask active) {
                  if (values.size() != ib.channel_count())
                      throw std::runtime_error("Incompatible channel count!");
                  ib.put(pos, values.data(), active);
              }, "pos"_a, "values"_a, "active"_a = true,
-             D(ImageBlock, put, 2))
+             D(ImageBlock, put))
         .def("read",
              [](ImageBlock &ib, const Point2f &pos, Mask active) {
                  std::vector<Float> values(ib.channel_count());

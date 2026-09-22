@@ -60,12 +60,12 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
         }
     }
 
-    if (has_flag(m_film->flags(), FilmFlags::Spectral)) {
+    if (const Texture *film_srf = m_film->sensor_response_function()) {
         if (m_srf != nullptr) {
             Throw("Sensor(): Spectral response function defined previously in sensor, "
                   "but another was found in film.");
         } else {
-            m_srf = m_film->sensor_response_function();
+            m_srf = film_srf;
         }
     }
 }

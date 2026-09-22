@@ -149,57 +149,6 @@ public:
      * Args:
      *     pos: Denotes the sample position in fractional pixel coordinates
      *
-     *     wavelengths: Sample wavelengths in nanometers
-     *
-     *     value: Sample value associated with the specified wavelengths
-     *
-     *     alpha: Alpha value associated with the sample
-     *
-     * Note:
-     *     This variant of the `put()` function assumes that the ImageBlock
-     *     has a standard layout, namely: ``RGB``, potentially ``alpha``,
-     *     and a ``weight`` channel. Use the other variant if the channel
-     *     configuration deviates from this default.
-     */
-    void put(const Point2f &pos,
-             const Wavelength &wavelengths,
-             const Spectrum &value,
-             Float alpha = 1.f,
-             Float weight = 1.f,
-             Mask active = true) {
-        DRJIT_MARK_USED(wavelengths);
-
-        UnpolarizedSpectrum spec_u = unpolarized_spectrum(value);
-
-        Color3f rgb;
-        if constexpr (is_spectral_v<Spectrum>)
-            rgb = spectrum_to_srgb(spec_u, wavelengths, active);
-        else if constexpr (is_monochromatic_v<Spectrum>)
-            rgb = spec_u.x();
-        else
-            rgb = spec_u;
-
-        Float values[5] = { rgb.x(), rgb.y(), rgb.z(), 0, 0 };
-
-        if (m_channel_count == 4) {
-            values[3] = weight;
-        } else if (m_channel_count == 5) {
-            values[3] = alpha;
-            values[4] = weight;
-        } else {
-            Throw("ImageBlock::put(): non-standard image block configuration! (AOVs?)");
-        }
-
-        put(pos, values, active);
-    }
-
-    /**
-     * Accumulate a single sample or a wavefront of samples into
-     * the image block.
-     *
-     * Args:
-     *     pos: Denotes the sample position in fractional pixel coordinates
-     *
      *     values: Points to an array of length `channel_count()`, which specifies
      *         the sample value for each channel.
      */

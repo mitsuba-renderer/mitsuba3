@@ -212,7 +212,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     scene.integrator().render(scene, seed=0, spp=spp, develop=True)
 
     # Compute variance image
-    bmp = scene.sensors()[0].film().bitmap(raw=False)
+    bmp = scene.sensors()[0].film().bitmap()
     img, var_img = bitmap_extract(bmp, require_variance=False)
 
     # Compute Z-test p-value
@@ -308,7 +308,7 @@ def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):
             scene = mi.load_file(scene_fname, spp=spp)
             scene.integrator().render(scene, seed=0, develop=False)
 
-            bmp = scene.sensors()[0].film().bitmap(raw=False)
+            bmp = scene.sensors()[0].film().bitmap()
             img, var_img = bitmap_extract(bmp)
 
             # Write rendered image to a file

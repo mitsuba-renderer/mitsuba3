@@ -164,7 +164,8 @@ public:
         Spectrum weight = emitter_idx_weight * emitter_weight * wav_weight * sensor_weight;
 
         // No BSDF passed (should not evaluate it since there's no scattering)
-        connect_sensor(scene, si, sensor_ds, nullptr, weight, block, sample_scale, active);
+        connect_sensor(scene, sensor, si, sensor_ds, nullptr, weight, block,
+                       sample_scale, active);
     }
 
     /// Samples a ray from a random emitter in the scene.
@@ -261,7 +262,7 @@ public:
             // from the sensor to the current surface point.
             auto [sensor_ds, sensor_weight] =
                 sensor->sample_direction(si, ls.sampler->next_2d(), ls.active);
-            connect_sensor(scene, si, sensor_ds, bsdf,
+            connect_sensor(scene, sensor, si, sensor_ds, bsdf,
                            ls.throughput * sensor_weight, block, sample_scale,
                            ls.active);
 
@@ -335,7 +336,8 @@ public:
      * Returns:
      *     The quantity that was accumulated to the block.
      */
-    Spectrum connect_sensor(const Scene *scene, const SurfaceInteraction3f &si,
+    Spectrum connect_sensor(const Scene *scene, const Sensor *sensor,
+                            const SurfaceInteraction3f &si,
                             const DirectionSample3f &sensor_ds,
                             const BSDFPtr &bsdf, const Spectrum &weight,
                             ImageBlock *block, ScalarFloat sample_scale,
@@ -404,13 +406,21 @@ public:
         // The crop window is already accounted for in the UV positions
         // returned by the sensor, here we just need to compensate for
         // the block's offset that will be applied in `put`.
-        Float alpha = dr::select(bsdf != nullptr, 1.f, 0.f);
         Vector2f adjusted_position = sensor_ds.uv + block->offset();
 
-        // Splat RGB value onto the image buffer. The particle tracer
-        // does not use the weight channel at all
-        block->put(adjusted_position, si.wavelengths, result, alpha,
-                   /* weight = */ 0.f, active);
+        // Splat onto the image buffer. The particle tracer does not use the
+        // weight channel at all.
+        uint32_t channel_count = block->channel_count();
+        if (channel_count > 8)
+            Throw("connect_sensor(): films with more than 7 base channels are "
+                  "not supported.");
+
+        Float values[8];
+        sensor->film()->prepare_sample(unpolarized_spectrum(result),
+                                       si.wavelengths, values,
+                                       bsdf != nullptr, active);
+        values[channel_count - 1] = 0.f;
+        block->put(adjusted_position, values, active);
 
         return result;
     }

@@ -164,6 +164,31 @@ void Bitmap::clear() {
     memset(m_data.get(), 0, buffer_size());
 }
 
+static const std::pair<const char *, Bitmap::PixelFormat> channel_formats[] = {
+    { "Y",     Bitmap::PixelFormat::Y     }, { "AY",    Bitmap::PixelFormat::YA    },
+    { "BGR",   Bitmap::PixelFormat::RGB   }, { "ABGR",  Bitmap::PixelFormat::RGBA  },
+    { "BGRW",  Bitmap::PixelFormat::RGBW  }, { "ABGRW", Bitmap::PixelFormat::RGBAW },
+    { "XYZ",   Bitmap::PixelFormat::XYZ   }, { "AXYZ",  Bitmap::PixelFormat::XYZA  }
+};
+
+Bitmap::PixelFormat Bitmap::pixel_format_from_channels(const std::vector<std::string> &channels) {
+    // Sort the single-letter names into a key that ignores the channel order
+    std::string key;
+    for (const std::string &name : channels) {
+        if (name.size() != 1)
+            return PixelFormat::MultiChannel;
+        key += name;
+    }
+
+    std::sort(key.begin(), key.end());
+
+    for (auto [sorted, format] : channel_formats)
+        if (key == sorted)
+            return format;
+
+    return PixelFormat::MultiChannel;
+}
+
 void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string> &channel_names) {
     std::vector<std::string> channels;
 
@@ -227,6 +252,14 @@ void Bitmap::rebuild_struct(size_t channel_count, const std::vector<std::string>
 
 size_t Bitmap::buffer_size() const {
     return pixel_count() * bytes_per_pixel();
+}
+
+std::vector<std::string> Bitmap::channel_names() const {
+    std::vector<std::string> result;
+    result.reserve(m_struct.size());
+    for (const sj::Field &field : m_struct)
+        result.push_back(field.name);
+    return result;
 }
 
 size_t Bitmap::bytes_per_pixel() const {
@@ -651,49 +684,20 @@ std::vector<std::pair<std::string, ref<Bitmap>>> Bitmap::split() const {
         std::string prefix = it->first;
         auto range = fields.equal_range(prefix);
 
-        bool has_rgb = true,
-             has_xyz = true,
-             has_y   = false,
-             has_a   = false,
-             has_w   = false;
-
         std::vector<std::string> field_names;
-        for (auto it2 = range.first; it2 != range.second; ++it2) {
-            if (it2->second.first == "Y")
-                has_y = true;
-            else if (it2->second.first == "A")
-                has_a = true;
-            else if (it2->second.first == "W")
-                has_w = true;
-            else if (std::string("RGB").find(it2->second.first) == std::string::npos)
-                has_rgb = false;
-            else if (std::string("XYZ").find(it2->second.first) == std::string::npos)
-                has_xyz = false;
+        for (auto it2 = range.first; it2 != range.second; ++it2)
             field_names.push_back(it2->second.first);
-        }
 
+        bool has_w = std::find(field_names.begin(), field_names.end(), "W") !=
+                     field_names.end();
         if (has_w && prefix != "<root>")
             Throw("Bitmap::split: Unexpected weight channel in image '%s'", prefix);
-        if (has_w && !has_a)
-            Throw("Bitmap::split: presence of weight channel implies alpha channel!");
 
-        size_t extra_ch = 0;
-        extra_ch += has_a ? 1 : 0;
-        extra_ch += has_w ? 1 : 0;
-
-        has_rgb &= field_names.size() == 3 + extra_ch;
-        has_xyz &= field_names.size() == 3 + extra_ch;
-        has_y   &= !has_xyz && field_names.size() == 1 + extra_ch;
+        PixelFormat format = pixel_format_from_channels(field_names);
 
         ref<Bitmap> target;
-        if (has_xyz || has_rgb || has_y) {
-            target = new Bitmap(
-                has_rgb
-                    ? (has_w ? (has_a ? PixelFormat::RGBAW : PixelFormat::RGBW)
-                             : (has_a ? PixelFormat::RGBA : PixelFormat::RGB))
-                    : (has_xyz ? (has_a ? PixelFormat::XYZA : PixelFormat::XYZ)
-                               : (has_a ? PixelFormat::YA : PixelFormat::Y)),
-                m_component_format, m_size);
+        if (format != PixelFormat::MultiChannel) {
+            target = new Bitmap(format, m_component_format, m_size);
         } else {
             target = new Bitmap (
                 PixelFormat::MultiChannel,

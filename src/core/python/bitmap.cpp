@@ -293,6 +293,8 @@ MI_PY_EXPORT(Bitmap) {
         .def("split", &Bitmap::split, D(Bitmap, split))
         .def_static("detect_file_format", &Bitmap::detect_file_format,
                     D(Bitmap, detect_file_format))
+        .def_static("pixel_format_from_channels", &Bitmap::pixel_format_from_channels,
+                    "channels"_a, D(Bitmap, pixel_format_from_channels))
         .def(
             "__dlpack__",
             [](Bitmap &bitmap, nb::object /*stream*/) {

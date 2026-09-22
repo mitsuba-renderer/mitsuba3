@@ -108,8 +108,18 @@ Integrator<Float, Spectrum>::render_forward(Scene* scene,
                                             UInt32 seed,
                                             uint32_t spp) {
     auto forward_gradients = [&]() -> TensorXf {
-        auto image = render(scene, sensor, seed, spp, true, false);
-        dr::forward_to(image);
+        render(scene, sensor, seed, spp, false, false);
+        TensorXf image = sensor->film()->develop();
+
+        // The image may not depend on any differentiable parameter, e.g.
+        // when an integrator only produces geometric AOVs
+        if (!dr::grad_enabled(image))
+            return TensorXf(dr::zeros<Float>(image.array().size()), 3,
+                            image.shape().data());
+
+        // Keep the input gradients, integrators that compose several passes
+        // (e.g. 'aov') need them again for the following passes
+        dr::forward_to(image, dr::ADFlag::ClearEdges | dr::ADFlag::ClearInterior);
         return TensorXf(dr::grad(image.array()), 3, image.shape().data());
     };
 
@@ -130,8 +140,10 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
                                              UInt32 seed,
                                              uint32_t spp) {
     auto backward_gradients = [&]() -> void {
-        auto image = render(scene, sensor, seed, spp, true, false);
-        dr::backward_from((image * grad_in).array());
+        render(scene, sensor, seed, spp, false, false);
+        TensorXf image = sensor->film()->develop();
+        dr::backward_from((image * grad_in).array(),
+                          dr::ADFlag::Default | dr::ADFlag::AllowNoGrad);
     };
 
     if constexpr (dr::is_jit_v<Float>) {
@@ -396,7 +408,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
             result = film->develop();
             dr::schedule(result);
         } else {
-            film->schedule_storage();
+            dr::schedule(film->storage());
         }
 
         if (evaluate)
@@ -476,7 +488,6 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
                                                    const Vector2f &offset,
                                                    Mask active) const {
     const Film *film = sensor->film();
-    const bool has_alpha = has_flag(film->flags(), FilmFlags::Alpha);
     const bool box_filter = film->rfilter()->is_box_filter();
 
     bool jitter = sensor->jitter();
@@ -506,36 +517,13 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
 
     const Medium *medium = sensor->medium();
 
+    // The AOVs follow the film's base channels, the sample weight comes last
     auto [spec, valid] = sample(scene, sampler, ray, medium,
-               aovs + (has_alpha ? 5 : 4) /* skip R,G,B,[A],W */, active);
+                                aovs + film->base_channels().size(), active);
 
     UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
-
-    if (unlikely(has_flag(film->flags(), FilmFlags::Special))) {
-        film->prepare_sample(spec_u, ray.wavelengths, aovs,
-                             /*weight*/ 1.f,
-                             /*alpha */ dr::select(valid, Float(1.f), Float(0.f)),
-                             valid);
-    } else {
-        Color3f rgb;
-        if constexpr (is_spectral_v<Spectrum>)
-            rgb = spectrum_to_srgb(spec_u, ray.wavelengths, active);
-        else if constexpr (is_monochromatic_v<Spectrum>)
-            rgb = spec_u.x();
-        else
-            rgb = spec_u;
-
-        aovs[0] = rgb.x();
-        aovs[1] = rgb.y();
-        aovs[2] = rgb.z();
-
-        if (likely(has_alpha)) {
-            aovs[3] = dr::select(valid, Float(1.f), Float(0.f));
-            aovs[4] = 1.f;
-        } else {
-            aovs[3] = 1.f;
-        }
-    }
+    film->prepare_sample(spec_u, ray.wavelengths, aovs, valid, active);
+    aovs[block->channel_count() - 1] = 1.f;
 
     // With box filter, ignore random offset to prevent numerical instabilities
     block->put(box_filter ? pos : sample_pos, aovs, active);
@@ -663,7 +651,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             result = film->develop();
             dr::schedule(result);
         } else {
-            film->schedule_storage();
+            dr::schedule(film->storage());
         }
         return result;
     }
@@ -811,7 +799,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
             result = film->develop();
             dr::schedule(result);
         } else {
-            film->schedule_storage();
+            dr::schedule(film->storage());
         }
 
         if (evaluate)

@@ -51,10 +51,6 @@ class ADIntegrator(mi.CppADIntegrator):
                develop: bool = True,
                evaluate: bool = True,
                profile: bool = False) -> mi.TensorXf:
-        if not develop:
-            raise Exception("develop=True must be specified when "
-                            "invoking AD integrators")
-
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
@@ -105,10 +101,11 @@ class ADIntegrator(mi.CppADIntegrator):
             # Explicitly delete any remaining unused variables
             del sampler, ray, weight, pos, L, valid
 
-            # Perform the weight division and return an image tensor
             film.put_block(block)
 
-            return film.develop()
+            # Perform the weight division and return an image tensor
+            if develop:
+                return film.develop()
 
     def render_forward(self: mi.SamplingIntegrator,
                        scene: mi.Scene,
@@ -157,8 +154,11 @@ class ADIntegrator(mi.CppADIntegrator):
                 film.put_block(block)
                 result_img = film.develop()
 
-                # Propagate the gradients to the image tensor
-                dr.forward_to(result_img)
+                # Propagate the gradients to the image tensor. Keep the input
+                # gradients, integrators that compose several passes (e.g.
+                # 'aov') need them again for the following passes.
+                dr.forward_to(result_img, flags=dr.ADFlag.ClearEdges |
+                                                dr.ADFlag.ClearInterior)
 
         return dr.grad(result_img)
 
@@ -382,29 +382,14 @@ class ADIntegrator(mi.CppADIntegrator):
                         weight: mi.Float,
                         alpha: mi.Float,
                         aovs: Sequence[mi.Float],
-                        wavelengths: mi.Spectrum):
+                        wavelengths: mi.Spectrum,
+                        active: mi.Bool = True):
         '''Helper function to splat values to a imageblock'''
-        if (dr.all(mi.has_flag(film.flags(), mi.FilmFlags.Special))):
-            aovs = film.prepare_sample(value, wavelengths,
-                                       block.channel_count(),
-                                       weight=weight,
-                                       alpha=alpha)
-            block.put(pos, aovs)
-            del aovs
-        else:
-            if mi.is_polarized:
-                value = mi.unpolarized_spectrum(value)
-            if mi.is_spectral:
-                rgb = mi.spectrum_to_srgb(value, wavelengths)
-            elif mi.is_monochromatic:
-                rgb = mi.Color3f(value.x)
-            else:
-                rgb = value
-            if mi.has_flag(film.flags(), mi.FilmFlags.Alpha):
-                aovs = [rgb.x, rgb.y, rgb.z, alpha, weight] + aovs
-            else:
-                aovs = [rgb.x, rgb.y, rgb.z, weight] + aovs
-            block.put(pos, aovs)
+        if mi.is_polarized:
+            value = mi.unpolarized_spectrum(value)
+        values = film.prepare_sample(value, wavelengths,
+                                     valid=mi.Mask(alpha > 0))
+        block.put(pos, values + list(aovs) + [mi.Float(weight)], active)
 
 
     def sample(self,
@@ -939,7 +924,7 @@ class PSIntegrator(ADIntegrator):
         aovs = self.aov_names()
         shape = (film.crop_size()[1],
                  film.crop_size()[0],
-                 film.base_channels_count() + len(aovs))
+                 len(film.base_channels()) + len(aovs))
         result_img = dr.zeros(mi.TensorXf, shape=shape)
 
         sampler_spp = sensor.sampler().sample_count()
@@ -1025,7 +1010,7 @@ class PSIntegrator(ADIntegrator):
         film = sensor.film()
         shape = (film.crop_size()[1],
                  film.crop_size()[0],
-                 film.base_channels_count() + len(self.aov_names()))
+                 len(film.base_channels()) + len(self.aov_names()))
         result_grad = dr.zeros(mi.TensorXf, shape=shape)
 
         sampler_spp = sensor.sampler().sample_count()
@@ -1049,7 +1034,8 @@ class PSIntegrator(ADIntegrator):
             # if `ad_img` isn't attached and we haven't used RB for the
             # continuous derivatives.
             if dr.grad_enabled(ad_img) or not self.radiative_backprop:
-                dr.forward_to(ad_img)
+                dr.forward_to(ad_img, flags=dr.ADFlag.ClearEdges |
+                                            dr.ADFlag.ClearInterior)
                 grad_img = dr.grad(ad_img)
                 result_grad += grad_img
 
@@ -1143,12 +1129,13 @@ class PSIntegrator(ADIntegrator):
         # Particle tracer style imageblock to accumulate primarily visible derivatives
         block = film.create_block(normalize=True)
         block.set_coalesce(block.coalesce() and spp >= 4)
-        block.put(
-            pos=sensor_ds.uv,
-            wavelengths=wavelengths,
+        ADIntegrator._splat_to_block(
+            block, film, sensor_ds.uv,
             value=derivative * dr.rcp(mi.ScalarFloat(spp)),
             weight=0,
             alpha=1,
+            aovs=[],
+            wavelengths=wavelengths,
             active=active
         )
         film.put_block(block)
@@ -1258,12 +1245,13 @@ class PSIntegrator(ADIntegrator):
             # Splat the result to the film
             block = film.create_block(normalize=True)
             block.set_coalesce(block.coalesce() and spp >= 4)
-            block.put(
-                pos=sensor_uv,
-                wavelengths=wavelengths,
+            ADIntegrator._splat_to_block(
+                block, film, sensor_uv,
                 value=value,
                 weight=0,
                 alpha=1,
+                aovs=[],
+                wavelengths=wavelengths,
                 active=active
             )
             film.put_block(block)

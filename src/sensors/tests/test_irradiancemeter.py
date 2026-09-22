@@ -136,8 +136,8 @@ def test_incoming_flux_integrator(variant_scalar_rgb, radiance):
     scene.integrator().render(scene, seed=0)
     film = scene.sensors()[0].film()
 
-    img = film.bitmap(raw=True).convert(mi.Bitmap.PixelFormat.Y,
-                                        mi.Struct.Type.Float32, srgb_gamma=False)
+    img = film.bitmap().convert(mi.Bitmap.PixelFormat.Y,
+                                mi.Struct.Type.Float32, srgb_gamma=False)
 
     assert dr.allclose(mi.TensorXf(img), (radiance * dr.pi))
 

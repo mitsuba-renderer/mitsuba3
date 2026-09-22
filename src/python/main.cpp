@@ -43,7 +43,6 @@ MI_PY_DECLARE(PhaseFunctionExtras);
 MI_PY_DECLARE(Spiral);
 MI_PY_DECLARE(Sensor);
 MI_PY_DECLARE(VolumeGrid);
-MI_PY_DECLARE(FilmFlags);
 MI_PY_DECLARE(DiscontinuityFlags);
 MI_PY_DECLARE(VertexFlags);
 
@@ -166,7 +165,6 @@ NB_MODULE(mitsuba_ext, m) {
     MI_PY_IMPORT(PhaseFunctionExtras);
     MI_PY_IMPORT(Spiral);
     MI_PY_IMPORT(Sensor);
-    MI_PY_IMPORT(FilmFlags);
     MI_PY_IMPORT(DiscontinuityFlags);
     MI_PY_IMPORT(VertexFlags);
 

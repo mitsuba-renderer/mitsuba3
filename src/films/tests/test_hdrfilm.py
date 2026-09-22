@@ -1,4 +1,5 @@
 import pytest
+import numpy as np
 import drjit as dr
 import mitsuba as mi
 
@@ -89,16 +90,19 @@ def test03_bitmap(variant_scalar_rgb, file_format, tmpdir):
         'component_format': "float32",
         'filter': {'type': 'box'}
     })
-    # Regardless of the output file format, values are stored as RGBAW (5 channels).
-    contents = rng.uniform(size=(film.size()[1], film.size()[0], 5))
+    # The film stores its base channels followed by the sample weight. RGBE
+    # and PFM only support RGB, so the film drops the alpha channel for them.
+    n_channels = len(film.base_channels()) + 1
+    assert n_channels == (5 if file_format == "exr" else 4)
+    contents = rng.uniform(size=(film.size()[1], film.size()[0], n_channels))
     # RGBE and will only reconstruct well images that have similar scales on
     # all channel (because exponent is shared between channels).
     if file_format == "rgbe":
         contents = 1 + 0.1 * contents
     # Use unit weights.
-    contents[:, :, 4] = 1.0
+    contents[:, :, -1] = 1.0
 
-    block = mi.ImageBlock(film.size(), [0, 0], 5, film.rfilter())
+    block = mi.ImageBlock(film.size(), [0, 0], n_channels, film.rfilter())
     for x in range(film.size()[1]):
         for y in range(film.size()[0]):
             block.put([y+0.5, x+0.5], contents[x, y, :])
@@ -158,9 +162,20 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
     })
 
     has_alpha = pixel_format.endswith('A') or pixel_format.endswith('alpha')
+    assert film.base_channels() == output_channels[:len(output_channels) - len(aovs_channels)]
 
+    # The storage holds the base channels, the AOVs, and the sample weight
+    n_color = len(film.base_channels()) - int(has_alpha)
     res = film.size()
-    block = mi.ImageBlock(res, [0, 0], (5 if has_alpha else 4) + len(aovs_channels), film.rfilter())
+    block = mi.ImageBlock(res, [0, 0], len(film.base_channels()) + len(aovs_channels) + 1, film.rfilter())
+
+    def values(x, y):
+        v = [x, 2 * y, 0.1][:n_color]
+        if has_alpha:
+            v += [1.0]
+        if has_aovs:
+            v += [10 + x, 20 + y, 10.1]
+        return v + [0.5]
 
     if dr.is_jit_v(mi.Float):
         pixel_idx = dr.arange(mi.UInt32, dr.prod(res))
@@ -168,21 +183,11 @@ def test04_develop_and_bitmap(variants_all_rgb, pixel_format, has_aovs):
         y = pixel_idx // res[0]
 
         pos = mi.Point2f(x, y) + 0.5
-        v = [x, 2 * y, 0.1, 0.5]
-        if has_alpha:
-            v += [1.0]
-        if has_aovs:
-            v += [10 + x, 20 + y, 10.1]
-        block.put(pos, v)
+        block.put(pos, values(x, y))
     else:
         for x in range(res[1]):
             for y in range(res[0]):
-                v = [x, 2 * y, 0.1, 0.5]
-                if has_alpha:
-                    v += [1.0]
-                if has_aovs:
-                    v += [10 + x, 20 + y, 10.1]
-                block.put([y + 0.5, x + 0.5], v)
+                block.put([y + 0.5, x + 0.5], values(x, y))
 
     film.prepare(aovs_channels)
     film.put_block(block)
@@ -203,8 +208,11 @@ def test05_without_prepare(variant_scalar_rgb):
         'height': 2,
     })
 
-    with pytest.raises(RuntimeError, match=r'prepare\(\)'):
-        _ = film.develop()
+    # Before prepare(), the film holds an empty image with its base channels
+    assert film.channels() == ['R', 'G', 'B']
+    image = film.develop()
+    assert image.shape == (2, 3, 3)
+    assert dr.all(image == 0, axis=None)
 
 
 @pytest.mark.parametrize('develop', [False, True])
@@ -236,3 +244,74 @@ def test07_luminance_alpha_mono(variants_all):
     image = mi.TensorXf(film.bitmap())
 
     assert image.shape[2] == 2
+
+
+
+
+def test08_write(variants_all_rgb, tmp_path):
+    """Rendered images match the written files, 8-bit files are sRGB-encoded"""
+    scene = mi.load_dict({
+        'type': 'scene',
+        'integrator': {'type': 'path', 'max_depth': 2},
+        'emitter': {'type': 'constant', 'radiance': 0.5},
+        'sensor': {
+            'type': 'perspective',
+            'film': {
+                'type': 'hdrfilm', 'width': 3, 'height': 2,
+                'pixel_format': 'rgba', 'rfilter': {'type': 'box'}
+            },
+            'sampler': {'type': 'independent', 'sample_count': 4}
+        }
+    })
+    film = scene.sensors()[0].film()
+
+    image = mi.render(scene, spp=4)
+    assert image.shape == (2, 3, 4)
+    assert dr.allclose(image[..., :3], 0.5)
+    assert film.storage().shape == (2, 3, 5)
+
+    exr = str(tmp_path / 'out.exr')
+    film.write(exr)
+    assert np.allclose(np.array(mi.Bitmap(exr))[..., :3], 0.5, atol=1e-3)
+
+    png = str(tmp_path / 'out.png')
+    film.write(png)
+    bitmap = mi.Bitmap(png)
+    assert bitmap.pixel_format() == mi.Bitmap.PixelFormat.RGBA
+    assert bitmap.component_format() == mi.Struct.Type.UInt8
+    decoded = bitmap.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, False)
+    assert np.allclose(np.array(decoded), 0.5, atol=1e-2)
+
+    # JPEG files have no alpha channel
+    jpg = str(tmp_path / 'out.jpg')
+    film.write(jpg)
+    assert mi.Bitmap(jpg).pixel_format() == mi.Bitmap.PixelFormat.RGB
+
+
+def test09_aov(variants_all_rgb):
+    """The output of the AOV integrator matches the developed film"""
+    scene = mi.load_dict({
+        'type': 'scene',
+        'integrator': {
+            'type': 'aov', 'aovs': 'dd.y:depth',
+            'primary': {'type': 'path', 'max_depth': 2},
+            'secondary': {'type': 'path', 'max_depth': 2}
+        },
+        'emitter': {'type': 'constant', 'radiance': 0.5},
+        'shape': {'type': 'sphere'},
+        'sensor': {
+            'type': 'perspective',
+            'film': {
+                'type': 'hdrfilm', 'width': 3, 'height': 2,
+                'rfilter': {'type': 'box'}
+            },
+            'sampler': {'type': 'independent', 'sample_count': 4}
+        }
+    })
+    film = scene.sensors()[0].film()
+
+    image = mi.render(scene, spp=4)
+    assert film.channels() == ['R', 'G', 'B', 'secondary.R', 'secondary.G',
+                               'secondary.B', 'dd.y.T']
+    assert image.shape == (2, 3, 7)
+    assert dr.allclose(image, film.develop())

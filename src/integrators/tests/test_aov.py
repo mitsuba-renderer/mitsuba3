@@ -82,6 +82,13 @@ def test03_supports_multiple_inner_integrators(variants_all_rgb):
     # Make sure radiance is consistent between two inner integrators
     assert(dr.allclose(aovs_image[:,:,:3], aovs_image[:,:, 3:6]))
 
+    # The first inner integrator occupies the base channels of the film, the
+    # second one receives a group of channels named after it
+    film = scene.sensors()[0].film()
+    assert film.channels() == ['R', 'G', 'B', 'my_image2.R', 'my_image2.G',
+                               'my_image2.B', 'dd.y.T', 'nn.X', 'nn.Y', 'nn.Z']
+    assert dr.allclose(aovs_image, film.develop())
+
 
 def test04_check_aov_correct(variants_all_rgb):
     albedo = 0.4
@@ -173,10 +180,10 @@ def test05_check_aov_film(variants_all_rgb):
     film = scene.sensors()[0].film()
 
     path_integrator.render(scene, seed=0, spp=spp)
-    bitmap_path = film.bitmap(raw=False)
+    bitmap_path = film.bitmap()
 
     _ = aov_integrator.render(scene, seed=0, spp=spp)
-    bitmap_aov = film.bitmap(raw=False)
+    bitmap_aov = film.bitmap()
 
     # Make sure radiance is consistent
     assert(np.allclose(bitmap_aov.split()[0][1],bitmap_path.split()[0][1]))
@@ -347,44 +354,33 @@ def test08_nested_aov_integrators(variants_all_rgb):
     spp = 4
     direct_image = direct_integrator.render(scene, seed=0, spp=spp)
     aov_image = outer_aov.render(scene, seed=0, spp=spp)
+    # The image of the innermost integrator occupies the base channels of the
+    # film at every level of nesting
     expected_aov_names = [
-        'inner_aov.R',
-        'inner_aov.G',
-        'inner_aov.B',
-        'inner_aov.A',
-        'inner_aov.inner_direct.R',
-        'inner_aov.inner_direct.G',
-        'inner_aov.inner_direct.B',
-        'inner_aov.inner_direct.A',
         'inner_aov.nn.X',
         'inner_aov.nn.Y',
         'inner_aov.nn.Z',
         'dd.T',
     ]
     assert outer_aov.aov_names() == expected_aov_names
-    # Developed RGB image contains 7 channels (6 from inner_aov + 1 depth)
+    # Developed RGB image contains 7 channels (3 base + 3 normals + 1 depth)
     assert aov_image.shape[2] == 7
     assert dr.allclose(direct_image[:, :, :3], aov_image[:, :, :3], atol=1e-2)
     assert dr.any(aov_image[:, :, 3:6] != 0.0) # non-zero normal values
     assert dr.any(aov_image[:, :, 6] > 0.0)  # positive depth values
 
+    # The developed image is what the film holds
+    film = scene.sensors()[0].film()
+    assert film.channels() == ['R', 'G', 'B'] + expected_aov_names
+    assert dr.allclose(aov_image, film.develop())
+
     # Verify that bitmap.split() cleanly splits channels into expected layer sub-bitmaps
-    split_layers = dict(scene.sensors()[0].film().bitmap().split())
+    split_layers = dict(film.bitmap().split())
     assert split_layers.keys() == {
         '<root>',
-        'inner_aov',
-        'inner_aov.inner_direct',
         'inner_aov.nn',
         'dd',
     }
-
-    # inner_aov layer contains the developed RGBA image from inner_aov
-    inner_aov_layer = mi.TensorXf(split_layers['inner_aov'])
-    assert dr.allclose(direct_image[:, :, :3], inner_aov_layer[:, :, :3], atol=1e-2)
-
-    # inner_aov.inner_direct layer contains the developed RGBA image from inner_direct
-    inner_direct_layer = mi.TensorXf(split_layers['inner_aov.inner_direct'])
-    assert dr.allclose(direct_image[:, :, :3], inner_direct_layer[:, :, :3], atol=1e-2)
 
     # <root> layer contains the developed base RGB image
     root_layer = mi.TensorXf(split_layers['<root>'])

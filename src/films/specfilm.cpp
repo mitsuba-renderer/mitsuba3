@@ -9,8 +9,6 @@
 #include <mitsuba/render/texture.h>
 #include <mitsuba/core/distr_1d.h>
 
-#include <mutex>
-
 NAMESPACE_BEGIN(mitsuba)
 
 /**!
@@ -131,12 +129,12 @@ Notice that in this example, each band contains the spectral sensitivity of one 
 
  */
 
-
 template <typename Float, typename Spectrum>
 class SpecFilm final : public Film<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Film, m_size, m_crop_size, m_crop_offset, m_sample_border,
-                   m_filter, m_flags, m_srf, set_crop_window)
+                   m_filter, m_srf, m_file_format,
+                   m_component_format, m_base_channels, alloc_storage)
     MI_IMPORT_TYPES(ImageBlock, Texture)
     using FloatStorage = DynamicBuffer<Float>;
 
@@ -149,57 +147,25 @@ public:
         for (auto &prop : props) {
             if (prop.type() == Properties::Type::Spectrum) {
                 m_srfs.push_back(props.get_texture<Texture>(prop.name()));
-                m_names.push_back(std::string(prop.name()));
+                m_base_channels.push_back(std::string(prop.name()));
             } else if (Texture *srf = prop.try_get<Texture>()) {
                 m_srfs.push_back(srf);
-                m_names.push_back(std::string(prop.name()));
+                m_base_channels.push_back(std::string(prop.name()));
             }
         }
 
         if (m_srfs.size() == 0)
             Log(Error, "At least one SRF should be defined");
 
-        std::string component_format = string::to_lower(
-            props.get<std::string_view>("component_format", "float16"));
-
-        // The resulting bitmap is always OpenEXR MultiChannel
-        m_file_format = Bitmap::FileFormat::OpenEXR;
-        m_pixel_format = Bitmap::PixelFormat::MultiChannel;
-
-        if (component_format == "float16")
-            m_component_format = sj::Type::Float16;
-        else if (component_format == "float32")
-            m_component_format = sj::Type::Float32;
-        else if (component_format == "uint32")
-            m_component_format = sj::Type::UInt32;
-        else
-            Throw("The \"component_format\" parameter must either be "
-                  "equal to \"float16\", \"float32\", or \"uint32\"."
-                  " Found %s instead.", component_format);
-
-        m_flags = FilmFlags::Spectral | FilmFlags::Special;
-
-        if (props.has_property("compensate")) {
-            props.mark_queried("compensate");
-            Log(Warn, "The \"compensate\" (Kahan-style error-compensated "
-                      "accumulation) parameter has been removed and is now "
-                      "ignored.");
-        }
-
         compute_srf_sampling();
 
-        alloc_storage(storage_channels());
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        Base::parameters_changed(keys);
-        alloc_storage(storage_channels());
+        alloc_storage();
     }
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
         for (size_t i=0; i<m_srfs.size(); ++i)
-            cb->put(m_names[i], m_srfs[i], ParamFlags::NonDifferentiable);
+            cb->put(m_base_channels[i], m_srfs[i], ParamFlags::NonDifferentiable);
     }
 
     void compute_srf_sampling() {
@@ -256,56 +222,9 @@ public:
         m_srf = PluginManager::instance()->create_object<Texture>(props);
     }
 
-    size_t base_channels_count() const override {
-        return m_srfs.size();
-    }
-
-    size_t prepare(const std::vector<std::string>& channels) override {
-        std::vector<std::string> sorted = channels;
-
-        for (size_t i = 0; i < m_srfs.size(); ++i)
-            sorted.insert(sorted.begin() + i, m_names[i]);
-        sorted.insert(sorted.end(), "W");  // Add weight channel
-
-        /* locked */ {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            alloc_storage(sorted.size());
-            m_channels = sorted;
-        }
-
-        std::sort(sorted.begin(), sorted.end());
-        auto it = std::unique(sorted.begin(), sorted.end());
-        if (it != sorted.end())
-            Throw("Film::prepare(): duplicate channel name \"%s\"", *it);
-
-        return m_channels.size();
-    }
-
-    ref<ImageBlock> create_block(const ScalarVector2u &size, bool normalize,
-                                 bool border) override {
-        bool default_config = dr::all(size == ScalarVector2u(0));
-
-        ref<ImageBlock> block = new ImageBlock(default_config ? m_crop_size : size,
-                              default_config ? m_crop_offset : ScalarPoint2u(0),
-                              (uint32_t) m_channels.size(), m_filter.get(),
-                              border /* border */,
-                              normalize /* normalize */,
-                              dr::is_jit_v<Float> /* coalesce */,
-                              false /* warn_negative */,
-                              false /* warn_invalid */);
-
-        if (default_config) {
-            typename Base::LaunchParams lp = this->launch_params();
-            block->set_opaque_geometry(lp.crop_size, Point2i(lp.crop_offset));
-        }
-
-        return block;
-    }
-
-    void prepare_sample(const UnpolarizedSpectrum &spec, const Wavelength &wavelengths,
-                        Float* aovs, Float weight, Float /* alpha */, Mask /* active */) const override {
-        aovs[m_channels.size() - 1] = weight;   // Set sample weight
-
+    void prepare_sample(const UnpolarizedSpectrum &spec,
+                        const Wavelength &wavelengths, Float *out,
+                        Mask /* valid */, Mask /* active */) const override {
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
         si.wavelengths = wavelengths;
 
@@ -316,159 +235,14 @@ public:
 
         for (size_t j = 0; j < m_srfs.size(); ++j) {
             UnpolarizedSpectrum weights = m_srfs[j]->eval(si);
-            aovs[j] = dr::zeros<Float>();
+            out[j] = dr::zeros<Float>();
 
             for (size_t i = 0; i<Spectrum::Size; ++i)
-                aovs[j] = dr::fmadd(weights[i], values[i], aovs[j]);
+                out[j] = dr::fmadd(weights[i], values[i], out[j]);
 
-            aovs[j] *= 1.f / Spectrum::Size;
+            out[j] *= 1.f / Spectrum::Size;
         }
     }
-
-    void put_block(const ImageBlock *block) override {
-        Assert(m_storage != nullptr);
-        std::lock_guard<std::mutex> lock(m_mutex);
-        m_storage->put_block(block);
-    }
-
-    void clear() override {
-        if (m_storage)
-            m_storage->clear();
-    }
-
-    TensorXf develop(bool raw = false) const override {
-        if (m_channels.empty())
-            Throw("develop(): channel information unavailable, prepare() must "
-                  "be called first.");
-
-        if (raw) {
-            std::lock_guard<std::mutex> lock(m_mutex);
-            return m_storage->tensor();
-        }
-
-        if constexpr (dr::is_jit_v<Float>) {
-            Float data;
-            uint32_t source_ch;
-            size_t pixel_count;
-            ScalarVector2i size;
-
-            /* locked */ {
-                std::lock_guard<std::mutex> lock(m_mutex);
-                data         = m_storage->tensor().array();
-                size         = m_storage->size();
-                source_ch    = (uint32_t) m_storage->channel_count();
-                pixel_count  = dr::prod(m_storage->size());
-            }
-
-            // Number of channels of the target tensor
-            uint32_t target_ch = (uint32_t) m_channels.size() - 1;
-
-            // Index vectors referencing pixels & channels of the output image
-            UInt32 idx         = dr::arange<UInt32>(pixel_count * target_ch),
-                   pixel_idx   = idx / target_ch,
-                   channel_idx = dr::fmadd(pixel_idx, uint32_t(-(int) target_ch), idx);
-
-            // Index vectors referencing source pixels/weights as follows:
-            //   values_idx = R1, G1, B1, R2, G2, B2 (for RGB response functions)
-            //   weight_idx = W1, W1, W1, W2, W2, W2
-            UInt32 values_idx = dr::fmadd(pixel_idx, source_ch, channel_idx),
-                   weight_idx = dr::fmadd(pixel_idx, source_ch, (uint32_t) (m_channels.size() - 1));
-
-            // Gather the pixel values from the image data buffer
-            Float weight = dr::gather<Float>(data, weight_idx),
-                  values = dr::gather<Float>(data, values_idx);
-
-            // Perform the weight division unless the weight is zero
-            values /= dr::select(weight == 0.f, 1.f, weight);
-
-            return TensorXf(values, { (size_t) size.y(), (size_t) size.x(),
-                                      target_ch });
-        } else {
-            ref<Bitmap> source = bitmap();
-            ScalarVector2i size = source->size();
-            size_t width = source->channel_count() * dr::prod(size);
-            auto data = dr::load<DynamicBuffer<Float>>(source->data(), width);
-
-            return TensorXf(data, { (size_t) source->height(),
-                                    (size_t) source->width(),
-                                    source->channel_count() });
-        }
-    }
-
-
-    ref<Bitmap> bitmap(bool raw = false) const override {
-        if (m_channels.empty())
-            Throw("bitmap(): channel information unavailable, prepare() must "
-                  "be called first.");
-
-        std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
-
-        if constexpr (dr::is_jit_v<Float>)
-            dr::sync_thread();
-
-        ref<Bitmap> source = new Bitmap(
-            Bitmap::PixelFormat::MultiChannel,
-            struct_type_v<ScalarFloat>, m_storage->size(),
-            m_storage->channel_count(), m_channels, (uint8_t *) storage.data());
-
-        if (raw)
-            return source;
-
-        ref<Bitmap> target = new Bitmap(
-            Bitmap::PixelFormat::MultiChannel,
-            struct_type_v<ScalarFloat>, m_storage->size(),
-            m_storage->channel_count() - 1);
-
-        source->struct_()[m_channels.size() - 1].flags |= +sj::Flag::Weight;
-        for (size_t i = 0; i < m_storage->channel_count() - 1; ++i) {
-            sj::Field &dest_field = target->struct_()[i];
-            dest_field.name = m_channels[i];
-        }
-
-        source->convert(target);
-
-        return target;
-    }
-
-    void write(const fs::path &path) const override {
-        fs::path filename = path;
-        std::string proper_extension = ".exr";
-
-        std::string extension = string::to_lower(filename.extension().string());
-        if (extension != proper_extension)
-            filename.replace_extension(proper_extension);
-
-        #if !defined(_WIN32)
-            Log(Info, "\U00002714  Developing \"%s\" ..", filename.string());
-        #else
-            Log(Info, "Developing \"%s\" ..", filename.string());
-        #endif
-
-        ref<Bitmap> source = bitmap();
-        if (m_component_format != struct_type_v<ScalarFloat>) {
-            // Mismatch between the current format and the one expected by the film
-            // Conversion is necessary before saving to disk
-            std::vector<std::string> channel_names;
-            for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()[i].name);
-            ref<Bitmap> target = new Bitmap(
-                source->pixel_format(),
-                m_component_format,
-                source->size(),
-                source->channel_count(),
-                channel_names);
-            source->convert(target);
-
-            target->write(filename, m_file_format);
-        } else {
-            source->write(filename, m_file_format);
-        }
-    }
-
-    void schedule_storage() override {
-        dr::schedule(m_storage->tensor());
-    };
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -479,7 +253,6 @@ public:
             << "  sample_border = " << m_sample_border << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
-            << "  pixel_format = " << m_pixel_format << "," << std::endl
             << "  component_format = " << m_component_format << "," << std::endl
             << "  film_srf = [" << std::endl << "    " << string::indent(m_srf, 4) << std::endl << "  ]," << std::endl
             << "  sensor response functions = (" << std::endl;
@@ -491,38 +264,12 @@ public:
 
     MI_DECLARE_CLASS(SpecFilm)
 protected:
-    /// Channel count of the last `prepare()` call, or a default before the first one
-    size_t storage_channels() const {
-        if (!m_channels.empty())
-            return m_channels.size();
-        return m_srfs.size() + 1;
-    }
-
-    /// Eagerly allocate the storage block
-    void alloc_storage(size_t channel_count) {
-        if (m_storage != nullptr &&
-            m_storage->channel_count() == channel_count &&
-            dr::all(m_storage->size() == m_crop_size) &&
-            dr::all(m_storage->offset() == m_crop_offset))
-            m_storage->clear();
-        else
-            m_storage = new ImageBlock(m_crop_size, m_crop_offset,
-                                       (uint32_t) channel_count);
-    }
-
-protected:
-    Bitmap::FileFormat m_file_format;
-    Bitmap::PixelFormat m_pixel_format;
-    sj::Type m_component_format;
-    ref<ImageBlock> m_storage;
-    mutable std::mutex m_mutex;
-    std::vector<std::string> m_channels;
     std::vector<ref<Texture>> m_srfs;
-    std::vector<std::string> m_names;
     ScalarVector2f m_range { dr::Infinity<ScalarFloat>, -dr::Infinity<ScalarFloat> };
 
-    MI_TRAVERSE_CB(Base, m_storage, m_srfs)
+    MI_TRAVERSE_CB(Base, m_srfs)
 };
 
 MI_EXPORT_PLUGIN(SpecFilm)
 NAMESPACE_END(mitsuba)
+
