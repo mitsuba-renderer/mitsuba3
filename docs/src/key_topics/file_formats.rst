@@ -10,21 +10,23 @@ its own that are specified here.
   instantiate and how to connect them.
 
 - The :ref:`packed container format <sec-packed-format>` described below
-  stores meshes and textures in the memory layout of the renderer.
+  stores meshes, curves, and textures in the memory layout of the
+  renderer.
 
 .. _sec-packed-format:
 
 Packed container (``.packed``)
 ------------------------------
 
-A ``.packed`` file bundles the meshes and textures of a scene in a single
-file. Its entries store data in the internal representation of the renderer,
-so that a reader can decompress the file contents straight into device
-buffers without decoding or format conversion steps. The :ref:`packed
-<shape-packed>` shape plugin and the :ref:`bitmap <texture-bitmap>` texture
-plugin each load one entry of a container, selected by its position
-(``index``) or its ``name``. The :py:class:`mitsuba.PackedFile` class
-implements reading and writing.
+A ``.packed`` file bundles the meshes, curves, and textures of a scene in
+a single file. Its entries store data in the internal representation of the
+renderer, so that a reader can decompress the file contents straight into
+device buffers without decoding or format conversion steps. The :ref:`packed
+<shape-packed>` shape plugin, the curve plugins (:ref:`linearcurve
+<shape-linearcurve>` and :ref:`bsplinecurve <shape-bsplinecurve>`), and the
+:ref:`bitmap <texture-bitmap>` texture plugin each load one entry of a
+container, selected by its position (``index``) or its ``name``. The
+:py:class:`mitsuba.PackedFile` class implements reading and writing.
 
 The file consists of a header, the data of all entries, and a dictionary
 that locates them. The format is designed to be written in a streaming
@@ -188,6 +190,48 @@ The header is followed by these compressed arrays, in order:
 
 - Per custom attribute: ``V dim`` (or ``F dim``) single precision floats of
   attribute data.
+
+.. _sec-packed-curve:
+
+Curve entries
+*************
+
+A curve entry stores the control points of a set of curves for the
+:ref:`linearcurve <shape-linearcurve>` and :ref:`bsplinecurve
+<shape-bsplinecurve>` plugins. It replaces the text format of these
+plugins, which parse one control point per line, with a binary encoding
+that decompresses straight into the control point buffer of the renderer.
+Both plugins read the same entries and only differ in how they interpret the
+control points of a curve. The entry begins with the following header:
+
+.. list-table::
+    :widths: 20 80
+    :header-rows: 1
+
+    * - Type
+      - Content
+    * - :monosp:`char[4]`
+      - The ASCII bytes ``CURV``
+    * - :monosp:`uint32`
+      - Entry version, currently 1
+    * - :monosp:`uint32`
+      - Number of curves ``C``
+    * - :monosp:`uint32`
+      - Number of control points ``P``
+
+The header is followed by these compressed arrays, in order:
+
+- ``C + 1`` :monosp:`uint32` curve offsets: the index of the first control
+  point of every curve, followed by ``P``. The control points of curve ``i``
+  are those with indices in ``[offset[i], offset[i + 1])``. The offsets
+  are nondecreasing, and every curve must have at least two (``linearcurve``)
+  or four (``bsplinecurve``) control points.
+
+- ``4 P`` single precision floats: the control point records. Each record
+  stores the position ``x``, ``y``, ``z`` followed by the radius, matching
+  the ``control_points`` parameter of the plugins. The ``to_world``
+  transformation of a shape is applied to the positions when loading, while
+  the radii are used as stored.
 
 .. _sec-packed-texture:
 

@@ -367,17 +367,40 @@ template <typename Point_> struct BoundingBox {
     DRJIT_TRAVERSE(BoundingBox, min, max);
 };
 
-/// Compute the bounding box of an interleaved position buffer.
+/// Compute the bounding box of an interleaved position buffer in host memory.
 ///
-/// ``data`` is interleaved with ``Stride`` scalars per element and the position
+/// ``ptr`` is interleaved with ``Stride`` scalars per element and the position
 /// at offsets 0, 1, 2.
 ///
 /// If ``RadiusOffset`` >= 0, each point is grown by the scalar at that offset.
 /// This is used by the curve shapes which pass curve control points to this
 /// function.
 ///
-/// An empty buffer produces an invalid bounding box. In JIT variants, the
-/// reduction runs on the device.
+/// An empty buffer produces an invalid bounding box.
+template <typename Type, uint32_t Stride, int RadiusOffset = -1,
+          typename Value>
+BoundingBox<Type> reduce_bbox_host(const Value *ptr, uint32_t count) {
+    BoundingBox<Type> bbox;
+
+    for (uint32_t i = 0; i < count; ++i) {
+        const Value *p = ptr + (size_t) i * Stride;
+        if constexpr (RadiusOffset >= 0) {
+            Value r = p[RadiusOffset];
+            bbox.expand(Type(p[0] - r, p[1] - r, p[2] - r));
+            bbox.expand(Type(p[0] + r, p[1] + r, p[2] + r));
+        } else {
+            bbox.expand(Type(p[0], p[1], p[2]));
+        }
+    }
+
+    return bbox;
+}
+
+/// Compute the bounding box of an interleaved position buffer.
+///
+/// This is the counterpart of `reduce_bbox_host()` for data that already
+/// resides in a Dr.Jit array. In JIT variants, the reduction runs on the
+/// device.
 template <typename Type, uint32_t Stride, int RadiusOffset = -1,
           typename StoredFloat>
 BoundingBox<Type> reduce_bbox(const StoredFloat &data, uint32_t count) {
@@ -424,19 +447,7 @@ BoundingBox<Type> reduce_bbox(const StoredFloat &data, uint32_t count) {
         bbox.min = Type(c[0], c[1], c[2]);
         bbox.max = Type(c[3], c[4], c[5]);
     } else {
-        using ScalarValue = dr::scalar_t<StoredFloat>;
-        const ScalarValue *ptr = data.data();
-
-        for (uint32_t i = 0; i < count; ++i) {
-            const ScalarValue *p = ptr + (size_t) i * Stride;
-            if constexpr (RadiusOffset >= 0) {
-                ScalarValue r = p[RadiusOffset];
-                bbox.expand(Type(p[0] - r, p[1] - r, p[2] - r));
-                bbox.expand(Type(p[0] + r, p[1] + r, p[2] + r));
-            } else {
-                bbox.expand(Type(p[0], p[1], p[2]));
-            }
-        }
+        bbox = reduce_bbox_host<Type, Stride, RadiusOffset>(data.data(), count);
     }
 
     return bbox;
