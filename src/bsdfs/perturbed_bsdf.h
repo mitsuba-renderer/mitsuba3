@@ -118,9 +118,8 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        BSDFFeatures3f features = m_nested_bsdf->eval_features(si, active);
-        features.sh_frame = frames(si, active).second;
-        return features;
+        SurfaceInteraction3f perturbed_si = perturb(si, active).first;
+        return m_nested_bsdf->eval_features(perturbed_si, active);
     }
 
     void traverse(TraversalCallback *cb) override {
