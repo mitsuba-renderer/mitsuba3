@@ -115,41 +115,25 @@ def get_ref_fname(scene_fname):
     pytest.fail("Could not find reference images for the given scene!")
 
 
-def xyz_to_rgb_bmp(arr):
-    """Convert an XYZ image to RGB"""
-    xyz_bmp = mi.Bitmap(arr, mi.Bitmap.PixelFormat.XYZ)
-    return xyz_bmp.convert(mi.Bitmap.PixelFormat.RGB, mi.Struct.Type.Float32, False)
-
-
-def read_rgb_bmp_to_xyz(fname):
-    """Load and convert RGB image to XYZ bitmap"""
-    return mi.Bitmap(fname).convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
+def to_array(bmp):
+    """Convert a bitmap into an array with a trailing channel dimension"""
+    img = np.array(bmp, copy=True)
+    return img[..., np.newaxis] if img.ndim == 2 else img
 
 
 def bitmap_extract(bmp, require_variance=True):
-    """Extract the image and the variance recorded by the moment integrator in XYZ"""
+    """Extract the image and the variance recorded by the moment integrator"""
     layers = dict(bmp.split())
     if require_variance and 'm2' not in layers:
         raise RuntimeError(
             'Could not extract variance image from bitmap. '
             'Did you wrap the integrator into a `moment` integrator?\n{}'.format(bmp))
 
-    def to_xyz(b):
-        if b.channel_count() >= 3 and b.pixel_format() != mi.Bitmap.PixelFormat.XYZ:
-            b = b.convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
-        img = np.array(b, copy=True)
-        return img[..., np.newaxis] if img.ndim == 2 else img
-
-    root = layers['<root>']
-    img = to_xyz(root)
+    img = to_array(layers['<root>'])
     if 'm2' not in layers:
         return img, None
 
-    # The moments are stored in the film's color space. Converting the
-    # per-channel variance to XYZ neglects the covariance between channels.
-    m1 = np.array(root, copy=False)
-    var = np.array(layers['m2'], copy=False) - m1 * m1
-    return img, to_xyz(mi.Bitmap(var, root.pixel_format()))
+    return img, to_array(layers['m2']) - img * img
 
 
 def z_test(mean, sample_count, reference, reference_var):
@@ -190,17 +174,14 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
     if os.name == 'nt' and 'test_various_emitters' in ref_fname and 'cuda' in variant:
         pytest.skip('Skipping flaky test (likely an OptiX miscompilation) on Windows')
 
-    ref_bmp = read_rgb_bmp_to_xyz(ref_fname)
-    ref_img = np.array(ref_bmp, copy=False)
-
-    ref_var_bmp = read_rgb_bmp_to_xyz(ref_var_fname)
-    ref_var_img = np.array(ref_var_bmp, copy=False)
+    ref_img = to_array(mi.Bitmap(ref_fname))
+    ref_var_img = to_array(mi.Bitmap(ref_var_fname))
 
     significance_level = 0.01
 
     # Compute spp budget
     sample_budget = int(2e6)
-    pixel_count = dr.prod(ref_bmp.size())
+    pixel_count = ref_img.shape[0] * ref_img.shape[1]
     spp = sample_budget // pixel_count
 
     # Load and render
@@ -221,7 +202,7 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
 
     success = (p_value > alpha)
 
-    if (np.count_nonzero(success) / 3) >= (0.9975 * pixel_count):
+    if (np.count_nonzero(success) / img.shape[2]) >= (0.9975 * pixel_count):
         print('Accepted the null hypothesis (min(p-value) = %f, significance level = %f)' %
               (np.min(p_value), alpha))
     else:
@@ -236,30 +217,27 @@ def test_render(variant, scene_fname, integrator_type, jit_flags_key):
         output_prefix = join(output_dir, splitext(
             basename(scene_fname))[0] + '_' + mi.variant())
 
-        img_rgb_bmp = xyz_to_rgb_bmp(img)
-        ref_img_rgb_bmp = xyz_to_rgb_bmp(ref_img)
-
         fname = output_prefix + '_img.exr'
-        img_rgb_bmp.write(fname)
+        mi.Bitmap(img).write(fname)
         print('Saved rendered image to: ' + fname)
 
         fname = output_prefix + '_ref.exr'
-        ref_img_rgb_bmp.write(fname)
+        mi.Bitmap(ref_img).write(fname)
         print('Saved reference image to: ' + fname)
 
         if var_img is not None:
             var_fname = output_prefix + '_var.exr'
-            xyz_to_rgb_bmp(var_img).write(var_fname)
+            mi.Bitmap(var_img).write(var_fname)
             print('Saved variance image to: ' + var_fname)
 
         err_fname = output_prefix + '_error.exr'
-        err_img = 0.02 * np.array(img_rgb_bmp)
+        err_img = 0.02 * img
         err_img[~success] = 1.0
         mi.Bitmap(err_img).write(err_fname)
         print('Saved error image to: ' + err_fname)
 
         pvalue_fname = output_prefix + '_pvalue.exr'
-        xyz_to_rgb_bmp(p_value).write(pvalue_fname)
+        mi.Bitmap(p_value).write(pvalue_fname)
         print('Saved error image to: ' + pvalue_fname)
 
         pytest.fail("Radiance values exceeded scene's tolerances!")
@@ -284,12 +262,11 @@ def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):
             continue
 
         for variant_ in mi.variants():
-            if variant is not None:
-                if not variant.split('_')[0] == 'scalar' or variant_.endswith('double'):
-                    continue
+            if not variant_.startswith('scalar_') or variant_.endswith('double'):
+                continue
 
-                if variant != variant_:
-                    continue
+            if variant is not None and variant != variant_:
+                continue
 
             if 'polarized' in variant_ and os.path.split(scene_dir)[1] in POLARIZED_EXCLUDE_FOLDERS:
                 continue
@@ -309,11 +286,11 @@ def render_ref_images(scenes, spp, overwrite, scene=None, variant=None):
 
             # Write rendered image to a file
             os.makedirs(dirname(ref_fname), exist_ok=True)
-            xyz_to_rgb_bmp(img).write(ref_fname)
+            mi.Bitmap(img).write(ref_fname)
             print(f'Saved rendered image to: {ref_fname}')
 
             # Write variance image to a file
-            xyz_to_rgb_bmp(var_img).write(var_fname)
+            mi.Bitmap(var_img).write(var_fname)
             print(f'Saved variance image to: {var_fname}')
 
 
