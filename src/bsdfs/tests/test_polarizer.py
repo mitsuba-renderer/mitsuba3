@@ -212,7 +212,7 @@ def test04_path_tracer_polarizer(variant_scalar_mono_polarized):
         ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
-        value, _, _ = integrator.sample(scene, sampler, ray)
+        value, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
         value = value * dr.rcp(value[0, 0][0])
@@ -314,7 +314,7 @@ def test05_path_tracer_malus_law(variant_scalar_mono_polarized):
         ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
-        value, _, _ = integrator.sample(scene, sampler, ray)
+        value, _ = integrator.sample(scene, sampler, ray)
 
         # Extract intensity from returned Stokes vector
         v = value[0,0]

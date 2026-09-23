@@ -349,7 +349,7 @@ class ProjectiveDetail():
             parent.proj_seed_spp = (ttl_num_cells // dr.prod(sensor.film().crop_size())) + 1
 
         spp = parent.proj_seed_spp
-        sampler, _ = parent.prepare(sensor, seed, spp, parent.aov_names())
+        sampler, _ = parent.prepare(sensor, seed, spp, parent.aov_names(sensor.film()))
         res = dr.zeros(mi.Float, ttl_num_cells)
         mi.Log(mi.LogLevel.Debug,
                "Initializing `grid` guiding distribution with projected"
@@ -431,7 +431,7 @@ class ProjectiveDetail():
             if parent.octree_scatter_inc:
                 spp = parent.proj_seed_spp * parent.guiding_rounds
 
-            sampler, _ = parent.prepare(sensor, seed, spp, parent.aov_names())
+            sampler, _ = parent.prepare(sensor, seed, spp, parent.aov_names(sensor.film()))
 
             if parent.guiding_rounds == 1 or parent.octree_scatter_inc:
                 sampler.seed(seed ^ 0x5555aaaa, sampler.wavefront_size())

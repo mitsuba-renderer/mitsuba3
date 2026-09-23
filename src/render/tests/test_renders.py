@@ -127,33 +127,29 @@ def read_rgb_bmp_to_xyz(fname):
 
 
 def bitmap_extract(bmp, require_variance=True):
-    """Extract different channels from moment integrator AOVs"""
-    # AVOs from the moment integrator are in XYZ (float32)
-    split = bmp.split()
-    if len(split) == 1:
-        if require_variance:
-            raise RuntimeError(
-                'Could not extract variance image from bitmap. '
-                'Did you wrap the integrator into a `moment` integrator?\n{}'.format(bmp))
-        b_root = split[0][1]
-        if b_root.channel_count() >= 3 and b_root.pixel_format() != mi.Bitmap.PixelFormat.XYZ:
-            b_root = b_root.convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
-        img = np.array(b_root, copy=True)
+    """Extract the image and the variance recorded by the moment integrator in XYZ"""
+    layers = dict(bmp.split())
+    if require_variance and 'm2' not in layers:
+        raise RuntimeError(
+            'Could not extract variance image from bitmap. '
+            'Did you wrap the integrator into a `moment` integrator?\n{}'.format(bmp))
 
-        if len(img.shape) == 2:
-            img = img[..., np.newaxis]
+    def to_xyz(b):
+        if b.channel_count() >= 3 and b.pixel_format() != mi.Bitmap.PixelFormat.XYZ:
+            b = b.convert(mi.Bitmap.PixelFormat.XYZ, mi.Struct.Type.Float32, False)
+        img = np.array(b, copy=True)
+        return img[..., np.newaxis] if img.ndim == 2 else img
 
+    root = layers['<root>']
+    img = to_xyz(root)
+    if 'm2' not in layers:
         return img, None
-    else:
-        img    = np.array(split[1][1], copy=False)
-        img_m2 = np.array(split[2][1], copy=False)
 
-        if len(img.shape) == 2:
-            img = img[..., np.newaxis]
-        if len(img_m2.shape) == 2:
-            img_m2 = img_m2[..., np.newaxis]
-
-        return img, img_m2 - img * img
+    # The moments are stored in the film's color space. Converting the
+    # per-channel variance to XYZ neglects the covariance between channels.
+    m1 = np.array(root, copy=False)
+    var = np.array(layers['m2'], copy=False) - m1 * m1
+    return img, to_xyz(mi.Bitmap(var, root.pixel_format()))
 
 
 def z_test(mean, sample_count, reference, reference_var):

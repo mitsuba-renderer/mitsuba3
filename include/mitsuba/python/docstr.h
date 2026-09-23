@@ -5067,9 +5067,14 @@ static const char *__doc_mitsuba_Integrator_7 = R"doc()doc";
 static const char *__doc_mitsuba_Integrator_Integrator = R"doc(Create an integrator)doc";
 
 static const char *__doc_mitsuba_Integrator_aov_names =
-R"doc(For integrators that return one or more arbitrary output variables
-(AOVs), this function specifies a list of associated channel names. The
-default implementation simply returns an empty vector.)doc";
+R"doc(Return the names of AOV channels
+
+For integrators that return one or more *arbitrary output variables*
+(AOVs), this function specifies a list of associated channel names.
+Integrators that produce several images (e.g. ``aov``, ``moment``)
+store each extra image in a group of channels named after the film's
+base channels (e.g. ``name.R``, ``name.G``, ``name.B``). This is why
+the film must be provided as an argument.)doc";
 
 static const char *__doc_mitsuba_Integrator_cancel = R"doc(Cancel a running render job (e.g. after receiving Ctrl-C))doc";
 
@@ -9599,8 +9604,10 @@ Subclasses of this interface must implement the `sample()` method, which
 performs Monte Carlo integration to return an unbiased statistical estimate
 of the radiance value along a given ray.
 
-The `render()` method then repeatedly invokes this estimator to compute
-all pixels of the image.)doc";
+The `render()` method then repeatedly invokes `sample_channels()` to compute
+all pixels of the image. Its default implementation converts the estimate of
+`sample()` into the film's base channels. Integrators that write further
+channels (e.g. AOVs) override it along with `aov_names()`.)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_2 = R"doc()doc";
 
@@ -9652,15 +9659,30 @@ Args:
     active: A mask that indicates which SIMD lanes are active
 
 Returns:
-    A tuple ``(spec, mask, aovs)`` where ``spec`` and ``mask`` specify the
+    A tuple ``(spec, mask)`` where ``spec`` and ``mask`` specify the
     sampled spectrum and whether a surface or medium interaction was
     sampled. False mask entries indicate that the ray "escaped" the
     scene, in which case the returned spectrum contains the
     contribution of environment maps, if present. The mask can be used
-    to estimate a suitable alpha channel of a rendered image. ``aovs``
-    is a list of one or more arbitrary output variables (AOVs)
-    returned by the integrator, with as many entries as
-    ``aov_names()``.)doc";
+    to estimate a suitable alpha channel of a rendered image.)doc";
+
+static const char *__doc_mitsuba_SamplingIntegrator_sample_channels =
+R"doc(Sample the channels that a camera ray contributes to the film, i.e.
+the film's base channels followed by the entries of `aov_names()`.
+
+The default implementation converts the estimate of `sample()` with
+``Film::prepare_sample()``. Integrators that nest others (e.g. ``aov``)
+override it and let every nested integrator write its channels in turn.
+
+Args:
+    sensor: The sensor that generated ``ray``
+
+    ray_weight: The weight returned by ``Sensor::sample_ray()``
+
+    out: Output array that receives the channels
+
+Returns:
+    A pointer just past the last written channel)doc";
 
 static const char *__doc_mitsuba_SamplingIntegrator_traverse_cb = R"doc()doc";
 
@@ -9921,6 +9943,8 @@ static const char *__doc_mitsuba_Scene_m_portals = R"doc(Light portals, excluded
 static const char *__doc_mitsuba_Scene_m_sensors = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_sensors_dr = R"doc()doc";
+
+static const char *__doc_mitsuba_Scene_m_shape_index = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_m_shapegroups = R"doc()doc";
 
@@ -10337,6 +10361,10 @@ static const char *__doc_mitsuba_Scene_sensors = R"doc(Return the list of sensor
 static const char *__doc_mitsuba_Scene_sensors_2 = R"doc(Return the list of sensors (const version))doc";
 
 static const char *__doc_mitsuba_Scene_sensors_dr = R"doc(Return the list of sensors as a Dr.Jit array)doc";
+
+static const char *__doc_mitsuba_Scene_shape_index =
+R"doc(Return the position of a shape within `shapes()` plus one, or zero if
+the scene did not contain the shape when it was constructed)doc";
 
 static const char *__doc_mitsuba_Scene_shape_types = R"doc(Returns a union of ShapeType flags denoting what is present in the scene)doc";
 

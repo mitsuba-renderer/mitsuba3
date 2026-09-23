@@ -51,11 +51,12 @@ def test02_radiance_consistent(variants_all_rgb):
         'my_image': path_integrator
     })
 
-    spp = 1
+    spp = 4
     path_image = path_integrator.render(scene, seed=0, spp=spp)
     aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
 
-    # Make sure radiance is consistent
+    # The first nested integrator sees the same random numbers as when
+    # rendering alone, hence the radiance must match
     assert(dr.allclose(path_image, aovs_image[:,:,:3]))
 
 
@@ -74,13 +75,15 @@ def test03_supports_multiple_inner_integrators(variants_all_rgb):
         'my_image2' : path_integrator
     })
 
-    # sampler is shared between integrators, use a higher spp to reduce noise
-    # difference between both rendered images
     spp = 32
     aovs_image = aov_integrator.render(scene, seed=0, spp=spp)
 
-    # Make sure radiance is consistent between two inner integrators
-    assert(dr.allclose(aovs_image[:,:,:3], aovs_image[:,:, 3:6]))
+    # The inner integrators share the sampler and therefore have independent
+    # noise. Their mean radiance must agree.
+    import numpy as np
+    image = np.array(aovs_image)
+    assert np.allclose(image[:, :, :3].mean(axis=(0, 1)),
+                       image[:, :, 3:6].mean(axis=(0, 1)), rtol=2e-2)
 
     # The first inner integrator occupies the base channels of the film, the
     # second one receives a group of channels named after it
@@ -90,7 +93,11 @@ def test03_supports_multiple_inner_integrators(variants_all_rgb):
     assert dr.allclose(aovs_image, film.develop())
 
 
-def test04_check_aov_correct(variants_all_rgb):
+# With a wide filter or a nested integrator that has its own pass structure,
+# correct AOVs require that all sources share sample positions and weights
+@pytest.mark.parametrize('rfilter,samples_per_pass', [
+    ('box', None), ('gaussian', None), ('gaussian', 1)])
+def test04_check_aov_correct(variants_all_rgb, rfilter, samples_per_pass):
     albedo = 0.4
     camera_offset = 1
     plane_offset = -1
@@ -107,10 +114,13 @@ def test04_check_aov_correct(variants_all_rgb):
         'to_world' : mi.ScalarTransform4f().scale([10.0, 10.0, 1.0]).translate([0,0,plane_offset])
     }
 
-    path_integrator = mi.load_dict({
+    path_dict = {
         'type': 'path',
         'max_depth': 6
-    })
+    }
+    if samples_per_pass is not None:
+        path_dict['samples_per_pass'] = samples_per_pass
+    path_integrator = mi.load_dict(path_dict)
 
     aov_integrator = mi.load_dict({
         'type': 'aov',
@@ -133,7 +143,7 @@ def test04_check_aov_correct(variants_all_rgb):
             'film': {
                 'type': 'hdrfilm',
                 'width': 128, 'height': 128,
-                'rfilter': {'type': 'box'}
+                'rfilter': {'type': rfilter}
             },
         },
         'emitter' : {
@@ -362,7 +372,7 @@ def test08_nested_aov_integrators(variants_all_rgb):
         'inner_aov.nn.Z',
         'dd.T',
     ]
-    assert outer_aov.aov_names() == expected_aov_names
+    assert outer_aov.aov_names(scene.sensors()[0].film()) == expected_aov_names
     # Developed RGB image contains 7 channels (3 base + 3 normals + 1 depth)
     assert aov_image.shape[2] == 7
     assert dr.allclose(direct_image[:, :, :3], aov_image[:, :, :3], atol=1e-2)

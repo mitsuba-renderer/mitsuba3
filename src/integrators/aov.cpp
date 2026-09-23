@@ -2,7 +2,6 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/render/records.h>
 #include <mitsuba/render/sensor.h>
-#include <unordered_map>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -89,7 +88,7 @@ template <typename Float, typename Spectrum>
 class AOVIntegratorImpl final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Shape, Sensor, Sampler, Medium, BSDFPtr, ShapePtr)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film, ShapePtr)
 
     enum class AOVType {
         Albedo,
@@ -156,7 +155,6 @@ public:
             } else if (item[1] == "shape_index") {
                 m_aov_types.push_back(AOVType::ShapeIndex);
                 m_aov_names.push_back(item[0] + ".I");
-                m_has_shape_index_aov = true;
             } else {
                 Throw("Invalid AOV type \"%s\"!", item[1]);
             }
@@ -167,15 +165,37 @@ public:
                                 type == AOVType::ShadingNormal;
     }
 
-    std::pair<Spectrum, Mask> sample(const Scene *scene,
-                                     Sampler * /*sampler*/,
-                                     const Ray3f &ray,
-                                     const Medium * /*medium*/,
-                                     Float *aovs,
-                                     Mask active) const override {
+    std::pair<Spectrum, Mask> sample(const Scene * /* scene */,
+                                     Sampler * /* sampler */,
+                                     const Ray3f & /* ray */,
+                                     const Medium * /* medium */,
+                                     Mask /* active */) const override {
+        return { 0.f, false };
+    }
+
+    Float *sample_channels(const Scene *scene,
+                           const Sensor *sensor,
+                           Sampler * /* sampler */,
+                           const Ray3f &ray,
+                           const Spectrum &ray_weight,
+                           const Medium * /* medium */,
+                           Float *out,
+                           Mask active) const override {
+        // The base channels hold no radiance
+        const Film *film = sensor->film();
+        film->prepare_sample(0.f, ray.wavelengths, out, false, active);
+        out += film->base_channels().size();
+        return sample_aovs(scene, ray, ray_weight, out, active);
+    }
+
+    /// Write the AOVs of a camera ray and return the end of the written range
+    Float *sample_aovs(const Scene *scene,
+                       const Ray3f &ray,
+                       const Spectrum &ray_weight,
+                       Float *aovs,
+                       Mask active) const {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        std::pair<Spectrum, Mask> result { 0.f, false };
         SurfaceInteraction3f si =
             scene->ray_intersect(ray, +RayFlags::Default, /* coherent = */ true,
                                  +RayMask::Primary, active);
@@ -186,20 +206,17 @@ public:
         if (m_needs_features && dr::any_or<true>(si.is_valid()))
             features = si.bsdf()->eval_features(si, active && si.is_valid());
 
-        auto spectrum_to_color3f = [](const Spectrum& spec, const Ray3f& ray, Mask active) {
+        // The ray weight accounts for the sampled wavelengths in spectral variants
+        auto spectrum_to_color3f = [&](const Spectrum &spec, Mask active) {
             DRJIT_MARK_USED(active);
-            UnpolarizedSpectrum spec_u = unpolarized_spectrum(spec);
+            UnpolarizedSpectrum spec_u = unpolarized_spectrum(spec) *
+                                         unpolarized_spectrum(ray_weight);
             if constexpr (is_monochromatic_v<Spectrum>)
-                return spec_u.x();
+                return Color3f(spec_u.x());
             else if constexpr (is_rgb_v<Spectrum>)
-                return spec_u;
-            else {
-                static_assert(is_spectral_v<Spectrum>);
-                /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
-                auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                spec_u *= dr::select(pdf != 0.f, dr::rcp(pdf), 0.f);
+                return Color3f(spec_u);
+            else
                 return spectrum_to_srgb(spec_u, ray.wavelengths, active);
-            }
         };
 
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
@@ -208,7 +225,7 @@ public:
                         Mask valid = active && si.is_valid();
                         Color3f rgb(0.f);
                         dr::masked(rgb, valid) =
-                            spectrum_to_color3f(features.albedo, ray, valid);
+                            spectrum_to_color3f(features.albedo, valid);
 
                         *aovs++ = rgb.r();
                         *aovs++ = rgb.g();
@@ -265,12 +282,7 @@ public:
                         ShapePtr target = si.instance_index != 0
                             ? scene->instance(si.instance_index - 1)
                             : si.shape;
-
-                        auto it = m_shape_to_idx.find(target);
-                        if (it == m_shape_to_idx.end())
-                            *aovs++ = 0;
-                        else
-                            *aovs++ = Float(it->second);
+                        *aovs++ = Float(scene->shape_index(target));
                     } else {
                         *aovs++ = Float(dr::reinterpret_array<UInt32>(si.shape));
                     }
@@ -278,33 +290,14 @@ public:
             }
         }
 
-        return result;
+        return aovs;
     }
 
-    TensorXf render(Scene *scene,
-                    Sensor *sensor,
-                    UInt32 seed,
-                    uint32_t spp,
-                    bool develop,
-                    bool evaluate,
-                    bool profile) override {
-
-        // Prepare shape indexing data structure for scalar variants
-        if constexpr (!dr::is_jit_v<Float>) {
-            if (m_has_shape_index_aov) {
-                m_shape_to_idx.clear();
-                size_t counter = 1;
-                for (const ref<Shape>& shape : scene->shapes())
-                    m_shape_to_idx[shape.get()] = (uint32_t) counter++;
-            }
-        }
-        return Base::render(scene, sensor, seed, spp, develop, evaluate,
-                            profile);
-    }
-
-    std::vector<std::string> aov_names() const override {
+    std::vector<std::string> aov_names(const Film * /* film */) const override {
         return m_aov_names;
     }
+
+    bool empty() const { return m_aov_names.empty(); }
 
     std::string to_string() const override {
         std::ostringstream oss;
@@ -317,26 +310,22 @@ public:
 private:
     std::vector<AOVType> m_aov_types;
     std::vector<std::string> m_aov_names;
-    bool m_has_shape_index_aov = false;
     bool m_needs_features = false;
-    std::unordered_map<const Shape*, uint32_t> m_shape_to_idx;
 };
 
 /**
  * Combines the images of the nested integrators and the built-in AOV pass
  * into a single film.
  *
- * Each source renders on its own into the shared film. The developed image
- * of the first source occupies the film's base channels, every further nested
- * integrator contributes its base channels under its own name, and the
- * built-in AOVs come last. This layout is a list of segments that
- * rendering, forward and backward differentiation all walk in the same way.
+ * The image of the first source occupies the film's base channels, every
+ * further nested integrator contributes its base channels under its own name,
+ * and the built-in AOVs come last.
  */
 template <typename Float, typename Spectrum>
 class AOVIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film, ImageBlock)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film)
     using Impl = AOVIntegratorImpl<Float, Spectrum>;
 
     AOVIntegrator(const Properties &props) : Base(props) {
@@ -351,7 +340,7 @@ public:
         std::string_view aovs = props.get<std::string_view>("aovs");
         if (!aovs.empty()) {
             ref<Impl> impl = new Impl(aovs);
-            if (!impl->aov_names().empty()) {
+            if (!impl->empty()) {
                 m_impl = impl;
                 m_integrators.push_back(impl.get());
                 m_names.push_back("");
@@ -361,48 +350,34 @@ public:
         if (m_integrators.empty())
             Throw("No sub-integrators or AOVs were specified!");
 
-        // The channel names of nested integrators depend on the film's base
-        // channels, which are unknown here. Assume an RGB film until a render
-        // reveals the actual one.
-        m_base_names = { "R", "G", "B" };
-
-        if (aov_names().empty())
+        if (!m_impl && m_integrators.size() == 1)
             Log(Warn, "No AOVs were specified!");
     }
 
-    TensorXf render(Scene *scene,
-                    Sensor *sensor,
-                    UInt32 seed,
-                    uint32_t spp,
-                    bool develop,
-                    bool evaluate,
-                    bool profile) override {
-        Film *film = sensor->film();
-        m_base_names = film->base_channels();
+    std::pair<Spectrum, Mask> sample(const Scene *scene,
+                                     Sampler *sampler,
+                                     const Ray3f &ray,
+                                     const Medium *medium,
+                                     Mask active) const override {
+        return m_integrators[0]->sample(scene, sampler, ray, medium, active);
+    }
 
-        // Render each source and keep the raw storage that it leaves in the film
-        std::vector<TensorXf> raw;
-        for (auto &integrator : m_integrators) {
-            integrator->render(scene, sensor, seed, spp, false, evaluate, profile);
-            raw.push_back(film->storage());
+    Float *sample_channels(const Scene *scene,
+                           const Sensor *sensor,
+                           Sampler *sampler,
+                           const Ray3f &ray,
+                           const Spectrum &ray_weight,
+                           const Medium *medium,
+                           Float *out,
+                           Mask active) const override {
+        for (size_t i = 0; i < m_integrators.size(); ++i) {
+            if (skips_base(i))
+                out = m_impl->sample_aovs(scene, ray, ray_weight, out, active);
+            else
+                out = m_integrators[i]->sample_channels(
+                    scene, sensor, sampler, ray, ray_weight, medium, out, active);
         }
-
-        // Assemble the combined image, reusing the sample weight of the first source
-        size_t n_channels = film->prepare(aov_names());
-        TensorXf block = concat(raw, n_channels);
-        copy_channels(raw[0], raw[0].shape(2) - 1, block, n_channels - 1, 1);
-
-        ref<ImageBlock> image_block = new ImageBlock(block, film->crop_offset());
-        film->put_block(image_block);
-
-        TensorXf result;
-        if (develop)
-            result = film->develop();
-
-        if (evaluate)
-            dr::eval(develop ? result : image_block->tensor());
-
-        return result;
+        return out;
     }
 
     TensorXf render_forward(Scene *scene,
@@ -410,13 +385,26 @@ public:
                             Sensor *sensor,
                             UInt32 seed = 0,
                             uint32_t spp = 0) override {
-        m_base_names = sensor->film()->base_channels();
+        const Film *film = sensor->film();
+        size_t base = film->base_channels().size();
 
         std::vector<TensorXf> grads;
-        for (auto &integrator : m_integrators)
-            grads.push_back(integrator->render_forward(scene, params, sensor, seed, spp));
+        std::vector<size_t> skip;
+        size_t n_channels = 0;
+        for (size_t i = 0; i < m_integrators.size(); ++i) {
+            grads.push_back(m_integrators[i]->render_forward(scene, params, sensor, seed, spp));
+            skip.push_back(skips_base(i) ? base : 0);
+            n_channels += grads[i].shape(2) - skip[i];
+        }
 
-        return concat(grads, m_base_names.size() + aov_names().size());
+        TensorXf result = zeros_like(grads[0], n_channels);
+        size_t offset = 0;
+        for (size_t i = 0; i < m_integrators.size(); ++i) {
+            size_t width = grads[i].shape(2) - skip[i];
+            copy_channels(grads[i], skip[i], result, offset, width);
+            offset += width;
+        }
+        return result;
     }
 
     void render_backward(Scene *scene,
@@ -425,24 +413,35 @@ public:
                          Sensor *sensor,
                          UInt32 seed = 0,
                          uint32_t spp = 0) override {
-        m_base_names = sensor->film()->base_channels();
+        const Film *film = sensor->film();
+        size_t base = film->base_channels().size(), offset = 0;
 
-        size_t offset = 0;
-        for (const Segment &seg : layout()) {
+        for (size_t i = 0; i < m_integrators.size(); ++i) {
             // The gradient image of a source has its base channels followed by its AOVs
-            Base *integrator = m_integrators[seg.source];
-            size_t n_channels = m_base_names.size() + integrator->aov_names().size();
+            Base *integrator = m_integrators[i];
+            size_t n_channels = base + integrator->aov_names(film).size(),
+                   skip = skips_base(i) ? base : 0,
+                   width = n_channels - skip;
             TensorXf grad = zeros_like(grad_in, n_channels);
-            copy_channels(grad_in, offset, grad, seg.offset, seg.width);
+            copy_channels(grad_in, offset, grad, skip, width);
             integrator->render_backward(scene, params, grad, sensor, seed, spp);
-            offset += seg.width;
+            offset += width;
         }
     }
 
-    std::vector<std::string> aov_names() const override {
+    std::vector<std::string> aov_names(const Film *film) const override {
         std::vector<std::string> result;
-        for (const Segment &seg : layout())
-            result.insert(result.end(), seg.names.begin(), seg.names.end());
+        for (size_t i = 0; i < m_integrators.size(); ++i) {
+            // Nested integrators after the first contribute their base
+            // channels under their own name
+            bool own = m_integrators[i].get() == m_impl.get();
+            if (i > 0 && !own)
+                for (const std::string &name : film->base_channels())
+                    result.push_back(m_names[i] + "." + name);
+
+            for (const std::string &name : m_integrators[i]->aov_names(film))
+                result.push_back(own ? name : m_names[i] + "." + name);
+        }
         return result;
     }
 
@@ -456,7 +455,6 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "AOVIntegrator[" << std::endl
-            << "  aovs = " << aov_names() << "," << std::endl
             << "  integrators = [" << std::endl;
         for (size_t i = 0; i < m_integrators.size(); ++i) {
             oss << "    " << string::indent(m_integrators[i], 4);
@@ -471,54 +469,10 @@ public:
 
     MI_DECLARE_CLASS(AOVIntegrator)
 protected:
-    /// A range of channels that one source contributes to the developed image
-    struct Segment {
-        size_t source;  // index into m_integrators
-        size_t offset;  // first channel within the source's developed image
-        size_t width;
-        std::vector<std::string> names;  // AOV names, excluding the film's base channels
-    };
-
-    std::vector<Segment> layout() const {
-        std::vector<Segment> result;
-        size_t base = m_base_names.size();
-
-        for (size_t i = 0; i < m_integrators.size(); ++i) {
-            bool own = m_integrators[i].get() == m_impl.get();
-            Segment seg { i, 0, 0, {} };
-
-            // The first source fills the film's base channels. Further nested
-            // integrators contribute theirs under their name, while the
-            // built-in AOV pass leaves its base channels empty and skips them.
-            if (i == 0 || !own)
-                seg.width = base;
-            else
-                seg.offset = base;
-
-            if (i > 0 && !own)
-                for (const std::string &name : m_base_names)
-                    seg.names.push_back(m_names[i] + "." + name);
-
-            for (const std::string &name : m_integrators[i]->aov_names()) {
-                seg.names.push_back(own ? name : m_names[i] + "." + name);
-                seg.width++;
-            }
-
-            result.push_back(std::move(seg));
-        }
-
-        return result;
-    }
-
-    /// Assemble the segments of the given source images into one image
-    TensorXf concat(const std::vector<TensorXf> &images, size_t n_channels) const {
-        TensorXf result = zeros_like(images[0], n_channels);
-        size_t offset = 0;
-        for (const Segment &seg : layout()) {
-            copy_channels(images[seg.source], seg.offset, result, offset, seg.width);
-            offset += seg.width;
-        }
-        return result;
+    /// The first source fills the film's base channels. Specify whether source
+    /// ``i`` is a later built-in AOV pass, whose zero-valued base channels are dropped.
+    bool skips_base(size_t i) const {
+        return i > 0 && m_integrators[i].get() == m_impl.get();
     }
 
     /// Zero-valued image with the resolution of 'ref' and the given channel count
@@ -554,7 +508,6 @@ private:
     std::vector<ref<Base>> m_integrators;
     std::vector<std::string> m_names;
     ref<Impl> m_impl;
-    std::vector<std::string> m_base_names;
 
     MI_TRAVERSE_CB(Base, m_integrators)
 };

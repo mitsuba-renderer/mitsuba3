@@ -7,6 +7,8 @@
 #include <mitsuba/render/sensor.h>
 #include <mitsuba/render/shapegroup.h>
 #include <mitsuba/render/accel.h>
+#include <drjit-core/hash.h>
+#include <tsl/robin_map.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -603,6 +605,15 @@ public:
     /// Return the list of shapes
     const std::vector<ref<Shape>> &shapes() const { return m_shapes; }
 
+    /**
+     * Return the position of a shape within `shapes()` plus one, or zero if
+     * the scene did not contain the shape when it was constructed
+     */
+    uint32_t shape_index(const Shape *shape) const {
+        auto it = m_shape_index.find(shape);
+        return it != m_shape_index.end() ? it->second : 0u;
+    }
+
     /// Return the list of shape groups
     std::vector<ref<ShapeGroup>> &shapegroups() { return m_shapegroups; }
     /// Return the list of shape groups
@@ -761,6 +772,7 @@ protected:
 
     std::vector<ref<Shape>> m_shapes;
     DynamicBuffer<ShapePtr> m_shapes_dr;
+    tsl::robin_map<const Shape *, uint32_t, PointerHasher> m_shape_index;
     std::vector<ref<ShapeGroup>> m_shapegroups;
 
     /// Light portals, excluded from ``m_emitters`` and never sampled directly

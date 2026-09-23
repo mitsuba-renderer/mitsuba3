@@ -63,7 +63,7 @@ class ADIntegrator(mi.CppADIntegrator):
                 sensor=sensor,
                 seed=seed,
                 spp=spp,
-                aovs=self.aov_names()
+                aovs=self.aov_names(sensor.film())
             )
 
             # Generate a set of rays starting at the sensor
@@ -128,7 +128,7 @@ class ADIntegrator(mi.CppADIntegrator):
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names(sensor.film()))
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
@@ -184,7 +184,7 @@ class ADIntegrator(mi.CppADIntegrator):
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names(sensor.film()))
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
@@ -482,7 +482,7 @@ class ADIntegrator(mi.CppADIntegrator):
 
             - ``aovs``: Integrators may return one or more arbitrary output
               variables (AOVs). The implementation has to guarantee that the
-              number of returned AOVs matches the length of self.aov_names().
+              number of returned AOVs matches the length of self.aov_names(film).
         """
 
         raise Exception('RBIntegrator does not provide the sample() method. '
@@ -565,7 +565,7 @@ class RBIntegrator(ADIntegrator):
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names(sensor.film()))
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
@@ -686,7 +686,7 @@ class RBIntegrator(ADIntegrator):
         # Disable derivatives in all of the following
         with dr.suspend_grad():
             # Prepare the film and sample generator for rendering
-            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names())
+            sampler, spp = self.prepare(sensor, seed, spp, self.aov_names(sensor.film()))
 
             # Generate a set of rays starting at the sensor, keep track of
             # derivatives wrt. sample positions ('pos') if there are any
@@ -730,7 +730,7 @@ class RBIntegrator(ADIntegrator):
                 L = dr.full(mi.Spectrum, 1.0, dr.width(ray))
                 dr.enable_grad(L)
                 aovs = []
-                for _ in self.aov_names():
+                for _ in self.aov_names(sensor.film()):
                     aov = dr.ones(mi.Float, dr.width(ray))
                     dr.enable_grad(aov)
                     aovs.append(aov)
@@ -936,7 +936,7 @@ class PSIntegrator(ADIntegrator):
             sensor = scene.sensors()[sensor]
 
         film = sensor.film()
-        aovs = self.aov_names()
+        aovs = self.aov_names(film)
         shape = (film.crop_size()[1],
                  film.crop_size()[0],
                  len(film.base_channels()) + len(aovs))
@@ -1025,7 +1025,7 @@ class PSIntegrator(ADIntegrator):
         film = sensor.film()
         shape = (film.crop_size()[1],
                  film.crop_size()[0],
-                 len(film.base_channels()) + len(self.aov_names()))
+                 len(film.base_channels()) + len(self.aov_names(film)))
         result_grad = dr.zeros(mi.TensorXf, shape=shape)
 
         sampler_spp = sensor.sampler().sample_count()
@@ -1104,7 +1104,7 @@ class PSIntegrator(ADIntegrator):
         traversed using one of the Dr.Jit functions to propagate gradients.
         """
         film = sensor.film()
-        aovs = self.aov_names()
+        aovs = self.aov_names(film)
 
         # Explicit sampling to handle the primarily visible discontinuous derivative
         with dr.suspend_grad():
@@ -1243,7 +1243,7 @@ class PSIntegrator(ADIntegrator):
                                    sampler: mi.Sampler,
                                    spp: int) -> mi.TensorXf:
         film = sensor.film()
-        film.prepare(self.aov_names())
+        film.prepare(self.aov_names(film))
 
         if self.proj_detail.guiding_distr is not None:
             # Draw samples from the guiding distribution
@@ -1320,7 +1320,7 @@ class PSIntegrator(ADIntegrator):
 
             - ``aovs``: Integrators may return one or more arbitrary output
               variables (AOVs). The implementation has to guarantee that the
-              number of returned AOVs matches the length of self.aov_names().
+              number of returned AOVs matches the length of self.aov_names(film).
 
             - ``seedray`` / ``state_out``: If ``project`` is true, the
               integrator returns the seed rays to be projected as the third

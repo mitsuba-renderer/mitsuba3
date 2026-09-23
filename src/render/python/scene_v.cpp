@@ -148,6 +148,7 @@ MI_PY_EXPORT(Scene) {
                  return result.commit();
              },
              D(Scene, shapes))
+        .def_method(Scene, shape_index, "shape"_a)
         .def("shapes_dr", &Scene::shapes_dr, D(Scene, shapes_dr))
         .def("portals", &Scene::portals, D(Scene, portals))
         .def("silhouette_shapes",

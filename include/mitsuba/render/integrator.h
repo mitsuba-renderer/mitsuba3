@@ -36,7 +36,7 @@ NAMESPACE_BEGIN(mitsuba)
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Integrator : public JitObject<Integrator<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(Scene, Sensor)
+    MI_IMPORT_TYPES(Scene, Sensor, Film)
 
     /**
      * Render the scene
@@ -296,11 +296,16 @@ public:
     }
 
     /**
-     * For integrators that return one or more arbitrary output variables
-     * (AOVs), this function specifies a list of associated channel names. The
-     * default implementation simply returns an empty vector.
+     * Return the names of AOV channels
+     *
+     * For integrators that return one or more *arbitrary output variables*
+     * (AOVs), this function specifies a list of associated channel names.
+     * Integrators that produce several images (e.g. ``aov``, ``moment``)
+     * store each extra image in a group of channels named after the film's
+     * base channels (e.g. ``name.R``, ``name.G``, ``name.B``). This is why
+     * the film must be provided as an argument.
      */
-    virtual std::vector<std::string> aov_names() const;
+    virtual std::vector<std::string> aov_names(const Film *film) const;
 
     /// Whether the deprecated ``hide_emitters`` flag was set (see `Scene`)
     bool hide_emitters() const { return m_hide_emitters; }
@@ -342,8 +347,10 @@ protected:
  * performs Monte Carlo integration to return an unbiased statistical estimate
  * of the radiance value along a given ray.
  *
- * The `render()` method then repeatedly invokes this estimator to compute
- * all pixels of the image.
+ * The `render()` method then repeatedly invokes `sample_channels()` to compute
+ * all pixels of the image. Its default implementation converts the estimate of
+ * `sample()` into the film's base channels. Integrators that write further
+ * channels (e.g. AOVs) override it along with `aov_names()`.
  */
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB SamplingIntegrator : public Integrator<Float, Spectrum> {
@@ -371,22 +378,45 @@ public:
      *     active: A mask that indicates which SIMD lanes are active
      *
      * Returns:
-     *     A tuple ``(spec, mask, aovs)`` where ``spec`` and ``mask`` specify the
+     *     A tuple ``(spec, mask)`` where ``spec`` and ``mask`` specify the
      *     sampled spectrum and whether a surface or medium interaction was
      *     sampled. False mask entries indicate that the ray "escaped" the
      *     scene, in which case the returned spectrum contains the
      *     contribution of environment maps, if present. The mask can be used
-     *     to estimate a suitable alpha channel of a rendered image. ``aovs``
-     *     is a list of one or more arbitrary output variables (AOVs)
-     *     returned by the integrator, with as many entries as
-     *     ``aov_names()``.
+     *     to estimate a suitable alpha channel of a rendered image.
      */
     virtual std::pair<Spectrum, Mask> sample(const Scene *scene,
                                              Sampler *sampler,
                                              const Ray3f &ray,
                                              const Medium *medium = nullptr,
-                                             Float *aovs = nullptr,
                                              Mask active = true) const;
+
+    /**
+     * Sample the channels that a camera ray contributes to the film, i.e.
+     * the film's base channels followed by the entries of `aov_names()`.
+     *
+     * The default implementation converts the estimate of `sample()` with
+     * ``Film::prepare_sample()``. Integrators that nest others (e.g. ``aov``)
+     * override it and let every nested integrator write its channels in turn.
+     *
+     * Args:
+     *     sensor: The sensor that generated ``ray``
+     *
+     *     ray_weight: The weight returned by ``Sensor::sample_ray()``
+     *
+     *     out: Output array that receives the channels
+     *
+     * Returns:
+     *     A pointer just past the last written channel
+     */
+    virtual Float *sample_channels(const Scene *scene,
+                                   const Sensor *sensor,
+                                   Sampler *sampler,
+                                   const Ray3f &ray,
+                                   const Spectrum &ray_weight,
+                                   const Medium *medium,
+                                   Float *out,
+                                   Mask active) const;
 
     // =========================================================================
     // Integrator interface implementation

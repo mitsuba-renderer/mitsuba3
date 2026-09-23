@@ -97,7 +97,6 @@ public:
                                      Sampler *sampler,
                                      const Ray3f &ray_,
                                      const Medium *initial_medium,
-                                     Float * /* aovs */,
                                      Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 

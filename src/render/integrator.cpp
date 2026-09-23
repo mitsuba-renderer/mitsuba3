@@ -155,7 +155,8 @@ Integrator<Float, Spectrum>::render_backward(Scene* scene,
     }
 }
 
-MI_VARIANT std::vector<std::string> Integrator<Float, Spectrum>::aov_names() const {
+MI_VARIANT std::vector<std::string>
+Integrator<Float, Spectrum>::aov_names(const Film * /* film */) const {
     return { };
 }
 
@@ -226,7 +227,7 @@ SamplingIntegrator<Float, Spectrum>::render(Scene *scene,
     ScalarFloat pixel_weight = 0.f;
     if (dr::is_jit_v<Float> && film->rfilter()->is_box_filter())
         pixel_weight = (ScalarFloat) spp;
-    size_t n_channels = film->prepare(aov_names(), pixel_weight);
+    size_t n_channels = film->prepare(aov_names(film), pixel_weight);
 
     // Start the render timer (used for timeouts & log messages)
     m_render_timer.reset();
@@ -517,19 +518,33 @@ SamplingIntegrator<Float, Spectrum>::render_sample(const Scene *scene,
     if (jitter)
         ray.cone = ray.cone.scale(dr::rsqrt((ScalarFloat) sampler->sample_count()));
 
-    const Medium *medium = sensor->medium();
-
-    // The AOVs follow the film's base channels, the sample weight (if stored) comes last
-    auto [spec, valid] = sample(scene, sampler, ray, medium,
-                                aovs + film->base_channels().size(), active);
-
-    UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
-    film->prepare_sample(spec_u, ray.wavelengths, aovs, valid, active);
+    // The sample weight (if stored) follows the channels written here
+    Float *end = sample_channels(scene, sensor, sampler, ray, ray_weight,
+                                 sensor->medium(), aovs, active);
     if (film->pixel_weight() == 0.f)
-        aovs[block->channel_count() - 1] = 1.f;
+        *end++ = 1.f;
+    Assert((size_t) (end - aovs) == block->channel_count());
+    DRJIT_MARK_USED(end);
 
     // With box filter, ignore random offset to prevent numerical instabilities
     block->put(box_filter ? pos : sample_pos, aovs, active);
+}
+
+MI_VARIANT Float *
+SamplingIntegrator<Float, Spectrum>::sample_channels(const Scene *scene,
+                                                     const Sensor *sensor,
+                                                     Sampler *sampler,
+                                                     const Ray3f &ray,
+                                                     const Spectrum &ray_weight,
+                                                     const Medium *medium,
+                                                     Float *out,
+                                                     Mask active) const {
+    auto [spec, valid] = sample(scene, sampler, ray, medium, active);
+
+    const Film *film = sensor->film();
+    UnpolarizedSpectrum spec_u = unpolarized_spectrum(ray_weight * spec);
+    film->prepare_sample(spec_u, ray.wavelengths, out, valid, active);
+    return out + film->base_channels().size();
 }
 
 MI_VARIANT std::pair<Spectrum, typename SamplingIntegrator<Float, Spectrum>::Mask>
@@ -537,7 +552,6 @@ SamplingIntegrator<Float, Spectrum>::sample(const Scene * /* scene */,
                                             Sampler * /* sampler */,
                                             const Ray3f & /* ray */,
                                             const Medium * /* medium */,
-                                            Float * /* aovs */,
                                             Mask /* active */) const {
     NotImplementedError("sample");
 }
@@ -641,7 +655,7 @@ AdjointIntegrator<Float, Spectrum>::render(Scene *scene,
     size_t samples_per_pass =
         (size_t) film_size.x() * (size_t) film_size.y() * (size_t) spp_per_pass;
 
-    std::vector<std::string> aovs = aov_names();
+    std::vector<std::string> aovs = aov_names(film);
     if (!aovs.empty())
         Throw("AOVs are not supported in the AdjointIntegrator!");
     film->prepare(aovs);

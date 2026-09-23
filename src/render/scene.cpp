@@ -90,6 +90,9 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     for (Sensor *sensor: m_sensors)
         sensor->set_scene(this);
 
+    for (size_t i = 0; i < m_shapes.size(); ++i)
+        m_shape_index[m_shapes[i].get()] = (uint32_t) (i + 1);
+
     // Mark backend-specific properties as queried
     props.mark_queried("embree_use_robust_intersections");
     props.mark_queried("kd_intersection_cost");

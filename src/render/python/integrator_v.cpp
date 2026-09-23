@@ -3,6 +3,7 @@
 #include <mitsuba/render/integrator.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
+#include <nanobind/stl/pair.h>
 #include <nanobind/stl/string.h>
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
@@ -65,7 +66,7 @@ ScopedSignalHandler::~ScopedSignalHandler() {
 template <typename Float, typename Spectrum, typename Base_>
 class PySamplingIntegratorImpl : public Base_ {
 public:
-    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film)
     using Base = Base_;
     NB_TRAMPOLINE(Base);
 
@@ -110,22 +111,40 @@ public:
                                      Sampler *sampler,
                                      const Ray3f &ray,
                                      const Medium *medium,
-                                     Float *aovs,
                                      Mask active) const override {
-        using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>>;
-
-        constexpr uint64_t nb_hash = nanobind::detail::str_hash("sample");
-        nanobind::detail::ticket nb_ticket(nb_trampoline, "sample", nb_hash, true);
-        auto [spec, mask, aovs_] =
-            nanobind::cast<PyReturn>(nb_trampoline.base().attr(nb_ticket.key)(
-                scene, sampler, ray, medium, active));
-
-        std::copy(aovs_.begin(), aovs_.end(), aovs);
-        return { spec, mask };
+        NB_OVERRIDE_PURE(sample, scene, sampler, ray, medium, active);
     }
 
-    std::vector<std::string> aov_names() const override {
-        NB_OVERRIDE(aov_names);
+    // Python overrides return the channel values as a list
+    Float *sample_channels(const Scene *scene,
+                           const Sensor *sensor,
+                           Sampler *sampler,
+                           const Ray3f &ray,
+                           const Spectrum &ray_weight,
+                           const Medium *medium,
+                           Float *out,
+                           Mask active) const override {
+        constexpr uint64_t nb_hash = nanobind::detail::str_hash("sample_channels");
+        nanobind::detail::ticket nb_ticket(nb_trampoline, "sample_channels", nb_hash, false);
+        if (!nb_ticket.key.is_valid())
+            return Base::sample_channels(scene, sensor, sampler, ray, ray_weight,
+                                         medium, out, active);
+
+        auto values = nanobind::cast<std::vector<Float>>(
+            nb_trampoline.base().attr(nb_ticket.key)(
+                scene, sensor, sampler, ray, ray_weight, medium, active));
+
+        const Film *film = sensor->film();
+        size_t expected = film->base_channels().size() + this->aov_names(film).size();
+        if (values.size() != expected)
+            Throw("sample_channels(): expected %zu channel values, got %zu!",
+                  expected, values.size());
+
+        return std::copy(values.begin(), values.end(), out);
+    }
+
+    std::vector<std::string> aov_names(const Film *film) const override {
+        NB_OVERRIDE(aov_names, film);
     }
 
     std::string to_string() const override {
@@ -162,7 +181,7 @@ public:
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyAdjointIntegrator : public AdjointIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(AdjointIntegrator, Scene, Sensor, Sampler, ImageBlock)
+    MI_IMPORT_TYPES(AdjointIntegrator, Scene, Sensor, Sampler, ImageBlock, Film)
     NB_TRAMPOLINE(AdjointIntegrator);
 
     PyAdjointIntegrator(const Properties &props) : AdjointIntegrator(props) {
@@ -189,8 +208,8 @@ public:
         NB_OVERRIDE_PURE(sample, scene, sensor, sampler, block, sample_scale);
     }
 
-    std::vector<std::string> aov_names() const override {
-        NB_OVERRIDE(aov_names);
+    std::vector<std::string> aov_names(const Film *film) const override {
+        NB_OVERRIDE(aov_names, film);
     }
 
     std::string to_string() const override {
@@ -227,7 +246,7 @@ template class CppADIntegrator<MI_VARIANT_FLOAT, MI_VARIANT_SPECTRUM>;
 
 MI_VARIANT class PyADIntegrator : public CppADIntegrator<Float, Spectrum> {
 public:
-    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Emitter, EmitterPtr, BSDF, BSDFPtr)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film, Emitter, EmitterPtr, BSDF, BSDFPtr)
     using Base = CppADIntegrator<Float, Spectrum>;
     NB_TRAMPOLINE(Base);
 
@@ -284,8 +303,51 @@ public:
                                      Sampler *sampler,
                                      const Ray3f &ray,
                                      const Medium * /* unused */,
-                                     Float *aovs,
                                      Mask active) const override {
+        auto [spec, mask, aovs] = sample_primal(scene, sampler, ray, active);
+        return { spec, mask };
+    }
+
+    Float *sample_channels(const Scene *scene,
+                           const Sensor *sensor,
+                           Sampler *sampler,
+                           const Ray3f &ray,
+                           const Spectrum &ray_weight,
+                           const Medium * /* unused */,
+                           Float *out,
+                           Mask active) const override {
+        auto [spec, mask, aovs] = sample_primal(scene, sampler, ray, active);
+
+        const Film *film = sensor->film();
+        film->prepare_sample(unpolarized_spectrum(ray_weight * spec),
+                             ray.wavelengths, out, mask, active);
+        out += film->base_channels().size();
+        return std::copy(aovs.begin(), aovs.end(), out);
+    }
+
+    std::vector<std::string> aov_names(const Film *film) const override {
+        NB_OVERRIDE(aov_names, film);
+    }
+
+    std::string to_string() const override {
+        NB_OVERRIDE(to_string);
+    }
+
+    void traverse(TraversalCallback *cb) override {
+        NB_OVERRIDE(traverse, cb);
+    }
+
+    void parameters_changed(const std::vector<std::string> &keys) override {
+        NB_OVERRIDE(parameters_changed, keys);
+    }
+
+    using Base::m_hide_emitters;
+
+private:
+    /// Call the Python ``sample()`` method in primal mode
+    std::tuple<Spectrum, Mask, std::vector<Float>>
+    sample_primal(const Scene *scene, Sampler *sampler, const Ray3f &ray,
+                  Mask active) const {
         constexpr uint64_t nb_hash = nanobind::detail::str_hash("sample");
         nanobind::detail::ticket nb_ticket(nb_trampoline, "sample", nb_hash, true);
 
@@ -302,31 +364,11 @@ public:
         kwargs["active"] = active;
 
         using PyReturn = std::tuple<Spectrum, Mask, std::vector<Float>, nb::object>;
-        auto [spec, mask, aovs_, _] = nanobind::cast<PyReturn>(
+        auto [spec, mask, aovs, _] = nanobind::cast<PyReturn>(
             nb_trampoline.base().attr(nb_ticket.key)(**kwargs));
 
-        std::copy(aovs_.begin(), aovs_.end(), aovs);
-
-        return { spec, mask };
+        return { spec, mask, aovs };
     }
-
-    std::vector<std::string> aov_names() const override {
-        NB_OVERRIDE(aov_names);
-    }
-
-    std::string to_string() const override {
-        NB_OVERRIDE(to_string);
-    }
-
-    void traverse(TraversalCallback *cb) override {
-        NB_OVERRIDE(traverse, cb);
-    }
-
-    void parameters_changed(const std::vector<std::string> &keys) override {
-        NB_OVERRIDE(parameters_changed, keys);
-    }
-
-    using Base::m_hide_emitters;
 };
 
 MI_PY_EXPORT(Integrator) {
@@ -368,7 +410,7 @@ MI_PY_EXPORT(Integrator) {
             "profile"_a = false)
         .def_method(Integrator, cancel)
         .def_method(Integrator, should_stop)
-        .def_method(Integrator, aov_names);
+        .def_method(Integrator, aov_names, "film"_a);
 
     drjit::bind_traverse(cls);
 
@@ -380,13 +422,28 @@ MI_PY_EXPORT(Integrator) {
                Sampler *sampler, const Ray3f &ray,
                const Medium *medium, Mask active) {
                 nb::gil_scoped_release release;
-                std::vector<Float> aovs(integrator->aov_names().size(), 0.f);
-                auto [spec, mask] = integrator->sample(
-                    scene, sampler, ray, medium, aovs.data(), active);
-                return std::make_tuple(spec, mask, aovs);
+                return integrator->sample(scene, sampler, ray, medium, active);
             },
             "scene"_a, "sampler"_a, "ray"_a, "medium"_a = nullptr,
             "active"_a = true, D(SamplingIntegrator, sample))
+        .def(
+            "sample_channels",
+            [](const SamplingIntegrator *integrator, const Scene *scene,
+               const Sensor *sensor, Sampler *sampler, const Ray3f &ray,
+               const Spectrum &ray_weight, const Medium *medium, Mask active) {
+                const Film *film = sensor->film();
+                std::vector<Float> out(film->base_channels().size() +
+                                       integrator->aov_names(film).size());
+                nb::gil_scoped_release release;
+                Float *end = integrator->sample_channels(
+                    scene, sensor, sampler, ray, ray_weight, medium,
+                    out.data(), active);
+                out.resize((size_t) (end - out.data()));
+                return out;
+            },
+            "scene"_a, "sensor"_a, "sampler"_a, "ray"_a, "ray_weight"_a,
+            "medium"_a = nullptr, "active"_a = true,
+            D(SamplingIntegrator, sample_channels))
         .def(
             "render_forward",
             [](SamplingIntegrator *integrator, Scene *scene, nb::object* params,

@@ -363,7 +363,7 @@ def test06_path_tracer_quarter_wave(variant_scalar_mono_polarized):
         ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
-        value, _, _ = integrator.sample(scene, sampler, ray)
+        value, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
         value = value * dr.rcp(value[0,0][0])
@@ -479,7 +479,7 @@ def test07_path_tracer_half_wave(variant_scalar_mono_polarized):
         ray, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
 
         # Call integrator
-        value, _, _ = integrator.sample(scene, sampler, ray)
+        value, _ = integrator.sample(scene, sampler, ray)
 
         # Normalize Stokes vector
         value = value * dr.rcp(value[0,0][0])

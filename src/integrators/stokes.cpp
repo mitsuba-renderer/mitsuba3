@@ -29,6 +29,11 @@ conductive sphere that all affect the polarization state of the
 The first entry corresponds to usual radiance, whereas the remaining three entries
 describe the polarization of light shown as false color images (green: positive, red: negative).
 
+The film's base channels hold :math:`\mathbf{s}_0`, and the four entries follow
+as channel groups :code:`S0` to :code:`S3` in the color space of the film. The
+nested integrator cannot produce AOVs of its own. To add AOVs, nest the
+:monosp:`stokes` integrator inside an :ref:`aov <integrator-aov>` integrator.
+
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/integrator_stokes_cbox.jpg
    :caption: ":math:`\mathbf{s}_0`": radiance
@@ -67,7 +72,7 @@ template <typename Float, typename Spectrum>
 class StokesIntegrator final : public SamplingIntegrator<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(SamplingIntegrator)
-    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium)
+    MI_IMPORT_TYPES(Scene, Sensor, Sampler, Medium, Film)
 
     StokesIntegrator(const Properties &props) : Base(props) {
         if constexpr (!is_polarized_v<Spectrum>)
@@ -86,72 +91,62 @@ public:
     }
 
     std::pair<Spectrum, Mask> sample(const Scene *scene,
-                                     Sampler * sampler,
+                                     Sampler *sampler,
                                      const Ray3f &ray,
                                      const Medium *medium,
-                                     Float *aovs,
                                      Mask active) const override {
+        return m_integrator->sample(scene, sampler, ray, medium, active);
+    }
+
+    Float *sample_channels(const Scene *scene,
+                           const Sensor *sensor,
+                           Sampler *sampler,
+                           const Ray3f &ray,
+                           const Spectrum &ray_weight,
+                           const Medium *medium,
+                           Float *out,
+                           Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::SamplingIntegratorSample, active);
 
-        auto [spec, mask] = m_integrator->sample(scene, sampler, ray, medium, aovs + 12, active);
-
         if constexpr (is_polarized_v<Spectrum>) {
-            // Need sensor information
-            if (!m_sensor)
-                Throw("The `sample()` method for this integrator must "
-                      "exclusively be called through the `render()` method!");
+            auto [spec, valid] = m_integrator->sample(scene, sampler, ray, medium, active);
 
             // The Stokes vector that comes from the integrator is still aligned
             // with the implicit Stokes frame used for the ray direction. Apply
             // one last rotation here s.t. it aligns with the sensor's x-axis.
             Vector3f current_basis = mueller::stokes_basis(-ray.d);
-            Vector3f vertical = m_sensor->world_transform(ray.time) * Vector3f(0.f, 1.f, 0.f);
+            Vector3f vertical = sensor->world_transform(ray.time) * Vector3f(0.f, 1.f, 0.f);
             Vector3f target_basis = dr::cross(ray.d, vertical);
             spec = mueller::rotate_stokes_basis(-ray.d,
                                                  current_basis,
                                                  target_basis) * spec;
 
-            for (int i = 0; i < 4; ++i) {
-                Color3f rgb;
-                if constexpr (is_monochromatic_v<Spectrum>) {
-                    rgb = spec.entry(i, 0).x();
-                } else if constexpr (is_rgb_v<Spectrum>) {
-                    rgb = spec.entry(i, 0);
-                } else {
-                    static_assert(is_spectral_v<Spectrum>);
-                    /// Note: this assumes that sensor used sample_rgb_spectrum() to generate 'ray.wavelengths'
-                    auto pdf = pdf_rgb_spectrum(ray.wavelengths);
-                    UnpolarizedSpectrum _spec =
-                        spec.entry(i, 0) * dr::select(pdf != 0.f, dr::rcp(pdf), 0.f);
-                    rgb = spectrum_to_srgb(_spec, ray.wavelengths, active);
-                }
+            // The base channels hold S0, followed by one group per component
+            const Film *film = sensor->film();
+            UnpolarizedSpectrum weight = unpolarized_spectrum(ray_weight);
 
-                *aovs++ = rgb.r(); *aovs++ = rgb.g(); *aovs++ = rgb.b();
+            for (int i : { 0, 0, 1, 2, 3 }) {
+                film->prepare_sample(spec.entry(i, 0) * weight, ray.wavelengths,
+                                     out, valid, active);
+                out += film->base_channels().size();
             }
+            return out;
+        } else {
+            // Unreachable, since the constructor rejects unpolarized variants
+            return Base::sample_channels(scene, sensor, sampler, ray, ray_weight,
+                                         medium, out, active);
         }
-
-        return { spec, mask };
     }
 
-    TensorXf render(Scene *scene,
-                    Sensor *sensor,
-                    UInt32 seed = 0,
-                    uint32_t spp = 0,
-                    bool develop = true,
-                    bool evaluate = true,
-                    bool profile = false) override {
-        m_sensor = sensor;
-        TensorXf result = Base::render(scene, sensor, seed, spp, develop,
-                                       evaluate, profile);
-        m_sensor = nullptr;
-        return result;
-    }
+    std::vector<std::string> aov_names(const Film *film) const override {
+        if (!m_integrator->aov_names(film).empty())
+            Throw("The 'stokes' integrator does not support AOVs of its nested "
+                  "integrator. Place the 'aov' integrator outside of it instead.");
 
-    std::vector<std::string> aov_names() const override {
-        std::vector<std::string> result = m_integrator->aov_names();
+        std::vector<std::string> result;
         for (int i = 0; i < 4; ++i)
-            for (int j = 0; j < 3; ++j)
-                result.insert(result.begin() + 3*i + j, "S" + std::to_string(i) + "." + ("RGB"[j]));
+            for (const std::string &name : film->base_channels())
+                result.push_back("S" + std::to_string(i) + "." + name);
         return result;
     }
 
@@ -161,7 +156,6 @@ public:
 
     MI_DECLARE_CLASS(StokesIntegrator)
 private:
-    Sensor *m_sensor;
     ref<Base> m_integrator;
 
     MI_TRAVERSE_CB(Base, m_integrator)
