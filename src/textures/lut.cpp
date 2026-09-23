@@ -6,6 +6,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/core/string.h>
 #include <drjit/tensor.h>
+#include <drjit/texture.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -128,7 +129,7 @@ public:
                   m_input_max, m_input_min);
 
         prepare_table(m_values);
-        update_coefficients();
+        update_textures();
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -139,7 +140,7 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         if (keys.empty() || string::contains(keys, "data")) {
             prepare_table(m_values);
-            update_coefficients();
+            update_textures();
         }
     }
 
@@ -162,11 +163,7 @@ public:
             if (!rgb_table())
                 return UnpolarizedSpectrum(lookup<Float>(x, active));
 
-            // Upsampling is nonlinear, so the entries are converted to
-            // spectra before they are interpolated
-            return lookup<Color3f>(m_coeffs, x, active, [&](const Color3f &c) {
-                return srgb_model_eval<UnpolarizedSpectrum>(c, si.wavelengths);
-            });
+            return lookup_spectrum(x, si.wavelengths, active);
         } else if constexpr (is_monochromatic_v<Spectrum>) {
             return UnpolarizedSpectrum(eval_1(si, active));
         } else {
@@ -256,6 +253,8 @@ public:
 
 protected:
     using FloatStorage = DynamicBuffer<Float>;
+    using Table        = dr::Texture<Float, 1>;
+    using Value1       = dr::Array<Float, 1>;
 
     bool rgb_table() const { return m_values.shape(1) == 3; }
 
@@ -304,12 +303,17 @@ protected:
     }
 
     /**
-     * \brief Derive the spectral upsampling coefficients of an RGB table
+     * \brief Build the texture that serves the lookups
      *
-     * The sRGB entries are the authoritative representation, and these
-     * coefficients are a cached byproduct that spectral queries use instead.
+     * Spectral color maps additionally store the spectral upsampling
+     * coefficients of the entries. The sRGB entries are the authoritative
+     * representation, and these coefficients are a cached byproduct.
      */
-    void update_coefficients() {
+    void update_textures() {
+        m_table = Table(TensorXf(m_values), true,
+                        m_nearest ? dr::FilterMode::Nearest : dr::FilterMode::Linear,
+                        dr::WrapMode::Clamp);
+
         if constexpr (is_spectral_v<Spectrum>) {
             if (!rgb_table() || m_curve) {
                 m_coeffs = FloatStorage();
@@ -344,30 +348,43 @@ protected:
         return { UInt32(i), f - i };
     }
 
-    /**
-     * \brief Look up an input value in a table with entries of type ``Value``
-     *
-     * The function ``fn`` maps entries to the result type. Linear lookups
-     * apply it to the two enclosing entries and interpolate the results.
-     */
-    template <typename Value, typename Fn>
-    auto lookup(const FloatStorage &data, Float x, Mask active, Fn fn) const {
-        auto [i, w] = segment(x);
-        if (m_nearest)
-            return fn(dr::gather<Value>(data, dr::select(w < .5f, i, i + 1u), active));
-        return dr::lerp(fn(dr::gather<Value>(data, i, active)),
-                        fn(dr::gather<Value>(data, i + 1u, active)), w);
+    /// Texture coordinate of an input value. Entry ``i`` lies at the center
+    /// of texel ``i``, and the texture clamps inputs outside of the range.
+    Value1 coord(Float x) const {
+        Float f = (dr::clip(x, m_input_min, m_input_max) - m_input_min) * scale();
+        return Value1((f + .5f) / (ScalarFloat) m_values.shape(0));
     }
 
     /// Look up an input value in the table entries (``Float`` or ``Color3f``)
     template <typename Value> Value lookup(Float x, Mask active) const {
-        return lookup<Value>(m_values.array(), x, active, [](const Value &v) { return v; });
+        if constexpr (std::is_same_v<Value, Float>)
+            return m_table.template eval<Value1>(coord(x), active).x();
+        else
+            return m_table.template eval<Value>(coord(x), active);
+    }
+
+    /// Look up an input value in a spectral color map. Upsampling is
+    /// nonlinear, so the entries are converted to spectra before they are
+    /// interpolated.
+    UnpolarizedSpectrum lookup_spectrum(Float x, const Wavelength &wavelengths,
+                                        Mask active) const {
+        auto spectrum = [&](const Color3f &c) {
+            return srgb_model_eval<UnpolarizedSpectrum>(c, wavelengths);
+        };
+
+        auto [i, w] = segment(x);
+        if (m_nearest)
+            return spectrum(dr::gather<Color3f>(m_coeffs, dr::select(w < .5f, i, i + 1u), active));
+        return dr::lerp(spectrum(dr::gather<Color3f>(m_coeffs, i, active)),
+                        spectrum(dr::gather<Color3f>(m_coeffs, i + 1u, active)), w);
     }
 
     // Input texture transformed by the LUT
     ref<Texture> m_input;
     // Table entries (scalar or sRGB) as a tensor of shape (N, C)
     TensorXf m_values;
+    // The entries as a texture
+    Table m_table;
     // Upsampling coefficients of an sRGB color map (spectral variants only)
     FloatStorage m_coeffs;
     // Inputs that map to the first and last entry
@@ -377,7 +394,7 @@ protected:
     // Nearest-neighbor lookups instead of linear interpolation
     bool m_nearest;
 
-    MI_TRAVERSE_CB(Texture, m_input, m_values, m_coeffs)
+    MI_TRAVERSE_CB(Texture, m_input, m_values, m_table, m_coeffs)
 };
 
 MI_EXPORT_PLUGIN(LUTTexture)
