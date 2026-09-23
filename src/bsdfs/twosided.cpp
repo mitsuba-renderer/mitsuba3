@@ -108,9 +108,16 @@ public:
         cb->put("brdf_1", m_brdf[1], ParamFlags::Differentiable);
     }
 
-    /// Test via the geometric normal if ``si.wi`` arrive on the back side.
-    Mask on_back_side(const SurfaceInteraction3f &si) const {
-        return dr::dot(si.n, si.to_world(si.wi)) < 0.f;
+    /// Geometric normal in the shading frame, flipped to the side of the
+    /// shading normal
+    static Vector3f local_normal(const SurfaceInteraction3f &si) {
+        Vector3f n = si.to_local(si.n);
+        return dr::mulsign(n, n.z());
+    }
+
+    /// Test via the geometric normal if ``si.wi`` arrives on the back side.
+    static Mask on_back_side(const SurfaceInteraction3f &si, const Vector3f &n) {
+        return dr::dot(n, si.wi) < 0.f;
     }
 
     static void to_front(SurfaceInteraction3f &si) {
@@ -119,11 +126,10 @@ public:
 
     /// Do ``si.wi`` and ``wo`` lie on the same geometric side? Always true
     /// when the nested model transmits.
-    Mask same_side(const SurfaceInteraction3f &si, const Vector3f &wo,
-                   Mask back) const {
+    Mask same_side(const Vector3f &n, const Vector3f &wo, Mask back) const {
         if (this->has_flag(BSDFFlags::Transmission))
             return true;
-        return (dr::dot(si.n, si.to_world(wo)) < 0.f) == back;
+        return (dr::dot(n, wo) < 0.f) == back;
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
@@ -138,7 +144,8 @@ public:
         SurfaceInteraction3f si(si_);
         BSDFContext ctx(ctx_);
         Result result = dr::zeros<Result>();
-        Mask back = on_back_side(si);
+        Vector3f n = local_normal(si);
+        Mask back = on_back_side(si, n);
         to_front(si);
 
         if (m_brdf[0] == m_brdf[1]) {
@@ -163,7 +170,7 @@ public:
         // Directions sampled on the back leave through the back
         dr::masked(result.first.wo.z(), back) *= -1.f;
 
-        Mask invalid = active && !same_side(si_, result.first.wo, back);
+        Mask invalid = active && !same_side(n, result.first.wo, back);
         dr::masked(result.first.pdf, invalid) = 0.f;
         dr::masked(result.second, invalid) = 0.f;
 
@@ -178,8 +185,9 @@ public:
         BSDFContext ctx(ctx_);
         Vector3f wo(wo_);
         Spectrum result = 0.f;
-        Mask back = on_back_side(si),
-             valid = same_side(si_, wo_, back);
+        Vector3f n = local_normal(si);
+        Mask back = on_back_side(si, n),
+             valid = same_side(n, wo_, back);
         active &= valid;
         to_front(si);
         dr::masked(wo.z(), back) *= -1.f;
@@ -213,8 +221,9 @@ public:
         BSDFContext ctx(ctx_);
         Vector3f wo(wo_);
         Float result = 0.f;
-        Mask back = on_back_side(si),
-             valid = same_side(si_, wo_, back);
+        Vector3f n = local_normal(si);
+        Mask back = on_back_side(si, n),
+             valid = same_side(n, wo_, back);
         active &= valid;
         to_front(si);
         dr::masked(wo.z(), back) *= -1.f;
@@ -251,8 +260,9 @@ public:
 
         Spectrum value = 0.f;
         Float pdf = 0.f;
-        Mask back = on_back_side(si),
-             valid = same_side(si_, wo_, back);
+        Vector3f n = local_normal(si);
+        Mask back = on_back_side(si, n),
+             valid = same_side(n, wo_, back);
         active &= valid;
         to_front(si);
         dr::masked(wo.z(), back) *= -1.f;
@@ -286,7 +296,7 @@ public:
     Result per_side(const SurfaceInteraction3f &si_, Mask active,
                     Func &&func) const {
         SurfaceInteraction3f si(si_);
-        Mask back = on_back_side(si);
+        Mask back = on_back_side(si, local_normal(si));
         to_front(si);
 
         if (m_brdf[0] == m_brdf[1])
