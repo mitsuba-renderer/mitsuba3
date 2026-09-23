@@ -202,17 +202,24 @@ def test06_tilted_shading_normal(variant_scalar_rgb):
     above = si.to_local(mi.Vector3f(0, 0, 1))
     leak = si.to_local(dr.normalize(mi.Vector3f(0.9, 0, -0.3)))
     assert leak.z > 0
-    for wo in (below, leak):
-        assert dr.allclose(bsdf.eval(ctx, si, wo), 0.0)
-        assert dr.allclose(bsdf.pdf(ctx, si, wo), 0.0)
-    assert dr.allclose(bsdf.eval(ctx, si, above),
-                       0.5 * dr.inv_pi * dr.cos(tilt))
-    for i in range(200):
-        bs, weight = bsdf.sample(ctx, si, 0.5, [(i % 20) / 20.0, (i // 20) / 10.0])
-        if bs.pdf > 0:
-            assert dr.dot(si.to_world(bs.wo), si.n) >= -1e-6
 
-    # Mirrored configuration behind the surface
-    si.wi = si.to_local(-wi_world)
-    assert dr.allclose(bsdf.eval(ctx, si, above), 0.0)
-    assert dr.all(bsdf.eval(ctx, si, below) > 0.0)
+    for n_geo in ([0, 0, 1], [0, 0, -1]):
+        si.n = n_geo
+        si.wi = si.to_local(wi_world)
+
+        for wo in (below, leak):
+            assert dr.allclose(bsdf.eval(ctx, si, wo), 0.0)
+            assert dr.allclose(bsdf.pdf(ctx, si, wo), 0.0)
+
+        assert dr.allclose(bsdf.eval(ctx, si, above),
+                           0.5 * dr.inv_pi * dr.cos(tilt))
+
+        for i in range(200):
+            bs, weight = bsdf.sample(ctx, si, 0.5, [(i % 20) / 20.0, (i // 20) / 10.0])
+            if bs.pdf > 0:
+                assert dr.dot(si.to_world(bs.wo), [0, 0, 1]) >= -1e-6
+
+        # Mirrored configuration behind the surface
+        si.wi = si.to_local(-wi_world)
+        assert dr.allclose(bsdf.eval(ctx, si, above), 0.0)
+        assert dr.all(bsdf.eval(ctx, si, below) > 0.0)

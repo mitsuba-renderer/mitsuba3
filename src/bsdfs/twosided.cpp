@@ -108,9 +108,11 @@ public:
         cb->put("brdf_1", m_brdf[1], ParamFlags::Differentiable);
     }
 
-    /// Test via the geometric normal if ``si.wi`` arrive on the back side.
+    /// Test via the geometric normal (aligned with the shading normal) if
+    /// ``si.wi`` arrives on the back side.
     Mask on_back_side(const SurfaceInteraction3f &si) const {
-        return dr::dot(si.n, si.to_world(si.wi)) < 0.f;
+        return dr::mulsign(dr::dot(si.n, si.to_world(si.wi)),
+                           dr::dot(si.n, si.sh_frame.n)) < 0.f;
     }
 
     static void to_front(SurfaceInteraction3f &si) {
@@ -123,7 +125,8 @@ public:
                    Mask back) const {
         if (this->has_flag(BSDFFlags::Transmission))
             return true;
-        return (dr::dot(si.n, si.to_world(wo)) < 0.f) == back;
+        return (dr::mulsign(dr::dot(si.n, si.to_world(wo)),
+                            dr::dot(si.n, si.sh_frame.n)) < 0.f) == back;
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx_,
