@@ -176,7 +176,7 @@ static void parse_dict_impl(ParserState &state, const nb::dict &d,
                 if (!child_dict.contains("filename"))
                     Throw("[%s] Import is missing 'filename' attribute", path);
 
-                std::string filename = nb::cast<std::string>(nb::str(child_dict["filename"]));
+                std::string filename = nb::cast<std::string>(nb::str((nb::handle) child_dict["filename"]));
                 if (std::find(state.imports.begin(), state.imports.end(),
                               filename) == state.imports.end())
                     state.imports.push_back(std::move(filename));
