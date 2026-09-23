@@ -239,9 +239,13 @@ public:
 
             m_internal_reflectance =
                 dr::mean(eval_reflectance(distr, wi, 1.f / eta) * wi.z()) * 2.f;
+
+            // Fraction of the diffusely scattered light that leaves
+            m_diffuse_transmittance =
+                dr::mean(external_transmittance * wi.z()) * 2.f / (eta * eta);
         }
         dr::make_opaque(m_eta, m_inv_eta, m_inv_eta_2, m_alpha,
-                        m_internal_reflectance);
+                        m_internal_reflectance, m_diffuse_transmittance);
 
         m_distr = MicrofacetDistribution(m_type, m_alpha, m_sample_visible);
         dr::make_opaque(m_distr);
@@ -371,8 +375,8 @@ public:
                                     MI_ROUGH_TRANSMITTANCE_RES, active);
 
             UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
-            diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
-                                       : UnpolarizedSpectrum(m_internal_reflectance));
+            diff /= m_nonlinear ? dr::fnmadd(diff, m_internal_reflectance, 1.f)
+                                : UnpolarizedSpectrum(1.f - m_internal_reflectance);
 
             value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
@@ -509,8 +513,8 @@ public:
             Float t_o = lerp_gather(m_external_transmittance, cos_theta_o,
                                     MI_ROUGH_TRANSMITTANCE_RES, active);
 
-            diff /= 1.f - (m_nonlinear ? (diff * m_internal_reflectance)
-                                       : UnpolarizedSpectrum(m_internal_reflectance));
+            diff /= m_nonlinear ? dr::fnmadd(diff, m_internal_reflectance, 1.f)
+                                : UnpolarizedSpectrum(1.f - m_internal_reflectance);
 
             value += diff * (dr::InvPi<Float> * m_inv_eta_2 * cos_theta_o * t_i * t_o);
         }
@@ -520,7 +524,21 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        return { m_diffuse_reflectance->eval(si, active), si.sh_frame, 1.f };
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        active &= cos_theta_i > 0.f;
+
+        // The interface transmits t_i of the incident light, and the rest
+        // approximates the reflection lobe
+        Float t_i = lerp_gather(m_external_transmittance, cos_theta_i,
+                                MI_ROUGH_TRANSMITTANCE_RES, active);
+        UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
+        diff /= m_nonlinear ? dr::fnmadd(diff, m_internal_reflectance, 1.f)
+                            : UnpolarizedSpectrum(1.f - m_internal_reflectance);
+        diff *= t_i * m_diffuse_transmittance;
+
+        return { dr::select(active, diff, 0.f),
+                 dr::select(active, eval_specular_reflectance(si, active) * (1.f - t_i), 0.f),
+                 0.f, si.sh_frame, m_alpha };
     }
 
     std::string to_string() const override {
@@ -552,11 +570,12 @@ private:
     bool m_sample_visible;
     DynamicBuffer<Float> m_external_transmittance;
     Float m_internal_reflectance;
+    Float m_diffuse_transmittance;
     MicrofacetDistribution m_distr;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
                    m_inv_eta, m_inv_eta_2, m_alpha, m_external_transmittance,
-                   m_internal_reflectance, m_distr)
+                   m_internal_reflectance, m_diffuse_transmittance, m_distr)
 };
 
 MI_EXPORT_PLUGIN(RoughPlastic)

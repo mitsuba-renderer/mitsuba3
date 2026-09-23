@@ -1056,17 +1056,39 @@ R"doc(Surface appearance summary used to guide image denoisers
 Denoisers separate texture and geometric detail from Monte Carlo noise
 using noise-free albedo and shading normal images. The purpose of this data
 structure is to efficiently return multiple such properties in one
-operation.)doc";
+operation. The three albedo fields split the directional albedo for the
+incident direction `si.wi`, and their sum is at most one.)doc";
 
 static const char *__doc_mitsuba_BSDFFeatures_BSDFFeatures = R"doc()doc";
 
 static const char *__doc_mitsuba_BSDFFeatures_BSDFFeatures_2 = R"doc()doc";
 
-static const char *__doc_mitsuba_BSDFFeatures_albedo = R"doc(Diffuse reflectance estimate for the direction `si.wi`, in [0, 1])doc";
+static const char *__doc_mitsuba_BSDFFeatures_diffuse_albedo =
+R"doc(Fraction of the light arriving from `si.wi` that the diffuse lobes
+scatter, including diffuse transmission. It accounts for the energy
+that a coating on top of the diffuse layer reflects or absorbs.)doc";
 
-static const char *__doc_mitsuba_BSDFFeatures_roughness = R"doc(Roughness of the roughest lobe, where 0 means perfectly specular)doc";
+static const char *__doc_mitsuba_BSDFFeatures_roughness =
+R"doc(Beckmann-equivalent roughness of the specular reflection and
+transmission lobes, where 0 means perfectly specular. Materials
+without such lobes report 1.)doc";
 
 static const char *__doc_mitsuba_BSDFFeatures_sh_frame = R"doc(Shading frame including perturbations applied by the BSDF, in world space)doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_specular_reflectance =
+R"doc(Fraction of the light arriving from `si.wi` that the specular or
+glossy reflection lobe scatters, including Fresnel effects and tints)doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_specular_transmittance =
+R"doc(Fraction of the light arriving from `si.wi` that the specular or
+glossy transmission lobe scatters along `wt`. This includes light
+that passes through the transparent parts of a surface.)doc";
+
+static const char *__doc_mitsuba_BSDFFeatures_wt =
+R"doc(Transmitted direction in world space, i.e. the refracted direction of
+transmissive materials, or `-si.wi` for thin ones. Zero when the
+material transmits no light specularly. The reflected direction is
+the mirror image of `si.wi` about `sh_frame.n`.)doc";
 
 static const char *__doc_mitsuba_BSDFFlags =
 R"doc(This list of flags is used to classify the different types of lobes
@@ -1324,12 +1346,9 @@ Args:
 static const char *__doc_mitsuba_BSDF_eval_features =
 R"doc(Summarize the appearance of the material for a denoiser
 
-The returned record holds the diffuse reflectance, the shading frame
-including any perturbation that the BSDF applies internally, and a
-roughness estimate. The default implementation approximates the
-reflectance by evaluating the BSDF for a normal outgoing direction,
-passes the shading frame of `si` through unchanged, and derives the
-roughness from the component flags.
+This function provides all information needed by the feature pass of
+a denoiser like OIDN or DLSS in one call. See BSDFFeatures for the
+meaning of the individual fields.
 
 Args:
     si: A surface interaction data structure describing the underlying

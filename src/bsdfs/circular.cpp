@@ -151,7 +151,8 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        return { m_transmittance->eval(si, active), si.sh_frame, 0.f };
+        return { 0.f, 0.f, m_transmittance->eval(si, active), si.sh_frame, 0.f,
+                 -si.to_world(si.wi) };
     }
 
     std::string to_string() const override {

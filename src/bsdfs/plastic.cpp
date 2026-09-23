@@ -275,7 +275,8 @@ public:
 
             Float f_o = std::get<0>(fresnel(Frame3f::cos_theta(bs.wo), m_eta, m_inv_eta));
             UnpolarizedSpectrum value = diff;
-            value /= 1.f - (m_nonlinear ? (value * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
+            value /= m_nonlinear ? dr::fnmadd(value, m_fdr_int, 1.f)
+                                 : UnpolarizedSpectrum(1.f - m_fdr_int);
             value *= m_inv_eta_2 * (1.f - f_i) * (1.f - f_o) / prob_diffuse;
             result[sample_diffuse] = value;
         }
@@ -301,7 +302,8 @@ public:
               f_o = std::get<0>(fresnel(cos_theta_o, m_eta, m_inv_eta));
 
         UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
-        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
+        diff /= m_nonlinear ? dr::fnmadd(diff, m_fdr_int, 1.f)
+                            : UnpolarizedSpectrum(1.f - m_fdr_int);
 
         diff *= warp::square_to_cosine_hemisphere_pdf(wo) *
                 m_inv_eta_2 * (1.f - f_i) * (1.f - f_o);
@@ -368,7 +370,8 @@ public:
             prob_diffuse = prob_diffuse / (prob_specular + prob_diffuse);
         }
 
-        diff /= 1.f - (m_nonlinear ? (diff * m_fdr_int) : UnpolarizedSpectrum(m_fdr_int));
+        diff /= m_nonlinear ? dr::fnmadd(diff, m_fdr_int, 1.f)
+                            : UnpolarizedSpectrum(1.f - m_fdr_int);
 
         Float hemi_pdf = warp::square_to_cosine_hemisphere_pdf(wo);
 
@@ -380,7 +383,20 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        return { m_diffuse_reflectance->eval(si, active), si.sh_frame, 1.f };
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        active &= cos_theta_i > 0.f;
+
+        // Integrated over the hemisphere, the diffusely scattered light
+        // leaves with 1 - m_fdr_int
+        Float f_i = std::get<0>(fresnel(cos_theta_i, m_eta, m_inv_eta));
+        UnpolarizedSpectrum diff = m_diffuse_reflectance->eval(si, active);
+        diff /= m_nonlinear ? dr::fnmadd(diff, m_fdr_int, 1.f)
+                            : UnpolarizedSpectrum(1.f - m_fdr_int);
+        diff *= (1.f - f_i) * (1.f - m_fdr_int);
+
+        return { dr::select(active, diff, 0.f),
+                 dr::select(active, eval_specular_reflectance(si, active) * f_i, 0.f),
+                 0.f, si.sh_frame, 0.f };
     }
 
     std::string to_string() const override {

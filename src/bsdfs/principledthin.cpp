@@ -363,10 +363,31 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        Float roughness  = m_roughness->eval_1(si, active),
-              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.f;
-        return { m_base_color->eval(si, active), si.sh_frame,
-                 dr::lerp(roughness, 1.f, 1.f - spec_trans) };
+        Params p = eval_params(si, active);
+
+        // The diffuse lobes include diffuse transmission
+        BSDFFeatures3f features = dr::zeros<BSDFFeatures3f>();
+        features.diffuse_albedo = (1.f - p.spec_trans) * p.base_color;
+        features.sh_frame       = si.sh_frame;
+        features.roughness      = 1.f;
+
+        if (m_has_spec_trans) {
+            // The Fresnel term at the macrosurface normal approximates how
+            // the lobes split the energy
+            Float cos_theta_i  = dr::abs(Frame3f::cos_theta(si.wi)),
+                  F_dielectric = std::get<0>(fresnel(cos_theta_i, p.eta));
+            features.specular_reflectance =
+                p.spec_trans * thin_fresnel(F_dielectric, p.spec_tint,
+                                            p.c_tint, cos_theta_i, p.eta,
+                                            m_has_spec_tint);
+            features.specular_transmittance =
+                p.spec_trans * (1.f - F_dielectric) * p.base_color;
+            features.roughness = dr::maximum(p.spec_reflect_distr.alpha_u(),
+                                             p.spec_reflect_distr.alpha_v());
+            features.wt = -si.to_world(si.wi);
+        }
+
+        return features;
     }
 
     std::string to_string() const override {

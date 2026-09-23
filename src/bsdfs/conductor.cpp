@@ -320,11 +320,11 @@ public:
                                  Mask active) const override {
         dr::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
                                              m_k->eval(si, active));
-        // Denoisers expect the reflectance at normal incidence from metals
-        UnpolarizedSpectrum albedo =
+        UnpolarizedSpectrum reflectance =
             m_specular_reflectance->eval(si, active) *
-            fresnel_conductor(UnpolarizedSpectrum(1.f), eta);
-        return { albedo, si.sh_frame, 0.f };
+            fresnel_conductor(
+                UnpolarizedSpectrum(dr::abs(Frame3f::cos_theta(si.wi))), eta);
+        return { 0.f, reflectance, 0.f, si.sh_frame, 0.f };
     }
 
     std::string to_string() const override {

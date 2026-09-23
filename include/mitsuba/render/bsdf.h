@@ -252,7 +252,8 @@ template <typename Float, typename Spectrum> struct BSDFSample3 {
  * Denoisers separate texture and geometric detail from Monte Carlo noise
  * using noise-free albedo and shading normal images. The purpose of this data
  * structure is to efficiently return multiple such properties in one
- * operation.
+ * operation. The three albedo fields split the directional albedo for the
+ * incident direction `si.wi`, and their sum is at most one.
  */
 template <typename Float, typename Spectrum> struct BSDFFeatures {
     // =============================================================
@@ -260,6 +261,7 @@ template <typename Float, typename Spectrum> struct BSDFFeatures {
     // =============================================================
 
     using Frame3f             = mitsuba::Frame<Float>;
+    using Vector3f            = mitsuba::Vector<Float, 3>;
     using UnpolarizedSpectrum = unpolarized_spectrum_t<Spectrum>;
 
     // =============================================================
@@ -268,22 +270,56 @@ template <typename Float, typename Spectrum> struct BSDFFeatures {
     // Fields
     // =============================================================
 
-    /// Diffuse reflectance estimate for the direction `si.wi`, in [0, 1]
-    UnpolarizedSpectrum albedo;
+    /**
+     * Fraction of the light arriving from `si.wi` that the diffuse lobes
+     * scatter, including diffuse transmission. It accounts for the energy
+     * that a coating on top of the diffuse layer reflects or absorbs.
+     */
+    UnpolarizedSpectrum diffuse_albedo;
+
+    /**
+     * Fraction of the light arriving from `si.wi` that the specular or
+     * glossy reflection lobe scatters, including Fresnel effects and tints
+     */
+    UnpolarizedSpectrum specular_reflectance;
+
+    /**
+     * Fraction of the light arriving from `si.wi` that the specular or
+     * glossy transmission lobe scatters along `wt`. This includes light
+     * that passes through the transparent parts of a surface.
+     */
+    UnpolarizedSpectrum specular_transmittance;
 
     /// Shading frame including perturbations applied by the BSDF, in world space
     Frame3f sh_frame;
 
-    /// Roughness of the roughest lobe, where 0 means perfectly specular
+    /// Beckmann-equivalent roughness of the specular reflection and
+    /// transmission lobes, where 0 means perfectly specular. Materials
+    /// without such lobes report 1.
     Float roughness;
+
+    /**
+     * Transmitted direction in world space, i.e. the refracted direction of
+     * transmissive materials, or `-si.wi` for thin ones. Zero when the
+     * material transmits no light specularly. The reflected direction is
+     * the mirror image of `si.wi` about `sh_frame.n`.
+     */
+    Vector3f wt;
 
     // =============================================================
 
-    BSDFFeatures(const UnpolarizedSpectrum &albedo, const Frame3f &sh_frame,
-                 const Float &roughness)
-        : albedo(albedo), sh_frame(sh_frame), roughness(roughness) { }
+    BSDFFeatures(const UnpolarizedSpectrum &diffuse_albedo,
+                 const UnpolarizedSpectrum &specular_reflectance,
+                 const UnpolarizedSpectrum &specular_transmittance,
+                 const Frame3f &sh_frame, const Float &roughness,
+                 const Vector3f &wt = Vector3f(0.f))
+        : diffuse_albedo(diffuse_albedo),
+          specular_reflectance(specular_reflectance),
+          specular_transmittance(specular_transmittance), sh_frame(sh_frame),
+          roughness(roughness), wt(wt) { }
 
-    DRJIT_STRUCT(BSDFFeatures, albedo, sh_frame, roughness);
+    DRJIT_STRUCT(BSDFFeatures, diffuse_albedo, specular_reflectance,
+                 specular_transmittance, sh_frame, roughness, wt);
 };
 
 
@@ -601,12 +637,9 @@ public:
     /**
      * Summarize the appearance of the material for a denoiser
      *
-     * The returned record holds the diffuse reflectance, the shading frame
-     * including any perturbation that the BSDF applies internally, and a
-     * roughness estimate. The default implementation approximates the
-     * reflectance by evaluating the BSDF for a normal outgoing direction,
-     * passes the shading frame of `si` through unchanged, and derives the
-     * roughness from the component flags.
+     * This function provides all information needed by the feature pass of
+     * a denoiser like OIDN or DLSS in one call. See \ref BSDFFeatures for
+     * the meaning of the individual fields.
      *
      * Args:
      *     si: A surface interaction data structure describing the underlying

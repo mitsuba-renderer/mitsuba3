@@ -538,13 +538,13 @@ public:
                                  Mask active) const override {
         dr::Complex<UnpolarizedSpectrum> eta(m_eta->eval(si, active),
                                              m_k->eval(si, active));
-        // Denoisers expect the reflectance at normal incidence from metals
-        UnpolarizedSpectrum albedo =
-            fresnel_conductor(UnpolarizedSpectrum(1.f), eta);
+        // The Fresnel term at the macrosurface normal approximates the albedo
+        UnpolarizedSpectrum reflectance = fresnel_conductor(
+            UnpolarizedSpectrum(dr::abs(Frame3f::cos_theta(si.wi))), eta);
         if (m_specular_reflectance)
-            albedo *= m_specular_reflectance->eval(si, active);
+            reflectance *= m_specular_reflectance->eval(si, active);
         MicrofacetDistribution distr = distribution(si, active);
-        return { albedo, si.sh_frame,
+        return { 0.f, reflectance, 0.f, si.sh_frame,
                  dr::maximum(distr.alpha_u(), distr.alpha_v()) };
     }
 

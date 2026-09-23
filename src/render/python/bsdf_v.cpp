@@ -37,15 +37,25 @@ MI_PY_EXPORT(BSDFSample) {
     {
     auto bf = nb::class_<BSDFFeatures3f>(m, "BSDFFeatures3f", D(BSDFFeatures))
         .def(nb::init<>())
-        .def(nb::init<const UnpolarizedSpectrum &, const Frame3f &,
-                      const Float &>(),
-             "albedo"_a, "sh_frame"_a, "roughness"_a)
+        .def(nb::init<const UnpolarizedSpectrum &, const UnpolarizedSpectrum &,
+                      const UnpolarizedSpectrum &, const Frame3f &,
+                      const Float &, const Vector3f &>(),
+             "diffuse_albedo"_a, "specular_reflectance"_a,
+             "specular_transmittance"_a, "sh_frame"_a, "roughness"_a,
+             "wt"_a = Vector3f(0.f))
         .def(nb::init<const BSDFFeatures3f &>(), "f"_a, "Copy constructor")
-        .def_rw("albedo", &BSDFFeatures3f::albedo, D(BSDFFeatures, albedo))
+        .def_rw("diffuse_albedo", &BSDFFeatures3f::diffuse_albedo,
+                D(BSDFFeatures, diffuse_albedo))
+        .def_rw("specular_reflectance", &BSDFFeatures3f::specular_reflectance,
+                D(BSDFFeatures, specular_reflectance))
+        .def_rw("specular_transmittance", &BSDFFeatures3f::specular_transmittance,
+                D(BSDFFeatures, specular_transmittance))
         .def_rw("sh_frame", &BSDFFeatures3f::sh_frame, D(BSDFFeatures, sh_frame))
-        .def_rw("roughness", &BSDFFeatures3f::roughness, D(BSDFFeatures, roughness));
+        .def_rw("roughness", &BSDFFeatures3f::roughness, D(BSDFFeatures, roughness))
+        .def_rw("wt", &BSDFFeatures3f::wt, D(BSDFFeatures, wt));
 
-    MI_PY_DRJIT_STRUCT(bf, BSDFFeatures3f, albedo, sh_frame, roughness);
+    MI_PY_DRJIT_STRUCT(bf, BSDFFeatures3f, diffuse_albedo, specular_reflectance,
+                       specular_transmittance, sh_frame, roughness, wt);
     }
 }
 

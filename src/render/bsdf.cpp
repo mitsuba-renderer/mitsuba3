@@ -38,13 +38,20 @@ MI_VARIANT Spectrum BSDF<Float, Spectrum>::eval_null(
 MI_VARIANT typename BSDF<Float, Spectrum>::BSDFFeatures3f
 BSDF<Float, Spectrum>::eval_features(const SurfaceInteraction3f &si,
                                      Mask active) const {
-    Vector3f wo = Vector3f(0.0f, 0.0f, 1.0f);
-    BSDFContext ctx;
-    BSDFFeatures3f features;
-    features.albedo =
-        unpolarized_spectrum(eval(ctx, si, wo, active)) * dr::Pi<Float>;
-    features.sh_frame  = si.sh_frame;
-    features.roughness = has_flag(BSDFFlags::Smooth) ? 1.f : 0.f;
+    BSDFFeatures3f features = dr::zeros<BSDFFeatures3f>();
+    features.sh_frame = si.sh_frame;
+    if (has_flag(BSDFFlags::Null)) {
+        features.specular_transmittance = 1.f;
+        features.wt = -si.to_world(si.wi);
+    } else if (has_flag(BSDFFlags::Smooth)) {
+        BSDFContext ctx;
+        features.diffuse_albedo = dr::minimum(
+            unpolarized_spectrum(eval(ctx, si, Vector3f(0.f, 0.f, 1.f), active)) *
+                dr::Pi<Float>, 1.f);
+        features.roughness = 1.f;
+    } else {
+        features.specular_reflectance = 1.f;
+    }
     return features;
 }
 

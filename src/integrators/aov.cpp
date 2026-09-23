@@ -65,7 +65,10 @@ of the others receives a group of channels named after it, e.g. [:code:`my_image
 
 Currently, the following AOVs types are available:
 
-    - :monosp:`albedo`: Albedo (diffuse reflectance) of the material.
+    - :monosp:`albedo`: Albedo (directional reflectance and transmittance) of the material.
+    - :monosp:`diffuse_albedo`, :monosp:`specular_reflectance`,
+      :monosp:`specular_transmittance`: The individual parts of the albedo.
+    - :monosp:`roughness`: Roughness of the specular lobes.
     - :monosp:`depth`: Distance from the pinhole.
     - :monosp:`position`: World space position value.
     - :monosp:`uv`: UV coordinates.
@@ -79,9 +82,10 @@ Note that integer-valued AOVs (e.g. :monosp:`prim_index`, :monosp:`shape_index`)
 are meaningless whenever there is only partial pixel coverage or when using a
 wide pixel reconstruction filter as it will result in fractional values.
 
-The :monosp:`albedo` AOV will evaluate the diffuse reflectance
-(`BSDF::eval_features()`) of the material. Note that depending on the material,
-this value might only be an approximation.
+The :monosp:`albedo` AOV sums the diffuse, specular reflection, and specular
+transmission albedos reported by `BSDF::eval_features()`, which also provides
+the other material-related AOVs. Note that depending on the material, these
+values might only be approximations.
  */
 
 template <typename Float, typename Spectrum>
@@ -92,6 +96,10 @@ public:
 
     enum class AOVType {
         Albedo,
+        DiffuseAlbedo,
+        SpecularReflectance,
+        SpecularTransmittance,
+        Roughness,
         Depth,
         Position,
         UV,
@@ -117,6 +125,24 @@ public:
                 m_aov_names.push_back(item[0] + ".R");
                 m_aov_names.push_back(item[0] + ".G");
                 m_aov_names.push_back(item[0] + ".B");
+            } else if (item[1] == "diffuse_albedo") {
+                m_aov_types.push_back(AOVType::DiffuseAlbedo);
+                m_aov_names.push_back(item[0] + ".R");
+                m_aov_names.push_back(item[0] + ".G");
+                m_aov_names.push_back(item[0] + ".B");
+            } else if (item[1] == "specular_reflectance") {
+                m_aov_types.push_back(AOVType::SpecularReflectance);
+                m_aov_names.push_back(item[0] + ".R");
+                m_aov_names.push_back(item[0] + ".G");
+                m_aov_names.push_back(item[0] + ".B");
+            } else if (item[1] == "specular_transmittance") {
+                m_aov_types.push_back(AOVType::SpecularTransmittance);
+                m_aov_names.push_back(item[0] + ".R");
+                m_aov_names.push_back(item[0] + ".G");
+                m_aov_names.push_back(item[0] + ".B");
+            } else if (item[1] == "roughness") {
+                m_aov_types.push_back(AOVType::Roughness);
+                m_aov_names.push_back(item[0] + ".Y");
             } else if (item[1] == "depth") {
                 m_aov_types.push_back(AOVType::Depth);
                 m_aov_names.push_back(item[0] + ".T");
@@ -162,6 +188,10 @@ public:
 
         for (AOVType type : m_aov_types)
             m_needs_features |= type == AOVType::Albedo ||
+                                type == AOVType::DiffuseAlbedo ||
+                                type == AOVType::SpecularReflectance ||
+                                type == AOVType::SpecularTransmittance ||
+                                type == AOVType::Roughness ||
                                 type == AOVType::ShadingNormal;
     }
 
@@ -201,10 +231,11 @@ public:
                                  +RayMask::Primary, active);
         dr::masked(si, !si.is_valid()) = dr::zeros<SurfaceInteraction3f>();
 
-        // The albedo and shading normal AOVs are both answered by this record
+        // All material-related AOVs are answered by this record
+        Mask valid = active && si.is_valid();
         BSDFFeatures3f features = dr::zeros<BSDFFeatures3f>();
         if (m_needs_features && dr::any_or<true>(si.is_valid()))
-            features = si.bsdf()->eval_features(si, active && si.is_valid());
+            features = si.bsdf()->eval_features(si, valid);
 
         // The ray weight accounts for the sampled wavelengths in spectral variants
         auto spectrum_to_color3f = [&](const Spectrum &spec, Mask active) {
@@ -219,19 +250,38 @@ public:
                 return spectrum_to_srgb(spec_u, ray.wavelengths, active);
         };
 
+        auto write_color = [&](const UnpolarizedSpectrum &spec) {
+            Color3f rgb(0.f);
+            dr::masked(rgb, valid) = spectrum_to_color3f(spec, valid);
+            *aovs++ = rgb.r();
+            *aovs++ = rgb.g();
+            *aovs++ = rgb.b();
+        };
+
         for (size_t i = 0; i < m_aov_types.size(); ++i) {
             switch (m_aov_types[i]) {
-                case AOVType::Albedo: {
-                        Mask valid = active && si.is_valid();
-                        Color3f rgb(0.f);
-                        dr::masked(rgb, valid) =
-                            spectrum_to_color3f(features.albedo, valid);
-
-                        *aovs++ = rgb.r();
-                        *aovs++ = rgb.g();
-                        *aovs++ = rgb.b();
-                    }
+                case AOVType::Albedo:
+                    write_color(features.diffuse_albedo +
+                                features.specular_reflectance +
+                                features.specular_transmittance);
                     break;
+
+                case AOVType::DiffuseAlbedo:
+                    write_color(features.diffuse_albedo);
+                    break;
+
+                case AOVType::SpecularReflectance:
+                    write_color(features.specular_reflectance);
+                    break;
+
+                case AOVType::SpecularTransmittance:
+                    write_color(features.specular_transmittance);
+                    break;
+
+                case AOVType::Roughness:
+                    *aovs++ = dr::select(valid, features.roughness, 0.f);
+                    break;
+
                 case AOVType::Depth:
                     *aovs++ = dr::select(si.is_valid(), si.t, 0.f);
                     break;

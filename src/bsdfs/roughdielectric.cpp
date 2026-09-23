@@ -639,14 +639,22 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        // What a denoiser sees at a transparent surface is mostly whatever
-        // lies behind it, tinted by the transmittance
-        UnpolarizedSpectrum albedo = 1.f;
+        // The Fresnel term at the macrosurface normal approximates how the
+        // lobes split the energy
+        auto [r, cos_theta_t, eta_it, eta_ti] =
+            fresnel(Frame3f::cos_theta(si.wi), m_eta, m_inv_eta);
+        UnpolarizedSpectrum reflectance = r, transmittance = 1.f - r;
+        if (m_specular_reflectance)
+            reflectance *= m_specular_reflectance->eval(si, active);
         if (m_specular_transmittance)
-            albedo = m_specular_transmittance->eval(si, active);
+            transmittance *= m_specular_transmittance->eval(si, active);
+        // Total internal reflection leaves no transmitted direction
+        Vector3f wt = dr::select(r < 1.f, refract(si.wi, cos_theta_t, eta_ti),
+                                 Vector3f(0.f));
         MicrofacetDistribution distr = distribution(si, active);
-        return { albedo, si.sh_frame,
-                 dr::maximum(distr.alpha_u(), distr.alpha_v()) };
+        return { 0.f, reflectance, transmittance, si.sh_frame,
+                 dr::maximum(distr.alpha_u(), distr.alpha_v()),
+                 si.to_world(wt) };
     }
 
     std::string to_string() const override {

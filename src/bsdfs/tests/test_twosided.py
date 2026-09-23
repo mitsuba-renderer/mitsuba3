@@ -127,10 +127,10 @@ def test04_features(variants_vec_rgb):
                                                       v / float(n-1)])
             up = mi.Frame3f.cos_theta(si.wi) > 0.0
 
-            value = bsdf.eval_features(si).albedo
-            value_front = bsdf_front.eval_features(si).albedo
+            value = bsdf.eval_features(si).diffuse_albedo
+            value_front = bsdf_front.eval_features(si).diffuse_albedo
             si.wi.z *= -1
-            value_back = bsdf_back.eval_features(si).albedo
+            value_back = bsdf_back.eval_features(si).diffuse_albedo
 
             assert dr.allclose(dr.select(up, value - value_front, 0), 0.0)
             assert dr.allclose(dr.select(up, 0, value - value_back), 0.0)

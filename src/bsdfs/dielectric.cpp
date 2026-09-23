@@ -402,12 +402,18 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        // What a denoiser sees at a transparent surface is mostly whatever
-        // lies behind it, tinted by the transmittance
-        UnpolarizedSpectrum albedo = 1.f;
+        auto [r, cos_theta_t, eta_it, eta_ti] =
+            fresnel(Frame3f::cos_theta(si.wi), m_eta, m_inv_eta);
+        UnpolarizedSpectrum reflectance = r, transmittance = 1.f - r;
+        if (m_specular_reflectance)
+            reflectance *= m_specular_reflectance->eval(si, active);
         if (m_specular_transmittance)
-            albedo = m_specular_transmittance->eval(si, active);
-        return { albedo, si.sh_frame, 0.f };
+            transmittance *= m_specular_transmittance->eval(si, active);
+        // Total internal reflection leaves no transmitted direction
+        Vector3f wt = dr::select(r < 1.f, refract(si.wi, cos_theta_t, eta_ti),
+                                 Vector3f(0.f));
+        return { 0.f, reflectance, transmittance, si.sh_frame, 0.f,
+                 si.to_world(wt) };
     }
 
     std::string to_string() const override {

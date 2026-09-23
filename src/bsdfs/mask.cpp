@@ -228,7 +228,24 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        return m_nested_bsdf->eval_features(si, active);
+        Float opacity = eval_opacity(si, active);
+        BSDFFeatures3f features = m_nested_bsdf->eval_features(si, active);
+        Float transparency = 1.f - opacity,
+              r = dr::mean(features.specular_reflectance),
+              t = dr::mean(features.specular_transmittance);
+
+        // The transparent part is a perfectly specular transmission lobe. It
+        // determines the direction and roughness where it dominates.
+        Mask pass_t = transparency > opacity * t,
+             pass_s = transparency > opacity * (r + t);
+        dr::masked(features.wt, pass_t) = -si.to_world(si.wi);
+        dr::masked(features.roughness, pass_s) = 0.f;
+
+        features.diffuse_albedo *= opacity;
+        features.specular_reflectance *= opacity;
+        features.specular_transmittance =
+            dr::fmadd(opacity, features.specular_transmittance, transparency);
+        return features;
     }
 
     std::string to_string() const override {

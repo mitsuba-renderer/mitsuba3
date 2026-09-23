@@ -324,10 +324,15 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        return per_side<BSDFFeatures3f>(si, active,
+        BSDFFeatures3f features = per_side<BSDFFeatures3f>(si, active,
             [](const Base *bsdf, const SurfaceInteraction3f &si, Mask active) {
                 return bsdf->eval_features(si, active);
             });
+        // The nested BSDF saw the back side mirrored to the front
+        Vector3f n = si.sh_frame.n;
+        dr::masked(features.wt, on_back_side(si, local_normal(si))) =
+            dr::fmadd(n, -2.f * dr::dot(features.wt, n), features.wt);
+        return features;
     }
 
     Mask has_attribute(const std::string &name, Mask active) const override {

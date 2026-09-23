@@ -452,14 +452,37 @@ public:
 
     BSDFFeatures3f eval_features(const SurfaceInteraction3f &si,
                                  Mask active) const override {
-        Float roughness  = m_roughness->eval_1(si, active),
-              metallic   = m_has_metallic ? m_metallic->eval_1(si, active) : 0.f,
-              spec_trans = m_has_spec_trans ? m_spec_trans->eval_1(si, active) : 0.f;
-        // However smooth the specular lobe is, a diffuse component leaves no
-        // sharp image of the surroundings behind
-        Float diffuse = (1.f - metallic) * (1.f - spec_trans);
-        return { m_base_color->eval(si, active), si.sh_frame,
-                 dr::lerp(roughness, 1.f, diffuse) };
+        Params p = eval_params(si, active);
+
+        // The Fresnel term at the macrosurface normal approximates how the
+        // lobes split the energy
+        Float cos_theta_i = Frame3f::cos_theta(si.wi);
+        Mask front_side = cos_theta_i > 0.f;
+        auto [F_dielectric, cos_theta_t, eta_it, eta_ti] =
+            fresnel(cos_theta_i, m_eta, m_inv_eta);
+        UnpolarizedSpectrum F = principled_fresnel(
+            F_dielectric, cos_theta_i, dr::abs(cos_theta_t), eta_it, m_r0,
+            p.metallic, p.spec_tint, p.base_color, p.c_tint, front_side,
+            p.bsdf, m_has_metallic, m_has_spec_tint);
+
+        // The clearcoat reflects on top of the other lobes
+        Float cc = dr::select(front_side, p.w_clearcoat, 0.f),
+              base = 1.f - cc;
+
+        UnpolarizedSpectrum diffuse =
+            dr::select(front_side, base * p.brdf * (1.f - F_dielectric), 0.f) *
+            p.base_color;
+        UnpolarizedSpectrum reflectance = dr::fmadd(F, base, cc);
+        UnpolarizedSpectrum transmittance =
+            base * p.bsdf * (1.f - F_dielectric) * dr::sqrt(p.base_color);
+
+        Vector3f wt = dr::select(p.bsdf > 0.f && F_dielectric < 1.f,
+                                 refract(si.wi, cos_theta_t, eta_ti),
+                                 Vector3f(0.f));
+
+        return { diffuse, reflectance, transmittance, si.sh_frame,
+                 dr::maximum(p.spec_distr.alpha_u(), p.spec_distr.alpha_v()),
+                 si.to_world(wt) };
     }
 
     std::string to_string() const override {

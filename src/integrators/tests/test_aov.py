@@ -395,3 +395,37 @@ def test08_nested_aov_integrators(variants_all_rgb):
     # <root> layer contains the developed base RGB image
     root_layer = mi.TensorXf(split_layers['<root>'])
     assert dr.allclose(direct_image[:, :, :3], root_layer[:, :, :3], atol=1e-2)
+
+
+def test09_material_aovs(variants_all_rgb):
+    # A smooth glass plane seen head-on reflects ((eta-1)/(eta+1))^2 of the
+    # light and transmits the rest
+    eta = 1.5
+    r = ((eta - 1) / (eta + 1)) ** 2
+
+    scene = mi.load_dict({
+        'type': 'scene',
+        'sensor': {
+            'type': 'orthographic',
+            'to_world': mi.ScalarTransform4f().look_at(
+                origin=(0, 0, 1), target=(0, 0, 0), up=(0, 1, 0)),
+            'film': {'type': 'hdrfilm', 'width': 4, 'height': 4,
+                     'rfilter': {'type': 'box'}},
+        },
+        'plane': {
+            'type': 'rectangle',
+            'to_world': mi.ScalarTransform4f().scale(10),
+            'material': {'type': 'dielectric', 'int_ior': eta, 'ext_ior': 1.0},
+        },
+    })
+
+    integrator = mi.load_dict({
+        'type': 'aov',
+        'aovs': 'a:albedo,d:diffuse_albedo,r:specular_reflectance,'
+                't:specular_transmittance,rough:roughness',
+    })
+
+    image = integrator.render(scene, spp=1)
+    expected = [1, 1, 1, 0, 0, 0, r, r, r, 1 - r, 1 - r, 1 - r, 0]
+    assert dr.allclose(image[:, :, 3:], mi.TensorXf(expected * 16, (4, 4, 13)),
+                       atol=1e-5)
