@@ -186,7 +186,7 @@ public:
             ds.p = si.p;
             ds.n = si.n;
             ds.p_err = si.p_err;
-            ds.uv = si.uv;
+            ds.uv = uv;
             ds.time = it.time;
             ds.delta = false;
             ds.d = ds.p - it.p;

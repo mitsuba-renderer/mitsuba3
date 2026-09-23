@@ -240,5 +240,5 @@ def test07_textured_sampling_modes(variants_vec_rgb):
             assert not dr.allclose(ds.pdf, shape_pdf, rtol=1e-2)
         else:
             dr.assert_allclose(ds.pdf, shape_pdf, rtol=1e-5)
-        irradiance.append(dr.mean(weight[0] * ds.d.z))
+        irradiance.append(dr.mean(mi.unpolarized_spectrum(weight)[0] * ds.d.z))
     dr.assert_allclose(irradiance[0], irradiance[1], rtol=0.01)
