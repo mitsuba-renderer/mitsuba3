@@ -285,6 +285,18 @@ def test05_sample_ggx(variants_vec_backends_once):
     assert dr.allclose(ref[1], result[1], atol=1e-4)
 
 
+def test06_visible_ggx_boundary_samples_are_finite(variants_all_backends_once):
+    mdf = mi.MicrofacetDistribution(
+        mi.MicrofacetType.GGX, 0.000984, True)
+    wi = dr.normalize(mi.Vector3f(-0.1, 0.05, 1.0))
+
+    for sample in ([0.0, 0.0], [0.0, 0.5], [0.5, 0.0], [1.0, 1.0]):
+        normal, pdf = mdf.sample(wi, sample)
+        assert dr.all(dr.isfinite(normal))
+        assert dr.all(dr.isfinite(pdf))
+        assert dr.all(pdf >= 0.0)
+
+
 @pytest.mark.parametrize("sample_visible", [True, False])
 @pytest.mark.parametrize("alpha", [0.125, 0.5])
 @pytest.mark.parametrize("md_type_name", ['GGX', 'Beckmann'])

@@ -406,6 +406,12 @@ public:
             return dr::erfinv(Vector2f(x, dr::fmsub(2.f, sample.y(), 1.f)));
         } else {
             // Choose a projection direction and re-scale the sample
+            // QMC samplers can generate exact boundary values. The GGX VNDF
+            // mapping is singular at disk-boundary configurations, so map the
+            // measure-zero boundary onto the open unit square.
+            sample = dr::maximum(
+                dr::minimum(sample, Point2f(1.f - 1e-6f)),
+                Point2f(1e-6f));
             Point2f p = warp::square_to_uniform_disk_concentric(sample);
 
             Float s = 0.5f * (1.f + cos_theta_i);
@@ -418,7 +424,10 @@ public:
             // Convert to slope
             Float sin_theta_i = dr::safe_sqrt(1.f - dr::square(cos_theta_i));
             Float norm = dr::rcp(dr::fmadd(sin_theta_i, y, cos_theta_i * z));
-            return Vector2f(dr::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
+            Vector2f slope =
+                Vector2f(dr::fmsub(cos_theta_i, y, sin_theta_i * z), x) * norm;
+            Mask valid = dr::isfinite(slope.x()) && dr::isfinite(slope.y());
+            return dr::select(valid, slope, Vector2f(0.f));
         }
     }
 
