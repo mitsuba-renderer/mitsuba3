@@ -378,6 +378,23 @@ def test_construct_from_non_contiguous_array(variants_all_rgb):
         assert dr.allclose(strided, np.array(b))
 
 
+def test_construct_from_readonly_array(variants_all_rgb):
+    arr = np.arange(4 * 3 * 3, dtype=np.float32).reshape((4, 3, 3))
+
+    # 1. Read-only C-contiguous array
+    ro_contig = arr.copy()
+    ro_contig.flags.writeable = False
+    b_contig = mi.Bitmap(ro_contig)
+    assert dr.allclose(ro_contig, np.array(b_contig))
+
+    # 2. Read-only non-contiguous array (e.g. np.broadcast_to)
+    ro_broadcast = np.broadcast_to(arr[:, :, :1], (4, 3, 3))
+    assert not ro_broadcast.flags.writeable
+    assert not ro_broadcast.flags.c_contiguous
+    b_broadcast = mi.Bitmap(ro_broadcast)
+    assert dr.allclose(ro_broadcast, np.array(b_broadcast))
+
+
 def test_construct_from_int8_array(variants_all_rgb):
     # test uint8
     b_np = np.reshape(np.arange(16), (4, 4, 1)).astype(np.uint8)
