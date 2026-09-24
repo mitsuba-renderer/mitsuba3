@@ -25,7 +25,7 @@ namespace nanobind::detail {
     };
 }
 
-using ContigCpuNdArray = nb::ndarray<nb::device::cpu, nb::c_contig>;
+using ContigCpuNdArray = nb::ndarray<nb::ro, nb::device::cpu, nb::c_contig>;
 
 void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
                      nb::object pixel_format_,
