@@ -18,6 +18,13 @@ def si_at(uv=(0.5, 0.5)):
     return si
 
 
+def lerp_atol():
+    """Tolerance of linear interpolation between entries that differ by up to 2.
+    GPU texture units quantize the interpolation weight to 8 bits."""
+    hw_tex = dr.backend_v(mi.Float) in (dr.JitBackend.CUDA, dr.JitBackend.Metal)
+    return 1e-2 if hw_tex else 1e-6
+
+
 @pytest.mark.parametrize('kwargs, xs, expected', [
     # Entries sit at i / (N - 1), and are interpolated linearly in between
     ({}, [0, 1/3, 2/3, 1, 1/6, 0.5, 0.75], [0, 1, 3, 2, 0.5, 2, 2.75]),
@@ -119,10 +126,10 @@ def test07_curve(variants_all_rgb):
     color = { 'type': 'srgb', 'color': [0.1, 0.5, 1.0] }
     si = si_at()
     tex = make(table(0, 2), input=color, curve=True)
-    dr.assert_allclose(tex.eval_3(si), [0.2, 1.0, 2.0], atol=1e-6)
-    dr.assert_allclose(tex.eval(si), [0.2, 1.0, 2.0], atol=1e-6)
+    dr.assert_allclose(tex.eval_3(si), [0.2, 1.0, 2.0], atol=lerp_atol())
+    dr.assert_allclose(tex.eval(si), [0.2, 1.0, 2.0], atol=lerp_atol())
     dr.assert_allclose(tex.eval_1(si), 2 * mi.load_dict(color).eval_1(si),
-                       atol=1e-6)
+                       atol=lerp_atol())
 
 
 def test08_rgb_curves(variants_all_rgb):
@@ -130,9 +137,10 @@ def test08_rgb_curves(variants_all_rgb):
     color = { 'type': 'srgb', 'color': [0.1, 0.5, 1.0] }
     si = si_at()
     tex = make(table([0, 1, 0], [2, 0, 1]), input=color, curve=True)
-    dr.assert_allclose(tex.eval_3(si), [0.2, 0.5, 1.0], atol=1e-6)
-    dr.assert_allclose(tex.eval(si), [0.2, 0.5, 1.0], atol=1e-6)
-    dr.assert_allclose(tex.eval_1(si), mi.luminance(mi.Color3f(0.2, 0.5, 1.0)), atol=1e-6)
+    dr.assert_allclose(tex.eval_3(si), [0.2, 0.5, 1.0], atol=lerp_atol())
+    dr.assert_allclose(tex.eval(si), [0.2, 0.5, 1.0], atol=lerp_atol())
+    dr.assert_allclose(tex.eval_1(si), mi.luminance(mi.Color3f(0.2, 0.5, 1.0)),
+                       atol=lerp_atol())
 
     with pytest.raises(RuntimeError, match='scalar entries'):
         tex.eval_1_grad(si)
