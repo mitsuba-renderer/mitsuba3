@@ -76,7 +76,7 @@ public:
     MI_IMPORT_BASE(MonteCarloIntegrator, m_max_depth, m_rr_depth,
                    m_clamp_direct, m_clamp_indirect, clamp_contribution)
     MI_IMPORT_TYPES(Scene, Sampler, Emitter, EmitterPtr, BSDF, BSDFPtr,
-                     Medium, MediumPtr, PhaseFunctionContext)
+                     Medium, MediumPtr, PhaseFunctionContext, PhaseFunctionPtr)
 
     VolumetricPathIntegrator(const Properties &props) : Base(props) {
     }
@@ -212,6 +212,7 @@ public:
             Mask active_surface = active && !active_medium;
             Mask act_null_scatter = false, act_medium_scatter = false,
                  escaped_medium = false;
+            Mask active_e_medium = false;
 
             // If the medium does not have a spectrally varying extinction,
             // we can perform a few optimizations to speed up rendering
@@ -266,14 +267,15 @@ public:
             }
 
             if (dr::any_or<true>(act_medium_scatter)) {
+                
                 if (dr::any_or<true>(is_spectral))
                     dr::masked(throughput, is_spectral && act_medium_scatter) *=
                         mei.sigma_s / dr::mean(mei.sigma_t / mei.combined_extinction);
                 if (dr::any_or<true>(not_spectral))
                     dr::masked(throughput, not_spectral && act_medium_scatter) *= mei.sigma_s / mei.sigma_t;
 
+                PhaseFunctionPtr phase = mei.medium->phase_function();
                 PhaseFunctionContext phase_ctx(sampler);
-                auto phase = mei.medium->phase_function();
 
                 // --------------------- Emitter sampling ---------------------
                 Mask sample_emitters = mei.medium->use_emitter_sampling();
@@ -281,16 +283,7 @@ public:
                 specular_chain &= !act_medium_scatter;
                 specular_chain |= act_medium_scatter && !sample_emitters;
 
-                Mask active_e = act_medium_scatter && sample_emitters;
-                if (dr::any_or<true>(active_e)) {
-                    auto [emitted, ds] = sample_emitter(mei, scene, sampler, medium, channel, active_e);
-                    auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e);
-                    // 'depth' already counts this scattering event
-                    dr::masked(result, active_e) += clamp_contribution(
-                        throughput * phase_val * emitted *
-                            mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf)),
-                        depth == 1u);
-                }
+                active_e_medium = act_medium_scatter && sample_emitters;
 
                 // ------------------ Phase function sampling -----------------
                 dr::masked(phase, !act_medium_scatter) = nullptr;
@@ -340,28 +333,54 @@ public:
                 }
             }
             active_surface &= si.is_valid();
+
+            // --------------------- Emitter sampling ---------------------
+            BSDFContext ctx;
+            BSDFPtr bsdf = nullptr;
+            Mask active_e_surface = false;
             if (dr::any_or<true>(active_surface)) {
-                // --------------------- Emitter sampling ---------------------
-                BSDFContext ctx;
-                BSDFPtr bsdf  = si.bsdf();
-                Mask active_e = active_surface && bsdf->has_flag(BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
+                bsdf = si.bsdf();
+                active_e_surface = active_surface && bsdf->has_flag(BSDFFlags::Smooth) && (depth + 1 < (uint32_t) m_max_depth);
+            }
 
-                if (likely(dr::any_or<true>(active_e))) {
-                    auto [emitted, ds] = sample_emitter(si, scene, sampler, medium, channel, active_e);
+            Mask active_e = active_e_medium || active_e_surface;
 
-                    // Query the BSDF for that emitter-sampled direction
-                    Vector3f wo       = si.to_local(ds.d);
-                    Spectrum bsdf_val = bsdf->eval(ctx, si, wo, active_e);
+            if (dr::any_or<true>(active_e)) {
+                Interaction3f ref_interaction           = dr::zeros<Interaction3f>();
+                dr::masked(ref_interaction, active_e_medium)  = mei;
+                dr::masked(ref_interaction, active_e_surface) = si;
+
+                auto [emitted, ds] = 
+                    sample_emitter(mei, si, active_e_surface, scene, 
+                                   sampler, medium, channel, active_e);
+
+                if (dr::any_or<true>(active_e_medium)) {
+                    PhaseFunctionPtr phase = mei.medium->phase_function();
+                    PhaseFunctionContext phase_ctx(sampler);
+
+                    auto [phase_val, phase_pdf] = phase->eval_pdf(phase_ctx, mei, ds.d, active_e_medium);
+                    // 'depth' already counts this scattering event
+                    dr::masked(result, active_e_medium) += 
+                        clamp_contribution( throughput * phase_val * emitted *
+                            mis_weight(ds.pdf, dr::select(ds.delta, 0.f, phase_pdf)),
+                            depth == 1u);
+                }
+
+                if (dr::any_or<true>(active_e_surface)) {
+                    // Query the BSDF for that emitter-sampled direction, and
+                    // the probability of having sampled that same direction
+                    // using BSDF sampling.
+                    Vector3f wo = si.to_local(ds.d);
+                    auto [bsdf_val, bsdf_pdf] = bsdf->eval_pdf(ctx, si, wo, active_e_surface);
                     bsdf_val = si.to_world_mueller(bsdf_val, -wo, si.wi);
 
-                    // Determine probability of having sampled that same
-                    // direction using BSDF sampling.
-                    Float bsdf_pdf = bsdf->pdf(ctx, si, wo, active_e);
-                    dr::masked(result, active_e) += clamp_contribution(
+                    dr::masked(result, active_e_surface) += clamp_contribution(
                         throughput * bsdf_val * mis_weight(ds.pdf, dr::select(ds.delta, 0.f, bsdf_pdf)) * emitted,
                         depth == 0u);
                 }
+            }
 
+            if (dr::any_or<true>(active_surface)) {
                 // ----------------------- BSDF sampling ----------------------
                 auto [bs, bsdf_val] = bsdf->sample(ctx, si, sampler->next_1d(active_surface),
                                                    sampler->next_2d(active_surface), active_surface);
@@ -393,6 +412,7 @@ public:
                 Mask has_medium_trans                = active_surface && si.is_medium_transition();
                 dr::masked(medium, has_medium_trans) = si.target_medium(ray.d);
             }
+
             active &= (active_surface | active_medium);
         },
         "Volpath integrator");
@@ -402,12 +422,15 @@ public:
 
 
     /// Samples an emitter in the scene and evaluates its attenuated contribution
-    template <typename Interaction>
     std::tuple<Spectrum, DirectionSample3f>
-    sample_emitter(const Interaction &ref_interaction, const Scene *scene,
-                   Sampler *sampler, MediumPtr medium,
+    sample_emitter(const MediumInteraction3f &ref_mei,
+                   const SurfaceInteraction3f &ref_si,
+                   Mask is_surface,
+                   const Scene *scene, Sampler *sampler, MediumPtr medium,
                    UInt32 channel, Mask active) const {
         Spectrum transmittance(1.0f);
+        Interaction3f ref_interaction =
+            dr::select(is_surface, Interaction3f(ref_si), Interaction3f(ref_mei));
 
         auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
@@ -421,9 +444,8 @@ public:
         Float max_dist = ray.maxt;
 
         // Potentially escaping the medium if this is the current medium's boundary
-        if constexpr (std::is_convertible_v<Interaction, SurfaceInteraction3f>)
-            dr::masked(medium, ref_interaction.is_medium_transition()) =
-                ref_interaction.target_medium(ray.d);
+        dr::masked(medium, is_surface && ref_si.is_medium_transition()) = 
+            ref_si.target_medium(ray.d);
 
         Float total_dist = 0.f;
         SurfaceInteraction3f si = dr::zeros<SurfaceInteraction3f>();
