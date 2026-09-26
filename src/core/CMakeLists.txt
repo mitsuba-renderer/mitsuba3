@@ -58,7 +58,6 @@ add_library(mitsuba-core OBJECT
                          ${INC_DIR}/warp.h
   parser.cpp             ${INC_DIR}/parser.h
   zstream.cpp            ${INC_DIR}/zstream.h
-                         ${INC_DIR}/quad.h
 )
 
 set_property(

@@ -389,7 +389,7 @@ def test09_complex_sun(variants_vec_rgb, turb, theta, sun_aperture):
         complex_sun=False, sun_aperture=sun_aperture)
     simple_sun_plugin_params = mi.traverse(simple_sun_plugin)
 
-    points, weights = mi.quad.gauss_legendre(200)
+    points, weights = dr.quad.gauss_legendre(mi.Float, 200)
     complex_sun_integrand = sun_integrand(complex_sun_plugin, points, weights,
                                           complex_sun_plugin_params["sun_direction"],
                                           dr.cos(dr.deg2rad(sun_aperture) / 2.0))

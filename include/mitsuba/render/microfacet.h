@@ -4,7 +4,7 @@
 #include <mitsuba/core/logger.h>
 #include <mitsuba/core/math.h>
 #include <mitsuba/core/properties.h>
-#include <mitsuba/core/quad.h>
+#include <drjit/quad.h>
 #include <mitsuba/core/spectrum.h>
 #include <mitsuba/core/string.h>
 #include <mitsuba/core/warp.h>
@@ -499,7 +499,7 @@ Float eval_reflectance(const MicrofaceDistributionP &distr,
     int res = eta > 1 ? 32 : 128;
 
     using FloatX = dr::DynamicArray<dr::scalar_t<Float>>;
-    auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
+    auto [nodes, weights] = dr::quad::gauss_legendre<FloatX>(res);
     Float result = dr::zeros<Float>(dr::width(wi));
 
     auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);
@@ -552,7 +552,7 @@ Float eval_transmittance(const MicrofaceDistributionP &distr,
 
     using ScalarFloat = dr::scalar_t<Float>;
     using FloatX = dr::DynamicArray<ScalarFloat>;
-    auto [nodes, weights] = quad::gauss_legendre<FloatX>(res);
+    auto [nodes, weights] = dr::quad::gauss_legendre<FloatX>(res);
     Float result = dr::zeros<Float>(dr::width(wi));
 
     auto [nodes_x, nodes_y]     = dr::meshgrid(nodes, nodes);

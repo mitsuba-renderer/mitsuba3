@@ -257,7 +257,7 @@ def test05_complex_sun(variants_vec_spectral,  turb, hour, sun_aperture):
         "sky_scale": 0,
         "sun_aperture": sun_aperture
     })
-    points, weights = mi.quad.gauss_legendre(200)
+    points, weights = dr.quad.gauss_legendre(mi.Float, 200)
     sunsky_irrad = sun_integrand(sunsky, points, weights, sunsky_params["sun_direction"], sun_cos_cutoff)
     sunsky_irrad = dr.sum(sunsky_irrad, axis=1)
 
