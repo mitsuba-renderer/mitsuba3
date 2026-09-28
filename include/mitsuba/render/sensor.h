@@ -14,6 +14,21 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Readout direction of a sensor's rolling shutter
+enum class RollingShutterType { None, Top, Bottom, Left, Right };
+
+MI_INLINE std::ostream &operator<<(std::ostream &os, RollingShutterType type) {
+    switch (type) {
+        case RollingShutterType::None:   os << "none";   break;
+        case RollingShutterType::Top:    os << "top";    break;
+        case RollingShutterType::Bottom: os << "bottom"; break;
+        case RollingShutterType::Left:   os << "left";   break;
+        case RollingShutterType::Right:  os << "right";  break;
+        default: Throw("Unknown rolling shutter type!");
+    }
+    return os;
+}
+
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Sensor : public Endpoint<Float, Spectrum> {
 public:
@@ -46,6 +61,27 @@ public:
     std::pair<Wavelength, Spectrum>
     sample_wavelengths(const SurfaceInteraction3f &si, Float sample,
                        Mask active = true) const override;
+
+    /// Adjusts a time sample according to the sensor's rolling shutter 
+    /// settings. Without rolling shutter, this is simply the identity.
+    MI_INLINE Float
+    sample_rolling_shutter_time(const Float &time,
+                                const Point2f &position_sample) const {
+        if (m_rolling_shutter_type == RollingShutterType::None)
+            return time;
+        return sample_rolling_shutter_time_impl(time, position_sample);
+    }
+
+    /// Evaluate the rolling shutter weight at ``time`` for the pixel at
+    /// ``position_sample`` (``1 / rolling_shutter_duration`` if exposed, else
+    /// zero). This is the adjoint of `sample_rolling_shutter_time()`.
+    MI_INLINE Float
+    eval_rolling_shutter_weight(const Float &time,
+                                const Point2f &position_sample) const {
+        if (m_rolling_shutter_type == RollingShutterType::None)
+            return 1.f;
+        return eval_rolling_shutter_weight_impl(time, position_sample);
+    }
 
     // =============================================================
 
@@ -127,10 +163,11 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         Base::traverse(cb);
-        cb->put("shutter_open",      m_shutter_open,      ParamFlags::NonDifferentiable);
-        cb->put("shutter_open_time", m_shutter_open_time, ParamFlags::NonDifferentiable);
-        cb->put("film",              m_film,              ParamFlags::NonDifferentiable);
-        cb->put("sampler",           m_sampler,           ParamFlags::NonDifferentiable);
+        cb->put("shutter_open",             m_shutter_open,             ParamFlags::NonDifferentiable);
+        cb->put("shutter_open_time",        m_shutter_open_time,        ParamFlags::NonDifferentiable);
+        cb->put("rolling_shutter_duration", m_rolling_shutter_duration, ParamFlags::NonDifferentiable);
+        cb->put("film",                     m_film,                     ParamFlags::NonDifferentiable);
+        cb->put("sampler",                  m_sampler,                  ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
@@ -141,8 +178,21 @@ public:
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Sensor)
 
+private:
+    /// Out-of-line implementation of sample_rolling_shutter_time()
+    Float sample_rolling_shutter_time_impl(const Float &time,
+                                           const Point2f &position_sample) const;
+
+    /// Out-of-line implementation of eval_rolling_shutter_weight()
+    Float eval_rolling_shutter_weight_impl(const Float &time,
+                                           const Point2f &position_sample) const;
+
 protected:
     Sensor(const Properties &props);
+
+    /// Normalized position in [0, 1] of the scanline containing
+    /// ``position_sample`` along the rolling shutter readout direction.
+    Float rolling_shutter_scan_pos(const Point2f &position_sample) const;
 
 protected:
     ref<Film> m_film;
@@ -150,6 +200,8 @@ protected:
     ScalarVector2f m_resolution;
     ScalarFloat m_shutter_open;
     ScalarFloat m_shutter_open_time;
+    RollingShutterType m_rolling_shutter_type;
+    ScalarFloat m_rolling_shutter_duration;
     ref<const Texture> m_srf;
     bool m_alpha;
     bool m_jitter;

@@ -68,6 +68,25 @@ MI_VARIANT Sensor<Float, Spectrum>::Sensor(const Properties &props) : Base(props
             m_srf = film_srf;
         }
     }
+
+    std::string_view rs_type = props.get<std::string_view>("rolling_shutter_type", "none");
+    if (rs_type == "none")
+        m_rolling_shutter_type = RollingShutterType::None;
+    else if (rs_type == "top")
+        m_rolling_shutter_type = RollingShutterType::Top;
+    else if (rs_type == "bottom")
+        m_rolling_shutter_type = RollingShutterType::Bottom;
+    else if (rs_type == "left")
+        m_rolling_shutter_type = RollingShutterType::Left;
+    else if (rs_type == "right")
+        m_rolling_shutter_type = RollingShutterType::Right;
+    else
+        Throw("Invalid rolling_shutter_type \"%s\", must be one of: 'none', "
+              "'top', 'bottom', 'left', or 'right'!", rs_type);
+
+    m_rolling_shutter_duration = props.get<ScalarFloat>("rolling_shutter_duration", 0.f);
+    if (m_rolling_shutter_duration < 0.f || m_rolling_shutter_duration > 1.f)
+        Throw("The 'rolling_shutter_duration' parameter must be in [0, 1]!");
 }
 
 MI_VARIANT std::pair<typename Sensor<Float, Spectrum>::Wavelength, Spectrum>
@@ -85,6 +104,49 @@ Sensor<Float, Spectrum>::sample_wavelengths(const SurfaceInteraction3f& /*si*/, 
     }
 
     return sample_wavelength<Float, Spectrum>(sample);
+}
+
+MI_VARIANT Float Sensor<Float, Spectrum>::rolling_shutter_scan_pos(
+    const Point2f &position_sample) const {
+    size_t axis = (m_rolling_shutter_type == RollingShutterType::Top ||
+                   m_rolling_shutter_type == RollingShutterType::Bottom) ? 1 : 0;
+    Float scan_pos = (position_sample[axis] * ScalarFloat(m_film->crop_size()[axis]) +
+                      ScalarFloat(m_film->crop_offset()[axis])) /
+                     ScalarFloat(m_film->size()[axis]);
+    if (m_rolling_shutter_type == RollingShutterType::Bottom ||
+        m_rolling_shutter_type == RollingShutterType::Right)
+        scan_pos = 1.f - scan_pos;
+    return scan_pos;
+}
+
+MI_VARIANT Float Sensor<Float, Spectrum>::sample_rolling_shutter_time_impl(
+    const Float &time, const Point2f &position_sample) const {
+    if (m_shutter_open_time == 0.f || m_rolling_shutter_duration == 1.f)
+        return time;
+
+    return dr::fmadd(
+        rolling_shutter_scan_pos(position_sample),
+        (1.f - m_rolling_shutter_duration) * m_shutter_open_time,
+        dr::fmadd(time, m_rolling_shutter_duration,
+                  m_shutter_open * (1.f - m_rolling_shutter_duration)));
+}
+
+MI_VARIANT Float Sensor<Float, Spectrum>::eval_rolling_shutter_weight_impl(
+    const Float &time, const Point2f &position_sample) const {
+    if (m_shutter_open_time == 0.f || m_rolling_shutter_duration == 1.f)
+        return 1.f;
+
+    // Each scanline is exposed instantaneously (Dirac in time)
+    if (m_rolling_shutter_duration == 0.f)
+        return 0.f;
+
+    Float u = ((time - m_shutter_open) / m_shutter_open_time -
+               rolling_shutter_scan_pos(position_sample) *
+                   (1.f - m_rolling_shutter_duration)) /
+              m_rolling_shutter_duration;
+
+    return dr::select(u >= 0.f && u <= 1.f,
+                      Float(1.f / m_rolling_shutter_duration), Float(0.f));
 }
 
 // =============================================================================
