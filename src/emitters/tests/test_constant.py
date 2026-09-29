@@ -36,7 +36,10 @@ def test01_eval(variants_vec_spectral, spectrum_key):
     emitter, spectrum = create_emitter_and_spectrum(spectrum_key)
 
     it = dr.zeros(mi.SurfaceInteraction3f)
-    assert dr.allclose(emitter.eval(it), spectrum.eval(it))
+    it.wavelengths = mi.UnpolarizedSpectrum(550)
+
+    res = mi.unpolarized_spectrum(emitter.eval(it))
+    assert dr.allclose(res, spectrum.eval(it))
 
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
@@ -74,10 +77,12 @@ def test03_sample_direction(variants_vec_spectral):
     # Some positions inside the unit sphere
     it.p = [[-0.5, 0.3, -0.1], [0.8, -0.3, -0.2], [-0.2, 0.6, -0.6]]
     it.time = 1.0
+    it.wavelengths = mi.UnpolarizedSpectrum(500)
 
     # Sample direction on the emitter
     samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
     ds, res = emitter.sample_direction(it, samples)
+    res = mi.unpolarized_spectrum(res)
 
     assert dr.allclose(ds.pdf, dr.inv_four_pi)
     assert dr.allclose(ds.d, mi.warp.square_to_uniform_sphere(samples))

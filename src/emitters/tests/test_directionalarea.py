@@ -49,13 +49,16 @@ def test01_constructor(variant_scalar_rgb):
 
 @pytest.mark.parametrize("spectrum_key", spectrum_dicts.keys())
 def test02_eval(variants_vec_spectral, spectrum_key):
-    # Check that eval() return the same values as the 'radiance' spectrum
+    # Check that eval() always returns 0.0 for a 
+    # directional area emitter since it is a degenerate light source.
 
-    shape, spectrum = create_emitter_and_spectrum(spectrum_key)
+    shape, _ = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
-    it = dr.zeros(mi.SurfaceInteraction3f, 3)
-    assert dr.allclose(emitter.eval(it), spectrum.eval(it))
+    ps = shape.sample_position(0.0, [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]])
+    it = mi.SurfaceInteraction3f(ps, mi.UnpolarizedSpectrum(550))
+    it.wi = [0, 0, 1]
+    assert dr.allclose(emitter.eval(it), 0.0)
 
     # Check that eval returns 0.0 when the direction points into the shape
 
