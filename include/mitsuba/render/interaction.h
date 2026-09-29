@@ -272,8 +272,7 @@ struct Interaction {
      * The segment stops short of the target by `PositionSample3f.p_err`
      * projected onto the segment, plus a relative amount that absorbs the
      * rounding of the distance. The endpoint moves back along the ray rather
-     * than along ``ps.n``, which is more robust when ``ps.n`` is a shading
-     * normal.
+     * than along ``ps.n``.
      */
     Ray3f spawn_ray_to(const PositionSample3f &ps) const {
         Point3f o = offset_p(ps.p - p);
