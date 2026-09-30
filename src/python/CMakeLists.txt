@@ -226,7 +226,7 @@ if (NOT (MI_SANITIZE_ADDRESS OR MI_SANITIZE_MEMORY))
 
   # Stub generation does not recurse, each module must be listed separately.
   # 'python.ad.optimizers' is absent because it forwards to 'drjit.opt'.
-  set(MI_STUB_SUBMODULES "math" "quad" "spline" "mueller" "warp" "misc" "detail" "filesystem"
+  set(MI_STUB_SUBMODULES "math" "spline" "mueller" "warp" "misc" "detail" "filesystem"
                          "python.ad" "python.ad.guiding" "python.ad.largesteps"
                          "python.ad.projective"
                          "python.ad.loaders.ray_loader"

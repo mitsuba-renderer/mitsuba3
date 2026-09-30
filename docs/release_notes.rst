@@ -323,6 +323,13 @@ Mitsuba 3.10.0
   importance sampling routine was very expensive and had numerous drawbacks.
   To importance sample the texture, set the ``sample_texture`` parameter.
 
+- **Quadrature routines moved to Dr.Jit**. The ``mitsuba.quad`` submodule and
+  the ``mitsuba/core/quad.h`` header were removed. The Gauss-Legendre,
+  Gauss-Lobatto, composite Simpson and Chebyshev rules now live in
+  ``drjit.quad`` (C++: ``drjit/quad.h``). The Python functions take the
+  desired output array type as their first argument, e.g.
+  ``dr.quad.gauss_legendre(mi.Float, n)`` replaces ``mi.quad.gauss_legendre(n)``.
+
 Mitsuba 3.9.1
 -------------
 *August 7, 2026*

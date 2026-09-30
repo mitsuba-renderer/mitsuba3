@@ -82,7 +82,6 @@ MI_PY_DECLARE(Transform);
 MI_PY_DECLARE(AnimatedTransform);
 MI_PY_DECLARE(vector);
 MI_PY_DECLARE(warp);
-MI_PY_DECLARE(quad);
 
 // render
 MI_PY_DECLARE(BSDFSample);
@@ -148,14 +147,12 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     nb::module_ math    = create_submodule(m, "math"),
                 spline  = create_submodule(m, "spline"),
                 warp    = create_submodule(m, "warp"),
-                quad    = create_submodule(m, "quad"),
                 mueller = create_submodule(m, "mueller");
 
     math.doc()    = "Mathematical routines, special functions, etc.";
     spline.doc()  = "Functions for evaluating and sampling Catmull-Rom splines";
     warp.doc()    = "Common warping techniques that map from the unit square to other "
                     "domains, such as spheres, hemispheres, etc.";
-    quad.doc()    = "Functions for numerical quadrature";
     mueller.doc() = "Routines to manipulate Mueller matrices for polarized rendering.";
 
     // FIXME: we don't really need a list of casters
@@ -209,7 +206,6 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Hierarchical2D);
     MI_PY_IMPORT(Marginal2D);
     MI_PY_IMPORT(vector);
-    MI_PY_IMPORT_SUBMODULE(quad);
     MI_PY_IMPORT_SUBMODULE(warp);
 
     MI_PY_IMPORT(Scene);
