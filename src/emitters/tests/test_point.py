@@ -65,7 +65,7 @@ def test02_point_sample_direction(variant_scalar_spectral, spectrum_key):
 
     # Direction sampling
     it = mi.SurfaceInteraction3f()
-    it.wavelengths = [0, 0, 0, 0]
+    it.wavelengths = mi.UnpolarizedSpectrum(550)
     it.p = [0.0, -2.0, 4.5]  # Some position
     it.time = 0.3
 
@@ -98,6 +98,7 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     it.p = [[0.0, 0.0, 0.0], [-2.0, 0.0, -2.0],
             [4.5, 4.5, 0.0]]  # Some positions
     it.time = [0.3, 0.3, 0.3]
+    it.wavelengths = mi.UnpolarizedSpectrum(550)
 
     # Direction from the position to the point emitter
     d = -it.p + emitter_pos
@@ -107,6 +108,7 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     # Sample direction on the emitter
     sample = [0.1, 0.5]
     ds, res = emitter.sample_direction(it, sample)
+    res = mi.unpolarized_spectrum(res)
 
     assert dr.all(ds.time == it.time)
     assert dr.all(ds.pdf == 1.0)
@@ -117,7 +119,9 @@ def test03_point_sample_direction_vec(variants_vec_spectral, spectrum_key):
     # Evaluate the spectrum
     spec = spectrum.eval(it) / (dist**2)
     assert dr.allclose(res, spec)
-    assert dr.allclose(emitter.eval_direction(it, ds), spec)
+
+    res = mi.unpolarized_spectrum(emitter.eval_direction(it, ds))
+    assert dr.allclose(res, spec)
 
 
 def test04_medium_shape_accessors(variants_vec_rgb):

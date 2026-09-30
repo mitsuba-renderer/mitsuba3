@@ -536,15 +536,18 @@ def test11_uv_sphere_tangents(variants_vec_rgb):
 
 @pytest.mark.parametrize("flip_normals", [False, True])
 def test12_sample_position(variants_vec_rgb, flip_normals):
-    """sample_position() draws area-uniform samples with interpolated UVs
-    and normals. The density equals the reciprocal surface area."""
+    """sample_position() draws area-uniform samples with interpolated UVs.
+    The density equals the reciprocal surface area."""
     # Two triangles of unequal area (0.5 and 2.0) with UVs = 0.5 * xy
     positions = np.float32([[0, 0, 0], [1, 0, 0], [0, 1, 0],
                             [1, 0, 0], [3, 0, 0], [1, 2, 0]])
+    k = dr.rcp(dr.sqrt(3.0))
+    normals = np.float32([[-k, -k, k], [k, -k, k], [-k, k, k],
+                          [-k, -k, k], [k, -k, k], [-k, k, k]])
     uv = (positions[:, :2] * 0.5).astype(np.float32)
-    m = mi.Mesh("two", flip_normals=flip_normals)
+    m = mi.Mesh("two", flip_normals=flip_normals, face_normals=False)
     m.from_fields(faces=np.arange(6, dtype=np.uint32).reshape(2, 3),
-                  positions=positions, texcoords=uv)
+                  positions=positions, texcoords=uv, normals=normals)
     dr.assert_allclose(m.surface_area(), 2.5)
 
     n = 64
@@ -555,6 +558,8 @@ def test12_sample_position(variants_vec_rgb, flip_normals):
     dr.assert_allclose(ps.pdf, 1.0 / 2.5)
     dr.assert_allclose(m.pdf_position(ps), ps.pdf)
     dr.assert_allclose(ps.uv, mi.Point2f(ps.p.x, ps.p.y) * 0.5, atol=1e-6)
+
+    # The sampled position should hold the geometric normal
     n_ref = [0, 0, -1] if flip_normals else [0, 0, 1]
     dr.assert_allclose(ps.n, n_ref)
 

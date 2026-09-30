@@ -54,8 +54,10 @@ def test02_eval(variants_vec_spectral, spectrum_key):
     shape, spectrum = create_emitter_and_spectrum(spectrum_key)
     emitter = shape.emitter()
 
-    it = dr.zeros(mi.SurfaceInteraction3f, 3)
-    assert dr.allclose(emitter.eval(it), spectrum.eval(it))
+    ps = shape.sample_position(0.0, [[0.2, 0.1, 0.2], [0.6, 0.9, 0.2]])
+    it = mi.SurfaceInteraction3f(ps, mi.UnpolarizedSpectrum(550))
+    it.wi = [0, 0, 1]
+    assert dr.allclose(mi.unpolarized_spectrum(emitter.eval(it)), spectrum.eval(it))
 
     # Check that eval returns 0.0 when the direction points into the shape
 
@@ -106,10 +108,12 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     it.p = [[0.2, 0.1, 0.2], [0.6, -0.9, 0.2],
             [0.4, 0.9, -0.2]]  # Some positions
     it.time = 1.0
+    it.wavelengths = mi.UnpolarizedSpectrum(550)
 
     # Sample direction on the emitter
     samples = [[0.4, 0.5, 0.3], [0.1, 0.4, 0.9]]
     ds, res = emitter.sample_direction(it, samples)
+    res = mi.unpolarized_spectrum(res)
 
     # Sample direction on the shape
     shape_ds = shape.sample_direction(it, samples)
@@ -120,10 +124,11 @@ def test04_sample_direction(variants_vec_spectral, spectrum_key):
     assert dr.allclose(ds.time, it.time)
 
     # Evaluate the spectrum (divide by the pdf)
-    spec = spectrum.eval(it) / ds.pdf
-    assert dr.allclose(res, spec)
+    spec_val = spectrum.eval(it)
+    assert dr.allclose(res, spec_val / ds.pdf)
 
-    assert dr.allclose(emitter.eval_direction(it, ds), spec)
+    res = mi.unpolarized_spectrum(emitter.eval_direction(it, ds))
+    assert dr.allclose(res, spec_val)
 
 
 def test05_shape_accessors(variants_vec_rgb):
