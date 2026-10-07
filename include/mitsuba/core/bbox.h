@@ -326,7 +326,7 @@ template <typename Point_> struct BoundingBox {
         */
 
         // Ensure that the ray either has a nonzero slope on each axis
-        auto active = dr::any(ray.d != dr::zeros<Vector>());
+        auto active = dr::all(ray.d != 0.f || (ray.o >= min && ray.o <= max));
 
         Vector d_rcp = dr::rcp(ray.d);
 
