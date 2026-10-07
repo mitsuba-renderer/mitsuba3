@@ -314,8 +314,19 @@ public:
 
             m_texture.update_inplace();
 
-            if (!m_fixed_max)
-                m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+            if (!m_fixed_max) {
+                if (is_spectral_v<Spectrum> && m_texture.channel_count() == 4 && !m_raw) {
+                    // Spectral upsampling stores (c0, c1, c2, scale) per voxel.
+                    // The model spectrum is bounded by 1, so the scale channel
+                    // bounds the volume; the coefficients do not.
+                    using Array = typename TensorXf::Array;
+                    const Array &data = m_texture.tensor().array();
+                    auto idx = dr::arange<dr::uint32_array_t<Array>>(data.size() / 4) * 4 + 3;
+                    m_max = (float) dr::max_nested(dr::gather<Array>(dr::detach(data), idx));
+                } else {
+                    m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+                }
+            }
         }
     }
 
