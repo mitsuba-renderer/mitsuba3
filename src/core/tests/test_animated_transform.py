@@ -261,3 +261,37 @@ def test14_mirroring_decomposition(variant_scalar_rgb, trafo_fn):
     at = mi.AnimatedTransform4f({0.0: trafo, 1.0: trafo})
     for t in [0.0, 0.5, 1.0]:
         assert dr.allclose(at.eval_scalar(t).matrix, trafo.matrix, atol=1e-5), t
+
+
+def test15_frozen_change_frame_number(variants_vec_backends_once):
+    """Frozen functions can be replayed after the number of keyframes changes"""
+    at = make_translation_anim([0.0, 1.0], [[0, 0, 0], [1, 0, 0]])
+
+    def func(at, t):
+        return at.eval(t).translation()
+
+    frozen = dr.freeze(func)
+    t = mi.Float([0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0])
+    for _ in range(2):
+        assert dr.allclose(frozen(at, t), func(at, t))
+
+    # Grow to 4 keyframes, which extends the animation to t = 3
+    params = mi.traverse(at)
+    params['times']       = mi.TensorXf([0.0, 1.0, 2.0, 3.0], shape=(4,))
+    params['scale']       = mi.TensorXf([1.0] * 12, shape=(4, 3))
+    params['rotation']    = mi.TensorXf([0.0, 0.0, 0.0, 1.0] * 4, shape=(4, 4))
+    params['translation'] = mi.TensorXf([0.0, 0.0, 0.0,
+                                         1.0, 0.0, 0.0,
+                                         1.0, 4.0, 0.0,
+                                         1.0, 4.0, 9.0], shape=(4, 3))
+    params.update()
+
+    expected = np.array([
+        [0.0, 0.5, 1.0, 1.0, 1.0, 1.0, 1.0],
+        [0.0, 0.0, 0.0, 2.0, 4.0, 4.0, 4.0],
+        [0.0, 0.0, 0.0, 0.0, 0.0, 4.5, 9.0],
+    ])
+    assert dr.allclose(func(at, t), expected)
+    assert dr.allclose(frozen(at, t), expected)
+    # The keyframe count must not be baked into the recording
+    assert frozen.n_recordings == 1

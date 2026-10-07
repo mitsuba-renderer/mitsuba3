@@ -120,7 +120,8 @@ public:
     MI_DECLARE_CLASS(AnimatedTransform)
 
 protected:
-    MI_TRAVERSE_CB(Object, m_times, m_scale, m_rotation, m_translation)
+    MI_TRAVERSE_CB(Object, m_times, m_scale, m_rotation, m_translation,
+                   m_keyframe_count)
 
 private:
     /// Read the (possibly user-written) keyframe tensors, validating that
@@ -136,6 +137,9 @@ private:
 
     /// Device-side keyframes used by `eval`, see the class documentation
     TensorXf m_times, m_scale, m_rotation, m_translation;
+
+    /// Opaque number of keyframes, so that it is not baked into frozen kernels
+    UInt32 m_keyframe_count;
 };
 
 MI_EXTERN_CLASS(AnimatedTransform)
