@@ -107,8 +107,11 @@ public:
         MI_MASKED_FUNCTION(ProfilerPhase::EndpointEvaluate, active);
 
         Spectrum result = depolarizer<Spectrum>(m_radiance->eval(si, active));
-        if (!m_twosided)
-            result = dr::select(Frame3f::cos_theta(si.wi) > 0.f, result, 0.f);
+        if (!m_twosided) {
+            // Test sidedness using the geometric normal
+            result = dr::select(dr::dot(si.n, si.to_world(si.wi)) > 0.f,
+                                result, 0.f);
+        }
         return result;
     }
 
@@ -171,6 +174,7 @@ public:
             active &= ds.pdf != 0.f;
             if (!m_twosided)
                 active &= dr::dot(ds.d, ds.n) < 0.f;
+            ds.pdf = dr::select(active, ds.pdf, 0.f);
 
             si = SurfaceInteraction3f(ds, it.wavelengths);
         } else {
