@@ -671,10 +671,17 @@ OptixAccel<Float, Spectrum>::ray_intersect_preliminary(
     // Scene property takes precedence
     reorder &= scene->m_thread_reordering;
 
+    // Like dr::reorder_threads(), prevent code motion across the reordering
+    if (reorder)
+        jit_new_scope(JitBackend::CUDA);
+
     trace(ray, active, ray_mask,
           OPTIX_RAY_FLAG_DISABLE_ANYHIT | OPTIX_RAY_FLAG_DISABLE_CLOSESTHIT,
           has_instances ? 7 : 6, fields, hitobject_out, reorder, reorder_hint,
           reorder_hint_bits);
+
+    if (reorder)
+        jit_new_scope(JitBackend::CUDA);
 
     Mask valid = UInt32::steal(hitobject_out[0]) != 0;
     active &= valid;
