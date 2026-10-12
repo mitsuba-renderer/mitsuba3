@@ -179,7 +179,17 @@ class ProjectiveDetail():
             it = dr.zeros(mi.Interaction3f)
             it.p = ss.p
             ds, _ = sensor.sample_direction(it, mi.Point2f(0), active)
-            visible &= ds.pdf != 0
+            film = sensor.film()
+            if film.sample_border():
+                # The filter reaches past the crop window, so points just
+                # outside of it still contribute
+                border = film.rfilter().border_size()
+                size = mi.ScalarVector2f(film.crop_size())
+                in_front = (to_world.inverse() @ ss.p).z > 0
+                visible &= in_front & dr.all((ds.uv >= -border) &
+                                             (ds.uv <= size + border))
+            else:
+                visible &= ds.pdf != 0
 
             # Sample wavelengths
             wavelength_sample = 0
