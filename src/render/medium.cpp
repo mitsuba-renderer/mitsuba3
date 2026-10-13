@@ -89,8 +89,11 @@ Medium<Float, Spectrum>::transmittance_eval_pdf(const MediumInteraction3f &mi,
                                                 Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::MediumEvaluate, active);
 
-    Float t      = dr::minimum(mi.t, si.t) - mi.mint;
-    UnpolarizedSpectrum tr  = dr::exp(-t * mi.combined_extinction);
+    Float t = dr::minimum(mi.t, si.t) - mi.mint;
+    // Clamp the optical depth: callers use the ratio tr / pdf, and on a long
+    // flight under a large majorant both would underflow to zero
+    UnpolarizedSpectrum tau = dr::minimum(t * mi.combined_extinction, 80.f);
+    UnpolarizedSpectrum tr  = dr::exp(-tau);
     UnpolarizedSpectrum pdf = dr::select(si.t < mi.t, tr, tr * mi.combined_extinction);
     return { tr, pdf };
 }
