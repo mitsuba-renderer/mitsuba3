@@ -67,12 +67,12 @@ AnimatedTransform<Float, Spectrum>::eval(Float time) const {
             dr::gather<Vector3f>(m_translation.array(), index));
     };
 
-    uint32_t n = (uint32_t) m_keyframes.size();
     auto time_at = [&](const UInt32 &idx) {
         return dr::gather<Float>(m_times.array(), idx);
     };
-    UInt32 index = math::find_interval<UInt32>(
-        n, [&](const UInt32 &idx) { return time_at(idx) <= time; });
+    UInt32 index = dr::binary_search<UInt32>(
+        UInt32(1), m_keyframe_count - 1,
+        [&](const UInt32 &idx) { return time_at(idx) <= time; }) - 1;
 
     Float t0 = time_at(index), t1 = time_at(index + 1);
     auto [s0, q0, tr0] = fetch(index);
@@ -137,6 +137,7 @@ MI_VARIANT void AnimatedTransform<Float, Spectrum>::upload(
     }
 
     m_keyframes = std::move(keyframes);
+    m_keyframe_count = dr::opaque<UInt32>((uint32_t) n);
 
     std::vector<ScalarFloat> times(n), scale(3 * n), rotation(4 * n),
                              translation(3 * n);
