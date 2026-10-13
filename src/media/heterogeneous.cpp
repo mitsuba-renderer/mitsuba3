@@ -38,6 +38,11 @@ Heterogeneous medium (:monosp:`heterogeneous`)
      units, or to simply tweak the density of the medium. (Default: 1)
    - |exposed|
 
+ * - majorant_factor
+   - |float|
+   - Safety factor on the majorant used by delta tracking. A value above 1
+     keeps the majorant strictly above the densest voxel. (Default: 1.2)
+
  * - sample_emitters
    - |bool|
    - Flag to specify whether shadow rays should be cast from inside the volume (Default: |true|)
@@ -159,8 +164,11 @@ public:
 
         m_scale = props.get<ScalarFloat>("scale", 1.0f);
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
+        m_majorant_factor = props.get<ScalarFloat>("majorant_factor", 1.2f);
+        if (m_majorant_factor <= 1.f)
+            Log(Warn, "'majorant_factor' is suggested being > 1, or delta tracking may generate bias");
 
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * m_majorant_factor * m_sigmat->max());
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -171,7 +179,7 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
-        m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+        m_max_density = dr::opaque<Float>(m_scale * m_majorant_factor * m_sigmat->max());
     }
 
     UnpolarizedSpectrum
@@ -206,6 +214,7 @@ public:
             << "  albedo  = " << string::indent(m_albedo) << std::endl
             << "  sigma_t = " << string::indent(m_sigmat) << std::endl
             << "  scale   = " << string::indent(m_scale) << std::endl
+            << "  majorant_factor = " << m_majorant_factor << std::endl
             << "]";
         return oss.str();
     }
@@ -213,7 +222,7 @@ public:
     MI_DECLARE_CLASS(HeterogeneousMedium)
 private:
     ref<Volume> m_sigmat, m_albedo;
-    ScalarFloat m_scale;
+    ScalarFloat m_scale, m_majorant_factor;
     Float m_max_density;
 
     MI_TRAVERSE_CB(Base, m_sigmat, m_albedo, m_max_density)
