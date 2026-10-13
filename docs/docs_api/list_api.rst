@@ -12,6 +12,146 @@
 
 .. autoclass:: mitsuba.ArgParser
 
+.. autoclass:: mitsuba.Array0b
+
+.. autoclass:: mitsuba.Array0d
+
+.. autoclass:: mitsuba.Array0f
+
+.. autoclass:: mitsuba.Array0f16
+
+.. autoclass:: mitsuba.Array0f32
+
+.. autoclass:: mitsuba.Array0f64
+
+.. autoclass:: mitsuba.Array0i
+
+.. autoclass:: mitsuba.Array0i32
+
+.. autoclass:: mitsuba.Array0i64
+
+.. autoclass:: mitsuba.Array0i8
+
+.. autoclass:: mitsuba.Array0u
+
+.. autoclass:: mitsuba.Array0u32
+
+.. autoclass:: mitsuba.Array0u64
+
+.. autoclass:: mitsuba.Array0u8
+
+.. autoclass:: mitsuba.Array1b
+
+.. autoclass:: mitsuba.Array1d
+
+.. autoclass:: mitsuba.Array1f
+
+.. autoclass:: mitsuba.Array1f16
+
+.. autoclass:: mitsuba.Array1f32
+
+.. autoclass:: mitsuba.Array1f64
+
+.. autoclass:: mitsuba.Array1i
+
+.. autoclass:: mitsuba.Array1i32
+
+.. autoclass:: mitsuba.Array1i64
+
+.. autoclass:: mitsuba.Array1i8
+
+.. autoclass:: mitsuba.Array1u
+
+.. autoclass:: mitsuba.Array1u32
+
+.. autoclass:: mitsuba.Array1u64
+
+.. autoclass:: mitsuba.Array1u8
+
+.. autoclass:: mitsuba.Array2b
+
+.. autoclass:: mitsuba.Array2d
+
+.. autoclass:: mitsuba.Array2f
+
+.. autoclass:: mitsuba.Array2f16
+
+.. autoclass:: mitsuba.Array2f32
+
+.. autoclass:: mitsuba.Array2f64
+
+.. autoclass:: mitsuba.Array2i
+
+.. autoclass:: mitsuba.Array2i32
+
+.. autoclass:: mitsuba.Array2i64
+
+.. autoclass:: mitsuba.Array2i8
+
+.. autoclass:: mitsuba.Array2u
+
+.. autoclass:: mitsuba.Array2u32
+
+.. autoclass:: mitsuba.Array2u64
+
+.. autoclass:: mitsuba.Array2u8
+
+.. autoclass:: mitsuba.Array3b
+
+.. autoclass:: mitsuba.Array3d
+
+.. autoclass:: mitsuba.Array3f
+
+.. autoclass:: mitsuba.Array3f16
+
+.. autoclass:: mitsuba.Array3f32
+
+.. autoclass:: mitsuba.Array3f64
+
+.. autoclass:: mitsuba.Array3i
+
+.. autoclass:: mitsuba.Array3i32
+
+.. autoclass:: mitsuba.Array3i64
+
+.. autoclass:: mitsuba.Array3i8
+
+.. autoclass:: mitsuba.Array3u
+
+.. autoclass:: mitsuba.Array3u32
+
+.. autoclass:: mitsuba.Array3u64
+
+.. autoclass:: mitsuba.Array3u8
+
+.. autoclass:: mitsuba.Array4b
+
+.. autoclass:: mitsuba.Array4d
+
+.. autoclass:: mitsuba.Array4f
+
+.. autoclass:: mitsuba.Array4f16
+
+.. autoclass:: mitsuba.Array4f32
+
+.. autoclass:: mitsuba.Array4f64
+
+.. autoclass:: mitsuba.Array4i
+
+.. autoclass:: mitsuba.Array4i32
+
+.. autoclass:: mitsuba.Array4i64
+
+.. autoclass:: mitsuba.Array4i8
+
+.. autoclass:: mitsuba.Array4u
+
+.. autoclass:: mitsuba.Array4u32
+
+.. autoclass:: mitsuba.Array4u64
+
+.. autoclass:: mitsuba.Array4u8
+
 .. autoclass:: mitsuba.ArrayXb
 
 .. autoclass:: mitsuba.ArrayXd
@@ -82,6 +222,14 @@
 
 .. autoclass:: mitsuba.Complex2f64
 
+.. autoclass:: mitsuba.ConditionalIrregular1D
+
+.. autoclass:: mitsuba.ConditionalIrregular1DSpectrum
+
+.. autoclass:: mitsuba.ConditionalRegular1D
+
+.. autoclass:: mitsuba.ConditionalRegular1DSpectrum
+
 .. autoclass:: mitsuba.ContinuousDistribution
 
 .. autoclass:: mitsuba.CppADIntegrator
@@ -107,6 +255,8 @@
 .. autoclass:: mitsuba.EmitterPtr
 
 .. autoclass:: mitsuba.Endpoint
+
+.. autoclass:: mitsuba.Event
 
 .. autoclass:: mitsuba.FileResolver
 
@@ -173,6 +323,8 @@
 .. autofunction:: mitsuba.MI_ENABLE_CUDA
 
 .. autofunction:: mitsuba.MI_ENABLE_EMBREE
+
+.. autofunction:: mitsuba.MI_ENABLE_METAL
 
 .. autofunction:: mitsuba.MI_FILTER_RESOLUTION
 
@@ -276,6 +428,8 @@
 
 .. autoclass:: mitsuba.PhaseFunctionPtr
 
+.. autoclass:: mitsuba.Philox4x32
+
 .. autoclass:: mitsuba.PluginManager
 
 .. autoclass:: mitsuba.Point0d
@@ -345,6 +499,8 @@
 .. autoclass:: mitsuba.Quaternion4f64
 
 .. autoclass:: mitsuba.RadicalInverse
+
+.. autoclass:: mitsuba.Ray2d
 
 .. autoclass:: mitsuba.Ray2f
 
@@ -443,6 +599,14 @@
 .. autoclass:: mitsuba.ScalarProjectiveTransform4d
 
 .. autoclass:: mitsuba.ScalarProjectiveTransform4f
+
+.. autoclass:: mitsuba.ScalarRay2d
+
+.. autoclass:: mitsuba.ScalarRay2f
+
+.. autoclass:: mitsuba.ScalarRay3d
+
+.. autoclass:: mitsuba.ScalarRay3f
 
 .. autoclass:: mitsuba.ScalarTransform3d
 
@@ -564,6 +728,8 @@
 
 .. autoclass:: mitsuba.Texture1f64
 
+.. autoclass:: mitsuba.Texture1f8u
+
 .. autoclass:: mitsuba.Texture2d
 
 .. autoclass:: mitsuba.Texture2f
@@ -574,6 +740,8 @@
 
 .. autoclass:: mitsuba.Texture2f64
 
+.. autoclass:: mitsuba.Texture2f8u
+
 .. autoclass:: mitsuba.Texture3d
 
 .. autoclass:: mitsuba.Texture3f
@@ -583,6 +751,8 @@
 .. autoclass:: mitsuba.Texture3f32
 
 .. autoclass:: mitsuba.Texture3f64
+
+.. autoclass:: mitsuba.Texture3f8u
 
 .. autoclass:: mitsuba.TexturePtr
 
@@ -689,6 +859,12 @@
 .. autoclass:: mitsuba.ad.largesteps.SolveCholesky
 
 .. autofunction:: mitsuba.ad.largesteps.mesh_laplacian
+
+.. autoclass:: mitsuba.ad.loaders.FlatSensor
+
+.. autoclass:: mitsuba.ad.loaders.RayDataLoader
+
+.. autofunction:: mitsuba.ad.loaders.Tuple
 
 .. autofunction:: mitsuba.chi2.BSDFAdapter
 
@@ -831,6 +1007,8 @@
 .. autofunction:: mitsuba.math.srgb_to_linear
 
 .. autofunction:: mitsuba.math.ulpdiff
+
+.. autofunction:: mitsuba.math_py.chi2
 
 .. autofunction:: mitsuba.math_py.rlgamma
 
@@ -1043,8 +1221,6 @@
 .. autofunction:: mitsuba.traverse
 
 .. autofunction:: mitsuba.unpolarized_spectrum
-
-.. autofunction:: mitsuba.util.Any
 
 .. autofunction:: mitsuba.util.Optional
 

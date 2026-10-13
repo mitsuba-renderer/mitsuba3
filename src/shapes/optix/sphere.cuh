@@ -3,18 +3,16 @@
 #include <math.h>
 #include <mitsuba/render/optix/common.h>
 #include <mitsuba/render/optix/math.cuh>
-
-struct OptixSphereData {
-    optix::BoundingBox3f bbox;
-    optix::Vector3f center;
-    float radius;
-};
+#include <mitsuba/render/shapedata.h>
 
 #ifdef __CUDACC__
 
 extern "C" __global__ void __intersection__sphere() {
     const OptixHitGroupData *sbt_data = (OptixHitGroupData*) optixGetSbtDataPointer();
-    OptixSphereData *sphere = (OptixSphereData*) sbt_data->data;
+    shapedata::SphereData *sphere = (shapedata::SphereData*) sbt_data->data;
+    Vector3f center(sphere->center_radius.x, sphere->center_radius.y,
+                    sphere->center_radius.z);
+    float radius = sphere->center_radius.w;
 
     // Ray in instance-space
     Ray3f ray = get_ray();
@@ -25,21 +23,21 @@ extern "C" __global__ void __intersection__sphere() {
     // additional step makes the whole intersection routine numerically more
     // robust.
 
-    Vector3f l = ray.o - sphere->center;
+    Vector3f l = ray.o - center;
     Vector3f d = ray.d;
     float plane_t = dot(-l, d) / norm(d);
     Vector3f plane_p = ray(plane_t);
 
     // Ray is perpendicular to the origin-center segment,
     // and intersection with plane is outside of the sphere
-    if (plane_t == 0.f && norm(plane_p - sphere->center) > sphere->radius)
+    if (plane_t == 0.f && norm(plane_p - center) > radius)
         return;
 
-    Vector3f o = plane_p - sphere->center;
+    Vector3f o = plane_p - center;
 
     float A = squared_norm(d);
     float B = 2.f * dot(o, d);
-    float C = squared_norm(o) - sqr(sphere->radius);
+    float C = squared_norm(o) - sqr(radius);
 
     float near_t, far_t;
     bool solution_found = solve_quadratic(A, B, C, near_t, far_t);

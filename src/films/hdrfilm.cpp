@@ -55,15 +55,6 @@ High dynamic range film (:monosp:`hdrfilm`)
      improve the image quality at the edges, especially when using very large reconstruction
      filters. In general, this is not needed though. (Default: |false|, i.e. disabled)
 
- * - compensate
-   - |bool|
-   - If set to |true|, sample accumulation will be performed using Kahan-style
-     error-compensated accumulation. This can be useful to avoid roundoff error
-     when accumulating very many samples to compute reference solutions using
-     single precision variants of Mitsuba. This feature is currently only supported
-     in JIT variants and can make sample accumulation quite a bit more expensive.
-     (Default: |false|, i.e. disabled)
-
  * - (Nested plugin)
    - :paramtype:`rfilter`
    - Reconstruction filter that should be used by the film. (Default: :monosp:`gaussian`, a windowed
@@ -189,11 +180,11 @@ public:
         }
 
         if (component_format == "float16")
-            m_component_format = Struct::Type::Float16;
+            m_component_format = sj::Type::Float16;
         else if (component_format == "float32")
-            m_component_format = Struct::Type::Float32;
+            m_component_format = sj::Type::Float32;
         else if (component_format == "uint32")
-            m_component_format = Struct::Type::UInt32;
+            m_component_format = sj::Type::UInt32;
         else
             Throw("The \"component_format\" parameter must either be "
                   "equal to \"float16\", \"float32\", or \"uint32\"."
@@ -205,10 +196,10 @@ public:
                            " Overriding..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (m_component_format != Struct::Type::Float32) {
+            if (m_component_format != sj::Type::Float32) {
                 Log(Warn, "The RGBE format only supports "
                            "component_format=\"float32\". Overriding..");
-                m_component_format = Struct::Type::Float32;
+                m_component_format = sj::Type::Float32;
             }
         } else if (m_file_format == Bitmap::FileFormat::PFM) {
             // PFM output; override pixel & component format if necessary
@@ -217,16 +208,21 @@ public:
                            " or \"luminance\". Overriding (setting to \"rgb\")..");
                 m_pixel_format = Bitmap::PixelFormat::RGB;
             }
-            if (m_component_format != Struct::Type::Float32) {
+            if (m_component_format != sj::Type::Float32) {
                 Log(Warn, "The PFM format only supports"
                            " component_format=\"float32\". Overriding..");
-                m_component_format = Struct::Type::Float32;
+                m_component_format = sj::Type::Float32;
             }
         }
 
-        m_compensate = props.get<bool>("compensate", false);
-
         props.mark_queried("banner"); // no banner in Mitsuba 3
+
+        if (props.has_property("compensate")) {
+            props.mark_queried("compensate");
+            Log(Warn, "The \"compensate\" (Kahan-style error-compensated "
+                      "accumulation) parameter has been removed and is now "
+                      "ignored.");
+        }
     }
 
     size_t base_channels_count() const override {
@@ -259,6 +255,8 @@ public:
 
         /* locked */ {
             std::lock_guard<std::mutex> lock(m_mutex);
+            if (dr::is_jit_v<Float> && m_storage == nullptr)
+                jit_freeze_discard(drjit::detail::backend<Float>::value, "Image Block was allocated");
             m_storage = new ImageBlock(m_crop_size, m_crop_offset,
                                        (uint32_t) channels.size());
             m_channels = channels;
@@ -285,7 +283,6 @@ public:
                               border /* border */,
                               normalize /* normalize */,
                               dr::is_jit_v<Float> /* coalesce */,
-                              m_compensate /* compensate */,
                               warn /* warn_negative */,
                               warn /* warn_invalid */);
     }
@@ -422,7 +419,7 @@ public:
             Throw("No storage allocated, was prepare() called first?");
 
         std::lock_guard<std::mutex> lock(m_mutex);
-        auto &&storage = dr::migrate(m_storage->tensor().array(), AllocType::Host);
+        auto &&storage = dr::migrate(m_storage->tensor().array(), JitBackend::None);
 
         if constexpr (dr::is_jit_v<Float>)
             dr::sync_thread();
@@ -461,11 +458,11 @@ public:
             has_aovs ? target_ch : 0);
 
         if (has_aovs) {
-            source->struct_()->operator[](base_ch - 1).flags |=
-                +Struct::Flags::Weight;
+            source->struct_()[base_ch - 1].flags |=
+                +sj::Flag::Weight;
 
             for (size_t i = 0; i < target_ch; ++i) {
-                Struct::Field &dest_field = target->struct_()->operator[](i);
+                sj::Field &dest_field = target->struct_()[i];
 
                 switch (i) {
                     case 0:
@@ -569,7 +566,7 @@ public:
             // Conversion is necessary before saving to disk
             std::vector<std::string> channel_names;
             for (size_t i = 0; i < source->channel_count(); i++)
-                channel_names.push_back(source->struct_()->operator[](i).name);
+                channel_names.push_back(source->struct_()[i].name);
             ref<Bitmap> target = new Bitmap(
                 source->pixel_format(),
                 m_component_format,
@@ -595,7 +592,6 @@ public:
             << "  crop_size = " << m_crop_size << "," << std::endl
             << "  crop_offset = " << m_crop_offset << "," << std::endl
             << "  sample_border = " << m_sample_border << "," << std::endl
-            << "  compensate = " << m_compensate << "," << std::endl
             << "  filter = " << m_filter << "," << std::endl
             << "  file_format = " << m_file_format << "," << std::endl
             << "  pixel_format = " << m_pixel_format << "," << std::endl
@@ -608,8 +604,7 @@ public:
 protected:
     Bitmap::FileFormat m_file_format;
     Bitmap::PixelFormat m_pixel_format;
-    Struct::Type m_component_format;
-    bool m_compensate;
+    sj::Type m_component_format;
     ref<ImageBlock> m_storage;
     mutable std::mutex m_mutex;
     std::vector<std::string> m_channels;

@@ -428,6 +428,28 @@ struct Transform {
         return result;
     }
 
+    /// Expand to a higher-dimensional (inverse of extract)
+    template <bool A = Affine, dr::enable_if_t<A> = 0>
+    auto expand() const {
+        Transform<mitsuba::Point<Float, Size + 1>, true> result;
+
+        for (size_t i = 0; i < Size - 1; ++i) {
+            for (size_t j = 0; j < Size - 1; ++j) {
+                result.matrix.entry(j, i) = matrix.entry(j, i);
+                result.inverse_transpose.entry(j, i) =
+                    inverse_transpose.entry(j, i);
+            }
+            result.matrix.entry(i, Size) = matrix.entry(i, Size - 1);
+            result.inverse_transpose.entry(Size, i) =
+                inverse_transpose.entry(Size - 1, i);
+        }
+
+        result.matrix.entry(Size, Size) = 1;
+        result.inverse_transpose.entry(Size, Size) = 1;
+
+        return result;
+    }
+
     template <typename T>
     [[deprecated("Please use operator*")]]
     auto transform_affine(const T &value) const { return operator*(value); }

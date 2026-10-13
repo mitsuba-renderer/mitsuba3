@@ -648,6 +648,8 @@ reference them elsewhere.
 A feature that is specific to the dictionary parser is that every object in
 the dictionary automatically receives an implicit ID based on the path within
 the dictionary (i.e., the sequence of dictionary keys needed to reach the object).
+However, if you are looking to refer to an object that was previously declared,
+you must use an explicit ID.
 
 For example, in the snippet below, the objects receive the following implicit IDs:
 - The shape: ``my_shape``

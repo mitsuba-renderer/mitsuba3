@@ -20,5 +20,6 @@ MI_PY_EXPORT(Thread) {
        .def_static("set_file_resolver", &set_file_resolver)
        .def_static("thread", &Thread::thread,
            nb::rv_policy::reference)
-       .def_static("wait_for_tasks", &Thread::wait_for_tasks);
+       .def_static("wait_for_tasks", &Thread::wait_for_tasks,
+           nb::call_guard<nb::gil_scoped_release>(), D(Thread, wait_for_tasks));
 }

@@ -9,7 +9,7 @@
 #pragma once
 
 #define MI_VERSION_MAJOR 3
-#define MI_VERSION_MINOR 7
+#define MI_VERSION_MINOR 9
 #define MI_VERSION_PATCH 1
 
 #define MI_STRINGIFY(x) #x

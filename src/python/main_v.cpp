@@ -72,6 +72,8 @@ MI_PY_DECLARE(DiscreteDistribution);
 MI_PY_DECLARE(DiscreteDistribution2D);
 MI_PY_DECLARE(ContinuousDistribution);
 MI_PY_DECLARE(IrregularContinuousDistribution);
+MI_PY_DECLARE(ConditionalIrregular1D);
+MI_PY_DECLARE(ConditionalRegular1D);
 MI_PY_DECLARE(Hierarchical2D);
 MI_PY_DECLARE(Marginal2D);
 MI_PY_DECLARE(math);
@@ -103,9 +105,7 @@ MI_PY_DECLARE(Medium);
 MI_PY_DECLARE(mueller);
 MI_PY_DECLARE(MicrofacetDistribution);
 MI_PY_DECLARE(MicroflakeDistribution);
-#if defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(OptixDenoiser);
-#endif // defined(MI_ENABLE_CUDA)
 MI_PY_DECLARE(PositionSample);
 MI_PY_DECLARE(PhaseFunction);
 MI_PY_DECLARE(DirectionSample);
@@ -191,6 +191,8 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(DiscreteDistribution2D);
     MI_PY_IMPORT(ContinuousDistribution);
     MI_PY_IMPORT(IrregularContinuousDistribution);
+    MI_PY_IMPORT(ConditionalIrregular1D);
+    MI_PY_IMPORT(ConditionalRegular1D);
     MI_PY_IMPORT_SUBMODULE(math);
     MI_PY_IMPORT(qmc);
     MI_PY_IMPORT(rfilter);
@@ -226,9 +228,7 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT_SUBMODULE(mueller);
     MI_PY_IMPORT(MicrofacetDistribution);
     MI_PY_IMPORT(MicroflakeDistribution);
-#if defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(OptixDenoiser);
-#endif // defined(MI_ENABLE_CUDA)
     MI_PY_IMPORT(PhaseFunction);
     MI_PY_IMPORT(Sampler);
     MI_PY_IMPORT(Sensor);
@@ -273,7 +273,8 @@ NB_MODULE(MI_VARIANT_NAME, m) {
 
     if (!is_stub_gen) {
         color_management_static_initialization(dr::is_cuda_v<Float>,
-                                               dr::is_llvm_v<Float>);
+                                               dr::is_llvm_v<Float>,
+                                               dr::is_metal_v<Float>);
         Scene::static_accel_initialization();
     }
 }

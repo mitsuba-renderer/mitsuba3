@@ -12,18 +12,19 @@ SUN_HALF_APERTURE_ANGLE = dr.deg2rad(0.5388/2.0)
 sunsky_ref_folder = "resources/data/tests/sunsky"
 
 
-def make_emitter_hour(turb, hour, albedo, sky_scale, sun_scale):
+def make_emitter_hour(turb, hour, albedo, sky_scale, sun_scale, complex_sun=True):
     return mi.load_dict({
         "type": "sunsky",
         "hour": hour,
         "sun_scale": sun_scale,
         "sky_scale": sky_scale,
         "turbidity": turb,
-        "albedo": albedo
+        "albedo": albedo,
+        "complex_sun": complex_sun
     })
 
 
-def make_emitter_angles(turb, sun_phi, sun_theta, albedo, sky_scale, sun_scale):
+def make_emitter_angles(turb, sun_phi, sun_theta, albedo, sky_scale, sun_scale, complex_sun=True, sun_aperture=0.5358):
     sp_sun, cp_sun = dr.sincos(sun_phi)
     st, ct = dr.sincos(sun_theta)
 
@@ -33,7 +34,9 @@ def make_emitter_angles(turb, sun_phi, sun_theta, albedo, sky_scale, sun_scale):
         "sun_scale": sun_scale,
         "sky_scale": sky_scale,
         "turbidity": turb,
-        "albedo": albedo
+        "albedo": albedo,
+        "complex_sun": complex_sun,
+        "sun_aperture": sun_aperture
     })
 
 
@@ -286,7 +289,8 @@ def test07_sun_and_sky_sampling(variants_vec_backends_once, turb, sun_theta):
         "type": "sunsky",
         "sun_direction": [cp_sun * st, sp_sun * st, ct],
         "turbidity": turb,
-        # Increase the sun aperture to avoid errors with chi2's resolution
+        # Increase the sun aperture and scale to avoid errors with chi2's resolution
+        "sun_scale": 1.25,
         "sun_aperture": 30.0,
         "albedo": 0.5
     }
@@ -330,3 +334,97 @@ def test08_update_params(variants_vec_rgb):
     params.update()
 
     render_and_compare(plugin, ref_path, rtol)
+
+def sun_integrand(emitter, quad_points, quad_weights, sun_direction, sun_cos_cutoff):
+    j = 0.5 * dr.pi * (1. - sun_cos_cutoff)
+    phi = dr.pi * (quad_points + 1)
+    cos_theta = 0.5 * ((1. - sun_cos_cutoff) * quad_points + (1 + sun_cos_cutoff))
+
+    phi, cos_theta = dr.meshgrid(phi, cos_theta)
+    w_phi, w_cos_theta = dr.meshgrid(quad_weights, quad_weights)
+    sin_phi, cos_phi = dr.sincos(phi)
+    sin_theta = dr.safe_sqrt(1 - cos_theta * cos_theta)
+
+    sun_wo = mi.Vector3f(sin_theta * cos_phi, sin_theta * sin_phi, cos_theta)
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wi = -mi.Frame3f(sun_direction).to_world(sun_wo)
+
+
+    if dr.hint(mi.is_rgb, mode="scalar"):
+        radiance = emitter.eval(si)
+        return j * radiance * w_phi * w_cos_theta
+
+    else:
+        wav_res = dr.zeros(mi.ArrayXf, (11, 1))
+        for i in range(11):
+            si.wavelengths = 320 + i * 40
+            radiance = emitter.eval(si)
+            wav_res[i] = radiance[0]
+
+        return j * wav_res * w_phi * w_cos_theta
+
+
+@pytest.mark.parametrize("turb", [2.0, 4.0, 6.0])
+@pytest.mark.parametrize("theta", [dr.deg2rad(20), dr.deg2rad(45)])
+@pytest.mark.parametrize("sun_aperture", [0.5358, 5.0])
+def test09_complex_sun(variants_vec_rgb, turb, theta, sun_aperture):
+    """
+    Validates that the complex sun model is consistent with the simple
+    sun model in terms of integrated radiance over the sun's solid angle.
+    """
+
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    complex_sun_plugin = make_emitter_angles(
+        turb=turb, sun_phi=0, sun_theta=theta,
+        albedo=0.5, sun_scale=1.0, sky_scale=0.0,
+        complex_sun=True, sun_aperture=sun_aperture)
+    complex_sun_plugin_params = mi.traverse(complex_sun_plugin)
+
+    simple_sun_plugin = make_emitter_angles(
+        turb=turb, sun_phi=0, sun_theta=theta,
+        albedo=0.5, sun_scale=1.0, sky_scale=0.0,
+        complex_sun=False, sun_aperture=sun_aperture)
+    simple_sun_plugin_params = mi.traverse(simple_sun_plugin)
+
+    points, weights = mi.quad.gauss_legendre(200)
+    complex_sun_integrand = sun_integrand(complex_sun_plugin, points, weights,
+                                          complex_sun_plugin_params["sun_direction"],
+                                          dr.cos(dr.deg2rad(sun_aperture) / 2.0))
+
+    simple_sun_integrand = sun_integrand(simple_sun_plugin, points, weights,
+                                         simple_sun_plugin_params["sun_direction"],
+                                         dr.cos(dr.deg2rad(sun_aperture) / 2.0))
+
+    complex_irradiance = dr.sum(complex_sun_integrand, axis=1)
+    simple_irradiance = dr.sum(simple_sun_integrand, axis=1)
+
+    assert np.allclose(complex_irradiance, simple_irradiance, rtol=0.01)
+
+
+def test10_invalid_sun_angles(variants_vec_backends_once_spectral):
+    """
+    Validates that invalid sun angles are correctly clamped and does not throw errors
+    """
+
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.wi = mi.Vector3f(0, 0, -1)
+
+    # Use `sun_direction` constructor
+    plugin = make_emitter_angles(
+        turb=2.0, sun_phi=0, sun_theta=dr.deg2rad(-5),
+        albedo=0.5, sun_scale=1.0, sky_scale=1.0,
+        complex_sun=True)
+    assert dr.all(plugin.eval(si) == 0.0, axis=None)
+
+    # Use `time` and `position` constructor
+    plugin = make_emitter_hour(
+        turb=2.0, hour=0.0,
+        albedo=0.5, sun_scale=1.0, sky_scale=1.0,
+        complex_sun=True)
+    assert dr.all(plugin.eval(si) == 0.0, axis=None)

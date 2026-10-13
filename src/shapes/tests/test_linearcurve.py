@@ -186,6 +186,9 @@ def test08_instancing(variants_all_rgb):
 
 @fresolver_append_path
 def test09_backface_culling(variants_vec_rgb):
+    if "metal" in variants_vec_rgb:
+        pytest.skip("Metal accepts inside-tube round curve hits.")
+
     scene =  mi.load_dict({
         "type" : "scene",
         "foo" : {

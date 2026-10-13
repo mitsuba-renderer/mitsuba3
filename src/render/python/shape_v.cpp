@@ -288,7 +288,7 @@ template <typename Ptr, typename Cls> void bind_mesh_generic(Cls &cls) {
 
        .def("ray_intersect_triangle", [](const Ptr ptr, const UInt32 &index,
                                          const Ray3f &ray, Mask active) {
-                ptr->ray_intersect_triangle(index, ray, active);
+                return ptr->ray_intersect_triangle(index, ray, active);
             },
             "index"_a, "ray"_a, "active"_a = true,
             D(Mesh, ray_intersect_triangle));

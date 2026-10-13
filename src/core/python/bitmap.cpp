@@ -43,29 +43,29 @@ void from_cpu_dlpack(Bitmap *b, ContigCpuNdArray data,
         shape[2] = data.ndim() == 3 ? data.shape(2) : 1;
 
         auto dtype = data.dtype();
-        Struct::Type component_format;
+        sj::Type component_format;
         if (dtype == nb::dtype<fp16>())
-            component_format = Struct::Type::Float16;
+            component_format = sj::Type::Float16;
         else if (dtype == nb::dtype<float>())
-            component_format = Struct::Type::Float32;
+            component_format = sj::Type::Float32;
         else if (dtype == nb::dtype<double>())
-            component_format = Struct::Type::Float64;
+            component_format = sj::Type::Float64;
         else if (dtype == nb::dtype<int8_t>())
-            component_format = Struct::Type::Int8;
+            component_format = sj::Type::Int8;
         else if (dtype == nb::dtype<uint8_t>())
-            component_format = Struct::Type::UInt8;
+            component_format = sj::Type::UInt8;
         else if (dtype == nb::dtype<int16_t>())
-            component_format = Struct::Type::Int16;
+            component_format = sj::Type::Int16;
         else if (dtype == nb::dtype<uint16_t>())
-            component_format = Struct::Type::UInt16;
+            component_format = sj::Type::UInt16;
         else if (dtype == nb::dtype<int32_t>())
-            component_format = Struct::Type::Int32;
+            component_format = sj::Type::Int32;
         else if (dtype == nb::dtype<uint32_t>())
-            component_format = Struct::Type::UInt32;
+            component_format = sj::Type::UInt32;
         else if (dtype == nb::dtype<int64_t>())
-            component_format = Struct::Type::Int64;
+            component_format = sj::Type::Int64;
         else if (dtype == nb::dtype<uint64_t>())
-            component_format = Struct::Type::UInt64;
+            component_format = sj::Type::UInt64;
         else
             throw nb::type_error("Invalid component format");
 
@@ -168,7 +168,7 @@ MI_PY_EXPORT(Bitmap) {
                 D(Bitmap, AlphaTransform, Unpremultiply));
 
     bitmap
-        .def(nb::init<Bitmap::PixelFormat, Struct::Type, const Vector2u &, size_t, std::vector<std::string>>(),
+        .def(nb::init<Bitmap::PixelFormat, sj::Type, const Vector2u &, size_t, std::vector<std::string>>(),
              "pixel_format"_a, "component_format"_a, "size"_a, "channel_count"_a = 0, "channel_names"_a = std::vector<std::string>(),
              D(Bitmap, Bitmap))
         .def(nb::init<const Bitmap &>())
@@ -217,9 +217,9 @@ MI_PY_EXPORT(Bitmap) {
                    Bitmap::PixelFormat pixel_format = b.pixel_format();
                    if (!pf.is(nb::none()))
                        pixel_format = nb::cast<Bitmap::PixelFormat>(pf);
-                   Struct::Type component_format = b.component_format();
+                   sj::Type component_format = b.component_format();
                    if (!cf.is(nb::none()))
-                       component_format = nb::cast<Struct::Type>(cf);
+                       component_format = nb::cast<sj::Type>(cf);
                    bool srgb_gamma = b.srgb_gamma();
                    if (!srgb.is(nb::none()))
                        srgb_gamma = nb::cast<bool>(srgb);
@@ -249,6 +249,7 @@ MI_PY_EXPORT(Bitmap) {
         .def_method(Bitmap, vflip)
         .def("struct_",
              nb::overload_cast<>(&Bitmap::struct_, nb::const_),
+             nb::rv_policy::reference_internal,
              D(Bitmap, struct))
         .def(nb::self == nb::self)
         .def(nb::self != nb::self);
@@ -296,40 +297,40 @@ MI_PY_EXPORT(Bitmap) {
         .def(
             "__dlpack__",
             [](Bitmap &bitmap, nb::object /*stream*/) {
-                Struct::Type component_format = bitmap.component_format();
+                sj::Type component_format = bitmap.component_format();
                 nb::dlpack::dtype dtype;
                 switch (component_format) {
-                    case Struct::Type::UInt8:
+                    case sj::Type::UInt8:
                         dtype = nb::dtype<uint8_t>();
                         break;
-                    case Struct::Type::UInt16:
+                    case sj::Type::UInt16:
                         dtype = nb::dtype<uint16_t>();
                         break;
-                    case Struct::Type::UInt32:
+                    case sj::Type::UInt32:
                         dtype = nb::dtype<uint32_t>();
                         break;
-                    case Struct::Type::UInt64:
+                    case sj::Type::UInt64:
                         dtype = nb::dtype<uint64_t>();
                         break;
-                    case Struct::Type::Int8:
+                    case sj::Type::Int8:
                         dtype = nb::dtype<int8_t>();
                         break;
-                    case Struct::Type::Int16:
+                    case sj::Type::Int16:
                         dtype = nb::dtype<int16_t>();
                         break;
-                    case Struct::Type::Int32:
+                    case sj::Type::Int32:
                         dtype = nb::dtype<int32_t>();
                         break;
-                    case Struct::Type::Int64:
+                    case sj::Type::Int64:
                         dtype = nb::dtype<int64_t>();
                         break;
-                    case Struct::Type::Float16:
+                    case sj::Type::Float16:
                         dtype = nb::dtype<fp16>();
                         break;
-                    case Struct::Type::Float32:
+                    case sj::Type::Float32:
                         dtype = nb::dtype<float>();
                         break;
-                    case Struct::Type::Float64:
+                    case sj::Type::Float64:
                         dtype = nb::dtype<double>();
                         break;
                     default:
@@ -353,9 +354,9 @@ MI_PY_EXPORT(Bitmap) {
             },
             "Interface for the DLPack protocol.")
         .def_prop_ro("__array_interface__", [](Bitmap &bitmap) -> nb::object {
-            if (bitmap.struct_()->size() == 0)
+            if (bitmap.struct_().size() == 0)
                 return nb::none();
-            auto field = bitmap.struct_()->operator[](0);
+            auto field = bitmap.struct_()[0];
             nb::dict result;
 
             if (bitmap.channel_count() == 1)
@@ -371,18 +372,18 @@ MI_PY_EXPORT(Bitmap) {
                 code[0] = '>';
             #endif
 
-            if (field.is_integer()) {
-                if (field.is_signed())
+            if (sj::type_is_integer(field.type)) {
+                if (sj::type_is_signed(field.type))
                     code[1] = 'i';
                 else
                     code[1] = 'u';
-            } else if (field.is_float()) {
+            } else if (sj::type_is_float(field.type)) {
                 code[1] = 'f';
             } else {
                 Throw("Internal error: unknown component type!");
             }
 
-            code[2] = (char) ('0' + field.size);
+            code[2] = (char) ('0' + sj::type_size(field.type));
             #if PY_MAJOR_VERSION > 3
                 result["typestr"] = code;
             #else
@@ -438,9 +439,9 @@ MI_PY_EXPORT(Bitmap) {
         ref<const Bitmap> bitmap = b;
 
         if (bitmap->pixel_format() != Bitmap::PixelFormat::RGB ||
-            bitmap->component_format() != Struct::Type::UInt8)
+            bitmap->component_format() != sj::Type::UInt8)
             bitmap = bitmap->convert(Bitmap::PixelFormat::RGB,
-                                     Struct::Type::UInt8, true);
+                                     sj::Type::UInt8, true);
 
         ref<MemoryStream> s = new MemoryStream(bitmap->buffer_size());
         bitmap->write(s, Bitmap::FileFormat::JPEG, 99);

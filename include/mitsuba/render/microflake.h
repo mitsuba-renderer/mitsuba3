@@ -7,7 +7,7 @@
 NAMESPACE_BEGIN(mitsuba)
 
 /**
- * \brief The parameters of the SGGX phase function stored as a pair of 
+ * \brief The parameters of the SGGX phase function stored as a pair of
  * 3D vectors [[S_xx, S_yy, S_zz], [S_xy, S_xz, S_yz]]
  */
 template <typename Float>
@@ -16,17 +16,17 @@ struct SGGXPhaseFunctionParams {
     dr::Array<Float, 3> off_diag;
 
     /**
-     * \brief Construct from a pair of 3D vectors [S_xx, S_yy, S_zz] and 
+     * \brief Construct from a pair of 3D vectors [S_xx, S_yy, S_zz] and
      * [S_xy, S_xz, S_yz] that correspond to the entries of a symmetric positive-definite
      * 3x3 matrix.
      */
-    SGGXPhaseFunctionParams(const dr::Array<Float, 3>& diag, 
+    SGGXPhaseFunctionParams(const dr::Array<Float, 3>& diag,
                             const dr::Array<Float, 3>& off_diag) :
         diag(diag),
         off_diag(off_diag) {}
 
-    operator const dr::Array<Float, 6>() const { 
-        return { 
+    operator const dr::Array<Float, 6>() const {
+        return {
             diag[0], diag[1], diag[2],
             off_diag[0], off_diag[1], off_diag[2]
         };

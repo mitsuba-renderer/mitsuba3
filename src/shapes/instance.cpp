@@ -2,6 +2,7 @@
 #include <mitsuba/core/properties.h>
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 #include <mitsuba/core/transform.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/bsdf.h>
@@ -43,7 +44,7 @@ details on how to create instances, refer to the :ref:`shape-shapegroup` plugin.
 
 .. warning::
 
-    - Note that it is not possible to assign a different material to each instance — the material
+    - Note that it is not possible to assign a different material to each instance. The material
       assignment specified within the shape group is the one that matters.
     - Shape groups cannot be used to replicate shapes with attached emitters, sensors, or
       subsurface scattering models.
@@ -118,8 +119,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -254,39 +255,22 @@ public:
         return oss.str();
     }
 
-#if defined(MI_ENABLE_EMBREE)
-    RTCGeometry embree_geometry(RTCDevice device) override {
-        DRJIT_MARK_USED(device);
-        if constexpr (!dr::is_cuda_v<Float>) {
-            RTCGeometry instance = m_shapegroup->embree_geometry(device);
-            rtcSetGeometryTimeStepCount(instance, 1);
-            dr::Matrix<ScalarFloat32, 4> matrix(dr::transpose(m_to_world.scalar().matrix));
-            rtcSetGeometryTransform(instance, 0, RTC_FORMAT_FLOAT4X4_COLUMN_MAJOR, matrix.data());
-            rtcCommitGeometry(instance);
-            return instance;
-        } else {
-            Throw("embree_geometry() should only be called in CPU mode.");
-        }
-    }
-#endif
-
-#if defined(MI_ENABLE_CUDA)
-    virtual void optix_prepare_ias(const OptixDeviceContext& context,
-                                   std::vector<OptixInstance>& out_instances,
-                                   uint32_t instance_id,
-                                   const ScalarAffineTransform4f& transf) override {
-        m_shapegroup->optix_prepare_ias(context, out_instances, instance_id,
-                                        transf * m_to_world.scalar());
-    }
-
-    virtual void optix_fill_hitgroup_records(
-        std::vector<HitGroupSbtRecord> &, const OptixProgramGroup *,
-        const OptixProgramGroupMapping &) override { /* no op */ }
-    virtual void optix_prepare_geometry() override { /* no op */ }
-#endif
-
     bool parameters_grad_enabled() const override {
         return dr::grad_enabled(m_to_world) || m_shapegroup->parameters_grad_enabled();
+    }
+
+    void describe(ShapeIR &g) const override {
+        g.kind = ShapeIR::Kind::Instance;
+        g.type = m_shape_type;
+        g.ctx = this;
+        // Column-major 3x4 affine (to_world[col*3 + row]). Each backend repacks
+        // into its instance-descriptor convention.
+        const auto &M = m_to_world.scalar().matrix;
+        for (size_t col = 0; col < 4; ++col)
+            for (size_t row = 0; row < 3; ++row)
+                g.to_world[col * 3 + row] = (float) M(row, col);
+        // Stable id for caching one BLAS set per ShapeGroup across Instances
+        g.group_id = (const void *) m_shapegroup.get();
     }
 
     MI_DECLARE_CLASS(Instance)

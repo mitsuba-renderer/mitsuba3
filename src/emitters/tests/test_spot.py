@@ -180,3 +180,37 @@ def test_eval(variants_vec_spectral, spectrum_key, lookat, cutoff_angle):
     it = dr.zeros(mi.SurfaceInteraction3f, 3)
     it.wi = [0, 1, 0]
     assert dr.allclose(emitter.eval(it), 0.)
+
+
+def test_update_falloff(variant_scalar_spectral):
+    cutoff_angle = 20.0
+    emitter, spectrum = create_emitter_and_spectrum(mi.ScalarTransform4f(), cutoff_angle)
+
+    params = mi.traverse(emitter)
+    assert 'cutoff_angle' in params
+    assert 'beam_width' in params
+    assert dr.allclose(params['cutoff_angle'], 20.0)
+    assert dr.allclose(params['beam_width'], 15.0)
+
+    # Test eval at angle 25 deg (> 20 deg cutoff) -> should be zero
+    angle_rad_25 = 25.0 * dr.pi / 180.0
+    it_pos_25 = [2.0 * dr.sin(angle_rad_25), 0.0, 2.0 * dr.cos(angle_rad_25)]
+
+    it = dr.zeros(mi.SurfaceInteraction3f)
+    it.p = it_pos_25
+    it.time = 0.3
+    it.wavelengths = spectrum.sample_spectrum(it, mi.sample_shifted(0.7))[0]
+
+    _, res = emitter.sample_direction(it, [0, 0])
+    assert dr.allclose(res, 0.0)
+
+    # Update cutoff to 30 deg and beam width to 20 deg
+    params['cutoff_angle'] = 30.0
+    params['beam_width'] = 20.0
+    params.update()
+    assert dr.allclose(params['cutoff_angle'], 30.0)
+    assert dr.allclose(params['beam_width'], 20.0)
+
+    # Now evaluate again at 25 deg -> should be non-zero
+    _, res = emitter.sample_direction(it, [0, 0])
+    assert not dr.allclose(res, 0.0)

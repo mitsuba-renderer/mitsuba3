@@ -97,7 +97,7 @@ public:
             } else if (Shape *shape = prop.try_get<Shape>()) {
                 if (shape->is_sensor()) {
                     /* Inner sensors only have a weak ref to any parent shape
-                     * so make sure lifetime of shapes are at least that of 
+                     * to make sure lifetime of shapes are at least that of
                      * batch sensor */
                     m_shapes.push_back(shape);
                     m_sensors.push_back(shape->sensor());
@@ -280,6 +280,43 @@ public:
             cb->put(id, m_sensors.at(i), ParamFlags::NonDifferentiable);
         }
     }
+
+    void traverse_1_cb_ro(void *payload, dr::detail::traverse_callback_ro fn) const override {
+        // Only traverse the scene for frozen functions, since accidentally
+        // traversing the scene in loops or vcalls can cause errors with variable
+        // size mismatches, and backpropagation of gradients.
+        if (!jit_flag(JitFlag::EnableObjectTraversal))
+            return;
+
+        Object::traverse_1_cb_ro(payload, fn);
+        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
+            dr::traverse_1_fn_ro(x, payload, fn);
+        });
+
+        dr::traverse_1_fn_ro(m_sensors_dr, payload, fn);
+        for(size_t i = 0; i < m_sensors.size(); i++) {
+            m_sensors[i]->traverse_1_cb_ro(payload, fn);
+        }
+    }
+
+    void traverse_1_cb_rw(void *payload, dr::detail::traverse_callback_rw fn) override {
+        // Only traverse the scene for frozen functions, since accidentally
+        // traversing the scene in loops or vcalls can cause errors with variable
+        // size mismatches, and backpropagation of gradients.
+        if (!jit_flag(JitFlag::EnableObjectTraversal))
+            return;
+
+        Object::traverse_1_cb_rw(payload, fn);
+        dr::traverse_1(this->traverse_1_cb_fields_(), [payload, fn](auto &x) {
+            dr::traverse_1_fn_rw(x, payload, fn);
+        });
+
+        dr::traverse_1_fn_rw(m_sensors_dr, payload, fn);
+        for(size_t i = 0; i < m_sensors.size(); i++) {
+            m_sensors[i]->traverse_1_cb_rw(payload, fn);
+        }
+    }
+
 
     MI_DECLARE_CLASS(BatchSensor)
 private:

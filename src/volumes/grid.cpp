@@ -609,7 +609,7 @@ public:
             << "  min = " << m_min << "," << std::endl
             << "  wrap = " << m_wrap << "," << std::endl
 // #ERADIATE_CHANGE_END
-            << "  channels = " << m_texture.shape()[3] << std::endl
+            << "  channels = " << m_texture.channel_count() << std::endl
             << "]";
         return oss.str();
     }
@@ -624,7 +624,7 @@ protected:
      * holds all scaling coefficients is omitted.
      */
     MI_INLINE size_t nchannels() const {
-        const size_t channels = m_texture.shape()[3];
+        const size_t channels = m_texture.channel_count();
         // When spectral upsampling is requested, a fourth channel is added to
         // the internal texture data to handle scaling coefficients.
         if (is_spectral_v<Spectrum> && channels == 4 && !m_raw)
@@ -662,21 +662,11 @@ protected:
 // #ERADIATE_CHANGE_END
 
         if (m_texture.filter_mode() == dr::FilterMode::Linear) {
-            dr::Array<Float, 4> d000, d100, d010, d110, d001, d101, d011, d111;
-            dr::Array<Float *, 8> fetch_values;
-            fetch_values[0] = d000.data();
-            fetch_values[1] = d100.data();
-            fetch_values[2] = d010.data();
-            fetch_values[3] = d110.data();
-            fetch_values[4] = d001.data();
-            fetch_values[5] = d101.data();
-            fetch_values[6] = d011.data();
-            fetch_values[7] = d111.data();
-
-            if (m_accel)
-                m_texture.template eval_fetch<Float>(p, fetch_values, active);
-            else
-                m_texture.template eval_fetch_nonaccel<Float>(p, fetch_values, active);
+            using Data4 = dr::Array<Float, 4>;
+            dr::Array<Data4, 8> d =
+                m_texture.template eval_fetch<Data4>(p, active);
+            const Data4 &d000 = d[0], &d100 = d[1], &d010 = d[2], &d110 = d[3],
+                        &d001 = d[4], &d101 = d[5], &d011 = d[6], &d111 = d[7];
 
             UnpolarizedSpectrum v000, v001, v010, v011, v100, v101, v110, v111;
             v000 = srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(d000), it.wavelengths);
@@ -716,11 +706,9 @@ protected:
 
             return result;
         } else {
-            dr::Array<Float, 4> v;
-            if (m_accel)
-                m_texture.template eval<Float>(p, v.data(), active);
-            else
-                m_texture.template eval_nonaccel<Float>(p, v.data(), active);
+            using Data4 = dr::Array<Float, 4>;
+            Data4 v = m_accel ? m_texture.template eval<Data4>(p, active)
+                              : m_texture.template eval_nonaccel<Data4>(p, active);
 
             return v.w() * srgb_model_eval<UnpolarizedSpectrum>(dr::head<3>(v), it.wavelengths);
         }
@@ -742,13 +730,11 @@ protected:
         }
 // #ERADIATE_CHANGE_END
 
-        Float result;
-        if (m_accel)
-            m_texture.template eval<Float>(p, &result, active);
-        else
-            m_texture.template eval_nonaccel<Float>(p, &result, active);
+        using Data1 = dr::Array<Float, 1>;
+        Data1 result = m_accel ? m_texture.template eval<Data1>(p, active)
+                               : m_texture.template eval_nonaccel<Data1>(p, active);
 
-        return result;
+        return result.x();
     }
 
     /**
@@ -768,13 +754,8 @@ protected:
         }
 // #ERADIATE_CHANGE_END
 
-        Color3f result;
-        if (m_accel)
-            m_texture.template eval<Float>(p, result.data(), active);
-        else
-            m_texture.template eval_nonaccel<Float>(p, result.data(), active);
-
-        return result;
+        return m_accel ? m_texture.template eval<Color3f>(p, active)
+                       : m_texture.template eval_nonaccel<Color3f>(p, active);
     }
 
     /**
@@ -794,13 +775,9 @@ protected:
         }
 // #ERADIATE_CHANGE_END
 
-        dr::Array<Float, 6> result;
-        if (m_accel)
-            m_texture.template eval<Float>(p, result.data(), active);
-        else
-            m_texture.template eval_nonaccel<Float>(p, result.data(), active);
-
-        return result;
+        using Data6 = dr::Array<Float, 6>;
+        return m_accel ? m_texture.template eval<Data6>(p, active)
+                       : m_texture.template eval_nonaccel<Data6>(p, active);
     }
 
 
@@ -817,14 +794,15 @@ protected:
 // #ERADIATE_CHANGE_BEGIN: add `wrap` parameter
         active &= wrap_mask(p);
         if (dr::any_or<false>(!active)) {
-            return;
+            return ;
         }
 // #ERADIATE_CHANGE_END
 
-        if (m_accel)
-            m_texture.template eval<Float>(p, out, active);
-        else
-            m_texture.template eval_nonaccel<Float>(p, out, active);
+        using DataX = dr::DynamicArray<Float>;
+        DataX result = m_accel ? m_texture.template eval<DataX>(p, active)
+                               : m_texture.template eval_nonaccel<DataX>(p, active);
+        for (size_t i = 0; i < result.size(); ++i)
+            out[i] = result.entry(i);
     }
 
 

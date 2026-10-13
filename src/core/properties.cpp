@@ -44,6 +44,7 @@ std::string_view property_type_name(Properties::Type type) {
 using Float             = double;
 using Array3f           = dr::Array<Float, 3>;
 using Color3f           = Color<Float, 3>;
+using AffineTransform3f = AffineTransform<Point<double, 3>>;
 using AffineTransform4f = AffineTransform<Point<double, 4>>;
 using Reference         = Properties::Reference;
 using ResolvedReference = Properties::ResolvedReference;
@@ -536,6 +537,18 @@ std::ostream &operator<<(std::ostream &os, const Properties &p) {
        << "]" << std::endl;
 
     return os;
+}
+
+template<>
+void Properties::set_impl<AffineTransform3f>(size_t index, const AffineTransform3f &value) {
+    d->entries[index].value = value.expand();
+    d->entries[index].queried = false;
+}
+
+template<>
+void Properties::set_impl<AffineTransform3f>(size_t index, AffineTransform3f &&value) {
+    d->entries[index].value = value.expand();
+    d->entries[index].queried = false;
 }
 
 template <typename T>

@@ -318,6 +318,7 @@ public:
                     break;
 
                 case AOVType::dUVdy:
+                    si.compute_uv_partials(ray);
                     *aovs++ = si.duv_dy.x();
                     *aovs++ = si.duv_dy.y();
                     break;
@@ -447,7 +448,7 @@ public:
             size_t num_aovs = m_aov_names.size() - m_integrator_aovs_count;
             aovs_image = get_channels_slice(aovs_image, aovs_image.shape(2) - num_aovs, num_aovs);
 
-            dr::backward_from((aovs_image * aovs_grad).array(), (uint32_t) dr::ADFlag::ClearInterior);
+            dr::backward_from((aovs_image * aovs_grad).array(), dr::ADFlag::ClearInterior | dr::ADFlag::AllowNoGrad);
         }
 
         // Let inner integrators handle backwards differentiation for radiance

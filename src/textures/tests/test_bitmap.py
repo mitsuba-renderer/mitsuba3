@@ -31,7 +31,6 @@ def test01_sample_position(variants_vec_backends_once, filter_type, wrap_mode):
 @fresolver_append_path
 def test02_eval_grad(variant_scalar_rgb, np_rng):
     # Tests evaluating the texture gradient under different rotation
-    import numpy as np
     delta = 1e-4
     si = mi.SurfaceInteraction3f()
     for u01 in np_rng.random((10, 1)):
@@ -56,8 +55,6 @@ def test02_eval_grad(variant_scalar_rgb, np_rng):
 @fresolver_append_path
 @pytest.mark.parametrize('wrap_mode', ['repeat', 'clamp', 'mirror'])
 def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
-    import numpy as np
-
     bitmap = mi.load_dict({
         "type"      : "bitmap",
         "filename"  : "resources/data/common/textures/noise_8x8.png",
@@ -133,8 +130,6 @@ def test03_wrap(variants_vec_backends_once_rgb, wrap_mode):
 
 @fresolver_append_path
 def test04_eval_rgb(variants_vec_backends_once_rgb):
-    import numpy as np
-
     # RGB image
     bitmap = mi.load_dict({
         'type' : 'bitmap',
@@ -161,10 +156,11 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
     # Grayscale image
     bitmap = mi.load_dict({
         'type' : 'bitmap',
-        'filename' : 'resources/data/common/textures/noise_02.png'
+        'filename' : 'resources/data/common/textures/noise_02.png',
+        'format' : 'variant'
     })
 
-    x_res, y_res =  bitmap.resolution()
+    x_res, y_res = bitmap.resolution()
     # Coordinates of gray pixel: (0, 15)
     x = (1 / x_res) * 0 + (1 / (2 * x_res))
     y = (1 / y_res) * 15 + (1 / (2 * y_res))
@@ -177,7 +173,7 @@ def test04_eval_rgb(variants_vec_backends_once_rgb):
         color = bitmap.eval_3(si)
     spec = bitmap.eval(si)
 
-    expected = 0.5394
+    expected = 0.5395
     assert dr.allclose(expected, spec, atol=1e-04)
     assert dr.allclose(expected, mono, atol=1e-04)
 
@@ -269,3 +265,76 @@ def test07_sample_position_consistency(variants_vec_backends_once, filter_type, 
     pdf = bitmap.pdf_position(mi.Point2f(out[0]))
 
     assert dr.allclose(out[1], pdf)
+
+
+@fresolver_append_path
+def test08_to_uv(variant_scalar_rgb):
+    transform = mi.ScalarTransform3f().translate([2,4]).scale([3, 9]).rotate(45)
+
+    bitmap = mi.load_dict({
+        "type" : "bitmap",
+        "filename" : "resources/data/common/textures/noise_8x8.png",
+        "to_uv" : transform
+    })
+
+    params = mi.traverse(bitmap)
+    assert params["to_uv"] == transform
+
+
+@fresolver_append_path
+def test09_eval_u8(variants_vec_backends_once_rgb):
+    # 8-bit sRGB storage decodes on lookup; it should agree with the float path
+    # (which decodes the same 8-bit source at load time) to within 8-bit /
+    # hardware-sRGB tolerance, for evaluation and the importance-sampling mean.
+    common = {
+        'type'     : 'bitmap',
+        'filename' : 'resources/data/common/textures/carrot.png'
+    }
+    tex_ref = mi.load_dict({ **common, 'format' : 'variant' })
+    tex_u8  = mi.load_dict({ **common, 'format' : 'uint8' })
+
+    x_res, y_res = tex_ref.resolution()
+    # Coordinates of green pixel: (7, 1)
+    x = (1 / x_res) * 7 + (1 / (2 * x_res))
+    y = (1 / y_res) * 1 + (1 / (2 * y_res))
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [x, y]
+
+    assert dr.allclose(tex_ref.eval_3(si), tex_u8.eval_3(si), atol=2e-3)
+    assert dr.allclose(tex_ref.eval_1(si), tex_u8.eval_1(si), atol=2e-3)
+    assert dr.allclose(tex_ref.mean(), tex_u8.mean(), atol=2e-3)
+
+
+@fresolver_append_path
+def test10_u8_unsupported_in_spectral(variants_vec_backends_once_spectral):
+    # 8-bit storage cannot hold spectral upsampling coefficients
+    with pytest.raises(RuntimeError):
+        mi.load_dict({
+            'type'     : 'bitmap',
+            'filename' : 'resources/data/common/textures/carrot.png',
+            'format'   : 'uint8'
+        })
+
+
+def test11_u8_small_bitmap_upsample(variants_vec_backends_once_rgb, tmpdir):
+    # A 1x1 uint8 bitmap must be padded to 2x2 for bilinear filtering.
+    import numpy as np
+    import os
+
+    bmp = mi.Bitmap(np.array([[[200, 100, 50]]], dtype=np.uint8))
+    bmp.set_srgb_gamma(True)
+
+    tmp_file = os.path.join(str(tmpdir), 'out.png')
+    bmp.write(tmp_file)
+
+    tex = mi.load_dict({
+        'type'     : 'bitmap',
+        'filename' : tmp_file,
+        'format'   : 'uint8',
+    })
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.5, 0.5]
+    val = tex.eval_3(si)
+    assert dr.all(val > 0)

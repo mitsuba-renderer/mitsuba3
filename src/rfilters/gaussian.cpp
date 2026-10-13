@@ -55,7 +55,7 @@ public:
         /* Precompute a cheap approximation to the filter kernel.
            Unnecessary on NVIDIA GPUs that provide a fast exponential
            instruction via the MUFU (multi-function generator). */
-        if constexpr (!dr::is_cuda_v<Float>) {
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>) {
             /*
               Remez fit to exp(-x/2), obtained using:
 
@@ -92,7 +92,7 @@ public:
     }
 
     Float eval(Float x, Mask /* active */) const override {
-        if constexpr (!dr::is_cuda_v<Float>) {
+        if constexpr (!dr::is_cuda_v<Float> && !dr::is_metal_v<Float>) {
             return dr::maximum(dr::detail::estrin_impl(dr::square(x), m_coeff), 0.f);
         } else {
             // Use the base-2 exponential functions on NVIDIA hardware

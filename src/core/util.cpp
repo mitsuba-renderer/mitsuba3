@@ -309,6 +309,10 @@ std::string info_features() {
     oss << " cuda";
 #endif
 
+#if defined(MI_ENABLE_METAL)
+    oss << " metal";
+#endif
+
 #if defined(MI_ENABLE_LLVM)
     oss << " llvm";
 #endif

@@ -50,7 +50,7 @@ template <typename Warp> auto bind_warp(nb::module_ &m,
         };
 
     MI_PY_CHECK_ALIAS(Warp, name) {
-        auto warp = nb::class_<Warp>(m, name, doc);
+        auto warp = nb::class_<Warp, drjit::TraversableBase>(m, name, doc);
 
         if constexpr (Warp::Dimension == 0)
             warp.def("__init__", constructor, "data"_a,
@@ -134,7 +134,7 @@ MI_PY_EXPORT(DiscreteDistribution2D) {
     using Warp = DiscreteDistribution2D<Float>;
 
     MI_PY_CHECK_ALIAS(Warp, "DiscreteDistribution2D") {
-        nb::class_<Warp>(m, "DiscreteDistribution2D")
+        nb::class_<Warp, drjit::TraversableBase>(m, "DiscreteDistribution2D")
             .def("__init__",[](Warp* t, const nb::ndarray<ScalarFloat, nb::ndim<2>> &data) {
                  new (t) Warp(
                      data.data(),

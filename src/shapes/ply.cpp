@@ -190,39 +190,39 @@ public:
         bool has_vertex_normals = false;
         bool has_vertex_texcoords = false;
 
-        ref<Struct> vertex_struct = new Struct();
-        ref<Struct> face_struct = new Struct();
+        sj::Struct vertex_struct;
+        sj::Struct face_struct;
 
         for (auto &el : header.elements) {
             if (el.name == "vertex") {
                 for (auto name : { "x", "y", "z" })
-                    vertex_struct->append(name, struct_type_v<InputFloat>);
+                    vertex_struct.append(name, struct_type_v<InputFloat>);
 
                 if (!m_face_normals) {
                     for (auto name : { "nx", "ny", "nz" })
-                        vertex_struct->append(name, struct_type_v<InputFloat>,
-                                                +Struct::Flags::Default, 0.0);
+                        vertex_struct.append(name, struct_type_v<InputFloat>,
+                                                +sj::Flag::Default, 0.0);
 
-                    if (el.struct_->has_field("nx") &&
-                        el.struct_->has_field("ny") &&
-                        el.struct_->has_field("nz"))
+                    if (el.struct_.contains("nx") &&
+                        el.struct_.contains("ny") &&
+                        el.struct_.contains("nz"))
                         has_vertex_normals = true;
                 }
 
-                if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
+                if (el.struct_.contains("u") && el.struct_.contains("v")) {
                     /* all good */
-                } else if (el.struct_->has_field("texture_u") &&
-                           el.struct_->has_field("texture_v")) {
-                    el.struct_->field("texture_u").name = "u";
-                    el.struct_->field("texture_v").name = "v";
-                } else if (el.struct_->has_field("s") &&
-                           el.struct_->has_field("t")) {
-                    el.struct_->field("s").name = "u";
-                    el.struct_->field("t").name = "v";
+                } else if (el.struct_.contains("texture_u") &&
+                           el.struct_.contains("texture_v")) {
+                    el.struct_["texture_u"].name = "u";
+                    el.struct_["texture_v"].name = "v";
+                } else if (el.struct_.contains("s") &&
+                           el.struct_.contains("t")) {
+                    el.struct_["s"].name = "u";
+                    el.struct_["t"].name = "v";
                 }
-                if (el.struct_->has_field("u") && el.struct_->has_field("v")) {
+                if (el.struct_.contains("u") && el.struct_.contains("v")) {
                     for (auto name : { "u", "v" })
-                        vertex_struct->append(name, struct_type_v<InputFloat>);
+                        vertex_struct.append(name, struct_type_v<InputFloat>);
                     has_vertex_texcoords = true;
                 }
 
@@ -234,12 +234,12 @@ public:
                 find_other_fields("vertex_", vertex_attributes_descriptors,
                                   vertex_struct, el.struct_, reserved_names, m_name);
 
-                size_t i_struct_size = el.struct_->size();
-                size_t o_struct_size = vertex_struct->size();
+                size_t i_struct_size = el.struct_.nbytes();
+                size_t o_struct_size = vertex_struct.nbytes();
 
-                ref<StructConverter> conv;
+                const sj::Converter *conv = nullptr;
                 try {
-                    conv = new StructConverter(el.struct_, vertex_struct);
+                    conv = &sj::make_converter(el.struct_, vertex_struct);
                 } catch (const std::exception &e) {
                     fail(e.what());
                 }
@@ -271,7 +271,7 @@ public:
                     size_t psize = (i != packet_count) ? i_packet_size : i_remainder_size;
                     size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
                     stream->read(buf.get(), psize);
-                    if (unlikely(!conv->convert(count, buf.get(), buf_o.get())))
+                    if (unlikely(!conv->convert(buf.get(), buf_o.get(), count, 1)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
@@ -331,15 +331,15 @@ public:
 
             } else if (el.name == "face") {
                 std::string field_name;
-                if (el.struct_->has_field("vertex_index.count"))
+                if (el.struct_.contains("vertex_index.count"))
                     field_name = "vertex_index";
-                else if (el.struct_->has_field("vertex_indices.count"))
+                else if (el.struct_.contains("vertex_indices.count"))
                     field_name = "vertex_indices";
                 else
                     fail("vertex_index/vertex_indices property not found");
 
                 for (size_t i = 0; i < 3; ++i)
-                    face_struct->append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
+                    face_struct.append(tfm::format("i%i", i), struct_type_v<ScalarIndex>);
 
                 // Look for other fields
                 std::unordered_set<std::string> reserved_names = {
@@ -351,12 +351,12 @@ public:
                 find_other_fields("face_", face_attributes_descriptors,
                                   face_struct, el.struct_, reserved_names, m_name);
 
-                size_t i_struct_size = el.struct_->size();
-                size_t o_struct_size = face_struct->size();
+                size_t i_struct_size = el.struct_.nbytes();
+                size_t o_struct_size = face_struct.nbytes();
 
-                ref<StructConverter> conv;
+                const sj::Converter *conv = nullptr;
                 try {
-                    conv = new StructConverter(el.struct_, face_struct);
+                    conv = &sj::make_converter(el.struct_, face_struct);
                 } catch (const std::exception &e) {
                     fail(e.what());
                 }
@@ -384,7 +384,7 @@ public:
                     size_t count = (i != packet_count) ? elements_per_packet : remainder_count;
 
                     stream->read(buf.get(), psize);
-                    if (unlikely(!conv->convert(count, buf.get(), buf_o.get())))
+                    if (unlikely(!conv->convert(buf.get(), buf_o.get(), count, 1)))
                         fail("incompatible contents -- is this a triangle mesh?");
 
                     for (size_t j = 0; j < count; ++j) {
@@ -411,7 +411,7 @@ public:
                 m_faces = dr::load<DynamicBuffer<UInt32>>(faces.get(), m_face_count * 3);
             } else {
                 Log(Warn, "\"%s\": skipping unknown element \"%s\"", m_name, el.name);
-                stream->seek(stream->tell() + el.struct_->size() * el.count);
+                stream->seek(stream->tell() + el.struct_.nbytes() * el.count);
             }
         }
 
@@ -420,8 +420,8 @@ public:
 
         Log(Debug, "\"%s\": read %i faces, %i vertices (%s in %s)",
             m_name, m_face_count, m_vertex_count,
-            util::mem_string(m_face_count * face_struct->size() +
-                             m_vertex_count * vertex_struct->size()),
+            util::mem_string(m_face_count * face_struct.nbytes() +
+                             m_vertex_count * vertex_struct.nbytes()),
             util::time_string((float) timer.value())
         );
 

@@ -967,7 +967,7 @@ private:
 
         m_valid = valid;
         dr::make_opaque(m_valid);
-        m_cdf = dr::load<FloatStorage>(cdf.data(), size);
+        m_cdf = dr::load<FloatStorage>(cdf.data(), size - 1);
         m_integral = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_integral);
         dr::make_opaque(m_integral, m_normalization);

@@ -8,9 +8,14 @@
 #include <mitsuba/render/fwd.h>
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
+#include <mitsuba/render/scene_ir.h>
 
 #if defined(MI_ENABLE_CUDA)
     #include "optix/disk.cuh"
+#endif
+
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    #include <mitsuba/render/shapedata.h>
 #endif
 
 NAMESPACE_BEGIN(mitsuba)
@@ -130,9 +135,9 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM/Embree reads these parameters from host memory; wait for
+            // in-flight kernels before overwriting (GPU uploads are queue-ordered).
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
             m_to_world = m_to_world.value().update();
@@ -196,8 +201,8 @@ public:
     SurfaceInteraction3f eval_parameterization(const Point2f &uv,
                                                uint32_t ray_flags,
                                                Mask active) const override {
-        Point2f uniform_disk = warp::square_to_uniform_disk_concentric(uv);
-        Point3f local = Point3f(uniform_disk.x(), uniform_disk.y(), 0.f);
+        auto [sin_phi, cos_phi] = dr::sincos(dr::TwoPi<Float> * uv.y());
+        Point3f local(uv.x() * cos_phi, uv.x() * sin_phi, 0.f);
 
         Point3f p = m_to_world.value() * local;
 
@@ -383,8 +388,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -402,7 +407,7 @@ public:
         active = active && t >= 0.f && t <= ray.maxt
                         && local.x() * local.x() + local.y() * local.y() <= 1.f;
 
-        return { dr::select(active, t, dr::Infinity<FloatP>),
+        return { active, dr::select(active, t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
     }
 
@@ -487,21 +492,31 @@ public:
 
         si.t = dr::select(active, si.t, dr::Infinity<Float>);
 
+        // The Metal intersection function cannot forward prim_uv, so recompute
+        // it from si.p. Done after the diff branches, which would otherwise
+        // propagate Metal's zero value through ``replace_grad``.
+        if constexpr (dr::is_metal_v<Float>) {
+            Point3f local = to_object * si.p;
+            prim_uv = Point2f(local.x(), local.y());
+        }
+
         if (likely(has_flag(ray_flags, RayFlags::UV) ||
                    has_flag(ray_flags, RayFlags::dPdUV))) {
-            Float r = dr::norm(Point2f(prim_uv.x(), prim_uv.y())),
-                  inv_r = dr::rcp(r);
+            Float r_2   = dr::squared_norm(prim_uv),
+                  inv_r = dr::select(r_2 != 0.f, dr::rsqrt(r_2), 0.f),
+                  r     = r_2 * inv_r;
 
             Float v = dr::atan2(prim_uv.y(), prim_uv.x()) * dr::InvTwoPi<Float>;
             dr::masked(v, v < 0.f) += 1.f;
             si.uv = Point2f(r, v);
 
             if (likely(has_flag(ray_flags, RayFlags::dPdUV))) {
-                Float cos_phi = dr::select(r != 0.f, prim_uv.x() * inv_r, 1.f),
-                      sin_phi = dr::select(r != 0.f, prim_uv.y() * inv_r, 0.f);
+                Float cos_phi = prim_uv.x() * inv_r,
+                      sin_phi = prim_uv.y() * inv_r;
 
                 si.dp_du = to_world * Vector3f( cos_phi, sin_phi, 0.f);
-                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f);
+                si.dp_dv = to_world * Vector3f(-sin_phi, cos_phi, 0.f) *
+                           (dr::TwoPi<Float> * r);
             }
         }
 
@@ -521,19 +536,15 @@ public:
         return dr::grad_enabled(m_to_world.value());
     }
 
-#if defined(MI_ENABLE_CUDA)
-    using Base::m_optix_data_ptr;
+#if defined(MI_ENABLE_METAL) || defined(MI_ENABLE_CUDA)
+    void gpu_fill_data(void *out) const {
+        shapedata::DiskData &d = *(shapedata::DiskData *) out;
+        shapedata::fill_affine3x4(m_to_world.scalar().inverse().matrix,
+                                  d.to_object);
+    }
 
-    void optix_prepare_geometry() override {
-        if constexpr (dr::is_cuda_v<Float>) {
-            if (!m_optix_data_ptr)
-                m_optix_data_ptr = jit_malloc(AllocType::Device, sizeof(OptixDiskData));
-
-            OptixDiskData data = { bbox(), m_to_world.scalar().inverse() };
-
-            jit_memcpy_async(JitBackend::CUDA, m_optix_data_ptr, &data,
-                             sizeof(OptixDiskData));
-        }
+    void describe(ShapeIR &g) const override {
+        Base::template describe_with_data<Disk, shapedata::DiskData>(g);
     }
 #endif
 

@@ -161,8 +161,10 @@ static void set_variant(nb::args args) {
 
     if (!curr_variant.equal(old_variant)) {
         // Reload internal plugins
-        if (curr_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_"))) {
+        if (curr_variant.attr("startswith")(nb::make_tuple("llvm_", "cuda_", "metal_"))) {
             nb::module_ mi_python = nb::module_::import_("mitsuba.python.ad.integrators");
+            nb::steal(PyImport_ReloadModule(mi_python.ptr()));
+            mi_python = nb::module_::import_("mitsuba.python.ad.loaders");
             nb::steal(PyImport_ReloadModule(mi_python.ptr()));
         }
 
@@ -207,7 +209,7 @@ static nb::object get_attr(nb::handle key) {
 
     // If no variant is set, inform the user
     if (curr_variant.is_none() && PyUnicode_Check(key.ptr())) {
-        const char* attr_name = PyUnicode_AsUTF8(key.ptr());
+        const char* attr_name = nb::borrow<nb::str>(key).c_str();
         if (attr_name) {
             return nb::steal(PyErr_Format(PyExc_AttributeError,
                 "Cannot access '%s' before setting a variant. "

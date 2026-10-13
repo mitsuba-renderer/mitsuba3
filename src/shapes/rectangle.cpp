@@ -226,9 +226,9 @@ public:
 
     void parameters_changed(const std::vector<std::string> &keys) override {
         if (keys.empty() || string::contains(keys, "to_world")) {
-            // Ensure previous ray-tracing operation are fully evaluated before
-            // modifying the scalar values of the fields in this class
-            if constexpr (dr::is_jit_v<Float>)
+            // LLVM/Embree reads these parameters from host memory; wait for
+            // in-flight kernels before overwriting (GPU uploads are queue-ordered).
+            if constexpr (dr::is_llvm_v<Float>)
                 dr::sync_thread();
 
             m_to_world = m_to_world.value().update();
@@ -507,8 +507,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -557,8 +557,8 @@ public:
 
         // We don't technically need to mask the inactive lanes, but we do it
         // nevertheless to match the behavior of `Scene::ray_intersect()`.
-        // Return: pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
-        return { dr::select(active, t, dr::Infinity<FloatP>),
+        // Return: pi.valid, pi.t, pi.prim_uv, pi.shape_index, pi.prim_index
+        return { active, dr::select(active, t, dr::Infinity<FloatP>),
                  prim_uv & active, ((uint32_t) -1), dr::select(active, prim_index, 0) };
     }
 

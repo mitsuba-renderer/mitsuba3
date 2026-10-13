@@ -19,7 +19,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/cornell-box.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/cornell-box.png
             :height: 90
             :align: center
 
@@ -27,7 +27,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/matpreview.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/matpreview.png
             :height: 90
             :align: center
 
@@ -35,7 +35,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-bidir.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-bidir.png
             :height: 90
             :align: center
 
@@ -45,7 +45,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-mis.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-mis.png
             :height: 90
             :align: center
 
@@ -55,7 +55,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/veach-ajar.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/veach-ajar.png
             :height: 90
             :align: center
 
@@ -65,7 +65,7 @@ Simple scenes
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/volumetric-caustic.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/volumetric-caustic.png
             :height: 90
             :align: center
 
@@ -81,7 +81,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/car.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/car.png
             :height: 130
             :align: center
 
@@ -91,7 +91,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/car2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/car2.png
             :height: 130
             :align: center
 
@@ -101,7 +101,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/coffee.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/coffee.png
             :height: 130
             :align: center
 
@@ -111,7 +111,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/dragon.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/dragon.png
             :height: 130
             :align: center
 
@@ -121,7 +121,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/spaceship.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/spaceship.png
             :height: 130
             :align: center
 
@@ -131,7 +131,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/lamp.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/lamp.png
             :height: 130
             :align: center
 
@@ -141,7 +141,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/teapot.png
             :height: 130
             :align: center
 
@@ -151,18 +151,29 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/teapot-full.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/teapot-full.png
             :height: 130
             :align: center
 
         by `Benedikt Bitterli <https://benedikt-bitterli.me/>`_
 
 
+    .. grid-item-card:: `Standard Shader Ball <https://d38rqfq1h7iukm.cloudfront.net/scenes/standard-shader-ball.zip>`_
+        :class-title: sd-text-center sd-font-weight-bold
+        :class-body: sd-text-center
+
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/standard-shader-ball.png
+            :height: 130
+            :align: center
+
+        by the `USD Working Group <https://github.com/usd-wg/assets/tree/main/full_assets/StandardShaderBall>`_,
+        converted by `Anton Palmqvist <https://github.com/AntonPalmqvist>`_
+
     .. grid-item-card:: `Lego Bulldozer <https://d38rqfq1h7iukm.cloudfront.net/scenes/lego.zip>`_
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/lego.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/lego.png
             :height: 130
             :align: center
 
@@ -172,7 +183,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/rover.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/rover.png
             :height: 130
             :align: center
 
@@ -182,7 +193,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/hair-curl.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/hair-curl.png
             :height: 130
             :align: center
 
@@ -192,7 +203,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/curly-hair.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/curly-hair.png
             :height: 130
             :align: center
 
@@ -202,7 +213,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/straight-hair.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/straight-hair.png
             :height: 130
             :align: center
 
@@ -212,7 +223,7 @@ Single object
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/furball.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/furball.png
             :height: 130
             :align: center
 
@@ -228,7 +239,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bathroom.png
             :height: 130
             :align: center
 
@@ -238,7 +249,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bathroom2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bathroom2.png
             :height: 130
             :align: center
 
@@ -248,7 +259,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/bedroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/bedroom.png
             :height: 130
             :align: center
 
@@ -258,7 +269,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/classroom.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/classroom.png
             :height: 130
             :align: center
 
@@ -268,7 +279,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/dining-room.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/dining-room.png
             :height: 130
             :align: center
 
@@ -278,7 +289,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/kitchen.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/kitchen.png
             :height: 130
             :align: center
 
@@ -288,7 +299,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room.png
             :height: 130
             :align: center
 
@@ -298,7 +309,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room-2.png
             :height: 130
             :align: center
 
@@ -308,7 +319,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/living-room-3.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/living-room-3.png
             :height: 130
             :align: center
 
@@ -318,7 +329,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/staircase.png
             :height: 130
             :align: center
 
@@ -328,7 +339,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/staircase2.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/staircase2.png
             :height: 130
             :align: center
 
@@ -338,7 +349,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/glass-of-water.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/glass-of-water.png
             :height: 130
             :align: center
 
@@ -348,7 +359,7 @@ Architecture
         :class-title: sd-text-center sd-font-weight-bold
         :class-body: sd-text-center
 
-        .. image:: ../resources/data/docs/images/gallery_thumbnails/house.png
+        .. image:: https://d38rqfq1h7iukm.cloudfront.net/scenes/thumbnails/house.png
             :height: 130
             :align: center
 
