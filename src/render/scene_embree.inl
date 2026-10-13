@@ -374,6 +374,7 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
     nested_scenes.reserve(groups.size());
     for (size_t i = 0; i < groups.size(); ++i) {
         RTCScene nested = rtcNewScene(embree_device);
+        rtcSetSceneBuildQuality(nested, RTC_BUILD_QUALITY_HIGH);
         for (uint32_t bi : sd.group_blases[i]) {
             for (const ShapeIR &g : sd.blases[bi].geoms) {
                 RTCGeometry cg = embree_make_geometry<Float, Spectrum>(
@@ -423,23 +424,26 @@ void EmbreeAccel<Float, Spectrum>::rebuild(
     if constexpr (dr::is_llvm_v<Float>)
         dr::sync_thread();
 
-    // Commit the nested scenes (each must be committed before the top-level
-    // scene that instances it).
-    for (RTCScene nested : nested_scenes)
-        rtcCommitScene(nested);
-
-    // Avoid getting in a deadlock when building a nested scene while rendering
-    if (is_nested_scene) {
-        rtcCommitScene(accel);
-    } else {
+    // Build on the nanothread pool, except for a nested scene built while
+    // rendering, which would deadlock
+    auto commit = [&](RTCScene s) {
+        if (is_nested_scene) {
+            rtcCommitScene(s);
+            return;
+        }
         dr::parallel_for(
             dr::blocked_range<size_t>(0, embree_threads, 1),
             [&](const dr::blocked_range<size_t> &) {
-                rtcJoinCommitScene(accel);
+                rtcJoinCommitScene(s);
             }
         );
-    }
+    };
 
+    // Each nested scene must be committed before the top-level scene that
+    // instances it
+    for (RTCScene nested : nested_scenes)
+        commit(nested);
+    commit(accel);
 }
 
 template <typename Float, typename Spectrum>
