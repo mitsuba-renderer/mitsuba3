@@ -22,7 +22,7 @@ TensorFile::TensorFile(const fs::path &filename)
 
     if (memcmp(header, "tensor_file", 12) != 0)
         Throw("Invalid tensor file: invalid header.");
-    else if (version[1] != 0 && version[1] != 0)
+    else if (version[0] != 1 || version[1] != 0)
         Throw("Invalid tensor file: unknown file version.");
 
     Log(Info, "Loading tensor data from \"%s\" .. (%s, %i field%s)",

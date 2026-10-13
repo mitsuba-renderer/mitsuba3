@@ -1,3 +1,4 @@
+import pytest
 import numpy as np
 import os
 import mitsuba as mi
@@ -116,3 +117,15 @@ def test05_tensor_file(variants_all, tmp_path):
 
     test2_mi = test2_field.to(mi.TensorXf32)
     assert np.all(test2_mi.numpy() == test2)
+
+
+def test06_tensor_file_version(variant_scalar_rgb, tmp_path):
+    path = str(tmp_path / "data")
+    mi.tensor_io.write(path, test=np.arange(4, dtype=np.float32))
+
+    with open(path, 'r+b') as f:
+        f.seek(12)
+        f.write(bytes([2, 0]))
+
+    with pytest.raises(RuntimeError, match='unknown file version'):
+        mi.TensorFile(path)
