@@ -133,12 +133,12 @@ def test_accumulate_envelope_multiphase(variant_scalar_rgb, hg, tabphase_irregul
     multi = mi.load_dict(
         {
             "type": "multiphase",
-            "phase0": iso,
-            "weight0": 1.0,
-            "phase1": hg,
-            "weight1": 1.0,
-            "phase2": tabphase_irregular,
-            "weight2": 1.0,
+            "phase_0": iso,
+            "weight_0": 1.0,
+            "phase_1": hg,
+            "weight_1": 1.0,
+            "phase_2": tabphase_irregular,
+            "weight_2": 1.0,
         }
     )
 
@@ -183,10 +183,10 @@ def _ddis_phase_tree(combo, shared):
     if combo == "multiphase":
         return {
             "type": "multiphase",
-            "phase0": shared,
-            "weight0": 1.0,
-            "phase1": {"type": "isotropic"},
-            "weight1": 1.0,
+            "phase_0": shared,
+            "weight_0": 1.0,
+            "phase_1": {"type": "isotropic"},
+            "weight_1": 1.0,
         }
     raise ValueError(combo)
 
