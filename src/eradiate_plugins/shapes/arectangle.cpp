@@ -436,8 +436,8 @@ public:
     // =============================================================
 
     template <typename FloatP, typename Ray3fP>
-    std::tuple<FloatP, Point<FloatP, 2>, dr::uint32_array_t<FloatP>,
-               dr::uint32_array_t<FloatP>>
+    std::tuple<dr::mask_t<FloatP>, FloatP, Point<FloatP, 2>,
+               dr::uint32_array_t<FloatP>, dr::uint32_array_t<FloatP>>
     ray_intersect_preliminary_impl(const Ray3fP &ray_,
                                    ScalarIndex /*prim_index*/,
                                    dr::mask_t<FloatP> active) const {
@@ -457,7 +457,7 @@ public:
                         && dr::abs(local.x()) <= 1.f
                         && dr::abs(local.y()) <= 1.f;
 
-        return { dr::select(active, t, dr::Infinity<FloatP>),
+        return { active, dr::select(active, t, dr::Infinity<FloatP>),
                  Point<FloatP, 2>(local.x(), local.y()), ((uint32_t) -1), 0 };
     }
 

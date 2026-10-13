@@ -102,10 +102,9 @@ public:
         p *= 1.f - pixel_size;
         p += 0.5 * pixel_size;
 
-        if (m_accel)
-            m_texture.template eval<Float>(p, &value, active);
-        else
-            m_texture.template eval_nonaccel<Float>(p, &value, active);
+        using Data1 = dr::Array<Float, 1>;
+        value = (m_accel ? m_texture.template eval<Data1>(p, active)
+                         : m_texture.template eval_nonaccel<Data1>(p, active)).x();
     }
 
     std::pair<BSDFSample3f, Spectrum> sample(const BSDFContext &ctx,

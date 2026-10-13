@@ -103,7 +103,8 @@ struct ExtremumSegment {
         return value.y();
     }
 
-    DRJIT_STRUCT_NODEF(ExtremumSegment, mint, maxt, value)
+    DRJIT_ARRAY_DEFAULTS(ExtremumSegment)
+    DRJIT_TRAVERSE(ExtremumSegment, mint, maxt, value)
 };
 
 NAMESPACE_END(mitsuba)

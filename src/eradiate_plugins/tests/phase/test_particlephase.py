@@ -599,15 +599,6 @@ def phase_function_sigma_s(grid_sigma_s, np_rng):
 
 
 @fixture
-def phase_nan_query(variant_scalar_mono_polarized, np_rng):
-    """Purposefully build a phase function with a NaN spatial r_eff volume"""
-    grid = build_grid(np_rng, 2, 2)
-    rv_volumes = make_rv_volumes(np_rng, (float("nan"), float("nan")), (0.15, 0.15))
-    phase, *_ = build_phase_function(grid, rv_volumes)
-    return phase
-
-
-@fixture
 def grid_irregular(variants_scalar_or_llvm, np_rng):
     """Build a grid with non-uniformly spaced r_eff and v_eff axes"""
     return build_grid(
@@ -665,11 +656,12 @@ def test_sigma_s_weight(phase_function_sigma_s, interaction_centrenadir, np_rng)
     check_phase_consistency(np_rng, *phase_function_sigma_s, interaction_centrenadir)
 
 
-def test_nan_query_raises(phase_nan_query, interaction_centrenadir):
-    """Check that a NaN (r_eff, v_eff) query raises instead of returning silently wrong values"""
-    ctx = mi.PhaseFunctionContext(None)
-    with pytest.raises(Exception, match="NaN"):
-        phase_nan_query.eval_pdf(ctx, interaction_centrenadir, mi.Vector3f([0, 0, -1]))
+def test_nan_volume_raises(variant_scalar_mono_polarized, np_rng):
+    """Check that a NaN r_eff volume raises at construction instead of returning silently wrong values"""
+    grid = build_grid(np_rng, 2, 2)
+    rv_volumes = make_rv_volumes(np_rng, (float("nan"), float("nan")), (0.15, 0.15))
+    with pytest.raises(Exception, match="invalid"):
+        build_phase_function(grid, rv_volumes)
 
 
 @pytest.mark.parametrize(

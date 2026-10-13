@@ -285,7 +285,7 @@ def test_compare_blendphase(variant_scalar_rgb):
             "weight_0": 1 - weight,
             "phase_1": phase1,
             "weight_1": weight,
-            "use_mis": False,
+            "use_mis": True,  # blendphase returns the mixture pdf
         }
     )
 

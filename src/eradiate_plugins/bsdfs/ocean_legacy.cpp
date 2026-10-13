@@ -465,19 +465,15 @@ public:
     Float eval_transmittance(const Texture2f &data, const Float &cos_theta,
                              const Vector3f &v) const {
         Point2f uv;
-        Float t;
 
         uv.x() = (dr::acos(dr::clip(cos_theta, -0.999999999f, 0.999999999f)) * (dr::InvPi<Float> * 2.f));
         uv.y() =
             (dr::atan2(v.y(), v.x()) - m_wind_direction) * dr::InvTwoPi<Float>;
         uv.y() = uv.y() - (1.f * dr::floor(uv.y())); // equivalent to uv.y % 1.f
 
-        if (m_accel)
-            data.template eval<Float>(uv, &t);
-        else
-            data.template eval_nonaccel<Float>(uv, &t);
-
-        return t;
+        using Data1 = dr::Array<Float, 1>;
+        return (m_accel ? data.template eval<Data1>(uv)
+                        : data.template eval_nonaccel<Data1>(uv)).x();
     }
 
     /**
