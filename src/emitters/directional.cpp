@@ -252,6 +252,13 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const override {
+        // The light travels along the local +Z axis
+        ScalarVector3f d = dr::normalize(
+            this->world_transform_scalar() * ScalarVector3f(0.f, 0.f, 1.f));
+        return { -d, m_irradiance->max() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "DirectionalEmitter[" << std::endl

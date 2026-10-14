@@ -190,6 +190,7 @@ public:
         m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
         m_sky_params_dataset, m_sun_radiance,
         m_to_world, m_to_world_anim, m_sky_irrad_dataset, m_sun_irrad_dataset,
+        m_irradiance_estimate,
 		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
 
@@ -453,9 +454,10 @@ private:
 
     /**
      * Updates the textures used for importance sampling the sun and sky as
-     * well as the sun's irradiance dataset.
+     * well as the sun's irradiance dataset. The irradiance estimate is the
+     * largest total irradiance over the sun elevations of the dataset.
      */
-    std::pair<ref<SamplingTexture>, ref<SunIrradTexture>> update_irradiance_data() const {
+    std::pair<ref<SamplingTexture>, ref<SunIrradTexture>> update_irradiance_data() {
         using UInt32Storage = dr::uint32_array_t<FloatStorage>;
         using Color3fStorage = mitsuba::Color<FloatStorage, 3>;
         using FullSpectrumStorage = unpolarized_spectrum_t<
@@ -482,6 +484,7 @@ private:
                          sun_lum = m_sun_scale * luminance(sun_irrad, wavelengths),
                          sampling_weigths = sky_lum / (sky_lum + sun_lum);
 
+            m_irradiance_estimate = dr::slice(dr::max(sky_lum + sun_lum));
             dr::masked(sampling_weigths, !dr::isfinite(sampling_weigths)) = 0.f;
 
             TensorXf temp(sampling_weigths, { MPDF_ELEVATION_COUNT, 1 });

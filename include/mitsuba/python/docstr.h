@@ -3901,6 +3901,20 @@ static const char *__doc_mitsuba_Emitter_dirty = R"doc(Return whether the emitte
 
 static const char *__doc_mitsuba_Emitter_flags = R"doc(Return the complete set of emitter flags)doc";
 
+static const char *__doc_mitsuba_Emitter_irradiance_estimate =
+R"doc(Estimate of the irradiance that an infinite emitter produces
+
+Emitter selection weighs infinite emitters against the emitter tree over
+the finite ones (see Scene::sample_emitter_direction()). This
+requires an estimate of the irradiance that each one delivers at a
+surface facing it, which the method returns together with the
+direction toward the emitter. Emitters that cover the whole sphere of
+directions return a zero direction. An environment map reports pi
+times its mean radiance, a directional emitter its irradiance. The
+value does not include sampling_weight(). Only emitters with the
+EmitterFlags::Infinite flag provide an estimate; the default
+implementation raises an exception.)doc";
+
 static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an environment map light emitter?)doc";
 
 static const char *__doc_mitsuba_Emitter_is_portal = R"doc(Is this a light portal? (see ``Scene::portals()``))doc";

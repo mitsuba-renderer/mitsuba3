@@ -111,3 +111,31 @@ def test02_mesh_normal_cone(variants_all_rgb, tmp_path):
     # A closed box has no preferred direction
     cube = mi.load_dict({'type': 'cube', 'emitter': {'type': 'area'}})
     assert cube.normal_cone()[1] == pytest.approx(math.pi)
+
+
+# Emitter definition and the expected direction and irradiance, or None for
+# emitters of finite extent
+IRRADIANCE = {
+    'constant': (lambda: {'type': 'constant', 'radiance': 0.5},
+                 ([0, 0, 0], 0.5 * math.pi)),
+    'directional': (lambda: {'type': 'directional', 'direction': [0, 0, -1],
+                             'irradiance': 2.0},
+                    ([0, 0, 1], 2.0)),
+    'envmap': (lambda: {'type': 'envmap', 'scale': 2.0,
+                        'bitmap': bitmap((4, 8, 3), 0.25)},
+               ([0, 0, 0], 0.5 * math.pi)),
+    'point': (lambda: {'type': 'point'}, None),
+}
+
+
+@pytest.mark.parametrize('name', IRRADIANCE.keys())
+def test03_irradiance_estimate(variants_all_rgb, name):
+    make, expected = IRRADIANCE[name]
+    emitter = mi.load_dict(make())
+    if expected is None:
+        with pytest.raises(RuntimeError, match='not an infinite emitter'):
+            emitter.irradiance_estimate()
+        return
+    d, e = emitter.irradiance_estimate()
+    assert dr.allclose(d, expected[0], atol=1e-6)
+    assert e == pytest.approx(expected[1], rel=1e-3)

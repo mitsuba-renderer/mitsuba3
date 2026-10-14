@@ -499,7 +499,12 @@ protected:
         std::unique_ptr<ScalarFloat[]> luminance_data(new ScalarFloat[n]);
         ScalarFloat *lum_ptr = luminance_data.get();
 
+        // Mean luminance over the sphere, with the periodic column skipped
+        double lum_sum = 0.0, weight_sum = 0.0;
+        ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
+
         for (size_t y = 0; y < res.y(); ++y) {
+            ScalarFloat sin_theta = dr::sin(y * theta_scale);
             for (size_t x = 0; x < res.x(); ++x) {
                 // Warp column x corresponds to storage column x+1
                 ScalarPixelData coeff = dr::load<ScalarPixelData>(
@@ -512,8 +517,14 @@ protected:
                 else
                     lum = srgb_model_mean(dr::head<3>(coeff)) * coeff.w();
                 lum_ptr[y * res.x() + x] = lum;
+                if (x + 1 < res.x()) {
+                    lum_sum += (double) (lum * sin_theta);
+                    weight_sum += (double) sin_theta;
+                }
             }
         }
+        m_mean_luminance =
+            weight_sum > 0.0 ? ScalarFloat(lum_sum / weight_sum) : 0.f;
 
         // "MIS Compensation: Optimizing Sampling Techniques in Multiple
         // Importance Sampling" Ondrej Karlik, Martin Sik, Petr Vivoda, Tomas
@@ -540,7 +551,6 @@ protected:
                 offset = 0.f; // disable
         }
 
-        ScalarFloat theta_scale = 1.f / (res.y() - 1) * dr::Pi<Float>;
         for (size_t y = 0; y < res.y(); ++y) {
             ScalarFloat sin_theta = dr::sin(y * theta_scale);
             for (size_t x = 0; x < res.x(); ++x) {
@@ -550,6 +560,11 @@ protected:
         }
 
         m_warp = Warp(luminance_data.get(), res);
+    }
+
+    std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const override {
+        return { ScalarVector3f(0.f),
+                 dr::Pi<ScalarFloat> * m_mean_luminance * dr::slice(m_scale) };
     }
 
     UnpolarizedSpectrum eval_spectrum(Point2f uv, const Wavelength &wavelengths,
@@ -626,6 +641,8 @@ protected:
     Warp m_warp;
     ref<Texture> m_d65;
     Float m_scale;
+    /// Mean luminance of the unscaled image over the sphere
+    ScalarFloat m_mean_luminance = 0.f;
     bool m_mis_compensation;
     PortalSampler<Float, Spectrum> m_portals;
 

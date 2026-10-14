@@ -167,6 +167,22 @@ public:
      */
     virtual EmitterBounds bounds() const;
 
+    /**
+     * \brief Estimate of the irradiance that an infinite emitter produces
+     *
+     * Emitter selection weighs infinite emitters against the emitter tree over
+     * the finite ones (see \ref Scene::sample_emitter_direction()). This
+     * requires an estimate of the irradiance that each one delivers at a
+     * surface facing it, which the method returns together with the
+     * direction toward the emitter. Emitters that cover the whole sphere of
+     * directions return a zero direction. An environment map reports pi
+     * times its mean radiance, a directional emitter its irradiance. The
+     * value does not include \ref sampling_weight(). Only emitters with the
+     * \ref EmitterFlags::Infinite flag provide an estimate; the default
+     * implementation raises an exception.
+     */
+    virtual std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const;
+
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Emitter)
 

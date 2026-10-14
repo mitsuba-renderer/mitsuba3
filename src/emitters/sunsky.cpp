@@ -200,7 +200,7 @@ public:
         m_turbidity, m_sky_scale, m_sun_scale, m_albedo, m_bsphere,
         m_sun_half_aperture, m_sky_rad_dataset, m_sampling_params,
         m_sky_params_dataset, m_to_world, m_to_world_anim,
-        m_sky_irrad_dataset, m_sun_irrad_dataset,
+        m_sky_irrad_dataset, m_sun_irrad_dataset, m_irradiance_estimate,
 		MIN_SAMPLING_ETA, MAX_SAMPLING_ETA, CHANNEL_COUNT
     )
     using typename Base::FloatStorage;
@@ -447,9 +447,9 @@ private:
 
     /**
      * Updates the sky sampling data and sun irradiance values
-     * based on the current parameters.
+     * based on the current parameters, and the total irradiance estimate.
      */
-    std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() const {
+    std::tuple<Float, ContinuousDistribution<Wavelength>, FloatStorage> update_irradiance_data() {
         Float angle = 0.5f * dr::Pi<Float> - m_sun_angles.x();
               angle = dr::clip((dr::rad_to_deg(angle) - 2.f) / 3.f,
                             0.f, MPDF_ELEVATION_COUNT - dr::OneMinusEpsilon<ScalarFloat>);
@@ -506,6 +506,7 @@ private:
             wav_dist = { range, pdf, 2 };
         }
 
+        m_irradiance_estimate = dr::slice(sky_lum + sun_lum);
         return std::make_tuple(sky_weight, wav_dist, spec_sun_irrad);
     }
 
