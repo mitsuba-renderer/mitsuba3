@@ -74,6 +74,10 @@ public:
         NB_OVERRIDE(bounds);
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const override {
+        NB_OVERRIDE(irradiance_estimate);
+    }
+
     std::string to_string() const override {
         NB_OVERRIDE_PURE(to_string);
     }
@@ -185,6 +189,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, visibility)
         .def_method(Emitter, flags)
         .def_method(Emitter, bounds)
+        .def_method(Emitter, irradiance_estimate)
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));

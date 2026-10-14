@@ -207,6 +207,10 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const override {
+        return { ScalarVector3f(0.f), dr::Pi<ScalarFloat> * m_radiance->max() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "ConstantBackgroundEmitter[" << std::endl

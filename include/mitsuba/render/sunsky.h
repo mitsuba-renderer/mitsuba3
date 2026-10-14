@@ -490,6 +490,10 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const override {
+        return { ScalarVector3f(0.f), m_irradiance_estimate };
+    }
+
 protected:
 
     /**
@@ -1269,6 +1273,9 @@ protected:
     Float m_turbidity;
     ScalarFloat m_sky_scale;
     ScalarFloat m_sun_scale;
+
+    /// Luminance of the sky and sun irradiance, set by the subclasses
+    ScalarFloat m_irradiance_estimate = 0.f;
 
     ref<Texture> m_albedo_tex;
     FloatStorage m_albedo;

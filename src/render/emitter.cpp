@@ -28,5 +28,12 @@ Emitter<Float, Spectrum>::bounds() const {
           class_name());
 }
 
+MI_VARIANT std::pair<typename Emitter<Float, Spectrum>::ScalarVector3f,
+                     typename Emitter<Float, Spectrum>::ScalarFloat>
+Emitter<Float, Spectrum>::irradiance_estimate() const {
+    Throw("%s::irradiance_estimate(): this is not an infinite emitter!",
+          class_name());
+}
+
 MI_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)
