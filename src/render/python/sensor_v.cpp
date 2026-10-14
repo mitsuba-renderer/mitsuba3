@@ -158,6 +158,10 @@ MI_PY_EXPORT(Sensor) {
         .def(nb::init<const Properties&>())
         .def_method(Sensor, shutter_open)
         .def_method(Sensor, shutter_open_time)
+        .def("sample_rolling_shutter_time", &Sensor::sample_rolling_shutter_time,
+             D(Sensor, sample_rolling_shutter_time), "time"_a, "position_sample"_a)
+        .def("eval_rolling_shutter_weight", &Sensor::eval_rolling_shutter_weight,
+             D(Sensor, eval_rolling_shutter_weight), "time"_a, "position_sample"_a)
         .def_method(Sensor, needs_aperture_sample)
         .def_method(Sensor, jitter)
         .def_method(Sensor, cone_scale)

@@ -13,7 +13,7 @@ Perspective pinhole camera (:monosp:`perspective`)
 --------------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 7
+ :extra-rows: 9
 
  * - to_world
    - |transform| or |animation|
@@ -64,6 +64,23 @@ Perspective pinhole camera (:monosp:`perspective`)
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
+
+ * - rolling_shutter_type
+   - |string|
+   - Readout direction of an optional rolling shutter: :monosp:`none` (global
+     shutter), :monosp:`top`, :monosp:`bottom`, :monosp:`left`, or :monosp:`right`.
+     A rolling shutter exposes the image rows (:monosp:`top`, :monosp:`bottom`)
+     or columns (:monosp:`left`, :monosp:`right`) one after another, starting
+     at the specified image edge, over the interval given by :monosp:`shutter_open`
+     and :monosp:`shutter_close`. (Default: :monosp:`none`)
+
+ * - rolling_shutter_duration
+   - |float|
+   - Exposure time of each row or column as a fraction in [0, 1] of the
+     shutter interval. A value of :monosp:`1` is equivalent to a global shutter,
+     and :monosp:`0` exposes each row or column instantaneously. Only used
+     when :monosp:`rolling_shutter_type` is not :monosp:`none`. (Default: :monosp:`0`)
+   - |exposed|
 
  * - x_fov
    - |float|
@@ -133,7 +150,9 @@ class PerspectiveCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(ProjectiveCamera, m_needs_sample_3, m_film, m_sampler,
                    m_resolution, m_shutter_open, m_shutter_open_time,
-                   m_near_clip, m_far_clip, m_cone_scale, sample_wavelengths,
+                   m_rolling_shutter_duration, m_near_clip, m_far_clip,
+                   m_cone_scale, sample_wavelengths, sample_rolling_shutter_time,
+                   eval_rolling_shutter_weight, m_rolling_shutter_type,
                    world_transform, traverse_world_transform,
                    world_transform_string, check_to_world, position_bounds)
     MI_IMPORT_TYPES()
@@ -209,7 +228,7 @@ public:
                                wavelength_sample,
                                active);
         Ray3f ray;
-        ray.time = time;
+        ray.time = sample_rolling_shutter_time(time, position_sample);
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
@@ -221,7 +240,7 @@ public:
         // Convert into a normalized ray direction; adjust the ray interval accordingly.
         Vector3f d = dr::normalize(Vector3f(near_p));
 
-        AffineTransform4f to_world = world_transform(time);
+        AffineTransform4f to_world = world_transform(ray.time);
         ray.o = to_world.translation();
         ray.d = to_world * d;
 
@@ -272,6 +291,7 @@ public:
         if (dr::none_or<false>(active))
             return { ds, dr::zeros<Spectrum>() };
 
+        Float rs_weight = eval_rolling_shutter_weight(it.time, ds.uv);
         ds.uv *= m_resolution;
 
         Vector3f local_d(ref_p);
@@ -285,7 +305,7 @@ public:
         ds.n    = trafo * Vector3f(0.0f, 0.0f, 1.0f);
         ds.pdf  = dr::select(active, Float(1.f), Float(0.f));
 
-        return { ds, Spectrum(importance(local_d) * inv_dist * inv_dist) };
+        return { ds, Spectrum(importance(local_d) * inv_dist * inv_dist * rs_weight) };
     }
 
     ScalarBoundingBox3f bbox() const override { return position_bounds(); }
@@ -362,6 +382,8 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
+            << "  rolling_shutter_type = " << m_rolling_shutter_type << "," << std::endl
+            << "  rolling_shutter_duration = " << m_rolling_shutter_duration << "," << std::endl
             << "  to_world = " << indent(world_transform_string(), 13) << std::endl
             << "]";
         return oss.str();

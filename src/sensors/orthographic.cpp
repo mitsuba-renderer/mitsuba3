@@ -31,6 +31,23 @@ Orthographic camera (:monosp:`orthographic`)
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
 
+ * - rolling_shutter_type
+   - |string|
+   - Readout direction of an optional rolling shutter: :monosp:`none` (global
+     shutter), :monosp:`top`, :monosp:`bottom`, :monosp:`left`, or :monosp:`right`.
+     A rolling shutter exposes the image rows (:monosp:`top`, :monosp:`bottom`)
+     or columns (:monosp:`left`, :monosp:`right`) one after another, starting
+     at the specified image edge, over the interval given by :monosp:`shutter_open`
+     and :monosp:`shutter_close`. (Default: :monosp:`none`)
+
+ * - rolling_shutter_duration
+   - |float|
+   - Exposure time of each row or column as a fraction in [0, 1] of the
+     shutter interval. A value of :monosp:`1` is equivalent to a global shutter,
+     and :monosp:`0` exposes each row or column instantaneously. Only used
+     when :monosp:`rolling_shutter_type` is not :monosp:`none`. (Default: :monosp:`0`)
+   - |exposed|
+
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_orthographic.jpg
@@ -80,10 +97,11 @@ class OrthographicCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_anim, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
-                    m_shutter_open_time, m_near_clip, m_far_clip,
-                    m_cone_scale, sample_wavelengths, world_transform,
-                    traverse_world_transform, world_transform_string,
-                    position_bounds)
+                    m_shutter_open_time, m_rolling_shutter_duration,
+                    m_near_clip, m_far_clip, m_cone_scale, sample_wavelengths,
+                    sample_rolling_shutter_time, m_rolling_shutter_type,
+                    world_transform, traverse_world_transform,
+                    world_transform_string, position_bounds)
     MI_IMPORT_TYPES()
 
     OrthographicCamera(const Properties &props) : Base(props) {
@@ -133,14 +151,14 @@ public:
                                wavelength_sample,
                                active);
         Ray3f ray;
-        ray.time = time;
+        ray.time = sample_rolling_shutter_time(time, position_sample);
         ray.wavelengths = wavelengths;
 
         // Compute the sample position on the near plane (local camera space).
         Point3f near_p = m_sample_to_camera *
                          Point3f(position_sample.x(), position_sample.y(), 0.f);
 
-        auto to_world = world_transform(time);
+        auto to_world = world_transform(ray.time);
         ray.o = to_world * near_p;
         ray.d = dr::normalize(to_world * Vector3f(0, 0, 1));
         ray.maxt = m_far_clip - m_near_clip;
@@ -174,6 +192,8 @@ public:
             << "  resolution = " << m_resolution << "," << std::endl
             << "  shutter_open = " << m_shutter_open << "," << std::endl
             << "  shutter_open_time = " << m_shutter_open_time << "," << std::endl
+            << "  rolling_shutter_type = " << m_rolling_shutter_type << "," << std::endl
+            << "  rolling_shutter_duration = " << m_rolling_shutter_duration << "," << std::endl
             << "  world_transform = " << indent(world_transform_string())  << std::endl
             << "]";
         return oss.str();

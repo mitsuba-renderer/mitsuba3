@@ -10478,6 +10478,11 @@ that they generate by this value, which is ``1`` by default. A value
 of ``2`` doubles the texture footprint, i.e. it biases filtered
 texture lookups by one MIP level.)doc";
 
+static const char *__doc_mitsuba_Sensor_eval_rolling_shutter_weight =
+R"doc(Evaluate the rolling shutter weight at ``time`` for the pixel at
+``position_sample`` (``1 / rolling_shutter_duration`` if exposed, else
+zero). This is the adjoint of `sample_rolling_shutter_time()`.)doc";
+
 static const char *__doc_mitsuba_Sensor_film = R"doc(Return the `Film` instance associated with this sensor)doc";
 
 static const char *__doc_mitsuba_Sensor_film_2 = R"doc(Return the `Film` instance associated with this sensor (const))doc";
@@ -10508,6 +10513,10 @@ static const char *__doc_mitsuba_Sensor_m_srf = R"doc()doc";
 static const char *__doc_mitsuba_Sensor_needs_aperture_sample = R"doc(Does the sampling technique require a sample for the aperture position?)doc";
 
 static const char *__doc_mitsuba_Sensor_parameters_changed = R"doc()doc";
+
+static const char *__doc_mitsuba_Sensor_sample_rolling_shutter_time =
+R"doc(Adjusts a time sample according to the sensor's rolling shutter
+settings. Without rolling shutter, this is simply the identity.)doc";
 
 static const char *__doc_mitsuba_Sensor_sample_wavelengths =
 R"doc(Importance sample a set of wavelengths proportional to the

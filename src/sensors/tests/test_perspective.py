@@ -330,3 +330,38 @@ def test11_animation_xml(variant_scalar_rgb):
     ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
 
+
+@pytest.mark.parametrize('direction,duration,crop_y,pos,input_time,expected_time,expected_weight', [
+    ('none',   0.0,  (0, 64),  (0.5, 0.0),  1.5, 1.5,   1.0),
+    ('top',    0.25, (0, 64),  (0.5, 0.5),  2.5, 2.125, 4.0),
+    ('top',    1.0,  (0, 64),  (0.5, 0.25), 2.5, 2.5,   1.0),
+    ('bottom', 0.0,  (0, 64),  (0.5, 0.25), 1.5, 2.5,   0.0),
+    ('left',   0.5,  (0, 64),  (0.25, 0.5), 1.5, 1.5,   2.0),
+    ('right',  0.0,  (0, 64),  (0.25, 0.5), 1.5, 2.5,   0.0),
+    ('top',    0.0,  (32, 32), (0.5, 0.5),  1.0, 2.5,   0.0),
+])
+def test12_rolling_shutter(variants_all_backends_once, direction, duration,
+                           crop_y, pos, input_time, expected_time, expected_weight):
+    t = mi.AnimatedTransform4f({
+        1.0: mi.ScalarTransform4f().translate([0, 0, 0]),
+        3.0: mi.ScalarTransform4f().translate([0, 2, 0]),
+    })
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'shutter_open': 1.0,
+        'shutter_close': 3.0,
+        'rolling_shutter_type': direction,
+        'rolling_shutter_duration': duration,
+        'to_world': t,
+        'film': {
+            'type': 'hdrfilm', 'width': 64, 'height': 64,
+            'crop_offset_y': crop_y[0], 'crop_height': crop_y[1],
+        },
+    })
+    assert dr.allclose(sensor.sample_rolling_shutter_time(input_time, pos),
+                       expected_time, atol=1e-6)
+    assert dr.allclose(sensor.eval_rolling_shutter_weight(expected_time, pos),
+                       expected_weight)
+    ray, _ = sensor.sample_ray(input_time, 0.5, pos, [0.5, 0.5])
+    assert dr.allclose(ray.time, expected_time, atol=1e-6)
+    assert dr.allclose(ray.o.y, expected_time - 1.0, atol=0.02)
