@@ -16,3 +16,4 @@ Eradiate Mitsuba API
 .. autoclass:: mitsuba.Medium
 
 .. autoclass:: mitsuba.PhaseFunction
+

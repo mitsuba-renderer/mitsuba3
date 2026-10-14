@@ -30,7 +30,7 @@ Medium
 
 .. include:: /generated/extracted_rst_api.rst
   :start-line: 187
-  :end-line: 371
+  :end-line: 378
 
 ------------
 
@@ -53,5 +53,5 @@ Phase
 -----
 
 .. include:: /generated/extracted_rst_api.rst
-  :start-line: 372
-  :end-line: 557
+  :start-line: 379
+  :end-line: 553

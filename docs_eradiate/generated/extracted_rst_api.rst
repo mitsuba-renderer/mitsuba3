@@ -1,16 +1,16 @@
-.. py:data:: mitsuba.ERD_MI_VERSION
+.. py:data:: mitsuba.ERADIATE_MI_VERSION
     :type: str
-    :value: 0.5.0
+    :value: 0.6.0
 
-.. py:data:: mitsuba.ERD_MI_VERSION_MAJOR
+.. py:data:: mitsuba.ERADIATE_MI_VERSION_MAJOR
     :type: int
     :value: 0
 
-.. py:data:: mitsuba.ERD_MI_VERSION_MINOR
+.. py:data:: mitsuba.ERADIATE_MI_VERSION_MINOR
     :type: int
-    :value: 5
+    :value: 6
 
-.. py:data:: mitsuba.ERD_MI_VERSION_PATCH
+.. py:data:: mitsuba.ERADIATE_MI_VERSION_PATCH
     :type: int
     :value: 0
 
@@ -188,6 +188,13 @@
 .. py:class:: mitsuba.Medium
 
     Base class: :py:obj:`mitsuba.Object`
+
+    .. py:method:: mitsuba.Medium.extremum_structure()
+
+        Returns the extremum structure for local extremum acceleration.
+
+        Returns → :py:obj:`mitsuba.ExtremumStructure`:
+            *no description available*
 
     .. py:method:: mitsuba.Medium.get_majorant(self, mi, active=True)
 
@@ -374,18 +381,6 @@
 
     Base class: :py:obj:`mitsuba.Object`
 
-    Abstract phase function base-class.
-
-    This class provides an abstract interface to all Phase function
-    plugins in Mitsuba. It exposes functions for evaluating and sampling
-    the model.
-
-    .. py:method:: __init__(self, arg)
-
-        Parameter ``arg`` (:py:obj:`mitsuba.Properties`, /):
-            *no description available*
-
-
     .. py:method:: mitsuba.PhaseFunction.accumulate_envelope(self, nodes, values)
 
         Evaluate the phase function at the given cos_theta nodes and
@@ -400,16 +395,17 @@
         Delegating the comparison to the callee rather than the caller enables
         natural recursion through composite phase functions (e.g.
         BlendPhaseFunction, MultiPhaseFunction): a composite implementation
-        simply calls ``eval_max`` on each child with the same buffer, and each
-        child accumulates its contribution independently. The resulting buffer
-        holds the pointwise supremum over the entire phase-function tree
-        without the caller needing to know its structure.
+        simply calls ``accumulate_envelope`` on each child with the same
+        buffer, and each child accumulates its contribution independently. The
+        resulting buffer holds the pointwise supremum over the entire phase-
+        function tree without the caller needing to know its structure.
 
-        \note cos_theta follows the physics convention (see get_nodes).
+        \note cos_theta follows the physics convention (see
+        get_envelope_nodes).
 
         Parameter ``nodes`` (drjit.scalar.ArrayXf):
             cos_theta values at which to evaluate the phase function, as
-            returned by get_nodes.
+            returned by get_envelope_nodes.
 
         Parameter ``values`` (drjit.scalar.ArrayXf):
             In/out buffer. Must have the same length as ``nodes`` and be zero-
