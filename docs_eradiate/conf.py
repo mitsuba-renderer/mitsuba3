@@ -23,7 +23,7 @@ def _read_version():
         text = f.read()
 
     major, minor, patch = re.findall(
-        r"#define ERD_MI_VERSION_(?:MAJOR|MINOR|PATCH)\s+(\d+)", text
+        r"#define ERADIATE_MI_VERSION_(?:MAJOR|MINOR|PATCH)\s+(\d+)", text
     )[:3]
     return f"{major}.{minor}", f"{major}.{minor}.{patch}"
 

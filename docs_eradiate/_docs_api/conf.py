@@ -84,7 +84,7 @@ list_api_filename = join(dirname(realpath(__file__)), "list_api.rst")
 # is documented upstream at https://mitsuba.readthedocs.io.
 api_doc_structure = {
     "Constants": [
-        r"mitsuba.ERD_MI_([\w]+)",
+        r"mitsuba.ERADIATE_MI_([\w]+)",
     ],
     "Medium": [
         r"mitsuba\.Medium",

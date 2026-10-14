@@ -26,15 +26,15 @@
 
 // #ERADIATE_CHANGE_BEGIN: Eradiate-specific constants
 
-#define ERD_MI_VERSION_MAJOR 0
-#define ERD_MI_VERSION_MINOR 6
-#define ERD_MI_VERSION_PATCH 0
+#define ERADIATE_MI_VERSION_MAJOR 0
+#define ERADIATE_MI_VERSION_MINOR 6
+#define ERADIATE_MI_VERSION_PATCH 0
 
-/// Current release of the Eradiate patch for Mitsuba
-#define ERD_MI_VERSION                                                             \
-    MI_TOSTRING(ERD_MI_VERSION_MAJOR) "."                                          \
-    MI_TOSTRING(ERD_MI_VERSION_MINOR) "."                                          \
-    MI_TOSTRING(ERD_MI_VERSION_PATCH)
+/// Current release of Eradiate's custom Mitsuba version
+#define ERADIATE_MI_VERSION                                                    \
+    MI_TOSTRING(ERADIATE_MI_VERSION_MAJOR) "."                                 \
+    MI_TOSTRING(ERADIATE_MI_VERSION_MINOR) "."                                 \
+    MI_TOSTRING(ERADIATE_MI_VERSION_PATCH)
 
 // #ERADIATE_CHANGE_END: Eradiate-specific constants
 

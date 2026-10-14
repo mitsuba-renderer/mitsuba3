@@ -18,7 +18,7 @@ commit_args = ""
 
 [[tool.bumpversion.files]]
 filename = "include/mitsuba/mitsuba.h"
-parse = "#define ERD_MI_VERSION_MAJOR (?P<major>\\d+)\n#define ERD_MI_VERSION_MINOR (?P<minor>\\d+)\n#define ERD_MI_VERSION_PATCH (?P<patch>\\d+)\n"
-serialize = ["#define ERD_MI_VERSION_MAJOR {major}\n#define ERD_MI_VERSION_MINOR {minor}\n#define ERD_MI_VERSION_PATCH {patch}\n"]
+parse = "#define ERADIATE_MI_VERSION_MAJOR (?P<major>\\d+)\n#define ERADIATE_MI_VERSION_MINOR (?P<minor>\\d+)\n#define ERADIATE_MI_VERSION_PATCH (?P<patch>\\d+)\n"
+serialize = ["#define ERADIATE_MI_VERSION_MAJOR {major}\n#define ERADIATE_MI_VERSION_MINOR {minor}\n#define ERADIATE_MI_VERSION_PATCH {patch}\n"]
 search = "{current_version}"
 replace = "{new_version}"

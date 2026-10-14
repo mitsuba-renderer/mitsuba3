@@ -94,9 +94,9 @@ norecursedirs = [ "src/python" ]
 provider = "scikit_build_core.metadata.regex"
 input = "include/mitsuba/mitsuba.h"
 regex = '''(?sx)
-\#define \s+ ERD_MI_VERSION_MAJOR \s+ (?P<major>\d+) .*?
-\#define \s+ ERD_MI_VERSION_MINOR \s+ (?P<minor>\d+) .*?
-\#define \s+ ERD_MI_VERSION_PATCH \s+ (?P<patch>\d+) .*?
+\#define \s+ ERADIATE_MI_VERSION_MAJOR \s+ (?P<major>\d+) .*?
+\#define \s+ ERADIATE_MI_VERSION_MINOR \s+ (?P<minor>\d+) .*?
+\#define \s+ ERADIATE_MI_VERSION_PATCH \s+ (?P<patch>\d+) .*?
 '''
 result = "{major}.{minor}.{patch}"
 
