@@ -10375,9 +10375,12 @@ Args:
 
     two_sided: Whether the reference point can receive light from both
         sides of ``ref.n``. When this is ``False``, the emitter tree
-        skips emitters behind the surface. The value must match the
-        one given to `pdf_emitter_direction()` for the same reference
-        point.
+        skips emitters behind the surface. The integrators pass
+        ``False`` at surfaces whose BSDF has no transmission. The
+        exception is an incident direction behind the geometric
+        normal, for example at a two-sided surface seen from the back.
+        The value must match the one given to `pdf_emitter_direction()`
+        for the same reference point.
 
 Returns:
     A tuple ``(ds, spec)`` where
