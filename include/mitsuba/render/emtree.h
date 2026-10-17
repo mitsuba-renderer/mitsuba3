@@ -29,8 +29,7 @@ public:
     MI_IMPORT_TYPES(Emitter, EmitterPtr)
 
     /// Build the tree and assign the emitters' path codes
-    EmitterTree(std::vector<ref<Emitter>> &emitters,
-                const std::vector<ref<Emitter>> &portals);
+    EmitterTree(std::vector<ref<Emitter>> &emitters);
 
     /// See \ref Scene::sample_emitter_direction()
     std::pair<DirectionSample3f, Spectrum>
@@ -45,9 +44,8 @@ public:
 
 private:
     /**
-     * Packed 32-byte node, shared by tree traversal and portal importance.
-     * ``EmitterTreeCluster::pack()`` in emtree.cpp documents the layout, and
-     * the constants above it the child word.
+     * Packed 32-byte node. ``EmitterTreeCluster::pack()`` in emtree.cpp
+     * documents the layout, and the constants above it the child word.
      */
     using Node = dr::Array<UInt32, 8>;
     using UInt32Buffer = DynamicBuffer<UInt32>;
@@ -69,23 +67,8 @@ private:
     Float importance(const Node &node, const Point3f &p,
                      const Normal3f &n, const Mask &two_sided) const;
 
-    /**
-     * \brief Importance of the infinite emitter ``index`` for the same receiver
-     *
-     * Environment emitters of a scene with light portals shine through the
-     * portals, which act as area emitters of the environment's mean radiance.
-     * Other infinite emitters use their irradiance estimate times the bound
-     * on the receiver cosine.
-     */
-    Float infinite_importance(size_t index, const Point3f &p, const Normal3f &n,
-                              const Mask &two_sided) const;
-
-    /// Does infinite emitter ``index`` shine through the scene's portals?
-    bool uses_portals(size_t index) const {
-        return m_portal_nodes.size() != 0 &&
-               m_infinite_emitters[index]->is_environment();
-    }
-
+    /// Selection weights of the tree root and of the infinite emitters
+    /// for a receiver at ``p`` with normal ``n``
     Weights weights(const Point3f &p, const Normal3f &n,
                     const Mask &two_sided) const;
 
@@ -119,15 +102,13 @@ private:
     /// Infinite emitters with nonzero sampling weight
     std::vector<ref<Emitter>> m_infinite_emitters;
 
-    /// Four floats per infinite emitter: direction xyz and weighted irradiance
+    /// Eight floats per infinite emitter: direction xyz, irradiance, sampling
+    /// weight and padding to a power of two for packet gathers
     DynamicBuffer<Float> m_infinite_records;
-
-    /// One emitter tree node record per portal, with the portal area as energy
-    UInt32Buffer m_portal_nodes;
 
     // Keep all derived buffers reachable through Scene for dr.freeze().
     MI_DECLARE_TRAVERSE_CB(m_nodes, m_emitters, m_infinite_emitters,
-                           m_infinite_records, m_portal_nodes)
+                           m_infinite_records)
 };
 
 MI_EXTERN_CLASS(EmitterTree)

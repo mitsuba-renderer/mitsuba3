@@ -290,11 +290,12 @@ def test05_parameter_update(variants_all_backends_once):
     assert pick(0.5) == 1
 
 
-@pytest.mark.parametrize('radiance, n_z, share', [
-    (1e4, 1, 0.5), (1e-4, 1, 0.0), (1e4, -1, 1.0)])
-def test06_infinite_cap(variants_vec_backends_once_rgb, radiance, n_z, share):
-    """Without portals, a bright sky never outweighs the tree, unless the
-    receiver faces away from every finite emitter"""
+@pytest.mark.parametrize('radiance, weight, n_z, share', [
+    (1e4, 1, 1, 0.5), (1e-4, 1, 1, 0.0), (1e4, 1, -1, 1.0), (1e4, 4, 1, 0.8)])
+def test06_infinite_cap(variants_vec_backends_once_rgb, radiance, weight, n_z,
+                        share):
+    """A bright sky never outweighs the tree, unless the receiver faces away
+    from every finite emitter. Its sampling weight applies on top."""
     n = 1 << 14
     ref = dr.zeros(mi.Interaction3f, n)
     ref.n = mi.Normal3f(0, 0, n_z)
@@ -304,7 +305,8 @@ def test06_infinite_cap(variants_vec_backends_once_rgb, radiance, n_z, share):
         'type': 'scene',
         'light1': {'type': 'point', 'position': [0, 0, 1], 'intensity': 1.0},
         'light2': {'type': 'point', 'position': [0, 0.1, 1], 'intensity': 1.0},
-        'sky': {'type': 'constant', 'radiance': radiance},
+        'sky': {'type': 'constant', 'radiance': radiance,
+                'sampling_weight': weight},
     })
     ds, spec = scene.sample_emitter_direction(ref, sampler.next_2d(), False, False)
     sky = dr.mean(dr.select(ds.emitter == scene.environment(), 1.0, 0.0))[0]
@@ -313,7 +315,8 @@ def test06_infinite_cap(variants_vec_backends_once_rgb, radiance, n_z, share):
 
 
 def test07_portals(variants_vec_backends_once_rgb):
-    """With portals, the sky is weighed like an area emitter in the window"""
+    """Portals do not change the selection: the sky keeps its share on both
+    sides of the window and the replayed density matches"""
     n = 1 << 14
     sampler = mi.load_dict({'type': 'independent'})
     sampler.seed(0, n)
@@ -329,19 +332,13 @@ def test07_portals(variants_vec_backends_once_rgb):
     assert len(scene.portals()) == 1
 
     ref = dr.zeros(mi.Interaction3f, n)
-    ref.n = mi.Normal3f(1, 0, 0)
-
-    # In front of the window the sky dominates, behind it the point emitters
-    # are all that remains
-    ref.p = mi.Point3f(0, 0, 0)
-    ds, _ = scene.sample_emitter_direction(ref, sampler.next_2d(), False, False)
-    assert dr.mean(dr.select(ds.emitter == scene.environment(), 1.0, 0.0))[0] > 0.9
-    check_pdf_consistency(scene, ref, sampler.next_2d(), False)
-
-    ref.p = mi.Point3f(4, 0, 0)
-    ref.n = mi.Normal3f(-1, 0, 0)
-    ds, _ = scene.sample_emitter_direction(ref, sampler.next_2d(), False, False)
-    assert dr.all(ds.emitter != scene.environment())
+    for p, nz in (([0, 0, 0], 1), ([4, 0, 0], -1)):
+        ref.p = mi.Point3f(p)
+        ref.n = mi.Normal3f(nz, 0, 0)
+        ds, _ = scene.sample_emitter_direction(ref, sampler.next_2d(), False, False)
+        sky = dr.mean(dr.select(ds.emitter == scene.environment(), 1.0, 0.0))[0]
+        assert abs(sky - 0.5) < 0.02
+        check_pdf_consistency(scene, ref, sampler.next_2d(), False)
 
 
 @pytest.mark.parametrize('radiance', [1e-20, 1.0, 1e20])

@@ -338,8 +338,7 @@ template <typename Value> struct EmitterTreeBuilder {
 NAMESPACE_END(detail)
 
 MI_VARIANT EmitterTree<Float, Spectrum>::EmitterTree(
-    std::vector<ref<Emitter>> &emitters,
-    const std::vector<ref<Emitter>> &portals) {
+    std::vector<ref<Emitter>> &emitters) {
     using Cluster = detail::EmitterTreeCluster<ScalarFloat>;
     constexpr uint32_t Arity = detail::EmitterTreeArity;
 
@@ -357,7 +356,7 @@ MI_VARIANT EmitterTree<Float, Spectrum>::EmitterTree(
         if (has_flag(e->flags(), EmitterFlags::Infinite)) {
             auto [dir, irradiance] = e->irradiance_estimate();
             records.insert(records.end(), { dir.x(), dir.y(), dir.z(),
-                                            irradiance * weight });
+                                            irradiance, weight, 0.f, 0.f, 0.f });
             m_infinite_emitters.push_back(e);
         } else {
             EmitterBounds eb = e->bounds();
@@ -393,25 +392,6 @@ MI_VARIANT EmitterTree<Float, Spectrum>::EmitterTree(
     if (!m_infinite_emitters.empty())
         m_infinite_records = dr::load<DynamicBuffer<Float>>(records.data(),
                                                         records.size());
-
-    // Portals act as one-sided area emitters of unit radiance
-    if (!portals.empty() && !m_infinite_emitters.empty()) {
-        std::vector<uint32_t> nodes(8 * portals.size());
-        for (size_t i = 0; i < portals.size(); ++i) {
-            const ScalarAffineTransform4f &t = portals[i]->world_transform_scalar();
-            ScalarPoint3f c = t * ScalarPoint3f(0.f);
-            ScalarVector3f a = t * ScalarVector3f(1.f, 0.f, 0.f),
-                           b = t * ScalarVector3f(0.f, 1.f, 0.f);
-            ScalarBoundingBox3f bbox;
-            for (ScalarVector3f corner : { a + b, a - b, b - a, -a - b })
-                bbox.expand(ScalarPoint3f(c + corner));
-            Cluster cl { bbox, dr::normalize(t * ScalarNormal3f(0.f, 0.f, 1.f)),
-                         0.f, 0.5f * dr::Pi<ScalarFloat>,
-                         4.f * dr::norm(dr::cross(a, b)) };
-            cl.pack(nodes.data() + 8 * i, 0);
-        }
-        m_portal_nodes = dr::load<UInt32Buffer>(nodes.data(), nodes.size());
-    }
 
     Log(Debug, "Built an emitter tree over %zu emitters (%zu infinite emitters)",
         n, m_infinite_emitters.size());
@@ -492,30 +472,6 @@ MI_VARIANT Float EmitterTree<Float, Spectrum>::importance(
     return dr::select(emits, energy * cos_tp * cos_ip * dr::square(inv_d), 0.f);
 }
 
-MI_VARIANT Float EmitterTree<Float, Spectrum>::infinite_importance(
-    size_t index, const Point3f &p, const Normal3f &n,
-    const Mask &two_sided) const {
-    Vector4f rec = dr::gather<Vector4f>(m_infinite_records, UInt32((uint32_t) index));
-
-    if (uses_portals(index)) {
-        Float result = 0.f;
-        for (size_t i = 0; i < m_portal_nodes.size() / 8; ++i)
-            result += importance(
-                dr::gather<Node>(m_portal_nodes, UInt32((uint32_t) i)),
-                p, n, two_sided);
-        return result * rec.w() * dr::InvPi<Float>;
-    }
-
-    // Directional emitters are delta emitters: only their sidedness counts
-    // (see importance())
-    Vector3f dir(rec.x(), rec.y(), rec.z());
-    Mask directional = dr::any(dir != 0.f), has_n = dr::any(n != 0.f);
-    Float cos_i = dr::dot(n, dir);
-    cos_i = dr::select(two_sided, dr::abs(cos_i), cos_i);
-    Float f = dr::select(directional && has_n && cos_i <= 0.f, 0.f, 1.f);
-    return rec.w() * f;
-}
-
 MI_VARIANT typename EmitterTree<Float, Spectrum>::Weights
 EmitterTree<Float, Spectrum>::weights(const Point3f &p, const Normal3f &n,
                                     const Mask &two_sided) const {
@@ -528,29 +484,39 @@ EmitterTree<Float, Spectrum>::weights(const Point3f &p, const Normal3f &n,
         return w;
     }
 
-    // The constant indices of the root and portal gathers always exist.
-    // Masking them would produce zero nodes, whose zero radius breaks
-    // the distance clamp of importance()
+    // The root gather has a constant index that always exists
     w.tree = importance(dr::gather<Node>(m_nodes, UInt32(0)), p, n, two_sided);
-    w.total = w.tree;
 
-    // Without portals, nothing tells how much of an infinite emitter the
-    // receiver can see. Such emitters together never outweigh the tree, so
-    // that an enclosed scene still samples its own emitters. A receiver that
-    // faces away from every finite emitter leaves the tree without weight
-    // and then draws only from the infinite emitters.
+    // Nothing tells how much of an infinite emitter the receiver can see.
+    // Their irradiance together never outweighs the tree, so that an
+    // enclosed scene still samples its own emitters, and their sampling
+    // weights apply on top of this cap. A receiver that faces away from
+    // every finite emitter leaves the tree without weight and then draws
+    // only from the infinite emitters.
     w.infinite.resize(n_infinite);
-    Float unbounded = 0.f;
+    std::vector<Float> sampling_weight(n_infinite);
+    Float sum = 0.f;
+    Mask has_n = dr::any(n != 0.f);
     for (size_t k = 0; k < n_infinite; ++k) {
-        w.infinite[k] = infinite_importance(k, p, n, two_sided);
-        if (!uses_portals(k))
-            unbounded += w.infinite[k];
+        auto rec = dr::gather<dr::Array<Float, 8>>(m_infinite_records,
+                                                   UInt32((uint32_t) k));
+        Float irradiance = rec[3];
+        // A directional emitter is a delta emitter: only its sidedness
+        // counts (see importance())
+        if (has_flag(m_infinite_emitters[k]->flags(),
+                     EmitterFlags::DeltaDirection)) {
+            Float cos_i = dr::dot(n, Vector3f(rec[0], rec[1], rec[2]));
+            cos_i = dr::select(two_sided, dr::abs(cos_i), cos_i);
+            irradiance = dr::select(has_n && cos_i <= 0.f, 0.f, irradiance);
+        }
+        w.infinite[k] = irradiance;
+        sampling_weight[k] = rec[4];
+        sum += irradiance;
     }
-    Float scale = dr::select(unbounded > w.tree && w.tree > 0.f,
-                             w.tree / unbounded, 1.f);
+    Float scale = dr::select(sum > w.tree && w.tree > 0.f, w.tree / sum, 1.f);
+    w.total = w.tree;
     for (size_t k = 0; k < n_infinite; ++k) {
-        if (!uses_portals(k))
-            w.infinite[k] *= scale;
+        w.infinite[k] *= scale * sampling_weight[k];
         w.total += w.infinite[k];
     }
     return w;

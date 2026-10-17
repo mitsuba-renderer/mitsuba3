@@ -236,7 +236,7 @@ void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
     }
     if (m_use_emitter_tree && n_finite > 1) {
         try {
-            m_emitter_tree = new EmitterTree(m_emitters, m_portals);
+            m_emitter_tree = new EmitterTree(m_emitters);
         } catch (const std::exception &e) {
             Log(Warn, "Could not build the emitter tree, falling back to the "
                       "selection by sampling weight: %s", e.what());
