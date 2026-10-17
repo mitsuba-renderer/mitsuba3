@@ -190,6 +190,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, flags)
         .def_method(Emitter, bounds)
         .def_method(Emitter, irradiance_estimate)
+        .def_method(Emitter, emitter_tree_code)
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));

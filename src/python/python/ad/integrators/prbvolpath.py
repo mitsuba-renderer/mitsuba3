@@ -227,7 +227,7 @@ class PRBVolpathIntegrator(RBIntegrator):
                 # Get the PDF of sampling this emitter using next event estimation
                 ds = mi.DirectionSample3f(scene, si, last_scatter_event)
                 if dr.hint(self.use_nee, mode='scalar'):
-                    emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, active_e)
+                    emitter_pdf = scene.pdf_emitter_direction(last_scatter_event, ds, True, active_e)
                 else:
                     emitter_pdf = 0.0
                 emitted = emitter.eval(si, active_e)
@@ -358,7 +358,7 @@ class PRBVolpathIntegrator(RBIntegrator):
 
         ds, emitter_val = scene.sample_emitter_direction(ref_interaction,
                                                          sampler.next_2d(active),
-                                                         False, active)
+                                                         False, True, active)
         ds = dr.detach(ds)
         invalid = (ds.pdf == 0.0)
         emitter_val[invalid] = 0.0

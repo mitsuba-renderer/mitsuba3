@@ -3919,6 +3919,15 @@ static const char *__doc_mitsuba_Emitter_is_environment = R"doc(Is this an envir
 
 static const char *__doc_mitsuba_Emitter_is_portal = R"doc(Is this a light portal? (see ``Scene::portals()``))doc";
 
+static const char *__doc_mitsuba_Emitter_emitter_tree_code =
+R"doc(Path code of the emitter within the scene's emitter tree
+
+Each level of the path from the root to the emitter's leaf contributes
+the index of the chosen child among 8 in 3 bits, from the lowest bits
+upward. A set bit above the last level marks the depth. The code is
+zero when the emitter is not part of the tree. The scene assigns the
+value when it builds the tree.)doc";
+
 static const char *__doc_mitsuba_Emitter_m_dirty = R"doc(True if the emitter's parameters have changed)doc";
 
 static const char *__doc_mitsuba_Emitter_m_flags = R"doc(Combined flags for all properties of this emitter.)doc";
@@ -10080,6 +10089,9 @@ Args:
 
     ds: A direction sampling record, which specifies the query location.
 
+    two_sided: Can the reference point receive light from both sides of
+        ``ref.n``? See `sample_emitter_direction()`.
+
 Returns:
     The solid angle density of the sample)doc";
 
@@ -10348,6 +10360,11 @@ profile and the inverse square distance between the reference point and
 the sampled emitter position. However, approximations are acceptable as
 long as these are reflected in the returned Monte Carlo sampling weight.
 
+By default, the scene chooses the emitter with an emitter tree, which
+uses the position ``ref.p`` and the normal ``ref.n`` (zero for
+interactions in participating media). See the ``emitter_tree`` scene
+parameter in the plugin documentation.
+
 Args:
     ref: A 3D reference location within the scene, which may influence the
         sampling process.
@@ -10358,6 +10375,14 @@ Args:
         sampled emitter position and the reference point are mutually visible.
         The shadow ray passes through surfaces with null transmission and
         the returned weight includes their transmittance (see `ray_test_tr()`).
+
+    two_sided: Can the reference point receive light from both sides of
+        ``ref.n``? With ``False``, the emitter tree skips the emitters
+        behind the surface. Integrators pass ``False`` at surfaces whose
+        BSDF has no transmission, unless the incident direction lies
+        behind the geometric normal, as at a two-sided surface seen from
+        the back. The value must match the one given to
+        `pdf_emitter_direction()` for the same reference point.
 
 Returns:
     A tuple ``(ds, spec)`` where
@@ -10470,7 +10495,7 @@ static const char *__doc_mitsuba_Scene_traverse_cb_fields = R"doc()doc";
 
 static const char *__doc_mitsuba_Scene_type = R"doc()doc";
 
-static const char *__doc_mitsuba_Scene_update_emitter_sampling_distribution = R"doc(Updates the discrete distribution used to select an emitter)doc";
+static const char *__doc_mitsuba_Scene_update_emitter_sampling_distribution = R"doc(Updates the discrete distribution and the emitter tree used to select an emitter)doc";
 
 static const char *__doc_mitsuba_Scene_update_filtered_textures = R"doc(Set ``m_has_filtered_textures`` by scanning the shapes' object graphs)doc";
 

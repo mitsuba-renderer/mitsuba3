@@ -127,6 +127,21 @@ vertex, which is a known limitation.
 sample directions through the portals. The :monosp:`portal_weight` parameter
 sets the probability of this strategy relative to the emitter's own one.
 
+**Emitter selection:** In scenes with at least two emitters of finite extent,
+direct illumination sampling picks an emitter with an emitter tree in the style
+of Conty Estevez and Kulla (2018). The tree groups the
+emitters of finite extent by position, orientation and power (an emitter made
+of many separate parts can expose them as individual primitives of the tree), and
+the traversal weighs each group by an estimate of its contribution at the shading point,
+which the scene compares against the irradiance of the infinite emitters. In a
+scene with :ref:`portals <emitter-portal>`, environment emitters count like
+area emitters seen through the portals, which keeps an interior from spending
+most of its samples on an occluded sky. Without portals, the infinite emitters
+together never receive more weight than the tree. This makes scenes with many
+emitters far less noisy than a uniform choice. Setting
+:monosp:`emitter_tree` to |false| restores the selection proportional to the
+emitters' :monosp:`sampling_weight`, which also scales their energy in the tree.
+
 **Thread reordering:** Ray intersection methods on the scene can take a
 `reorder` argument to specifiy whether or not threads should be shuffled into
 coherent groups after the intersection (shader execution reordering). Both this
@@ -151,6 +166,10 @@ has no effect in scalar or LLVM variants.
    - :paramtype:`float`
    - Probability of sampling directions through the scene's light portals
      rather than with the environment emitter's own strategy (Default: 0.5).
+ * - emitter_tree
+   - :paramtype:`bool`
+   - Whether direct illumination sampling selects emitters with an emitter tree
+     rather than proportionally to their sampling weight (Default: |true|).
 
 When creating a scene, the scene-wide attributes can be specified as follows:
 

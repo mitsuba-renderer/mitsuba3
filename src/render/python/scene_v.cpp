@@ -99,10 +99,12 @@ MI_PY_EXPORT(Scene) {
         .def("pdf_emitter", &Scene::pdf_emitter,
              "index"_a, "active"_a = true, D(Scene, pdf_emitter))
         .def("sample_emitter_direction", &Scene::sample_emitter_direction,
-             "ref"_a, "sample"_a, "test_visibility"_a = true, "active"_a = true,
+             "ref"_a, "sample"_a, "test_visibility"_a = true,
+             "two_sided"_a = true, "active"_a = true,
              D(Scene, sample_emitter_direction))
         .def("pdf_emitter_direction", &Scene::pdf_emitter_direction,
-             "ref"_a, "ds"_a, "active"_a = true, D(Scene, pdf_emitter_direction))
+             "ref"_a, "ds"_a, "two_sided"_a = true, "active"_a = true,
+             D(Scene, pdf_emitter_direction))
         .def("eval_emitter_direction", &Scene::eval_emitter_direction,
              "ref"_a, "ds"_a, "active"_a = true, D(Scene, eval_emitter_direction))
         .def("sample_emitter_ray", &Scene::sample_emitter_ray,

@@ -5,6 +5,7 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/mesh.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/render/emtree.h>
 #include <mitsuba/render/integrator.h>
 
 #if defined(MI_ENABLE_EMBREE)
@@ -32,6 +33,7 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
     m_portal_data.weight = props.get<ScalarFloat>("portal_weight", .5f);
     if (m_portal_data.weight < 0.f || m_portal_data.weight > 1.f)
         Throw("'portal_weight' must be in [0, 1]!");
+    m_use_emitter_tree = props.get<bool>("emitter_tree", true);
 
     for (auto &prop : props.objects()) {
         ref<Object> v = prop.get<ref<Object>>();
@@ -223,6 +225,24 @@ void Scene<Float, Spectrum>::update_emitter_sampling_distribution() {
         // By default use uniform sampling with constant PMF
         m_emitter_distr = nullptr;
     }
+
+    m_emitter_tree = nullptr;
+    size_t n_finite = 0;
+    for (auto &e : m_emitters) {
+        e->m_emitter_tree_code = 0;
+        if (e->sampling_weight() != 0.f &&
+            !has_flag(e->flags(), EmitterFlags::Infinite))
+            n_finite++;
+    }
+    if (m_use_emitter_tree && n_finite > 1) {
+        try {
+            m_emitter_tree = new EmitterTree(m_emitters, m_portals);
+        } catch (const std::exception &e) {
+            Log(Warn, "Could not build the emitter tree, falling back to the "
+                      "selection by sampling weight: %s", e.what());
+        }
+    }
+
     // Clear emitter's dirty flag
     for (auto &e : m_emitters)
         e->set_dirty(false);
@@ -985,7 +1005,8 @@ Scene<Float, Spectrum>::sample_emitter_ray(Float time, Float sample1,
 
 MI_VARIANT std::pair<typename Scene<Float, Spectrum>::DirectionSample3f, Spectrum>
 Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const Point2f &sample_,
-                                                 bool test_visibility, Mask active) const {
+                                                 bool test_visibility, Mask two_sided,
+                                                 Mask active) const {
     MI_MASKED_FUNCTION(ProfilerPhase::SampleEmitterDirection, active);
 
     Point2f sample(sample_);
@@ -994,7 +1015,10 @@ Scene<Float, Spectrum>::sample_emitter_direction(const Interaction3f &ref, const
 
     // Don't inline emitter sampling in JIT variants(if there is just a single emitter)
     size_t emitter_count = m_emitter_pmf != 0.f ? m_emitters.size() : 0;
-    if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
+    if (m_emitter_tree) {
+        std::tie(ds, spec) =
+            m_emitter_tree->sample_direction(ref, sample, two_sided, active);
+    } else if (emitter_count > 1 || (emitter_count == 1 && drjit::is_jit_v<Float>)) {
         // Randomly pick an emitter
         auto [index, emitter_weight, sample_x_re] = sample_emitter(sample.x(), active);
         sample.x() = sample_x_re;
@@ -1068,8 +1092,12 @@ MI_VARIANT uint32_t Scene<Float, Spectrum>::shape_types() const {
 MI_VARIANT Float
 Scene<Float, Spectrum>::pdf_emitter_direction(const Interaction3f &ref,
                                               const DirectionSample3f &ds,
+                                              Mask two_sided,
                                               Mask active) const {
     MI_MASK_ARGUMENT(active);
+    if (m_emitter_tree)
+        return m_emitter_tree->pdf_direction(ref, ds, two_sided, active);
+
     Float emitter_pmf;
     if (m_emitter_distr == nullptr)
         emitter_pmf = m_emitter_pmf;
@@ -1249,13 +1277,13 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
     }
 
     // Check if emitters were modified and we potentially need to update
-    // the emitter sampling distribution.
-    for (auto &e : m_emitters) {
-        if (e->dirty()) {
-            update_emitter_sampling_distribution();
-            break;
-        }
-    }
+    // the emitter sampling distribution. A changed shape may have moved an
+    // area emitter, which the emitter tree must reflect.
+    bool emitters_dirty = accel_is_dirty && m_use_emitter_tree;
+    for (auto &e : m_emitters)
+        emitters_dirty |= e->dirty();
+    if (emitters_dirty)
+        update_emitter_sampling_distribution();
 }
 
 MI_VARIANT std::string Scene<Float, Spectrum>::to_string() const {

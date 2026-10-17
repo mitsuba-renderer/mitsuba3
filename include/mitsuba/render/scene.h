@@ -46,7 +46,7 @@ class MI_EXPORT_LIB Scene final : public JitObject<Scene<Float, Spectrum>> {
 public:
     MI_IMPORT_TYPES(BSDF, Emitter, EmitterPtr, SensorPtr, Film, Sampler, Shape,
                     ShapePtr, ShapeGroup, Sensor, Integrator, Medium, MediumPtr,
-                    Mesh)
+                    Mesh, EmitterTree)
 
     /// Instantiate a scene from a `Properties` object
     Scene(const Properties &props);
@@ -446,6 +446,11 @@ public:
      * the sampled emitter position. However, approximations are acceptable as
      * long as these are reflected in the returned Monte Carlo sampling weight.
      *
+     * By default, the scene chooses the emitter with an emitter tree, which
+     * uses the position ``ref.p`` and the normal ``ref.n`` (zero for
+     * interactions in participating media). See the ``emitter_tree`` scene
+     * parameter in the plugin documentation.
+     *
      * Args:
      *     ref: A 3D reference location within the scene, which may influence the
      *         sampling process.
@@ -456,6 +461,14 @@ public:
      *         sampled emitter position and the reference point are mutually visible.
      *         The shadow ray passes through surfaces with null transmission and
      *         the returned weight includes their transmittance (see `ray_test_tr()`).
+     *
+     *     two_sided: Can the reference point receive light from both sides of
+     *         ``ref.n``? With ``False``, the emitter tree skips the emitters
+     *         behind the surface. Integrators pass ``False`` at surfaces whose
+     *         BSDF has no transmission, unless the incident direction lies
+     *         behind the geometric normal, as at a two-sided surface seen from
+     *         the back. The value must match the one given to
+     *         `pdf_emitter_direction()` for the same reference point.
      *
      * Returns:
      *     A tuple ``(ds, spec)`` where
@@ -474,6 +487,7 @@ public:
     sample_emitter_direction(const Interaction3f &ref,
                              const Point2f &sample,
                              bool test_visibility = true,
+                             Mask two_sided = true,
                              Mask active = true) const;
 
     /**
@@ -491,11 +505,15 @@ public:
      *
      *     ds: A direction sampling record, which specifies the query location.
      *
+     *     two_sided: Can the reference point receive light from both sides of
+     *         ``ref.n``? See `sample_emitter_direction()`.
+     *
      * Returns:
      *     The solid angle density of the sample
      */
     Float pdf_emitter_direction(const Interaction3f &ref,
                                 const DirectionSample3f &ds,
+                                Mask two_sided = true,
                                 Mask active = true) const;
 
     /**
@@ -755,7 +773,7 @@ protected:
 
     using ShapeKDTree = mitsuba::ShapeKDTree<Float, Spectrum>;
 
-    /// Updates the discrete distribution used to select an emitter
+    /// Updates the discrete distribution and the emitter tree used to select an emitter
     void update_emitter_sampling_distribution();
 
     /// Updates the discrete distribution used to select a shape's silhouette
@@ -790,6 +808,12 @@ protected:
     /// emitter that sample_emitter() could pick.
     ScalarFloat m_emitter_pmf;
     std::unique_ptr<DiscreteDistribution<Float>> m_emitter_distr = nullptr;
+
+    /// Emitter tree for emitter sampling, null when the scene does not use one
+    ref<EmitterTree> m_emitter_tree;
+
+    /// Use an emitter tree when the scene has at least two finite emitters?
+    bool m_use_emitter_tree;
 
     std::vector<ref<Shape>> m_silhouette_shapes;
     DynamicBuffer<ShapePtr> m_silhouette_shapes_dr;
@@ -852,7 +876,8 @@ protected:
                            m_shapes_dr, m_shapegroups, m_portals,
                            m_portal_data, m_sensors, m_sensors_dr,
                            m_children, m_integrator, m_environment,
-                           m_emitter_pmf, m_emitter_distr, m_silhouette_shapes,
+                           m_emitter_pmf, m_emitter_distr, m_emitter_tree,
+                           m_silhouette_shapes,
                            m_silhouette_shapes_dr, m_silhouette_distr,
                            m_instance_transforms, m_instance_kf_data,
                            m_instance_kf_meta)
