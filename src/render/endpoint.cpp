@@ -130,6 +130,17 @@ Endpoint<Float, Spectrum>::position_bounds() const {
     return bbox;
 }
 
+MI_VARIANT std::pair<typename Endpoint<Float, Spectrum>::ScalarVector3f,
+                     typename Endpoint<Float, Spectrum>::ScalarFloat>
+Endpoint<Float, Spectrum>::direction_bounds(const ScalarVector3f &local) const {
+    if (!m_to_world_anim)
+        return { dr::normalize(m_to_world.scalar() * local), 0.f };
+
+    ScalarFloat t0 = m_to_world_anim->keyframes().front().first;
+    return { dr::normalize(m_to_world_anim->eval_scalar(t0) * local),
+             dr::Pi<ScalarFloat> };
+}
+
 MI_IMPLEMENT_TRAVERSE_CB(Endpoint, Object)
 MI_INSTANTIATE_CLASS(Endpoint)
 NAMESPACE_END(mitsuba)

@@ -284,6 +284,13 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
+    EmitterBounds bounds() const override {
+        auto [axis, theta_o] =
+            this->direction_bounds(ScalarVector3f(0.f, 0.f, 1.f));
+        return { position_bounds(), axis, theta_o,
+                 dr::slice(m_cutoff_angle_rad), m_intensity->max() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "SpotLight[" << std::endl

@@ -61,6 +61,59 @@ enum class EmitterFlags : uint32_t {
 
 MI_DECLARE_ENUM_OPERATORS(EmitterFlags)
 
+/**
+ * \brief Scalar summary of an emitter for emitter selection
+ *
+ * Emitter sampling data structures such as emitter trees need to know where an
+ * emitter is, into which directions it emits and how much, without
+ * evaluating it. \ref Emitter::bounds() returns this record for every
+ * emitter of finite extent. The orientation cone follows Conty Estevez and
+ * Kulla (2018): a point emitter reports <tt>theta_o = pi</tt> and
+ * <tt>theta_e = pi/2</tt>, a spot emitter <tt>theta_o = 0</tt> and its cutoff
+ * angle as \c theta_e.
+ */
+template <typename Float>
+struct EmitterBounds {
+    MI_IMPORT_CORE_TYPES()
+
+    /// World-space bounding box of the emitting geometry
+    ScalarBoundingBox3f bbox;
+
+    /// Axis of the orientation cone
+    ScalarVector3f axis;
+
+    /// Bound on the angle between any emitter normal and \c axis, in radians
+    ScalarFloat theta_o;
+
+    /// Angular spread of the emission around each normal, in radians
+    ScalarFloat theta_e;
+
+    /**
+     * \brief Estimate of the radiant intensity (power per steradian) that
+     * the emitter radiates into the directions of its cone
+     *
+     * Area emitters report the radiance times the surface area, point and
+     * spot emitters their intensity. The maximum of a spatially varying
+     * texture cannot be computed in general, so such textures count as
+     * modulations bounded by one. Emitters modulated by a directional
+     * profile may scale this by the profile's average. The value does not
+     * include \ref Emitter::sampling_weight().
+     */
+    ScalarFloat energy;
+};
+
+template <typename Float>
+std::ostream &operator<<(std::ostream &os, const EmitterBounds<Float> &lb) {
+    os << "EmitterBounds[" << std::endl
+       << "  bbox = " << string::indent(lb.bbox) << "," << std::endl
+       << "  axis = " << lb.axis << "," << std::endl
+       << "  theta_o = " << lb.theta_o << "," << std::endl
+       << "  theta_e = " << lb.theta_e << "," << std::endl
+       << "  energy = " << lb.energy << std::endl
+       << "]";
+    return os;
+}
+
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
@@ -104,6 +157,15 @@ public:
 
     /// Modify the emitter's ``dirty`` flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
+
+    /**
+     * \brief Return the scalar summary of the emitter for emitter sampling
+     * data structures
+     *
+     * Infinite and portal emitters raise an exception, as does the default
+     * implementation. See \ref EmitterBounds.
+     */
+    virtual EmitterBounds bounds() const;
 
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Emitter)

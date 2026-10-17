@@ -951,6 +951,8 @@ public:
 
     Float surface_area() const override;
 
+    std::pair<ScalarVector3f, ScalarFloat> normal_cone() const override;
+
     PositionSample3f sample_position(Float time,
                                      const Point2f &sample,
                                      Mask active = true) const override;

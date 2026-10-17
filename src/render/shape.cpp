@@ -338,6 +338,12 @@ MI_VARIANT Float Shape<Float, Spectrum>::surface_area() const {
     NotImplementedError("surface_area");
 }
 
+MI_VARIANT std::pair<typename Shape<Float, Spectrum>::ScalarVector3f,
+                     typename Shape<Float, Spectrum>::ScalarFloat>
+Shape<Float, Spectrum>::normal_cone() const {
+    return { ScalarVector3f(0.f, 0.f, 1.f), dr::Pi<ScalarFloat> };
+}
+
 MI_VARIANT typename Shape<Float, Spectrum>::ScalarBoundingBox3f
 Shape<Float, Spectrum>::bbox(ScalarIndex) const {
     return bbox();

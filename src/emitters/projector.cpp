@@ -310,6 +310,20 @@ public:
         return ScalarBoundingBox3f();
     }
 
+    EmitterBounds bounds() const override {
+        auto [axis, theta_o] =
+            this->direction_bounds(ScalarVector3f(0.f, 0.f, 1.f));
+        // The emission fills the image rectangle, whose corners lie at the
+        // diagonal half-angle from the axis
+        ScalarVector2i size = m_irradiance->resolution();
+        ScalarFloat aspect = size.y() / (ScalarFloat) size.x(),
+                    tan_half = dr::tan(0.5f * dr::deg_to_rad(m_x_fov)),
+                    theta_e = dr::atan(tan_half * dr::sqrt(1.f + dr::square(aspect)));
+        // The irradiance image counts as a modulation bounded by one
+        return { this->position_bounds(), axis, theta_o, theta_e,
+                 dr::slice(m_intensity_scale) };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "Projector[" << std::endl

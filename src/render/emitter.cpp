@@ -22,5 +22,11 @@ MI_VARIANT void Emitter<Float, Spectrum>::parameters_changed(const std::vector<s
     Base::parameters_changed(keys);
 }
 
+MI_VARIANT typename Emitter<Float, Spectrum>::EmitterBounds
+Emitter<Float, Spectrum>::bounds() const {
+    Throw("%s::bounds(): this emitter does not have a finite extent!",
+          class_name());
+}
+
 MI_INSTANTIATE_CLASS(Emitter)
 NAMESPACE_END(mitsuba)

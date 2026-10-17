@@ -86,6 +86,10 @@ public:
         NB_OVERRIDE(surface_area);
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> normal_cone() const override {
+        NB_OVERRIDE(normal_cone);
+    }
+
     PositionSample3f sample_position(Float time, const Point2f &sample,
                                      Mask active) const override {
         NB_OVERRIDE(sample_position, time, sample, active);
@@ -557,6 +561,7 @@ MI_PY_EXPORT(Shape) {
         .def_method(Shape, primitive_count)
         .def_method(Shape, effective_primitive_count)
         .def_method(Shape, precompute_silhouette, "viewpoint"_a)
+        .def_method(Shape, normal_cone)
         .def("initialize", &PyShape::initialize, D(Shape, initialize));
 
     drjit::bind_traverse(shape);

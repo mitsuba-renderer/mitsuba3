@@ -420,6 +420,16 @@ protected:
     /// keyframes of an animated ``to_world`` transformation
     ScalarBoundingBox3f position_bounds() const;
 
+    /**
+     * \brief Bound on the world-space images of a local direction
+     *
+     * Returns an axis and an angle in radians such that the direction
+     * ``local`` transformed by ``to_world`` lies within that angle of the
+     * axis at every time. An animated transformation yields the angle pi.
+     */
+    std::pair<ScalarVector3f, ScalarFloat>
+    direction_bounds(const ScalarVector3f &local) const;
+
 protected:
     field<AffineTransform4f, ScalarAffineTransform4f> m_to_world;
     ref<AnimatedTransform4f> m_to_world_anim;

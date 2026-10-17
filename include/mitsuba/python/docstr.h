@@ -3817,6 +3817,38 @@ static const char *__doc_mitsuba_EmbreeSceneState_scene = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter = R"doc()doc";
 
+static const char *__doc_mitsuba_EmitterBounds =
+R"doc(Scalar summary of an emitter for emitter selection
+
+Emitter sampling data structures such as emitter trees need to know where an
+emitter is, into which directions it emits and how much, without
+evaluating it. Emitter::bounds() returns this record for every
+emitter of finite extent. The orientation cone follows Conty Estevez and
+Kulla (2018): a point emitter reports <tt>theta_o = pi</tt> and
+<tt>theta_e = pi/2</tt>, a spot emitter <tt>theta_o = 0</tt> and its cutoff
+angle as ``theta_e``.)doc";
+
+static const char *__doc_mitsuba_EmitterBounds_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_EmitterBounds_axis = R"doc(Axis of the orientation cone)doc";
+
+static const char *__doc_mitsuba_EmitterBounds_bbox = R"doc(World-space bounding box of the emitting geometry)doc";
+
+static const char *__doc_mitsuba_EmitterBounds_energy =
+R"doc(Estimate of the radiant intensity (power per steradian) that
+the emitter radiates into the directions of its cone
+
+Area emitters report the radiance times the surface area, point and
+spot emitters their intensity. The maximum of a spatially varying
+texture cannot be computed in general, so such textures count as
+modulations bounded by one. Emitters modulated by a directional
+profile may scale this by the profile's average. The value does not
+include Emitter::sampling_weight().)doc";
+
+static const char *__doc_mitsuba_EmitterBounds_theta_e = R"doc(Angular spread of the emission around each normal, in radians)doc";
+
+static const char *__doc_mitsuba_EmitterBounds_theta_o = R"doc(Bound on the angle between any emitter normal and ``axis``, in radians)doc";
+
 static const char *__doc_mitsuba_Emitter_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_Emitter_3 = R"doc()doc";
@@ -3855,6 +3887,13 @@ the shape through ``Shape::eval_parameterization()``, which meshes must
 prepare for)doc";
 
 static const char *__doc_mitsuba_Emitter_Emitter = R"doc(This is both a class and the base of various Mitsuba plugins)doc";
+
+static const char *__doc_mitsuba_Emitter_bounds =
+R"doc(Return the scalar summary of the emitter for emitter sampling data
+structures
+
+Infinite and portal emitters raise an exception, as does the default
+implementation. See EmitterBounds.)doc";
 
 static const char *__doc_mitsuba_Emitter_class_name = R"doc()doc";
 
@@ -10871,6 +10910,15 @@ static const char *__doc_mitsuba_ShapeVisibility_Secondary = R"doc(Hidden from p
 static const char *__doc_mitsuba_Shape_Shape = R"doc()doc";
 
 static const char *__doc_mitsuba_Shape_Shape_2 = R"doc()doc";
+
+static const char *__doc_mitsuba_Shape_normal_cone =
+R"doc(Bound on the surface normals of the shape
+
+Returns a world-space axis and an angle in radians such that every
+surface normal of the shape lies within that angle of the axis. Light
+sampling data structures use it to bound the emission of area lights
+(see EmitterBounds). The default implementation returns the full
+sphere; meshes and planar shapes override it.)doc";
 
 static const char *__doc_mitsuba_Shape_to_world_anim =
 R"doc(Return the animated object-to-world transformation, or ``nullptr`` if

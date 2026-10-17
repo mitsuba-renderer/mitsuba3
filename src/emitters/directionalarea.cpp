@@ -168,6 +168,18 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return m_shape->bbox(); }
 
+    EmitterBounds bounds() const override {
+        if (!m_shape)
+            Throw("DirectionalArea::bounds(): the emitter is not attached to "
+                  "a shape!");
+        auto [axis, theta_o] = m_shape->normal_cone();
+        // A spatially varying radiance counts as a modulation bounded by one
+        ScalarFloat radiance = m_radiance->is_spatially_varying()
+                                   ? 1.f : m_radiance->max();
+        return { m_shape->bbox(), axis, theta_o, 0.f,
+                 radiance * dr::slice(m_area) };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "DirectionalArea[" << std::endl

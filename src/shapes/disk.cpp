@@ -166,6 +166,10 @@ public:
         return dr::Pi<ScalarFloat> * m_du * h;
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> normal_cone() const override {
+        return { ScalarVector3f(dr::slice(m_frame.n)), 0.f };
+    }
+
     // =============================================================
     // Sampling routines
     // =============================================================
