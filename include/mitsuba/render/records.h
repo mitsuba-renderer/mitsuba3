@@ -36,13 +36,12 @@ struct PositionSample {
     /// Sampled position
     Point3f p;
 
-    /// Sampled surface normal (if applicable)
+    /// Sampled geometric surface normal (if applicable)
     Normal3f n;
 
     /**
-     * Bound on the rounding error of ``p``, see `Interaction3f.p_err`. Records
-     * built from a surface interaction carry the bound along the geometric
-     * normal while ``n`` holds the shading normal.
+     * Bound on the rounding error of ``p``, see `Interaction3f.p_err`. The
+     * bound is measured along the geometric normal (``this->n``).
      */
     Float p_err = 0.f;
 
@@ -79,7 +78,7 @@ struct PositionSample {
      * instance in path tracing with multiple importance sampling.
      */
     PositionSample(const SurfaceInteraction3f &si)
-        : p(si.p), n(si.sh_frame.n), p_err(si.p_err), uv(si.uv),
+        : p(si.p), n(si.n), p_err(si.p_err), uv(si.uv),
           time(si.time), pdf(0.f), delta(false) { }
 
     /// Basic field constructor

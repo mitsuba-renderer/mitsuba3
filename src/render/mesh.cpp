@@ -1663,18 +1663,8 @@ Mesh<Float, Spectrum>::sample_position(Float time, const Point2f &sample_, Mask 
         ps.uv = b;
     }
 
-    if (has_normals()) {
-        Normal3f n0 = vertex_normal(fi[0], active),
-                 n1 = vertex_normal(fi[1], active),
-                 n2 = vertex_normal(fi[2], active);
-
-        ps.n = dr::fmadd(n0, (1.f - b.x() - b.y()),
-                         dr::fmadd(n1, b.x(), n2 * b.y()));
-    } else {
-        ps.n = dr::cross(e0, e1);
-    }
-
-    ps.n = dr::normalize(ps.n);
+    // Use the geometric normal
+    ps.n = Normal3f(face_normal(p0, p1, p2));
     ps.p_err = face_position_error(frec);
 
     return ps;

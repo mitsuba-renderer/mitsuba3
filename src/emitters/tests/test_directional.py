@@ -94,7 +94,7 @@ def test_sample_direction(variant_scalar_spectral, spectrum_key, direction):
     spectrum = make_spectrum(spectrum_key)
 
     it = mi.SurfaceInteraction3f()
-    it.wavelengths = [0, 0, 0, 0]
+    it.wavelengths = mi.UnpolarizedSpectrum(550)
 
     # Some position inside the unit sphere (i.e. within the emitter's default bounding sphere)
     it.p = [-0.5, 0.3, -0.1]

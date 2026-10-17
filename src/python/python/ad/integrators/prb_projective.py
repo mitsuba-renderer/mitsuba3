@@ -470,6 +470,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # ``si_fg`` surgery
         si_fg.sh_frame[wrong_side] = mi.Frame3f(new_sh_normal)
         si_fg.wi[wrong_side] = si_fg.to_local(-ss.d)
+        si_fg.n = dr.mulsign(si_fg.n, dr.dot(si_fg.n, -ss.d))
 
         # Call `sample()` to estimate the radiance starting from the surface
         # interaction
