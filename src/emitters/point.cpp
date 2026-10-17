@@ -182,6 +182,12 @@ public:
 
     ScalarBoundingBox3f bbox() const override { return position_bounds(); }
 
+    EmitterBounds bounds() const override {
+        return { position_bounds(), ScalarVector3f(0.f, 0.f, 1.f),
+                 dr::Pi<ScalarFloat>, 0.5f * dr::Pi<ScalarFloat>,
+                 m_intensity->max() };
+    }
+
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "PointLight[" << std::endl

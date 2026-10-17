@@ -637,6 +637,18 @@ public:
     virtual Float surface_area() const;
 
     /**
+     * Bound on the surface normals of the shape
+     *
+     * Returns a world-space axis and an angle in radians such that every
+     * surface normal of the shape lies within that angle of the axis.
+     * Emitter sampling data structures use this to bound the emission of
+     * area emitters (see `EmitterBounds`). The default implementation
+     * returns the full sphere. Meshes, disks and rectangles return a tighter
+     * bound.
+     */
+    virtual std::pair<ScalarVector3f, ScalarFloat> normal_cone() const;
+
+    /**
      * Add a texture attribute with the given ``name``.
      *
      * If an attribute with the same name already exists, it is replaced.

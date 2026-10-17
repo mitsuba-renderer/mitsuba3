@@ -1621,6 +1621,58 @@ MI_VARIANT Float Mesh<Float, Spectrum>::surface_area() const {
     return m_area_pmf.sum();
 }
 
+MI_VARIANT std::pair<typename Mesh<Float, Spectrum>::ScalarVector3f,
+                     typename Mesh<Float, Spectrum>::ScalarFloat>
+Mesh<Float, Spectrum>::normal_cone() const {
+    // The axis points to the center of the bounding box of the face normals,
+    // and the angle is the largest deviation of a face normal from it.
+    // Degenerate faces (NaN normals) are skipped. Each pass reduces into a
+    // small buffer with one kernel and one readback in JIT variants (see
+    // reduce_bbox()). Min/max reductions do not depend on the order of the
+    // atomic updates, which keeps the result deterministic.
+    using Buffer = DynamicBuffer<Float>;
+    auto read = [](const Buffer &buf) {
+        Buffer host = dr::migrate(buf, JitBackend::None);
+        if constexpr (dr::is_jit_v<Float>)
+            dr::sync_thread();
+        return host;
+    };
+
+    constexpr ScalarFloat inf = dr::Infinity<ScalarFloat>;
+    ScalarFloat init[6] = { inf, inf, inf, -inf, -inf, -inf };
+    Buffer bounds = dr::load<Buffer>(init, 6);
+    foreach_index<UInt32>(m_face_count, [&](const UInt32 &f) {
+        Vector3f n = face_normal(f);
+        Mask valid = dr::all(dr::isfinite(n));
+        for (uint32_t i = 0; i < 3; ++i) {
+            dr::scatter_reduce(ReduceOp::Min, bounds, n[i], UInt32(i), valid,
+                               ReduceMode::Local);
+            dr::scatter_reduce(ReduceOp::Max, bounds, n[i], UInt32(i + 3),
+                               valid, ReduceMode::Local);
+        }
+    });
+    bounds = read(bounds);
+    const ScalarFloat *b = bounds.data();
+    ScalarBoundingBox3f nbox(ScalarPoint3f(b[0], b[1], b[2]),
+                             ScalarPoint3f(b[3], b[4], b[5]));
+    if (!nbox.valid())
+        return { ScalarVector3f(0.f, 0.f, 1.f), dr::Pi<ScalarFloat> };
+    ScalarVector3f axis(nbox.center());
+    if (dr::squared_norm(axis) == 0.f)
+        return { ScalarVector3f(0.f, 0.f, 1.f), dr::Pi<ScalarFloat> };
+    axis = dr::normalize(axis);
+
+    Buffer cos_min = dr::full<Buffer>(1.f, 1);
+    foreach_index<UInt32>(m_face_count, [&](const UInt32 &f) {
+        Vector3f n = face_normal(f);
+        dr::scatter_reduce(ReduceOp::Min, cos_min, dr::dot(n, Vector3f(axis)),
+                           UInt32(0), dr::all(dr::isfinite(n)),
+                           ReduceMode::Local);
+    });
+    cos_min = read(cos_min);
+    return { axis, dr::acos(dr::clip(cos_min.data()[0], -1.f, 1.f)) };
+}
+
 // =============================================================
 // Surface sampling routines
 // =============================================================

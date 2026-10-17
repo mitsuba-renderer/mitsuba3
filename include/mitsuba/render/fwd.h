@@ -47,6 +47,7 @@ template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Shape>    struct PreliminaryIntersection;
+template <typename Float>                    struct EmitterBounds;
 
 /// Shape type bit flags driving GPU intersection-function dispatch.
 enum class ShapeType : uint32_t {
@@ -115,6 +116,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using MediumInteraction3f       = MediumInteraction<Float, Spectrum>;
     using SurfaceInteraction3f      = SurfaceInteraction<Float, Spectrum>;
     using PreliminaryIntersection3f = PreliminaryIntersection<Float, mitsuba::Shape<Float, Spectrum>>;
+    using EmitterBounds             = mitsuba::EmitterBounds<Float>;
 
     using Scene                  = mitsuba::Scene<Float, Spectrum>;
     using Sampler                = mitsuba::Sampler<Float, Spectrum>;
@@ -201,6 +203,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using SurfaceInteraction3f      = typename RenderAliases::SurfaceInteraction3f;                \
     using MediumInteraction3f       = typename RenderAliases::MediumInteraction3f;                 \
     using PreliminaryIntersection3f = typename RenderAliases::PreliminaryIntersection3f;           \
+    using EmitterBounds             = typename RenderAliases::EmitterBounds;                       \
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
     using BSDFFeatures3f            = typename RenderAliases::BSDFFeatures3f;                      \
     using SilhouetteSample3f        = typename RenderAliases::SilhouetteSample3f;                  \

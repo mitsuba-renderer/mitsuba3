@@ -190,6 +190,10 @@ public:
         return dr::norm(dr::cross(m_frame.s, m_frame.t));
     }
 
+    std::pair<ScalarVector3f, ScalarFloat> normal_cone() const override {
+        return { ScalarVector3f(dr::slice(m_frame.n)), 0.f };
+    }
+
     ScalarBoundingBox3f bbox() const override {
         ScalarBoundingBox3f bbox;
         ScalarAffineTransform4f to_world = m_to_world.scalar();

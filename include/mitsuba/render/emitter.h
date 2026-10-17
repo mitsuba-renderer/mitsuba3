@@ -61,6 +61,59 @@ enum class EmitterFlags : uint32_t {
 
 MI_DECLARE_ENUM_OPERATORS(EmitterFlags)
 
+/**
+ * Summary of an emitter for emitter selection
+ *
+ * Emitter sampling data structures need information about the position and
+ * energy of emitters. `Emitter.bounds()` returns this record for emitters of
+ * finite extent. The orientation cone follows Conty Estevez and Kulla (2018).
+ */
+template <typename Float>
+struct EmitterBounds {
+    MI_IMPORT_CORE_TYPES()
+
+    /// World-space bounding box of the emitting geometry
+    ScalarBoundingBox3f bbox;
+
+    /// Axis of the orientation cone
+    ScalarVector3f axis;
+
+    /**
+     * Bound on the angle between any emitter normal and ``axis``, in radians
+     *
+     * A point emitter reports :math:`\pi` and a spot emitter :math:`0`.
+     */
+    ScalarFloat theta_o;
+
+    /**
+     * Angular spread of the emission around each normal, in radians
+     *
+     * A point emitter reports :math:`\pi/2` and a spot emitter its cutoff angle.
+     */
+    ScalarFloat theta_e;
+
+    /**
+     * Estimate of the radiant intensity (power per steradian) that the
+     * emitter radiates into the directions of its cone
+     *
+     * For an area emitter, this is the radiance times the surface area. For
+     * a point or spot emitter, it is the intensity.
+     */
+    ScalarFloat energy;
+};
+
+template <typename Float>
+std::ostream &operator<<(std::ostream &os, const EmitterBounds<Float> &lb) {
+    os << "EmitterBounds[" << std::endl
+       << "  bbox = " << string::indent(lb.bbox) << "," << std::endl
+       << "  axis = " << lb.axis << "," << std::endl
+       << "  theta_o = " << lb.theta_o << "," << std::endl
+       << "  theta_e = " << lb.theta_e << "," << std::endl
+       << "  energy = " << lb.energy << std::endl
+       << "]";
+    return os;
+}
+
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Emitter : public Endpoint<Float, Spectrum> {
 public:
@@ -104,6 +157,15 @@ public:
 
     /// Modify the emitter's ``dirty`` flag
     void set_dirty(bool dirty) { m_dirty = dirty; }
+
+    /**
+     * Return a summary of the position, orientation and energy of the emitter
+     *
+     * The summary assumes a constant ``to_world`` transformation. Infinite
+     * emitters, portals and the default implementation raise an exception.
+     * See `EmitterBounds`.
+     */
+    virtual EmitterBounds bounds() const;
 
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Emitter)

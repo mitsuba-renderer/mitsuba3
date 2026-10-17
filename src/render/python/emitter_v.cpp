@@ -70,6 +70,10 @@ public:
         NB_OVERRIDE_PURE(bbox);
     }
 
+    EmitterBounds bounds() const override {
+        NB_OVERRIDE(bounds);
+    }
+
     std::string to_string() const override {
         NB_OVERRIDE_PURE(to_string);
     }
@@ -156,6 +160,23 @@ MI_PY_EXPORT(Emitter) {
     m.def("has_flag", [](uint32_t flags, EmitterFlags f) {return has_flag(flags, f);});
     m.def("has_flag", [](UInt32   flags, EmitterFlags f) {return has_flag(flags, f);});
 
+    MI_PY_CHECK_ALIAS(EmitterBounds, "EmitterBounds") {
+        nb::class_<EmitterBounds>(m, "EmitterBounds", D(EmitterBounds))
+            .def("__init__",
+                 [](EmitterBounds *self, const ScalarBoundingBox3f &bbox,
+                    const ScalarVector3f &axis, ScalarFloat theta_o,
+                    ScalarFloat theta_e, ScalarFloat energy) {
+                     new (self) EmitterBounds{ bbox, axis, theta_o, theta_e, energy };
+                 },
+                 "bbox"_a, "axis"_a, "theta_o"_a, "theta_e"_a, "energy"_a)
+            .def_rw("bbox",    &EmitterBounds::bbox,    D(EmitterBounds, bbox))
+            .def_rw("axis",    &EmitterBounds::axis,    D(EmitterBounds, axis))
+            .def_rw("theta_o", &EmitterBounds::theta_o, D(EmitterBounds, theta_o))
+            .def_rw("theta_e", &EmitterBounds::theta_e, D(EmitterBounds, theta_e))
+            .def_rw("energy",  &EmitterBounds::energy,  D(EmitterBounds, energy))
+            .def_repr(EmitterBounds);
+    }
+
     auto emitter = MI_PY_TRAMPOLINE_CLASS(PyEmitter, Emitter, Endpoint)
         .def(nb::init<const Properties&>(), "props"_a)
         .def_method(Emitter, is_environment)
@@ -163,6 +184,7 @@ MI_PY_EXPORT(Emitter) {
         .def_method(Emitter, sampling_weight)
         .def_method(Emitter, visibility)
         .def_method(Emitter, flags)
+        .def_method(Emitter, bounds)
         .def_field(PyEmitter, m_needs_sample_2, D(Endpoint, m_needs_sample_2))
         .def_field(PyEmitter, m_needs_sample_3, D(Endpoint, m_needs_sample_3))
         .def_field(PyEmitter, m_flags, D(Emitter, m_flags));
