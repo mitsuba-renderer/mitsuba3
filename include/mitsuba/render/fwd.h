@@ -26,6 +26,7 @@ template <typename Float, typename Spectrum> class MicrofacetDistribution;
 template <typename Float, typename Spectrum> class ReconstructionFilter;
 template <typename Float, typename Spectrum> class Sampler;
 template <typename Float, typename Spectrum> class Scene;
+template <typename Float, typename Spectrum> class EmitterTree;
 template <typename Float, typename Spectrum> class Sensor;
 template <typename Float, typename Spectrum> class PhaseFunction;
 template <typename Float, typename Spectrum> class ProjectiveCamera;
@@ -119,6 +120,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using EmitterBounds             = mitsuba::EmitterBounds<Float>;
 
     using Scene                  = mitsuba::Scene<Float, Spectrum>;
+    using EmitterTree            = mitsuba::EmitterTree<Float, Spectrum>;
     using Sampler                = mitsuba::Sampler<Float, Spectrum>;
     using MicrofacetDistribution = mitsuba::MicrofacetDistribution<Float, Spectrum>;
     using Shape                  = mitsuba::Shape<Float, Spectrum>;

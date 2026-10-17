@@ -387,7 +387,7 @@ public:
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
                         DirectionSample3f ds(scene, si, last_scatter_event);
-                        Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
+                        Float emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, true, active_e);
                         update_weights(p_over_f_nee, emitter_pdf, 1.f, channel, active_e);
                     }
                     Spectrum emitted = emitter->eval(si, active_e);
@@ -460,7 +460,7 @@ public:
                    Mask active) const {
         WeightMatrix p_over_f_nee = p_over_f, p_over_f_uni = p_over_f;
 
-        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        auto [ds, emitter_sample_weight] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, true, active);
         Spectrum emitter_val = emitter_sample_weight * ds.pdf;
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
         active &= (ds.pdf != 0.f);

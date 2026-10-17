@@ -98,6 +98,7 @@ template <typename Float_> struct CoreAliases {
     using Bool = Mask;
 
     using Int8    = dr::replace_scalar_t<Float, int8_t>;
+    using UInt16  = dr::replace_scalar_t<Float, uint16_t>;
     using Int32   = dr::int32_array_t<Float>;
     using UInt32  = dr::uint32_array_t<Float>;
     using Int64   = dr::int64_array_t<Float>;
@@ -218,10 +219,12 @@ template <typename Float_> struct CoreAliases {
     using prefix ## Mask                 = typename prefix ## CoreAliases::Mask;                   \
     using prefix ## Bool                 = typename prefix ## CoreAliases::Bool;                   \
     using prefix ## Int8                 = typename prefix ## CoreAliases::Int8;                   \
+    using prefix ## UInt16               = typename prefix ## CoreAliases::UInt16;                 \
     using prefix ## Int32                = typename prefix ## CoreAliases::Int32;                  \
     using prefix ## UInt32               = typename prefix ## CoreAliases::UInt32;                 \
     using prefix ## Int64                = typename prefix ## CoreAliases::Int64;                  \
     using prefix ## UInt64               = typename prefix ## CoreAliases::UInt64;                 \
+    using prefix ## Float16              = typename prefix ## CoreAliases::Float16;                \
     using prefix ## Float32              = typename prefix ## CoreAliases::Float32;                \
     using prefix ## Float64              = typename prefix ## CoreAliases::Float64;                \
     using prefix ## Vector1i             = typename prefix ## CoreAliases::Vector1i;               \

@@ -182,6 +182,17 @@ public:
      */
     virtual std::pair<ScalarVector3f, ScalarFloat> irradiance_estimate() const;
 
+    /**
+     * Path code of the emitter within the scene's emitter tree
+     *
+     * Each level of the path from the root to the emitter's leaf stores the
+     * index of the chosen child (one of 8) in 3 bits, starting from the
+     * lowest bits. An additional set bit above the last level marks the
+     * length of the path. The code is zero when the emitter is not part of
+     * the tree. The scene assigns the code when it builds the tree.
+     */
+    uint32_t emitter_tree_code() const { return m_emitter_tree_code; }
+
     /// This is both a class and the base of various Mitsuba plugins
     MI_DECLARE_PLUGIN_BASE_CLASS(Emitter)
 
@@ -201,8 +212,12 @@ protected:
     /// True if the emitter's parameters have changed
     bool m_dirty = false;
 
+    /// Path code within the scene's emitter tree (see `emitter_tree_code()`)
+    uint32_t m_emitter_tree_code = 0;
+
 private:
     friend class mitsuba::Scene<Float, Spectrum>;
+    friend class mitsuba::EmitterTree<Float, Spectrum>;
 
     MI_TRAVERSE_CB(Base)
 };
@@ -228,6 +243,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Emitter)
     DRJIT_CALL_GETTER(shape)
     DRJIT_CALL_GETTER(medium)
     DRJIT_CALL_GETTER(sampling_weight)
+    DRJIT_CALL_GETTER(emitter_tree_code)
 DRJIT_CALL_END()
 
 // -----------------------------------------------------------------------

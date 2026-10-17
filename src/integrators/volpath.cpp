@@ -331,7 +331,7 @@ public:
                     if (dr::any_or<true>(active_e && !count_direct)) {
                         // Get the PDF of sampling this emitter using next event estimation
                         DirectionSample3f ds(scene, si, last_scatter_event);
-                        emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, active_e);
+                        emitter_pdf = scene->pdf_emitter_direction(last_scatter_event, ds, true, active_e);
                     }
                     Spectrum emitted = emitter->eval(si, active_e);
                     Spectrum contrib = dr::select(count_direct, throughput * emitted,
@@ -409,7 +409,7 @@ public:
                    UInt32 channel, Mask active) const {
         Spectrum transmittance(1.0f);
 
-        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, active);
+        auto [ds, emitter_val] = scene->sample_emitter_direction(ref_interaction, sampler->next_2d(active), false, true, active);
         dr::masked(emitter_val, ds.pdf == 0.f) = 0.f;
         active &= (ds.pdf != 0.f);
 

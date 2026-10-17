@@ -127,6 +127,21 @@ vertex, which is a known limitation.
 sample directions through the portals. The :monosp:`portal_weight` parameter
 sets the probability of this strategy relative to the emitter's own one.
 
+**Emitter selection:** Direct illumination sampling chooses emitters with an
+emitter tree in the style of Conty Estevez and Kulla (2018) when the scene
+contains at least two emitters of finite extent and no animated emitters. The
+tree groups the emitters of finite extent by position, orientation and power.
+During traversal, it weighs each group by an estimate of its contribution at
+the shading point. The scene compares this estimate with the irradiance of the
+infinite emitters. In a scene with :ref:`portals <emitter-portal>`, environment
+emitters are treated like area emitters seen through the portals. This keeps an
+interior from spending most of its samples on an occluded sky. Without portals,
+the infinite emitters together never receive more weight than the tree. In
+scenes with many emitters, the tree produces far less noise than a uniform
+choice. Setting :monosp:`emitter_tree` to |false| restores the selection
+proportional to the emitters' :monosp:`sampling_weight`. The sampling weight
+also scales the energy of an emitter in the tree.
+
 **Thread reordering:** Ray intersection methods on the scene can take a
 `reorder` argument to specifiy whether or not threads should be shuffled into
 coherent groups after the intersection (shader execution reordering). Both this
@@ -151,6 +166,10 @@ has no effect in scalar or LLVM variants.
    - :paramtype:`float`
    - Probability of sampling directions through the scene's light portals
      rather than with the environment emitter's own strategy (Default: 0.5).
+ * - emitter_tree
+   - :paramtype:`bool`
+   - Whether direct illumination sampling selects emitters with an emitter tree
+     rather than proportionally to their sampling weight (Default: |true|).
 
 When creating a scene, the scene-wide attributes can be specified as follows:
 

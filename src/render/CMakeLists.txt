@@ -36,6 +36,7 @@ add_library(mitsuba-render OBJECT
   bsdf.cpp         ${INC_DIR}/bsdf.h
   dedge.cpp ${INC_DIR}/dedge.h
   emitter.cpp      ${INC_DIR}/emitter.h
+  emtree.cpp       ${INC_DIR}/emtree.h
   endpoint.cpp     ${INC_DIR}/endpoint.h
   film.cpp         ${INC_DIR}/film.h
                    ${INC_DIR}/fresnel.h
