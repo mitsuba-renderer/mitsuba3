@@ -128,10 +128,13 @@ public:
             Interaction3f si;
             Float bsdf_pdf;
             Bool bsdf_delta;
+            /// Could the vertex receive light from both sides of its normal?
+            Bool two_sided;
             UInt32 depth;
             UInt32 ray_mask;
-            DRJIT_STRUCT(Vertex, si, bsdf_pdf, bsdf_delta, depth, ray_mask)
-        } vertex = { dr::zeros<Interaction3f>(), 1.f, true, 0,
+            DRJIT_STRUCT(Vertex, si, bsdf_pdf, bsdf_delta, two_sided, depth,
+                         ray_mask)
+        } vertex = { dr::zeros<Interaction3f>(), 1.f, true, true, 0,
                      +RayMask::Primary };
 
         // Set up a Dr.Jit loop. This optimizes away to a normal loop in scalar
@@ -195,6 +198,7 @@ public:
 
                 if (dr::any_or<true>(!ls.vertex.bsdf_delta))
                     em_pdf = scene->pdf_emitter_direction(ls.vertex.si, ds,
+                                                          ls.vertex.two_sided,
                                                           !ls.vertex.bsdf_delta);
 
                 // Compute MIS weight for emitter sample from previous bounce
@@ -232,6 +236,11 @@ public:
             Mask active_em = active_next && depth_ok &&
                              has_flag(bsdf_flags, BSDFFlags::Smooth);
 
+            // Emitters behind an opaque surface cannot contribute (see
+            // Scene::sample_emitter_direction() for the back-facing case)
+            Mask two_sided = has_flag(bsdf_flags, BSDFFlags::Transmission) ||
+                             dr::dot(si.n, ls.ray.d) >= 0.f;
+
             DirectionSample3f ds = dr::zeros<DirectionSample3f>();
             Spectrum em_weight = dr::zeros<Spectrum>();
             Vector3f wo = dr::zeros<Vector3f>();
@@ -240,7 +249,7 @@ public:
                 // Sample the emitter. The sample is detached, and its weight
                 // is attached to the emitter and to the motion of 'si'.
                 std::tie(ds, em_weight) = scene->sample_emitter_direction(
-                    si, ls.sampler->next_2d(), true, active_em);
+                    si, ls.sampler->next_2d(), true, two_sided, active_em);
                 active_em &= (ds.pdf != 0.f);
 
                 wo = si.to_local(ds.d);
@@ -302,7 +311,7 @@ public:
             ls.valid_ray |= scattered && si.is_valid();
             dr::masked(ls.vertex, scattered) = Vertex{
                 Interaction3f(si), bsdf_sample.pdf,
-                bsdf_sample.is_delta(),
+                bsdf_sample.is_delta(), two_sided,
                 ls.vertex.depth + 1,
                 // A specular event leaves the visibility class unchanged
                 dr::select(bsdf_sample.is_delta(), ls.vertex.ray_mask,

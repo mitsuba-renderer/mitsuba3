@@ -465,3 +465,27 @@ def test12_frozen_tree_rebuild(variants_vec_backends_once_rgb, infinite, auto_op
             assert not dr.allclose(first, result[2])
     # auto_opaque promotes the changing radiance literal on the second call.
     assert frozen.n_recordings == (2 if auto_opaque else 1)
+
+
+@pytest.mark.parametrize('integrator', ['path', 'direct', 'prb', 'prb_projective',
+                                        'direct_projective'])
+def test13_back_facing_receiver(variants_vec_backends_once_rgb, integrator):
+    """Delta emitters lighting a two-sided surface seen from the back."""
+    if integrator.startswith(('prb', 'direct_')) and not dr.is_diff_v(mi.Float):
+        pytest.skip('requires an AD variant')
+    d = {
+        'type': 'scene',
+        'integrator': {'type': integrator},
+        'sensor': {'type': 'perspective', 'fov': 30,
+                   'to_world': mi.ScalarTransform4f().look_at([0, 0, -3], [0, 0, 0], [0, 1, 0]),
+                   'film': {'type': 'hdrfilm', 'width': 8, 'height': 8}},
+        'plane': {'type': 'rectangle', 'bsdf': {'type': 'twosided', 'bsdf': {'type': 'diffuse'}}},
+        'a': {'type': 'point', 'position': [0.5, 0, -1]},
+        'b': {'type': 'point', 'position': [-0.5, 0, -1]},
+    }
+    means = []
+    for emitter_tree in (True, False):
+        d['emitter_tree'] = emitter_tree
+        means.append(dr.mean(mi.render(mi.load_dict(d), spp=64), axis=None))
+    assert means[1] > 0
+    dr.assert_allclose(means[0], means[1], rtol=0.02)

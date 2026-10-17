@@ -167,11 +167,17 @@ class DirectProjectiveIntegrator(PSIntegrator):
         # Is emitter sampling possible on the current vertex?
         active_em_ = active_next & bsdf.has_flag(mi.BSDFFlags.Smooth)
 
+        # Emitters behind an opaque surface cannot contribute (see
+        # Scene.sample_emitter_direction() for the back-facing case)
+        two_sided = bsdf.has_flag(mi.BSDFFlags.Transmission) | \
+                    (dr.dot(si.n, ray.d) >= 0)
+
         # If so, sample an emitter. The sample is detached, and its weight
         # is attached to the emitter and to the motion of 'si'.
         with dr.resume_grad(when=not primal):
             ds_em, emitter_val = scene.sample_emitter_direction(
-                si, sampler.next_2d(active_em_), test_visibility=True, active=active_em_)
+                si, sampler.next_2d(active_em_), test_visibility=True,
+                two_sided=two_sided, active=active_em_)
             active_em = active_em_ & (ds_em.pdf != 0.0)
 
             # Evaluate the BSDF (foreshortening term included)
@@ -235,7 +241,8 @@ class DirectProjectiveIntegrator(PSIntegrator):
             # Compute the detached MIS weight for the BSDF sample
             ds_bsdf = mi.DirectionSample3f(scene, si=si_bsdf, ref=si)
             pdf_emitter = scene.pdf_emitter_direction(
-                ref=si, ds=ds_bsdf, active=active_bsdf & ~delta_bsdf)
+                ref=si, ds=ds_bsdf, two_sided=two_sided,
+                active=active_bsdf & ~delta_bsdf)
             mis_bsdf = dr.select(delta_bsdf, 1.0, mis_weight(sample_bsdf.pdf, pdf_emitter))
 
             L[active_bsdf] += weight_bsdf * tr_bsdf * L_bsdf * mis_bsdf

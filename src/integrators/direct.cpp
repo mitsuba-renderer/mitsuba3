@@ -139,13 +139,18 @@ public:
         BSDFPtr bsdf = si.bsdf();
         Mask sample_emitter = active && bsdf->has_flag(BSDFFlags::Smooth);
 
+        // Emitters behind an opaque surface cannot contribute (see
+        // Scene::sample_emitter_direction() for the back-facing case)
+        Mask two_sided = bsdf->has_flag(BSDFFlags::Transmission) ||
+                         dr::dot(si.n, ray.d) >= 0.f;
+
         if (dr::any_or<true>(sample_emitter)) {
             for (size_t i = 0; i < m_emitter_samples; ++i) {
                 Mask active_e = sample_emitter;
                 DirectionSample3f ds;
                 Spectrum emitter_val;
                 std::tie(ds, emitter_val) = scene->sample_emitter_direction(
-                    si, sampler->next_2d(active_e), true, active_e);
+                    si, sampler->next_2d(active_e), true, two_sided, active_e);
                 active_e &= ds.pdf != 0.f;
                 if (dr::none_or<false>(active_e))
                     continue;
@@ -212,8 +217,9 @@ public:
                 // direction using Emitter sampling.
                 DirectionSample3f ds(scene, si_bsdf, si);
 
-                Float emitter_pdf =
-                    dr::select(delta, 0.f, scene->pdf_emitter_direction(si, ds, active_b));
+                Float emitter_pdf = dr::select(
+                    delta, 0.f,
+                    scene->pdf_emitter_direction(si, ds, two_sided, active_b));
 
                 result[active_b] +=
                     bsdf_val * tr * emitter_val *

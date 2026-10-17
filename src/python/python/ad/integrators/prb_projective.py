@@ -183,6 +183,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         si_prev         = dr.zeros(mi.SurfaceInteraction3f)
         bsdf_pdf_prev   = mi.Float(1.0)
         bsdf_delta_prev = mi.Bool(True)
+        two_sided_prev  = mi.Bool(True)
 
         # Null tests fold to literals in scenes without null shapes
         has_null = scene.has_null_shapes()
@@ -229,7 +230,8 @@ class PathProjectiveIntegrator(PSIntegrator):
 
             mis = mis_weight(
                 bsdf_pdf_prev,
-                scene.pdf_emitter_direction(si_prev, ds, ~bsdf_delta_prev)
+                scene.pdf_emitter_direction(si_prev, ds, two_sided_prev,
+                                            ~bsdf_delta_prev)
             )
 
             with dr.resume_grad(when=not primal):
@@ -246,11 +248,17 @@ class PathProjectiveIntegrator(PSIntegrator):
             active_em = active_next & depth_ok & \
                         mi.has_flag(bsdf_flags, mi.BSDFFlags.Smooth)
 
+            # Emitters behind an opaque surface cannot contribute (see
+            # Scene.sample_emitter_direction() for the back-facing case)
+            two_sided = mi.has_flag(bsdf_flags, mi.BSDFFlags.Transmission) | \
+                        (dr.dot(si.n, ray.d) >= 0)
+
             # If so, sample an emitter. The sample is detached, and its
             # weight is attached to the emitter and to the motion of 'si'.
             with dr.resume_grad(when=not primal):
                 ds, em_weight = scene.sample_emitter_direction(
-                    si, sampler.next_2d(), test_visibility=True, active=active_em)
+                    si, sampler.next_2d(), test_visibility=True,
+                    two_sided=two_sided, active=active_em)
                 active_em &= (ds.pdf != 0.0)
 
                 # Evaluate BSDF * cos(theta) differentiably
@@ -341,6 +349,7 @@ class PathProjectiveIntegrator(PSIntegrator):
             ray_prev[scattered]        = ray
             bsdf_pdf_prev[scattered]   = bsdf_sample.pdf
             bsdf_delta_prev[scattered] = bsdf_sample.is_delta()
+            two_sided_prev[scattered]  = two_sided
             # A specular event leaves the visibility class unchanged
             ray_mask[scattered & ~bsdf_sample.is_delta()] = \
                 mi.RayMask.Secondary
