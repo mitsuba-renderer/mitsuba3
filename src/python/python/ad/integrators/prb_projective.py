@@ -449,7 +449,7 @@ class PathProjectiveIntegrator(PSIntegrator):
         # Create a dummy ray that we never perform ray-intersection with to
         # compute other fields in ``si``
         dummy_ray = mi.Ray3f(ss.p - ss.d, ss.d)
-        ray_bg.wavelengths = wavelengths
+        dummy_ray.wavelengths = wavelengths
 
         # The ray origin is wrong, but this is fine if we only need the primal
         # radiance
