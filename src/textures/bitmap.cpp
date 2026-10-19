@@ -824,6 +824,9 @@ public:
             active = true;
 
         Point2f uv = m_transform * si.uv;
+        if (filtered())
+            return uv_grad(filtered_grad(si, uv, active));
+
         BilinearWeights bw = bilinear_weights(uv);
         const Point2f &w0 = bw.w0, &w1 = bw.w1;
 
@@ -865,12 +868,7 @@ public:
         // Partials w.r.t. the transformed coordinates
         Vector2f df_st = resolution() * df_xy;
 
-        // Partials w.r.t. u and v (include uv transform by transpose multiply)
-        const auto &tm = m_transform.matrix;
-        return Vector2f{ dr::fmadd(tm.entry(0, 0),  df_st.x(),
-                                   tm.entry(1, 0) * df_st.y()),
-                         dr::fmadd(tm.entry(0, 1),  df_st.x(),
-                                   tm.entry(1, 1) * df_st.y()) };
+        return uv_grad(df_st);
     }
 
     Color3f eval_3(const SurfaceInteraction3f &si,
@@ -1114,6 +1112,39 @@ protected:
         const Matrix2f &m = si.footprint;
         return { m_transform * Vector2f(m(0, 0), m(1, 0)),
                  m_transform * Vector2f(m(0, 1), m(1, 1)) };
+    }
+
+    /// Map partials w.r.t. transformed coordinates to partials w.r.t. (u, v)
+    Vector2f uv_grad(const Vector2f &df_st) const {
+        const auto &tm = m_transform.matrix;
+        return Vector2f{ dr::fmadd(tm.entry(0, 0),  df_st.x(),
+                                   tm.entry(1, 0) * df_st.y()),
+                         dr::fmadd(tm.entry(0, 1),  df_st.x(),
+                                   tm.entry(1, 1) * df_st.y()) };
+    }
+
+    /// Partials of a filtered \ref eval_1() lookup w.r.t. transformed coords
+    Vector2f filtered_grad(const SurfaceInteraction3f &si, const Point2f &uv,
+                           Mask active) const {
+        auto [ddx, ddy] = footprint(si);
+        size_t channels = m_texture.channel_count();
+        if (channels == 1) {
+            return m_texture.template eval_filtered_grad<dr::Array<Float, 1>>(
+                uv, ddx, ddy, active).gradient.x();
+        } else if (channels == 2) {
+            // Chain rule through luminance(reconstruct_normal(xy)), whose
+            // third channel z / 2 + 1 / 2 has the partials -(n . dxy) / z
+            auto [xy, g] = m_texture.template eval_filtered_grad<Vector2f>(
+                uv, ddx, ddy, active);
+            Vector2f n = dr::fmadd(xy, 2.f, -1.f);
+            Float z = dr::safe_sqrt(1.f - dr::squared_norm(n));
+            Vector2f gz = dr::select(
+                z > 0.f, -dr::fmadd(n.x(), g.x(), n.y() * g.y()) / z, 0.f);
+            return luminance(Color<Vector2f, 3>(g.x(), g.y(), gz));
+        } else { // 3 channels
+            return luminance(m_texture.template eval_filtered_grad<Color3f>(
+                uv, ddx, ddy, active).gradient);
+        }
     }
 
     /**
