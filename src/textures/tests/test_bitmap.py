@@ -511,3 +511,59 @@ def test15_forward_ad_spectral(variants_all_ad_spectral):
                    np.array(make(0.5 - eps).eval(si))).ravel() / (2 * eps)
 
     dr.assert_allclose(dr.grad(value), finite_diff, atol=1e-3)
+
+
+def test16_laplacian_mip_basis(variants_all_ad_rgb):
+    """Laplacian MIP basis exposes per-level differentiable parameters, matches
+    standard filtered lookups, routes gradients only to accessed levels, and
+    re-initializes the pyramid when ``data`` is assigned."""
+    import numpy as np
+    rng = np.random.default_rng(0)
+    values = rng.random((16, 16, 3), dtype=np.float32)
+    common = {'type': 'bitmap', 'bitmap': mi.Bitmap(values), 'raw': True,
+              'filter_type': 'trilinear', 'wrap_mode': 'clamp'}
+    tex = mi.load_dict({**common, 'mip_basis': 'laplacian'})
+    ref = mi.load_dict(common)
+
+    params = mi.traverse(tex)
+    for l in range(5):
+        assert params[f'pyramid.{l}'].shape == (16 >> l, 16 >> l, 3)
+        assert not (params.flags(f'pyramid.{l}') & mi.ParamFlags.NonDifferentiable)
+    assert 'pyramid.5' not in params
+    assert params.flags('data') & mi.ParamFlags.NonDifferentiable
+    dr.assert_allclose(params['data'], mi.TensorXf(values), atol=1e-5)
+
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [2.5 / 8, 5.5 / 8]
+    for fp in (0.0, 1 / 8, 2.0):
+        si.footprint = mi.Matrix2f(fp, 0, 0, fp)
+        dr.assert_allclose(tex.eval_3(si), ref.eval_3(si), atol=1e-4)
+
+    for l in range(5):
+        dr.enable_grad(params[f'pyramid.{l}'])
+    params.update()
+
+    # A footprint of 4 texels (LOD 2) does not depend on the two finest levels
+    si.footprint = mi.Matrix2f(0.25, 0, 0, 0.25)
+    dr.backward(dr.sum(tex.eval_3(si)))
+    for l in range(5):
+        assert dr.any(dr.grad(params[f'pyramid.{l}']).array != 0) == (l >= 2)
+
+    # Assigning 'data' re-initializes the pyramid (including resolution changes)
+    params['data'] = dr.full(mi.TensorXf, 0.25, shape=(32, 32, 3))
+    params.update()
+    params = mi.traverse(tex)
+    assert 'pyramid.5' in params
+    dr.assert_allclose(params['pyramid.5'], 0.25, atol=1e-6)
+    dr.assert_allclose(params['pyramid.0'], 0.0, atol=1e-6)
+
+    with pytest.raises(RuntimeError, match='trilinear'):
+        mi.load_dict({**common, 'filter_type': 'bilinear', 'mip_basis': 'laplacian'})
+    with pytest.raises(RuntimeError, match='uint8'):
+        mi.load_dict({**common, 'mip_basis': 'laplacian', 'format': 'uint8'})
+
+    # format='auto' promotes 8-bit and 16-bit bitmaps to float storage
+    for dtype in (np.uint8, np.uint16):
+        t = mi.load_dict({**common, 'bitmap': mi.Bitmap(np.zeros((4, 4, 3), dtype)),
+                          'mip_basis': 'laplacian'})
+        assert dr.type_v(mi.traverse(t)['pyramid.0']) == dr.type_v(mi.Float)
