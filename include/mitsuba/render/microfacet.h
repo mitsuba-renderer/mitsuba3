@@ -464,9 +464,9 @@ protected:
 
 public:
     /// Roughness values and derived constants, exposed for traversal
-    Float m_alpha_u = 0.f, m_alpha_v = 0.f;
-    Float m_inv_alpha_u = 0.f, m_inv_alpha_v = 0.f;
-    Float m_norm = 0.f;
+    Float m_alpha_u{}, m_alpha_v{};
+    Float m_inv_alpha_u{}, m_inv_alpha_v{};
+    Float m_norm{};
 
     DRJIT_TRAVERSE(MicrofacetDistribution, m_alpha_u, m_alpha_v,
                    m_inv_alpha_u, m_inv_alpha_v, m_norm)

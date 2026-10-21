@@ -269,8 +269,8 @@ private:
 private:
     FloatStorage m_pmf;
     FloatStorage m_cdf;
-    Float m_sum = 0.f;
-    Float m_normalization = 0.f;
+    Float m_sum{};
+    Float m_normalization{};
     Vector2u m_valid;
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_pmf, m_cdf, m_sum, m_normalization,
@@ -599,11 +599,11 @@ private:
 private:
     FloatStorage m_pdf;
     FloatStorage m_cdf;
-    Float m_integral = 0.f;
-    Float m_normalization = 0.f;
-    Float m_interval_size = 0.f;
+    Float m_integral{};
+    Float m_normalization{};
+    Float m_interval_size{};
     ScalarFloat m_interval_size_scalar = 0.f;
-    Float m_inv_interval_size = 0.f;
+    Float m_inv_interval_size{};
     ScalarVector2f m_range { 0.f, 0.f };
     Vector2u m_valid;
     ScalarFloat m_max = 0.f;
@@ -977,8 +977,8 @@ private:
     FloatStorage m_nodes;
     FloatStorage m_pdf;
     FloatStorage m_cdf;
-    Float m_integral = 0.f;
-    Float m_normalization = 0.f;
+    Float m_integral{};
+    Float m_normalization{};
     ScalarVector2f m_range { 0.f, 0.f };
     Vector2u m_valid;
     ScalarFloat m_interval_size = 0.f;
