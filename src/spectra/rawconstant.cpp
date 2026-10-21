@@ -55,7 +55,9 @@ public:
     using Value = std::conditional_t<Channels == 1, Float, Vector3f>;
 
     RawConstantTextureImpl(const Properties &props, const Value &value)
-        : Texture(props), m_value(value) {}
+        : Texture(props), m_value(value) {
+        dr::make_opaque(m_value);
+    }
 
     UnpolarizedSpectrum eval(const SurfaceInteraction3f &/*si*/, Mask active) const override {
         MI_MASKED_FUNCTION(ProfilerPhase::TextureEvaluate, active);

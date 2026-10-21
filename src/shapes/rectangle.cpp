@@ -110,6 +110,7 @@ public:
     void initialize() override {
         // The unit rectangle is symmetric in z, so mirroring that axis turns
         // the surface around without moving it
+        dr::make_opaque(m_to_world);
         AffineTransform4f to_world = m_to_world.value();
         if (m_flipped)
             to_world = to_world *
