@@ -221,3 +221,49 @@ def test05_python_shape_side_effect(variants_vec_backends_once_rgb):
     mi.register_shape('badshape', BadShape)
     with pytest.raises(RuntimeError, match='side effect'):
         mi.load_dict({'type': 'scene', 'shape': {'type': 'badshape'}})
+
+
+def test06_parallel_load_vcall_dedup(variants_vec_backends_once_rgb):
+    """Verify virtual call deduplication across shapes/BSDFs loaded with parallel=True."""
+    def make_scene(n):
+        d = {
+            'type': 'scene',
+            'integrator': {'type': 'path', 'max_depth': 3},
+            'sensor': {
+                'type': 'perspective',
+                'film': {'type': 'hdrfilm', 'width': 16, 'height': 16},
+            },
+            'light': {'type': 'point', 'position': [0, 0, 5], 'intensity': {'type': 'rgb', 'value': 10.0}},
+        }
+        for i in range(n):
+            r = 0.1 + 0.02 * i
+            d[f'disk_{i}'] = {
+                'type': 'disk',
+                'to_world': mi.ScalarTransform4f().translate([i * 0.05, 0, -3]).scale([r, r * 1.2, 1.0]),
+                'bsdf': {
+                    'type': 'principled',
+                    'base_color': {'type': 'rgb', 'value': [0.2 + 0.01 * i, 0.5, 0.7]},
+                    'roughness': 0.15 + 0.01 * i,
+                },
+            }
+        return d
+
+    s_small = mi.load_dict(make_scene(4), parallel=True)
+    dr.flush_kernel_cache()
+    with dr.kernel_history() as h_small:
+        img_small = mi.render(s_small, spp=2, seed=0)
+        dr.eval(img_small)
+    ops_small = sum(e.operation_count for e in h_small if e.type == dr.KernelType.JIT)
+
+    s_large = mi.load_dict(make_scene(24), parallel=True)
+    dr.flush_kernel_cache()
+    with dr.kernel_history() as h_large:
+        img_large = mi.render(s_large, spp=2, seed=0)
+        dr.eval(img_large)
+    ops_large = sum(e.operation_count for e in h_large if e.type == dr.KernelType.JIT)
+
+    assert ops_small == ops_large
+
+    s_serial = mi.load_dict(make_scene(24), parallel=False)
+    img_serial = mi.render(s_serial, spp=2, seed=0)
+    assert dr.allclose(img_large, img_serial)

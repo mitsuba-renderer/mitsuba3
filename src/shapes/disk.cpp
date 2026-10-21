@@ -123,7 +123,7 @@ public:
         m_frame = Frame3f(dp_du / m_du, dp_dv / m_dv, n);
         m_inv_surface_area = dr::rcp(surface_area());
 
-        dr::make_opaque(m_frame, m_inv_surface_area);
+        dr::make_opaque(m_frame, m_du, m_dv, m_inv_surface_area);
         mark_dirty();
    }
 
