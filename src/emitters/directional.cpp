@@ -270,7 +270,7 @@ protected:
     Float m_angle, m_cos_cutoff;
     ScalarBoundingSphere3f m_bsphere;
 
-    MI_TRAVERSE_CB(Base, m_irradiance, m_angle, m_cos_cutoff)
+    MI_TRAVERSE_CB(Base, m_irradiance, m_angle, m_cos_cutoff, m_bsphere)
 };
 
 MI_EXPORT_PLUGIN(DirectionalEmitter)

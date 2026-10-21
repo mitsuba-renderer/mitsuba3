@@ -610,7 +610,7 @@ private:
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_pdf, m_cdf, m_integral,
                    m_normalization, m_interval_size, m_inv_interval_size,
-                   m_valid)
+                   m_interval_size_scalar, m_range, m_valid)
 };
 
 /**
@@ -985,7 +985,7 @@ private:
     ScalarFloat m_max = 0.f;
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_nodes, m_pdf, m_cdf, m_integral,
-                   m_normalization, m_valid)
+                   m_normalization, m_valid, m_range, m_interval_size)
 };
 
 template <typename Value>

@@ -127,7 +127,7 @@ protected:
 private:
     friend class mitsuba::Scene<Float, Spectrum>;
 
-    MI_TRAVERSE_CB(Base)
+    MI_TRAVERSE_CB(Base, m_flags)
 };
 
 MI_EXTERN_CLASS(Emitter)

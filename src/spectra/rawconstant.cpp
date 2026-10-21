@@ -123,6 +123,8 @@ public:
     MI_DECLARE_CLASS(RawConstantTexture)
 protected:
     Value m_value;
+
+    MI_TRAVERSE_CB(Texture, m_value)
 };
 
 // Note: this gets expanded to a `RawConstantTextureImpl` specialized to the channel count.

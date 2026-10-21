@@ -394,7 +394,8 @@ protected:
     // Nearest-neighbor lookups instead of linear interpolation
     bool m_nearest;
 
-    MI_TRAVERSE_CB(Texture, m_input, m_values, m_table, m_coeffs)
+    MI_TRAVERSE_CB(Texture, m_input, m_values, m_table, m_coeffs,
+                   m_input_min, m_input_max, m_curve, m_nearest)
 };
 
 MI_EXPORT_PLUGIN(LUTTexture)

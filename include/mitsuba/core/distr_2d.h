@@ -246,7 +246,7 @@ protected:
     Float m_normalization;
 
     MI_TRAVERSE_CB(drjit::TraversableBase, m_data, m_marg_cdf, m_cond_cdf,
-                   m_inv_normalization, m_normalization)
+                   m_inv_normalization, m_normalization, m_size)
 };
 
 /// Base class of Hierarchical2D and Marginal2D with common functionality
@@ -360,6 +360,8 @@ public:
     void traverse_cb(void *payload, const drjit::TraverseVisitor &cb) override {
         for (auto &param_value : m_param_values)
             drjit::traverse_fn(param_value, payload, cb, "m_param_values");
+        DRJIT_MAP(DR_TRAVERSE_MEMBER, m_patch_size, m_inv_patch_size,
+                  m_param_strides, m_slices)
     }
 };
 
@@ -813,6 +815,8 @@ protected:
             return ((p.x() & 1u) | dr::sl<1>((p.x() & ~1u) | (p.y() & 1u))) +
                    ((p.y() & ~1u) * width);
         }
+
+        DRJIT_STRUCT(Level, width, size, offset)
     };
 
     /// Look up a single value, interpolating across parameter slices
@@ -867,7 +871,7 @@ protected:
     /// Number of bilinear patches in the X/Y dimension - 1
     ScalarVector2u m_max_patch_index;
 
-    MI_TRAVERSE_CB(Base, m_data)
+    MI_TRAVERSE_CB(Base, m_data, m_levels, m_max_patch_index)
 };
 
 /**
@@ -1529,7 +1533,7 @@ protected:
     /// Are the probability values normalized?
     bool m_normalized;
 
-    MI_TRAVERSE_CB(Base, m_data, m_marg_cdf, m_cond_cdf)
+    MI_TRAVERSE_CB(Base, m_data, m_marg_cdf, m_cond_cdf, m_size, m_normalized)
 };
 
 // =======================================================================

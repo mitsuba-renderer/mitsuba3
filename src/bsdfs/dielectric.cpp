@@ -436,7 +436,7 @@ private:
     ref<Texture> m_specular_transmittance;
 
     MI_TRAVERSE_CB(Base, m_eta, m_inv_eta, m_specular_reflectance,
-                   m_specular_transmittance)
+                   m_specular_transmittance, m_eta_scale)
 };
 
 MI_EXPORT_PLUGIN(SmoothDielectric)

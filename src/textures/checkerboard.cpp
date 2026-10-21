@@ -127,7 +127,7 @@ protected:
     ref<Texture> m_color1;
     ScalarAffineTransform3f m_transform;
 
-    MI_TRAVERSE_CB(Texture, m_color0, m_color1)
+    MI_TRAVERSE_CB(Texture, m_color0, m_color1, m_transform)
 };
 
 MI_EXPORT_PLUGIN(Checkerboard)

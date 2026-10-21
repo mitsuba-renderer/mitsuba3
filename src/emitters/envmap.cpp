@@ -629,7 +629,7 @@ protected:
     bool m_mis_compensation;
     PortalSampler<Float, Spectrum> m_portals;
 
-    MI_TRAVERSE_CB(Base, m_bsphere, m_texture, m_warp, m_d65, m_scale, m_portals)
+    MI_TRAVERSE_CB(Base, m_bsphere, m_texture, m_res, m_warp, m_d65, m_scale, m_mis_compensation, m_portals)
 };
 
 MI_EXPORT_PLUGIN(EnvironmentMapEmitter)
