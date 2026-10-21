@@ -270,6 +270,9 @@ private:
     ScalarFloat m_integral_min;
     ScalarFloat m_integral;
     ScalarVector2f m_wavelength_range;
+
+    MI_TRAVERSE_CB(Texture, m_temperature, m_integral_min, m_integral,
+                   m_wavelength_range)
 };
 
 MI_EXPORT_PLUGIN(BlackBodySpectrum)

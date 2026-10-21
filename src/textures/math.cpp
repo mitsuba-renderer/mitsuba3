@@ -707,7 +707,7 @@ protected:
     /// Does the expression use any of the color handling operations?
     bool m_color_ops = false;
 
-    MI_TRAVERSE_CB(Texture, m_inputs)
+    MI_TRAVERSE_CB(Texture, m_inputs, m_expression, m_consts, m_color_ops)
 };
 
 MI_EXPORT_PLUGIN(MathTexture)

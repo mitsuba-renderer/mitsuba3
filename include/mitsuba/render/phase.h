@@ -214,6 +214,8 @@ protected:
 
     /// Flags for each component of this phase function.
     std::vector<uint32_t> m_components;
+
+    MI_TRAVERSE_CB(Object, m_flags, m_components)
 };
 
 MI_VARIANT

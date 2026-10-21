@@ -399,7 +399,7 @@ private:
     ScalarFloat m_alpha_sample;
     Interpolator  m_interpolator;
 
-    MI_TRAVERSE_CB(Base, m_interpolator)
+    MI_TRAVERSE_CB(Base, m_interpolator, m_wavelength, m_alpha_sample)
 };
 
 MI_EXPORT_PLUGIN(MeasuredPolarized)

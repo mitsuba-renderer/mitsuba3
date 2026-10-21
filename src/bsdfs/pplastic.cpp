@@ -528,7 +528,8 @@ private:
     ref<Texture> m_eta;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance,
-                   m_alpha_u, m_alpha_v, m_eta, m_distr)
+                   m_alpha_u, m_alpha_v, m_eta, m_distr,
+                   m_type, m_sample_visible, m_uniform_alpha)
 };
 
 MI_EXPORT_PLUGIN(PolarizedPlastic)

@@ -953,7 +953,11 @@ private:
     MI_TRAVERSE_CB(Base, m_base_color, m_roughness, m_anisotropic, m_sheen,
                    m_sheen_tint, m_spec_trans, m_flatness, m_spec_tint,
                    m_clearcoat, m_clearcoat_gloss, m_metallic, m_eta,
-                   m_inv_eta, m_r0, m_specular, m_spec_distr, m_cc_distr)
+                   m_inv_eta, m_r0, m_specular, m_spec_distr, m_cc_distr,
+                   m_eta_specular, m_uniform_roughness, m_uniform_gloss,
+                   m_has_clearcoat, m_has_sheen, m_has_spec_trans,
+                   m_eta_scale, m_has_metallic, m_has_spec_tint,
+                   m_has_sheen_tint, m_has_anisotropic, m_has_flatness)
 };
 
 MI_EXPORT_PLUGIN(Principled)

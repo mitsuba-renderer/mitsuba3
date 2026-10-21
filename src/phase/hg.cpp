@@ -52,6 +52,7 @@ public:
         if (g >= 1.f || g <= -1.f)
             Log(Error, "The asymmetry parameter must lie in the interval (-1, 1)!");
         m_g = g;
+        dr::make_opaque(m_g);
 
         m_flags = +PhaseFunctionFlags::Anisotropic;
         m_components.push_back(m_flags); // TODO: check
@@ -59,6 +60,10 @@ public:
 
     void traverse(TraversalCallback *cb) override {
         cb->put("g", m_g, ParamFlags::Differentiable | ParamFlags::Discontinuous);
+    }
+
+    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+        dr::make_opaque(m_g);
     }
 
     MI_INLINE Float eval_hg(Float cos_theta) const {
@@ -109,6 +114,8 @@ public:
     MI_DECLARE_CLASS(HGPhaseFunction)
 private:
     Float m_g;
+
+    MI_TRAVERSE_CB(Base, m_g)
 };
 
 MI_EXPORT_PLUGIN(HGPhaseFunction)

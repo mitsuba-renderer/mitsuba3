@@ -110,7 +110,7 @@ protected:
     bool m_is_homogeneous;
     bool m_has_spectral_extinction;
 
-    MI_DECLARE_TRAVERSE_CB(m_phase_function)
+    MI_DECLARE_TRAVERSE_CB(m_phase_function, m_sample_emitters, m_is_homogeneous, m_has_spectral_extinction)
 };
 
 MI_EXTERN_CLASS(Medium)

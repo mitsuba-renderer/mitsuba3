@@ -128,6 +128,8 @@ public:
     MI_DECLARE_CLASS(TabulatedPhaseFunction)
 private:
     ContinuousDistribution<Float> m_distr;
+
+    MI_TRAVERSE_CB(Base, m_distr)
 };
 
 MI_EXPORT_PLUGIN(TabulatedPhaseFunction)

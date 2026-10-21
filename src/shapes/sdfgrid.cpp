@@ -1056,8 +1056,9 @@ private:
     uint32_t m_filled_voxel_count = 0;
     NormalMethod m_normal_method;
 
-    MI_TRAVERSE_CB(Base, m_grid_texture, m_inv_shape, m_voxel_size,
-                   m_jit_bboxes, m_jit_voxel_indices)
+    MI_TRAVERSE_CB(Base, m_grid_texture, m_grid_texture.tensor().shape(),
+                   m_inv_shape, m_voxel_size, m_jit_bboxes,
+                   m_jit_voxel_indices, m_normal_method)
 };
 
 MI_EXPORT_PLUGIN(SDFGrid)

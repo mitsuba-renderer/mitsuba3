@@ -792,7 +792,7 @@ private:
                    m_pheomelanin, m_sigma_a, m_scale,
                    m_v[0], m_v[1], m_v[2], m_v[3], m_s, m_sin_2k_alpha[0],
                    m_sin_2k_alpha[1], m_sin_2k_alpha[2], m_cos_2k_alpha[0],
-                   m_cos_2k_alpha[1], m_cos_2k_alpha[2])
+                   m_cos_2k_alpha[1], m_cos_2k_alpha[2], m_use_pigmentation)
     static_assert(P_MAX == 3, "Please update the DR_TRAVERSE_CB() macro when changing P_MAX.");
 };
 

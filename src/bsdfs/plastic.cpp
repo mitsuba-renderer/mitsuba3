@@ -423,7 +423,7 @@ private:
     bool m_nonlinear;
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
-                   m_inv_eta, m_inv_eta_2, m_fdr_int, m_fdr_ext)
+                   m_inv_eta, m_inv_eta_2, m_fdr_int, m_fdr_ext, m_nonlinear)
 };
 
 MI_EXPORT_PLUGIN(SmoothPlastic)

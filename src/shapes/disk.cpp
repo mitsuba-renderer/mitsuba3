@@ -507,7 +507,7 @@ private:
     Float m_inv_surface_area;
     bool m_flip_normals;
 
-    MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area)
+    MI_TRAVERSE_CB(Base, m_frame, m_du, m_dv, m_inv_surface_area, m_flip_normals)
 };
 
 MI_EXPORT_PLUGIN(Disk)
