@@ -591,7 +591,7 @@ private:
     /// Is the winding of the two triangles reversed?
     bool m_reversed;
 
-    MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area)
+    MI_TRAVERSE_CB(Base, m_frame, m_inv_surface_area, m_flipped, m_reversed)
 };
 
 MI_EXPORT_PLUGIN(Rectangle)

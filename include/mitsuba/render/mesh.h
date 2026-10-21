@@ -1225,7 +1225,7 @@ protected:
         }
 
         DRJIT_ARRAY_DEFAULTS(MeshAttribute)
-        DRJIT_TRAVERSE(MeshAttribute, data);
+        DRJIT_TRAVERSE(MeshAttribute, dim, data);
     };
 
     /// Does the attribute ``name`` live on the vertices rather than the faces?
@@ -1346,7 +1346,8 @@ protected:
     MI_DECLARE_TRAVERSE_CB(m_packed_vertices, m_packed_faces,
                            m_position_index, m_normal_index,
                            m_dedge, m_sil_dedge_pmf, m_mesh_attributes,
-                           m_area_pmf, m_parameterization)
+                           m_area_pmf, m_parameterization, m_layout,
+                           m_face_normals)
 };
 
 MI_EXTERN_CLASS(Mesh)

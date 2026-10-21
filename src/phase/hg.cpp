@@ -109,6 +109,8 @@ public:
     MI_DECLARE_CLASS(HGPhaseFunction)
 private:
     Float m_g;
+
+    MI_TRAVERSE_CB(Base, m_g)
 };
 
 MI_EXPORT_PLUGIN(HGPhaseFunction)

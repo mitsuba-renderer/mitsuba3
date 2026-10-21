@@ -331,7 +331,7 @@ private:
 
     bool m_has_value = false;
 
-    MI_TRAVERSE_CB(Base, m_color, m_coeff, m_factor, m_nested_texture, m_d65)
+    MI_TRAVERSE_CB(Base, m_color, m_coeff, m_factor, m_nested_texture, m_d65, m_scale, m_has_value)
 };
 
 MI_EXPORT_PLUGIN(D65Spectrum)

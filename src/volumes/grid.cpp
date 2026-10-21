@@ -597,7 +597,7 @@ protected:
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
 
-    MI_TRAVERSE_CB(Base, m_texture)
+    MI_TRAVERSE_CB(Base, m_texture, m_accel, m_raw, m_fixed_max, m_max, m_max_per_channel)
 };
 
 MI_EXPORT_PLUGIN(GridVolume)

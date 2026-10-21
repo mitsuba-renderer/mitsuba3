@@ -575,7 +575,8 @@ private:
 
     MI_TRAVERSE_CB(Base, m_diffuse_reflectance, m_specular_reflectance, m_eta,
                    m_inv_eta, m_inv_eta_2, m_alpha, m_external_transmittance,
-                   m_internal_reflectance, m_diffuse_transmittance, m_distr)
+                   m_internal_reflectance, m_diffuse_transmittance, m_distr,
+                   m_type, m_nonlinear, m_sample_visible)
 };
 
 MI_EXPORT_PLUGIN(RoughPlastic)

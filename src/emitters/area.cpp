@@ -371,7 +371,7 @@ private:
     ref<Texture> m_radiance;
     bool m_twosided;
 
-    MI_TRAVERSE_CB(Base, m_radiance)
+    MI_TRAVERSE_CB(Base, m_radiance, m_shape, m_twosided)
 };
 
 MI_EXPORT_PLUGIN(AreaLight)

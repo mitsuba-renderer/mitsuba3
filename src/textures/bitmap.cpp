@@ -1376,7 +1376,7 @@ protected:
     // Sampling distribution, built on first use
     std::unique_ptr<DiscreteDistribution2D<Float>> m_distr2d;
 
-    MI_TRAVERSE_CB(Texture, m_texture, m_rgb, m_distr2d)
+    MI_TRAVERSE_CB(Texture, m_texture, m_rgb, m_distr2d, m_transform, m_raw, m_srgb)
 };
 
 MI_EXPORT_PLUGIN(BitmapTexture)

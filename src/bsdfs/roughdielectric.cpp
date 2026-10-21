@@ -695,7 +695,8 @@ private:
     bool m_uniform_alpha = false;
 
     MI_TRAVERSE_CB(Base, m_specular_reflectance, m_specular_transmittance,
-                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta, m_distr)
+                   m_alpha_u, m_alpha_v, m_eta, m_inv_eta, m_distr,
+                   m_type, m_sample_visible, m_eta_scale, m_uniform_alpha)
 };
 
 MI_EXPORT_PLUGIN(RoughDielectric)

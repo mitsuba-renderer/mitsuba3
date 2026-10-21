@@ -711,7 +711,7 @@ private:
     bool m_flip_normals;
 
     MI_TRAVERSE_CB(Base, m_center, m_radius, m_inv_surface_area,
-                   m_radius_thresh)
+                   m_radius_thresh, m_flip_normals)
 };
 
 MI_EXPORT_PLUGIN(Sphere)
