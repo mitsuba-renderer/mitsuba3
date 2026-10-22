@@ -237,7 +237,9 @@ class PathSample:
         z.emitter_pdf = emitter_pdf
         z.k = mi.UInt32(rc.k)
         z.k[(rc.k == 0) & (nee | rc_src)] = d
-        emitter_next = (z.k > 0) & (z.k == (d - 1 if depth_prev is None else depth_prev))
+        emitter_next = (z.k > 0) & (
+            z.k == (d - 1 if depth_prev is None else depth_prev)
+        )
         z.emitter_next = emitter_next & (z.k < d)
         z.rc_hit = dr.copy(rc.hit)
         z.rc_pos = mi.Point3f(rc.pos)
@@ -830,13 +832,16 @@ class RestirPTIntegrator(ADIntegrator):
             # One texture per slot with interleaved (dx, dy), concatenated for
             # lookup in a symbolic loop
             self.pairing = dr.concat(
-                [dr.ravel(self.pairing_texture(r)) for r in range(self.spatial_neighbors)]
+                [
+                    dr.ravel(self.pairing_texture(r))
+                    for r in range(self.spatial_neighbors)
+                ]
             )
             dr.eval(self.pairing)
 
-    def footprint_threshold(self, x_v: mi.Vector3f, n_v: mi.Vector3f, eye: mi.Point3f):
+    def footprint_threshold(self, x_v: mi.Vector3f, n_v: mi.Vector3f, x_0: mi.Point3f):
         """The scene dependent footprint threshold (right hand side of Eq. 5)."""
-        v = eye - x_v
+        v = x_0 - x_v
         dist2 = dr.squared_norm(v)
         cos = dr.abs(dr.dot(n_v, v * dr.rsqrt(dr.maximum(dist2, 1e-20))))
         scale = self.footprint_c / 100.0 * 4.0 * dr.pi
@@ -898,14 +903,15 @@ class RestirPTIntegrator(ADIntegrator):
             )
 
             ray, weight, image_pos = self.sample_rays(scene, sensor, sampler)
-            eye = mi.Point3f(sensor.world_transform().translation())
-            prev_eye = mi.Point3f(self.prev_to_world.translation())
+            # Camera vertex x_0 of this and the previous frame
+            x_0 = mi.Point3f(sensor.world_transform().translation())
+            prev_x_0 = mi.Point3f(self.prev_to_world.translation())
 
             # ---------------- Initial resampling over the path tree -------
             si: mi.SurfaceInteraction3f = scene.ray_intersect(
                 ray, mi.RayFlags.Default, coherent=True, ray_mask=mi.RayMask.Primary
             )
-            threshold = self.footprint_threshold(si.p, si.n, eye)
+            threshold = self.footprint_threshold(si.p, si.n, x_0)
             primary_ds = mi.DirectionSample3f(
                 scene,
                 si,
@@ -913,11 +919,11 @@ class RestirPTIntegrator(ADIntegrator):
                 ray_mask=mi.RayMask.Primary,
             )
             Le_dir = primary_ds.emitter.eval(si)
-            fresh = self.sample_initial(scene, sampler, si, threshold)
+            initial = self.sample_initial(scene, sampler, si, threshold)
 
             pixel = dr.arange(mi.UInt32, n_pixels)
             sampler.schedule_state()
-            dr.eval(fresh, Le_dir, si, threshold, ray, weight, image_pos)
+            dr.eval(initial, Le_dir, si, threshold, ray, weight, image_pos)
 
             # ---------------- Temporal reuse -------------------------------
             prev_idx, prev_ok = self.temporal_neighbor(sensor, si, pixel)
@@ -927,11 +933,11 @@ class RestirPTIntegrator(ADIntegrator):
 
             if self.reorder:
                 key = dr.select(prev_ok & prev.path().needs_replay(), 2, 0)
-                key |= dr.select(fresh.path().needs_replay(), 1, 0)
+                key |= dr.select(initial.path().needs_replay(), 1, 0)
                 si.p, si.n = dr.reorder_threads(mi.UInt32(key), 2, (si.p, si.n))
 
             temporal = self.resample_temporal(
-                scene, sampler, fresh, si, threshold, prev, prev_si, prev_ok, prev_eye
+                scene, sampler, initial, si, threshold, prev, prev_si, prev_ok, prev_x_0
             )
 
             temporal_buf = dr.ravel(temporal.pack())
@@ -941,7 +947,7 @@ class RestirPTIntegrator(ADIntegrator):
             # ---------------- Paired spatial reuse -------------------------
             reservoir = temporal
             if self.spatial_neighbors:
-                pairs = self.spatial_prepass(scene, temporal_buf, si, eye, seed)
+                pairs = self.spatial_prepass(scene, temporal_buf, si, x_0, seed)
                 dr.eval(pairs)
                 reservoir = self.resample_spatial(
                     sampler, temporal, si, temporal_buf, pairs, seed
@@ -1094,9 +1100,7 @@ class RestirPTIntegrator(ADIntegrator):
         self, em: EmitterSample, count: mi.Float, visible: mi.Bool
     ) -> None:
         """Fill in the MIS-weighted contribution and the connection density."""
-        mis_em = dr.select(
-            em.ds.delta, 1.0, mis_weight(count * em.ds.pdf, em.pdf_bsdf)
-        )
+        mis_em = dr.select(em.ds.delta, 1.0, mis_weight(count * em.ds.pdf, em.pdf_bsdf))
         em.contribution = dr.select(
             visible, em.f * em.em_weight * mis_em, mi.Color3f(0)
         )
@@ -1148,16 +1152,13 @@ class RestirPTIntegrator(ADIntegrator):
 
         n = dr.width(seed)
         # Streams seeded by the path alone, not the lane, for replayed BSDF
-        # samples. NEE uses one stream per vertex so that the rebuild can
-        # redraw a vertex's candidates without the ones before.
+        # samples.
         path_sampler = ReSTIRSampler(0)
         path_sampler.seed(seed, n)
 
         active = mi.Bool(active)
         weight = mi.Spectrum(1.0)
         eta = mi.Float(1.0)
-        # Index j of the current vertex x_j, as in the paper: the primary
-        # vertex is x_1 (prb.py instead counts the bounces from zero)
         depth = mi.UInt32(1)
         ray_mask = mi.UInt32(mi.RayMask.Primary)
 
@@ -1659,7 +1660,7 @@ class RestirPTIntegrator(ADIntegrator):
         prev: PathReservoir,
         prev_si: mi.SurfaceInteraction3f,
         valid: mi.Bool,
-        prev_eye: mi.Point3f,
+        prev_x_0: mi.Point3f,
     ) -> PathReservoir:
         """Combine the initial sample with the reprojected reservoir."""
         out = PathReservoir.empty()
@@ -1672,10 +1673,8 @@ class RestirPTIntegrator(ADIntegrator):
         inbound = self.shift(scene, prev_z, si, threshold, reuse)
         dr.eval(inbound)
         # This pixel's path shifted to the previous frame
-        threshold_p = self.footprint_threshold(prev_si.p, prev_si.n, prev_eye)
-        outbound = self.shift(
-            scene, res_z, prev_si, threshold_p, valid & (res.W > 0)
-        )
+        threshold_p = self.footprint_threshold(prev_si.p, prev_si.n, prev_x_0)
+        outbound = self.shift(scene, res_z, prev_si, threshold_p, valid & (res.W > 0))
         dr.eval(outbound)
         J_in = inbound.jacobian(prev_z)
         J_out = outbound.jacobian(res_z)
@@ -1759,7 +1758,7 @@ class RestirPTIntegrator(ADIntegrator):
         scene: mi.Scene,
         reservoir_buf: mi.UInt32,
         si: mi.SurfaceInteraction3f,
-        eye: mi.Point3f,
+        x_0: mi.Point3f,
         seed: mi.UInt32,
     ) -> PairShift:
         """Shift every pixel's path to each of its partners (Sec. 3)."""
@@ -1771,7 +1770,7 @@ class RestirPTIntegrator(ADIntegrator):
         si_own = dr.gather(mi.SurfaceInteraction3f, si, pixel)
         si_q = dr.gather(mi.SurfaceInteraction3f, si, partner, valid)
         valid &= self.similar(si_q, si_own)
-        threshold_q = self.footprint_threshold(si_q.p, si_q.n, eye)
+        threshold_q = self.footprint_threshold(si_q.p, si_q.n, x_0)
         return self.shift(scene, res.path(), si_q, threshold_q, valid & (res.W > 0))
 
     @dr.syntax
@@ -1823,7 +1822,8 @@ class RestirPTIntegrator(ADIntegrator):
             # This pixel's path keeps the share that the neighbor does not take
             canonical_weight += dr.select(
                 valid,
-                1.0 - balance_heuristic(neighbor.M * phat_c_at_n, res.M * phat_c / count),
+                1.0
+                - balance_heuristic(neighbor.M * phat_c_at_n, res.M * phat_c / count),
                 0.0,
             )
             valid_count += dr.select(valid, 1.0, 0.0)
@@ -1874,4 +1874,3 @@ class RestirPTIntegrator(ADIntegrator):
 
 
 mi.register_integrator("restirpt_rebuild", lambda props: RestirPTIntegrator(props))
-
