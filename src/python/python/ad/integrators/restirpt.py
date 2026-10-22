@@ -546,12 +546,6 @@ class RestirPTIntegrator(ADIntegrator):
          indirect bounce, and so on. Since path depths are stored in 4 bits, the
          value must lie between 2 and 15. (Default: 6)
 
-     * - jitter
-       - |bool|
-       - If set to |true|, the camera ray of each pixel is jittered within the
-         pixel. Otherwise, all rays pass through pixel centers, which makes the
-         primary hit points identical across frames. (Default: |true|)
-
      * - spatial_neighbors
        - |int|
        - Specifies the number of paired spatial neighbors that are merged per
@@ -606,9 +600,8 @@ class RestirPTIntegrator(ADIntegrator):
 
      * - roughness_threshold
        - |float|
-       - Minimum roughness of a glossy BSDF for a vertex to be used as the
-         source of a reconnection. Diffuse BSDFs are always accepted.
-         (Default: 0.2)
+       - Minimum roughness :math:`1/p^2` of the direction density at the
+         source of a reconnection. (Default: 0.2)
 
      * - nee_candidates
        - |int|
@@ -688,6 +681,13 @@ class RestirPTIntegrator(ADIntegrator):
         :meth:`render`. Rendering unrelated frames with the same instance will
         therefore reuse the previous frame, unless the film resolution changes.
 
+    .. note::
+        With pixel jitter, the primary hit point of a pixel changes in every
+        frame, and reused paths must be shifted to it. This makes the result
+        noisier, so we recommend setting the sensor's :monosp:`jitter`
+        parameter to |false|, which sends every camera ray through the pixel
+        center.
+
     .. warning::
         This integrator only renders one sample per pixel and does not support
         films with :monosp:`sample_border` enabled. It does not support
@@ -709,7 +709,6 @@ class RestirPTIntegrator(ADIntegrator):
 
     def __init__(self, props: mi.Properties):
         super().__init__(props)
-        self.jitter = props.get("jitter", True)
         self.max_M_temporal = props.get("max_M_temporal", 20.0)
         self.min_M_temporal = props.get("min_M_temporal", 1.0)
         self.duplication_map = props.get("duplication_map", True)
@@ -742,32 +741,9 @@ class RestirPTIntegrator(ADIntegrator):
             raise ValueError("pairing_sizes must list one size per spatial neighbor")
         if self.nee_candidates < 1:
             raise ValueError("nee_candidates must be at least 1")
-        self.n = dr.opaque(mi.UInt32, 0)
         self.film_size: None | mi.ScalarVector2u = None
 
     # ---------------------- Reconnection policy ----------------------
-
-    def rough(
-        self, bsdf: mi.BSDF, si: mi.SurfaceInteraction3f, active: mi.Bool
-    ) -> mi.Bool:
-        """Roughness safeguard (Sec. 4.2) at a reconnection source."""
-        alpha_u = bsdf.eval_attribute_1("alpha_u", si, active)
-        alpha_v = bsdf.eval_attribute_1("alpha_v", si, active)
-        alpha = bsdf.eval_attribute_1("alpha", si, active)
-        roughness = bsdf.eval_attribute_1("roughness", si, active)
-        width = dr.select(
-            (alpha_u > 0) & (alpha_v > 0),
-            dr.minimum(alpha_u, alpha_v),
-            dr.select(alpha > 0, alpha, roughness),
-        )
-        flags = bsdf.flags()
-        return active & (
-            mi.has_flag(flags, mi.BSDFFlags.Diffuse)
-            | (
-                mi.has_flag(flags, mi.BSDFFlags.Glossy)
-                & (width >= self.roughness_threshold)
-            )
-        )
 
     def diffuse_only(self, bsdf: mi.BSDF, active: mi.Bool) -> mi.Bool:
         """Materials whose sampling density does not depend on the incidence."""
@@ -778,14 +754,15 @@ class RestirPTIntegrator(ADIntegrator):
 
     def rc_src_criterion(
         self,
-        rough: mi.Bool,
         delta: mi.Bool,
         pdf: mi.Float,
         g: mi.Float,
         threshold: mi.Float,
     ) -> mi.Bool:
-        """Whether this vertex can serve as the source vertex of a reconnection (Eq. 5)."""
-        return rough & ~delta & (footprint(pdf, g) >= threshold)
+        """Whether this vertex can serve as the source vertex of a reconnection
+        (Eq. 5, with the roughness safeguard of Supp. Eq. 26)."""
+        rough = dr.square(pdf) * self.roughness_threshold <= 1.0
+        return (pdf > 0) & rough & ~delta & (footprint(pdf, g) >= threshold)
 
     def rc_dst_criterion(
         self,
@@ -800,25 +777,20 @@ class RestirPTIntegrator(ADIntegrator):
 
     # ------------------------ Spatial pairing ------------------------
 
-    def pairing_texture(
-        self, size: int, sigma: float, seed: int
-    ) -> tuple[mi.Int32, mi.Int32]:
-        """Self-inverting pixel offsets with Gaussian spread ``sigma`` (Sec. 3.1)."""
+    def pairing_texture(self, slot: int) -> mi.Vector2i:
+        """Self-inverting pixel offsets of pairing texture ``slot``, with a
+        Gaussian spread set by the search radius (Sec. 3.1)."""
+        size = self.pairing_layout(slot)[0]
+        sigma = math.sqrt(8.0 / (9.0 * math.pi)) * self.search_radius
+        seed = 0xC0FFEE + 7919 * slot
         iterations = round(
             sigma**2 / 2 + 1.46 / sigma + 1.76 / sigma**2 + 0.656 / sigma**3 + 0.5
         )
         n, half = size * size, size // 2
         texel = dr.arange(mi.UInt32, n)
 
-        def roll(t: mi.TensorXu, shift: int) -> mi.TensorXu:
-            coord = mi.Int32(texel)
-            source = ((coord // size + size - shift) % size) * size
-            source += (coord % size + size - shift) % size
-            values = dr.gather(mi.UInt32, t.array, mi.UInt32(source))
-            return mi.TensorXu(values, (size, size))
-
         def shuffle(a: mi.TensorXu, offset: int, iteration: int) -> mi.TensorXu:
-            blocks = dr.reshape(roll(a, -offset), (half, 2, half, 2))
+            blocks = dr.reshape(dr.roll(a, -offset, axis=(0, 1)), (half, 2, half, 2))
             blocks = dr.transpose(blocks, (0, 2, 1, 3))
             blocks = dr.reshape(blocks, (half, half, 4))
             keys = mi.TensorXf(
@@ -827,7 +799,7 @@ class RestirPTIntegrator(ADIntegrator):
             order = dr.argsort(keys).array + (texel // 4) * 4
             a = mi.TensorXu(dr.gather(mi.UInt32, blocks.array, order), blocks.shape)
             a = dr.transpose(dr.reshape(a, (half, half, 2, 2)), (0, 2, 1, 3))
-            return roll(dr.reshape(a, (size, size)), offset)
+            return dr.roll(dr.reshape(a, (size, size)), offset, axis=(0, 1))
 
         samples = mi.TensorXu(texel, (size, size))
         for i in range(max(iterations, 1)):
@@ -841,30 +813,26 @@ class RestirPTIntegrator(ADIntegrator):
         wrap = lambda d: dr.select(
             d > half, d - size, dr.select(d < -half, d + size, d)
         )
-        return wrap(dx), wrap(dy)
+        return mi.Vector2i(wrap(dx), wrap(dy))
 
     # -------------------------- Frame state --------------------------
 
     def reset_frame_state(self, film_size: mi.ScalarVector2u) -> None:
         """Reset frame state such as pairing textures and reservoirs."""
         self.film_size = mi.ScalarVector2u(film_size)
-        self.n = dr.opaque(mi.UInt32, 0)
         n = film_size.x * film_size.y
         self.reservoir_buf = dr.zeros(mi.UInt32, n * PathReservoir.WORDS)
         self.si_buf: mi.SurfaceInteraction3f = dr.zeros(mi.SurfaceInteraction3f, n)
-        self.duplication_buf = dr.zeros(mi.Float, n)
+        if self.duplication_map:
+            self.duplication_buf = dr.zeros(mi.Float, n)
 
-        sigma = math.sqrt(8.0 / (9.0 * math.pi)) * self.search_radius
-        # One texture per slot, concatenated for lookup in a symbolic loop
-        textures = [
-            self.pairing_texture(self.pairing_layout(r)[0], sigma, 0xC0FFEE + 7919 * r)
-            for r in range(self.spatial_neighbors)
-        ]
-        # Loop state must be initialized even without slots
-        empty = [dr.zeros(mi.Int32, 1)]
-        self.pairing_dx = dr.concat([dx for dx, _ in textures] or empty)
-        self.pairing_dy = dr.concat([dy for _, dy in textures] or empty)
-        dr.eval(self.pairing_dx, self.pairing_dy)
+        if self.spatial_neighbors:
+            # One texture per slot with interleaved (dx, dy), concatenated for
+            # lookup in a symbolic loop
+            self.pairing = dr.concat(
+                [dr.ravel(self.pairing_texture(r)) for r in range(self.spatial_neighbors)]
+            )
+            dr.eval(self.pairing)
 
     def footprint_threshold(self, x_v: mi.Vector3f, n_v: mi.Vector3f, eye: mi.Point3f):
         """The scene dependent footprint threshold (right hand side of Eq. 5)."""
@@ -887,28 +855,6 @@ class RestirPTIntegrator(ADIntegrator):
         close = dr.norm(a.p - b.p) < self.dist_threshold
         facing = dr.dot(a.n, b.n) > dr.cos(self.angle_threshold)
         return a.is_valid() & b.is_valid() & close & facing
-
-    def sample_rays(
-        self, scene: mi.Scene, sensor: mi.Sensor, sampler: mi.Sampler
-    ) -> tuple[mi.Ray3f, mi.Spectrum, mi.Vector2f]:
-        """Override of the ``sample_rays`` method supporting center pixel sampling."""
-        if self.jitter:
-            return super().sample_rays(scene, sensor, sampler)
-
-        film = sensor.film()
-        size = film.crop_size()
-        index = dr.arange(mi.UInt32, dr.prod(size))
-        pixel = mi.Vector2u(index % size.x, index // size.x)
-        image_pos = mi.Vector2f(pixel) + mi.Vector2f(film.crop_offset())
-        ray, weight = sensor.sample_ray(
-            time=sensor.shutter_open(),
-            sample1=0.0,
-            sample2=(mi.Vector2f(pixel) + 0.5) / mi.ScalarVector2f(size),
-            sample3=mi.Vector2f(0.0),
-        )
-        if not film.rfilter().is_box_filter():
-            image_pos += 0.5
-        return ray, weight, image_pos
 
     def nee_count(self, depth: mi.UInt32) -> mi.Float:
         """Light candidates at bounce ``depth``: ``N / B^2``, at least one (Sec. 7)."""
@@ -944,7 +890,6 @@ class RestirPTIntegrator(ADIntegrator):
             self.reset_frame_state(film_size)
             self.prev_to_world = sensor.world_transform()
 
-        dr.make_opaque(self.n)
         n_pixels = film_size.x * film_size.y
 
         with dr.suspend_grad():
@@ -978,8 +923,7 @@ class RestirPTIntegrator(ADIntegrator):
             prev_idx, prev_ok = self.temporal_neighbor(sensor, si, pixel)
             prev = PathReservoir.gather(self.reservoir_buf, prev_idx, prev_ok)
             prev_si = dr.gather(mi.SurfaceInteraction3f, self.si_buf, prev_idx, prev_ok)
-            score = dr.gather(mi.Float, self.duplication_buf, prev_idx, prev_ok)
-            prev.M = dr.minimum(prev.M, self.confidence_cap(score))
+            prev.M = dr.minimum(prev.M, self.confidence_cap(prev_idx, prev_ok))
 
             if self.reorder:
                 key = dr.select(prev_ok & prev.path().needs_replay(), 2, 0)
@@ -997,10 +941,10 @@ class RestirPTIntegrator(ADIntegrator):
             # ---------------- Paired spatial reuse -------------------------
             reservoir = temporal
             if self.spatial_neighbors:
-                pairs = self.spatial_prepass(scene, temporal_buf, si, eye)
+                pairs = self.spatial_prepass(scene, temporal_buf, si, eye, seed)
                 dr.eval(pairs)
                 reservoir = self.resample_spatial(
-                    sampler, temporal, si, temporal_buf, pairs
+                    sampler, temporal, si, temporal_buf, pairs, seed
                 )
 
             reservoir_buf = dr.ravel(reservoir.pack())
@@ -1023,7 +967,6 @@ class RestirPTIntegrator(ADIntegrator):
             self.reservoir_buf = reservoir_buf
             self.si_buf = si
             self.prev_to_world = sensor.world_transform()
-            self.n += 1
             dr.eval(self.reservoir_buf, self.si_buf)
 
             if self.duplication_map:
@@ -1346,8 +1289,6 @@ class RestirPTIntegrator(ADIntegrator):
                 depth_prev = mi.UInt32(depth)
             eta *= bsdf_sample.eta
             ray = si.spawn_ray(wo_world)
-            # Kept for the reconnection criterion of x_j -> x_{j+1}
-            src_rough = self.rough(bsdf, si, valid)
             src_n = mi.Normal3f(si.n)
 
             # -------------------- Stopping criterion ---------------------
@@ -1387,7 +1328,7 @@ class RestirPTIntegrator(ADIntegrator):
             jacobian_next = solid_angle_to_area(si.n, ray.d, si.t)
             jacobian_prev = solid_angle_to_area(src_n, ray.d, si.t)
             rc_src = self.rc_src_criterion(
-                src_rough, bsdf_delta, bsdf_sample.pdf, jacobian_next, threshold
+                bsdf_delta, bsdf_sample.pdf, jacobian_next, threshold
             )
             arrival_pdf = bsdf_sample.pdf * dr.select(valid, jacobian_next, 1.0)
 
@@ -1531,7 +1472,6 @@ class RestirPTIntegrator(ADIntegrator):
         src_si: mi.SurfaceInteraction3f = prefix.si
         rc = active & (z.k > 0) & src_si.is_valid()
         src_bsdf: mi.BSDF = src_si.bsdf()
-        src_rough = self.rough(src_bsdf, src_si, rc)
 
         # ------------------------- x_k --------------------------
         d = z.rc_pos - src_si.p
@@ -1584,7 +1524,6 @@ class RestirPTIntegrator(ADIntegrator):
             bsdf_ctx, rc_si, rc_si.to_local(z.rc_dir), rc & ~rc_emitter
         )
         src_ok = rc & self.rc_src_criterion(
-            src_rough,
             mi.Bool(False),
             src_pdf,
             dr.select(rc_infinite, 0.0, jacobian_rc),
@@ -1701,10 +1640,12 @@ class RestirPTIntegrator(ADIntegrator):
         ok_d = try_dual & self.similar(prev_si_d, si)
         return dr.select(ok_d, idx_d, idx), ok | ok_d
 
-    def confidence_cap(self, score: mi.Float) -> mi.Float:
-        """Temporal cap lowered by the duplication score (Sec. 5)."""
+    def confidence_cap(self, prev_idx: mi.UInt32, prev_ok: mi.Bool) -> mi.Float:
+        """Temporal cap lowered by the duplication score of the previous-frame
+        pixel (Sec. 5)."""
         if not self.duplication_map:
             return mi.Float(self.max_M_temporal)
+        score = dr.gather(mi.Float, self.duplication_buf, prev_idx, prev_ok)
         t = dr.power(dr.clip(score, 0.0, 1.0), self.duplication_alpha)
         return dr.lerp(mi.Float(self.max_M_temporal), mi.Float(self.min_M_temporal), t)
 
@@ -1777,13 +1718,15 @@ class RestirPTIntegrator(ADIntegrator):
             offset = dr.select(slot == r, mi.UInt32(offsets[r]), offset)
         return size, offset
 
-    def partner(self, slot: mi.UInt32, pixel: mi.UInt32) -> tuple[mi.UInt32, mi.Bool]:
-        """Partner pixel under pairing texture ``slot``, randomly transformed
-        per frame (Sec. 3.2)."""
+    def partner(
+        self, slot: mi.UInt32, pixel: mi.UInt32, seed: mi.UInt32
+    ) -> tuple[mi.UInt32, mi.Bool]:
+        """Partner pixel under pairing texture ``slot``, transformed randomly
+        per frame by ``seed`` (Sec. 3.2)."""
         usize, offset = self.pairing_layout(slot)
         size = mi.Int32(usize)
         width, height = self.film_size.x, self.film_size.y
-        h, _ = mi.sample_tea_32(self.n, mi.UInt32(slot))
+        h, _ = mi.sample_tea_32(seed, mi.UInt32(slot))
         flip_x = (h & 1) != 0
         flip_y = (h & 2) != 0
         transpose = (h & 4) != 0
@@ -1799,9 +1742,8 @@ class RestirPTIntegrator(ADIntegrator):
         tx = dr.select(transpose, uy, ux)
         ty = dr.select(transpose, ux, uy)
         texel = offset + mi.UInt32(ty * size + tx)
-        dx = dr.gather(mi.Int32, self.pairing_dx, texel)
-        dy = dr.gather(mi.Int32, self.pairing_dy, texel)
-        dx, dy = dr.select(transpose, dy, dx), dr.select(transpose, dx, dy)
+        d = dr.gather(mi.Vector2i, self.pairing, texel)
+        dx, dy = dr.select(transpose, d.y, d.x), dr.select(transpose, d.x, d.y)
         dx = dr.select(flip_x, -dx, dx)
         dy = dr.select(flip_y, -dy, dy)
         px = x + dx
@@ -1818,12 +1760,13 @@ class RestirPTIntegrator(ADIntegrator):
         reservoir_buf: mi.UInt32,
         si: mi.SurfaceInteraction3f,
         eye: mi.Point3f,
+        seed: mi.UInt32,
     ) -> PairShift:
         """Shift every pixel's path to each of its partners (Sec. 3)."""
         n = dr.width(si.p)
         idx = dr.arange(mi.UInt32, n * self.spatial_neighbors)
         pixel, r = idx // self.spatial_neighbors, idx % self.spatial_neighbors
-        partner, valid = self.partner(r, pixel)
+        partner, valid = self.partner(r, pixel, seed)
         res = PathReservoir.gather(reservoir_buf, pixel, mi.Bool(True))
         si_own = dr.gather(mi.SurfaceInteraction3f, si, pixel)
         si_q = dr.gather(mi.SurfaceInteraction3f, si, partner, valid)
@@ -1839,6 +1782,7 @@ class RestirPTIntegrator(ADIntegrator):
         si: mi.SurfaceInteraction3f,
         reservoir_buf: mi.UInt32,
         pairs: PairShift,
+        seed: mi.UInt32,
     ) -> PathReservoir:
         """Pairwise MIS over the paired neighbors (Sec. 3.2)."""
         n = dr.width(si.p)
@@ -1855,7 +1799,7 @@ class RestirPTIntegrator(ADIntegrator):
             max_iterations=self.spatial_neighbors,
             label="Spatial resampling",
         ):
-            partner, valid = self.partner(r, lane)
+            partner, valid = self.partner(r, lane, seed)
             si_q = dr.gather(mi.SurfaceInteraction3f, si, partner, valid)
             valid &= self.similar(si_q, si)
             neighbor = PathReservoir.gather(reservoir_buf, partner, valid)
@@ -1931,4 +1875,3 @@ class RestirPTIntegrator(ADIntegrator):
 
 mi.register_integrator("restirpt_rebuild", lambda props: RestirPTIntegrator(props))
 
-del ADIntegrator
