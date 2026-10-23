@@ -17,7 +17,7 @@ is associated with an identifying name that is composed of several parts:
     :width: 80%
     :align: center
 
-As many as 60 different variants of the renderer are presently available, shown
+As many as 72 different variants of the renderer are presently available, shown
 in the list below.
 
   .. container:: toggle
@@ -86,6 +86,18 @@ in the list below.
       - :monosp:`cuda_ad_spectral_double`
       - :monosp:`cuda_ad_spectral_polarized`
       - :monosp:`cuda_ad_spectral_polarized_double`
+      - :monosp:`metal_mono`
+      - :monosp:`metal_mono_polarized`
+      - :monosp:`metal_rgb`
+      - :monosp:`metal_rgb_polarized`
+      - :monosp:`metal_spectral`
+      - :monosp:`metal_spectral_polarized`
+      - :monosp:`metal_ad_mono`
+      - :monosp:`metal_ad_mono_polarized`
+      - :monosp:`metal_ad_rgb`
+      - :monosp:`metal_ad_rgb_polarized`
+      - :monosp:`metal_ad_spectral`
+      - :monosp:`metal_ad_spectral_polarized`
 
 However, when installing Mitsuba on your system with ``pip``, only a subset of
 those variants will be installed.
@@ -103,6 +115,14 @@ those variants will be installed.
     - :monosp:`cuda_ad_mono_polarized`
     - :monosp:`cuda_ad_spectral`
     - :monosp:`cuda_ad_spectral_polarized`
+    - :monosp:`metal_ad_rgb`
+    - :monosp:`metal_ad_mono`
+    - :monosp:`metal_ad_mono_polarized`
+    - :monosp:`metal_ad_spectral`
+    - :monosp:`metal_ad_spectral_polarized`
+
+Note that the ``cuda`` variants are only available on Linux and Windows, while
+the ``metal`` variants are only available on macOS.
 
 This is to avoid the burden of downloading massive binaries, but those should be
 enough to get you started with Mitsuba 3. For advanced applications that require
@@ -138,19 +158,25 @@ are available:
   which is detected and loaded at runtime. If you don't have a NVIDIA GPU, this
   mode is a great alternative to the ``cuda`` backend.
 
-An appealing aspect of the ``llvm`` and ``cuda`` modes, is that they expose
-*vectorized* Python interfaces that operate on arbitrarily large set of inputs.
-This means that millions of ray tracing operations or BSDF evaluations can be
-performed with a single Python function call, enabling efficient prototyping
-within Python or Jupyter notebooks without costly iteration over many elements.
+- The ``metal`` backend is the Apple Silicon counterpart of the ``cuda``
+  backend: Dr.Jit compiles the computation into Metal kernels that run on the
+  GPU, and ray tracing uses Metal's hardware-accelerated ray tracing. This
+  backend is only available on macOS and does not support double precision.
+
+An appealing aspect of the ``llvm``, ``cuda``, and ``metal`` modes, is that
+they expose *vectorized* Python interfaces that operate on arbitrarily large set
+of inputs. This means that millions of ray tracing operations or BSDF
+evaluations can be performed with a single Python function call, enabling
+efficient prototyping within Python or Jupyter notebooks without costly
+iteration over many elements.
 
 Part 2: Automatic differentiation
 ---------------------------------
 
 It is possible to add the ``_ad`` suffix to enable automatic differentiation for
-both ``cuda`` and ``llvm`` modes. In which case the backend will furthermore
-propagates derivative information through the simulation, which is a crucial
-ingredient for solving *inverse problems* using rendering algorithms.
+the ``cuda``, ``llvm``, and ``metal`` modes. In which case the backend will
+furthermore propagates derivative information through the simulation, which is
+a crucial ingredient for solving *inverse problems* using rendering algorithms.
 
 The following shows an example from :cite:`NimierDavidVicini2019Mitsuba2`.
 Here, Mitsuba 3 is used to compute the height profile of a transparent glass
@@ -302,9 +328,10 @@ Part 5: Precision
 
 Mitsuba 3 normally relies on single precision (32 bit) arithmetic, but double
 precision (64 bit) is optionally available adding the ``_double`` suffix to the
-variant name. We find this particularly helpful for debugging: whether or not an
-observed problem arises due to floating point imprecisions can normally be
-determined after switching to double precision. Note that Embree and OptiX don't
+variant name (except for the ``metal`` backend). We find this particularly
+helpful for debugging: whether or not an observed problem arises due to floating
+point imprecisions can normally be determined after switching to double
+precision. Note that Embree and OptiX don't
 support double precision, hence ray-tracing operations will run in reduced
 (single) precision in those modes. The only way to use precision for everything
 including ray tracing is to render on the CPU (``scalar`` or ``llvm``) and
