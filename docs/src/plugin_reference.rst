@@ -133,14 +133,16 @@ contains at least two emitters of finite extent and no animated emitters. The
 tree groups the emitters of finite extent by position, orientation and power.
 During traversal, it weighs each group by an estimate of its contribution at
 the shading point. The scene compares this estimate with the irradiance of the
-infinite emitters. In a scene with :ref:`portals <emitter-portal>`, environment
-emitters are treated like area emitters seen through the portals. This keeps an
-interior from spending most of its samples on an occluded sky. Without portals,
-the infinite emitters together never receive more weight than the tree. In
-scenes with many emitters, the tree produces far less noise than a uniform
-choice. Setting :monosp:`emitter_tree` to |false| restores the selection
-proportional to the emitters' :monosp:`sampling_weight`. The sampling weight
-also scales the energy of an emitter in the tree.
+infinite emitters. The infinite emitters together never receive more weight
+than the tree. This keeps an enclosed scene from spending most of its samples
+on an occluded sky. Light portals reduce the noise of the samples that do go
+to the sky. In scenes with many emitters, the tree produces far less noise
+than a uniform choice. Setting :monosp:`emitter_tree` to |false| restores the
+selection proportional to the emitters' :monosp:`sampling_weight`. The
+sampling weight also scales the energy of an emitter in the tree. For an
+infinite emitter, the sampling weight applies after the limit described above.
+Raising it therefore gives the sky a larger share in a room that the sky
+lights.
 
 **Thread reordering:** Ray intersection methods on the scene can take a
 `reorder` argument to specifiy whether or not threads should be shuffled into
