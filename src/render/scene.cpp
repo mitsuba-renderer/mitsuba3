@@ -55,7 +55,6 @@ MI_VARIANT Scene<Float, Spectrum>::Scene(const Properties &props)
             if (shape->is_shape_group()) {
                 m_shapegroups.push_back((ShapeGroup*)shape);
             } else {
-                m_bbox.expand(shape->bbox());
                 m_shapes.push_back(shape);
                 if (shape->is_instance())
                     m_instances.push_back(shape);
@@ -1229,10 +1228,7 @@ MI_VARIANT void Scene<Float, Spectrum>::parameters_changed(const std::vector<std
         m_accel.rebuild(this);
         clear_shapes_dirty();
         update_instance_transforms();
-
-        m_bbox = {};
-        for (auto &s : m_shapes)
-            m_bbox.expand(s->bbox());
+        m_bbox_valid = false;
     }
 
     if (m_environment)
