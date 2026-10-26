@@ -585,7 +585,15 @@ public:
     // =============================================================
 
     /// Return a bounding box surrounding the scene
-    const ScalarBoundingBox3f &bbox() const { return m_bbox; }
+    const ScalarBoundingBox3f &bbox() const {
+        if (!m_bbox_valid) {
+            m_bbox = {};
+            for (auto &s : m_shapes)
+                m_bbox.expand(s->bbox());
+            m_bbox_valid = true;
+        }
+        return m_bbox;
+    }
 
     /// Return the list of sensors
     std::vector<ref<Sensor>> &sensors() { return m_sensors; }
@@ -765,7 +773,11 @@ protected:
     /// Backend-specific acceleration data structure state
     SceneAccel<Float, Spectrum> m_accel;
 
-    ScalarBoundingBox3f m_bbox;
+    /// Bounding box of the scene, computed on demand by `bbox()`
+    mutable ScalarBoundingBox3f m_bbox;
+
+    /// Does `m_bbox` reflect the current shapes?
+    mutable bool m_bbox_valid = false;
 
     std::vector<ref<Emitter>> m_emitters;
     DynamicBuffer<EmitterPtr> m_emitters_dr;
