@@ -410,6 +410,11 @@ class PathReservoir(Reservoir):
         return r
 
     @staticmethod
+    def seed(buf: mi.UInt32, idx: mi.UInt32, active=True) -> mi.UInt32:
+        """Read the path seed without unpacking the reservoir."""
+        return dr.gather(mi.UInt32, buf, idx * PathReservoir.WORDS + 4, active)
+
+    @staticmethod
     def gather(buf: mi.UInt32, idx: mi.UInt32, active) -> "PathReservoir":
         n = dr.width(buf) // PathReservoir.WORDS
         return PathReservoir.unpack(
@@ -919,7 +924,7 @@ class RestirPTIntegrator(ADIntegrator):
                 ray_mask=mi.RayMask.Primary,
             )
             Le_dir = primary_ds.emitter.eval(si)
-            initial = self.sample_initial(scene, sampler, si, threshold)
+            initial = self.sample_initial(scene, sampler, seed, si, threshold)
 
             pixel = dr.arange(mi.UInt32, n_pixels)
             sampler.schedule_state()
@@ -988,13 +993,14 @@ class RestirPTIntegrator(ADIntegrator):
         self,
         scene: mi.Scene,
         sampler: mi.Sampler,
+        seed: mi.UInt32,
         si: mi.SurfaceInteraction3f,
         threshold: mi.Float,
     ) -> PathReservoir:
         """Trace one path tree and add its paths into a new reservoir."""
-        seed = (mi.UInt32(sampler.next_1d() * 65536.0) << 16) | mi.UInt32(
-            sampler.next_1d() * 65536.0
-        )
+        pixel = dr.arange(mi.UInt32, dr.width(si))
+        seed, _ = mi.sample_tea_32(pixel, seed)
+        # Seed 0 marks a reservoir without a path.
         seed = dr.maximum(seed, 1)
         tree = self.trace(scene, sampler, seed, si, threshold, "sample")
         sampler.schedule_state()
@@ -1852,9 +1858,8 @@ class RestirPTIntegrator(ADIntegrator):
         lane = dr.arange(mi.UInt32, n)
         width, height = self.film_size.x, self.film_size.y
         x, y = mi.Int32(lane % width), mi.Int32(lane // width)
-        words = PathReservoir.WORDS
         # Seed 0 marks a pixel without a path
-        seed = dr.gather(mi.UInt32, reservoir_buf, lane * words + 4)
+        seed = PathReservoir.seed(reservoir_buf, lane)
 
         radius = self.duplication_radius
         side = 2 * radius + 1
@@ -1867,7 +1872,7 @@ class RestirPTIntegrator(ADIntegrator):
             py = y + mi.Int32(q // side) - radius
             inside = (px >= 0) & (px < width) & (py >= 0) & (py < height)
             other = dr.select(inside, mi.UInt32(py * width + px), 0)
-            other_seed = dr.gather(mi.UInt32, reservoir_buf, other * words + 4, inside)
+            other_seed = PathReservoir.seed(reservoir_buf, other, inside)
             count += dr.select(inside & (other_seed == seed), 1.0, 0.0)
             i += 1
         return dr.select(seed != 0, count / max(neighbors, 1), 0.0)
