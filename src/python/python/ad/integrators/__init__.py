@@ -6,6 +6,7 @@ if mi.variant() is not None and not mi.variant().startswith('scalar'):
     # List of submodules to import
     submodules = [
         'common',
+        'adaptive',
         'prb_basic',
         'prb',
         'prbvolpath',
