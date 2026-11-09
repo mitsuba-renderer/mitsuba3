@@ -77,6 +77,20 @@ Bitmap texture (:monosp:`bitmap`)
    - Upper bound on the number of taps used by ``anisotropic`` filtering, in
      the range :math:`[1, 16]`. (Default: 8)
 
+ * - mip_basis
+   - |string|
+   - Representation of the MIP pyramid used by ``trilinear`` and ``anisotropic``
+     filtering:
+
+     - ``standard`` (default): derive the MIP pyramid from the base image
+       :paramtype:`data`.
+
+     - ``laplacian``: synthesize the MIP pyramid from per-level Laplacian
+       pyramid coefficients, which are exposed as the differentiable parameters
+       ``pyramid.0`` (finest) to ``pyramid.N-1`` (1x1) while :paramtype:`data`
+       becomes non-differentiable (assigning it re-initializes the pyramid).
+       Requires a JIT variant and floating-point storage.
+
  * - wrap_mode
    - |string|
    - Controls the behavior of texture evaluations that fall outside of the
@@ -284,6 +298,21 @@ public:
                       "\"bilinear\", \"trilinear\", or \"anisotropic\"!",
                       filter_mode_str);
             }
+
+            std::string_view mip_basis_str = props.get<std::string_view>("mip_basis", "standard");
+            if (mip_basis_str == "standard") {
+                m_mip_basis = dr::MipBasis::Standard;
+            } else if (mip_basis_str == "laplacian") {
+                if (!dr::is_jit_v<Float>)
+                    Throw("The \"laplacian\" MIP basis requires a JIT variant!");
+                if (m_mip_filter == dr::MipFilter::Disabled)
+                    Throw("The \"laplacian\" MIP basis requires \"trilinear\" "
+                          "or \"anisotropic\" filtering!");
+                m_mip_basis = dr::MipBasis::Laplacian;
+            } else {
+                Throw("Invalid MIP basis \"%s\", must be one of: \"standard\", "
+                      "or \"laplacian\"!", mip_basis_str);
+            }
         }
 
         // Wrap mode
@@ -314,6 +343,10 @@ public:
             else
                 Throw("Invalid format \"%s\", must be one of: \"auto\", "
                       "\"variant\", \"float16\", or \"uint8\"!", format_str);
+
+            if (m_format == Format::UInt8 && m_mip_basis == dr::MipBasis::Laplacian)
+                Throw("The \"laplacian\" MIP basis is incompatible with "
+                      "\"uint8\" storage!");
         }
 
         // Store
@@ -383,6 +416,8 @@ protected:
     Format resolve_format() const {
         if (m_format != Format::Auto)
             return m_format;
+        if (m_mip_basis == dr::MipBasis::Laplacian)
+            return Format::Variant;
         size_t bytes_per_channel =
             m_bitmap->bytes_per_pixel() / m_bitmap->channel_count();
         if (bytes_per_channel == 1)
@@ -456,6 +491,10 @@ protected:
 
     /// Read the selected entry of a ``.packed`` texture container
     void load_container(const Properties &props, const fs::path &file_path) {
+        if (m_mip_basis == dr::MipBasis::Laplacian)
+            Throw("Block-compressed textures do not support the \"laplacian\" "
+                  "MIP basis!");
+
         ref<PackedFile> file = PackedFile::open(file_path);
 
         size_t index;
@@ -589,6 +628,10 @@ protected:
         if constexpr (is_spectral_v<Spectrum>) {
             if (!m_raw && tensor.shape()[2] == 3) {
                 // Spectral upsampling is nonlinear, which rules out MIP mapping
+                if (m_mip_basis == dr::MipBasis::Laplacian)
+                    Throw("Bitmap texture \"%s\": the \"laplacian\" MIP basis "
+                          "is unsupported for color textures in spectral "
+                          "variants!", m_name);
                 if (m_mip_filter != dr::MipFilter::Disabled)
                     Log(Warn, "Bitmap texture \"%s\": filtered lookups are "
                               "unsupported for color textures in spectral "
@@ -596,14 +639,15 @@ protected:
 
                 return new BitmapTextureImpl<Float, Spectrum, StoredType, true>(
                     Properties(), m_name, m_transform, m_filter_mode,
-                    m_wrap_mode, dr::MipFilter::Disabled, 1, m_raw, m_accel,
-                    srgb, std::forward<Tensor>(tensor));
+                    m_wrap_mode, dr::MipFilter::Disabled, 1,
+                    dr::MipBasis::Standard, m_raw, m_accel, srgb,
+                    std::forward<Tensor>(tensor));
             }
         }
 
         return new BitmapTextureImpl<Float, Spectrum, StoredType, false>(
             Properties(), m_name, m_transform, m_filter_mode, m_wrap_mode,
-            m_mip_filter, m_max_aniso, m_raw, m_accel, srgb,
+            m_mip_filter, m_max_aniso, m_mip_basis, m_raw, m_accel, srgb,
             std::forward<Tensor>(tensor));
     }
 
@@ -634,6 +678,9 @@ private:
 
     // Upper bound on the taps of anisotropic filtering
     uint32_t m_max_aniso;
+
+    // Representation of the MIP pyramid
+    dr::MipBasis m_mip_basis;
 
     // Source image, when loaded from a file or passed via 'bitmap'
     mutable ref<Bitmap> m_bitmap;
@@ -685,6 +732,7 @@ public:
                       dr::WrapMode wrap_mode,
                       dr::MipFilter mip_filter,
                       uint32_t max_aniso,
+                      dr::MipBasis mip_basis,
                       bool raw,
                       bool accel,
                       bool srgb,
@@ -705,7 +753,7 @@ public:
         } else {
             m_texture = TexelTexture2f(std::forward<Tensor>(tensor), accel,
                                        filter_mode, wrap_mode, srgb,
-                                       mip_filter, max_aniso);
+                                       mip_filter, max_aniso, mip_basis);
         }
     }
 
@@ -727,14 +775,24 @@ public:
     }
 
     void traverse(TraversalCallback *cb) override {
+        bool laplacian = m_texture.mip_basis() == dr::MipBasis::Laplacian;
         cb->put("data", data(),
-                IsUInt8 ? ParamFlags::NonDifferentiable
-                        : ParamFlags::Differentiable);
+                (IsUInt8 || laplacian) ? ParamFlags::NonDifferentiable
+                                       : ParamFlags::Differentiable);
+        if (laplacian) {
+            for (size_t l = 0; l < m_texture.mip_levels(); ++l)
+                cb->put("pyramid." + std::to_string(l), m_texture.tensor(l),
+                        ParamFlags::Differentiable);
+        }
         cb->put("to_uv", m_transform, ParamFlags::NonDifferentiable);
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (keys.empty() || string::contains(keys, "data")) {
+        bool has_data = string::contains(keys, "data"),
+             has_pyramid = false;
+        for (const std::string &k : keys)
+            has_pyramid |= string::starts_with(k, "pyramid.");
+        if (keys.empty() || has_data || has_pyramid) {
             const dr::vector<size_t> &shape = data().shape();
             const size_t channels = shape[2];
             if (Upsample && channels != 3)
@@ -751,11 +809,23 @@ public:
                 Throw("parameters_changed(): The bitmap texture \"%s\" changed "
                       "to %zux%zu, but it must be at least 2x2 pixels in size!",
                       m_name, shape[0], shape[1]);
+            else if (m_texture.mip_basis() == dr::MipBasis::Laplacian &&
+                     (shape[0] != m_texture.shape()[0] ||
+                      shape[1] != m_texture.shape()[1] ||
+                      channels != m_texture.channel_count()))
+                Throw("parameters_changed(): The bitmap texture \"%s\" cannot "
+                      "change shape when using the \"laplacian\" MIP basis!",
+                      m_name);
 
             if constexpr (Upsample)
                 m_texture.set_tensor(upsample());
+            else if (m_texture.mip_basis() == dr::MipBasis::Laplacian && has_data)
+                m_texture.set_tensor(StoredTensorXf(data()));
             else
                 m_texture.update_inplace();
+
+            if (m_texture.mip_basis() == dr::MipBasis::Laplacian)
+                dr::disable_grad(data());
 
             rebuild_internals(data(), m_distr2d != nullptr, true);
         }
