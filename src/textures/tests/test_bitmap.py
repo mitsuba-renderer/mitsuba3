@@ -511,3 +511,46 @@ def test15_forward_ad_spectral(variants_all_ad_spectral):
                    np.array(make(0.5 - eps).eval(si))).ravel() / (2 * eps)
 
     dr.assert_allclose(dr.grad(value), finite_diff, atol=1e-3)
+
+
+def test16_laplacian_mip_basis(variants_all_ad_rgb):
+    import numpy as np
+
+    bmp = mi.Bitmap(np.full((4, 4, 3), 128, dtype=np.uint8))
+    tex = mi.load_dict({
+        'type': 'bitmap',
+        'bitmap': bmp,
+        'raw': True,
+        'filter_type': 'trilinear',
+        'mip_basis': 'laplacian',
+    })
+
+    params = mi.traverse(tex)
+    assert params.flags('data') & mi.ParamFlags.NonDifferentiable
+    assert not (params.flags('pyramid.0') & mi.ParamFlags.NonDifferentiable)
+    assert [params[f'pyramid.{l}'].shape for l in range(3)] == [
+        (4, 4, 3), (2, 2, 3), (1, 1, 3)
+    ]
+
+    dr.enable_grad(params['pyramid.0'])
+    params.update()
+    assert not dr.grad_enabled(params['data'])
+    si = dr.zeros(mi.SurfaceInteraction3f)
+    si.uv = [0.25, 0.25]
+    dr.backward(tex.eval_3(si))
+    assert dr.any(dr.grad(params['pyramid.0']).array > 0)
+
+    params['data'] = dr.full(mi.TensorXf, 0.25, shape=(4, 4, 3))
+    params.update()
+    dr.assert_allclose(tex.eval_3(si), 0.25)
+
+    with pytest.raises(RuntimeError, match='cannot change shape'):
+        params['data'] = dr.full(mi.TensorXf, 0.25, shape=(8, 8, 3))
+        params.update()
+    with pytest.raises(RuntimeError, match='trilinear'):
+        mi.load_dict({'type': 'bitmap', 'bitmap': bmp,
+                      'filter_type': 'bilinear', 'mip_basis': 'laplacian'})
+    with pytest.raises(RuntimeError, match='uint8'):
+        mi.load_dict({'type': 'bitmap', 'bitmap': bmp,
+                      'filter_type': 'trilinear', 'mip_basis': 'laplacian',
+                      'format': 'uint8'})
