@@ -31,6 +31,12 @@ Orthographic camera (:monosp:`orthographic`)
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
 
+ * - pixel_aspect_ratio
+   - |float|
+   - Specifies the ratio of physical pixel width to pixel height (equivalent
+     to ``fy / fx`` for pinhole cameras). (Default: :monosp:`1.0`)
+   - |exposed|
+
 
 .. subfigstart::
 .. subfigure:: ../../resources/data/docs/images/render/sensor_orthographic.jpg
@@ -81,9 +87,9 @@ public:
     MI_IMPORT_BASE(ProjectiveCamera, m_to_world, m_to_world_anim, m_needs_sample_3,
                     m_film, m_sampler, m_resolution, m_shutter_open,
                     m_shutter_open_time, m_near_clip, m_far_clip,
-                    m_cone_scale, sample_wavelengths, world_transform,
-                    traverse_world_transform, world_transform_string,
-                    position_bounds)
+                    m_pixel_aspect_ratio, m_cone_scale, sample_wavelengths,
+                    world_transform, traverse_world_transform,
+                    world_transform_string, position_bounds)
     MI_IMPORT_TYPES()
 
     OrthographicCamera(const Properties &props) : Base(props) {
@@ -104,7 +110,8 @@ public:
     void update_camera_transforms() {
         m_sample_to_camera = orthographic_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            Float(m_near_clip), Float(m_far_clip)).inverse();
+            Float(m_near_clip), Float(m_far_clip),
+            m_pixel_aspect_ratio).inverse();
 
         m_normalization = 1.f / m_image_rect.volume();
 
@@ -118,8 +125,8 @@ public:
                  dy = to_world * m_dy;
         m_pixel_width = dr::sqrt(dr::norm(dx) * dr::norm(dy)) * m_cone_scale;
 
-        dr::make_opaque(m_sample_to_camera, m_normalization, m_pixel_width,
-                        m_dx, m_dy);
+        dr::make_opaque(m_sample_to_camera, m_pixel_aspect_ratio,
+                        m_normalization, m_pixel_width, m_dx, m_dy);
     }
 
     std::pair<Ray3f, Spectrum> sample_ray(Float time, Float wavelength_sample,
@@ -167,6 +174,7 @@ public:
 
         std::ostringstream oss;
         oss << "OrthographicCamera[" << std::endl
+            << "  pixel_aspect_ratio = " << m_pixel_aspect_ratio << "," << std::endl
             << "  near_clip = " << m_near_clip << "," << std::endl
             << "  far_clip = " << m_far_clip << "," << std::endl
             << "  film = " << indent(m_film) << "," << std::endl

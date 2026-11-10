@@ -99,6 +99,11 @@ MI_VARIANT ProjectiveCamera<Float, Spectrum>::ProjectiveCamera(const Properties 
     m_far_clip = props.get<ScalarFloat>("far_clip", 1e4f);
     // Distance to the focal plane
     m_focus_distance = props.get<ScalarFloat>("focus_distance", (float) m_far_clip);
+    // Ratio of physical pixel width to pixel height
+    ScalarFloat pixel_aspect_ratio = props.get<ScalarFloat>("pixel_aspect_ratio", 1.f);
+    if (pixel_aspect_ratio <= 0.f)
+        Throw("The 'pixel_aspect_ratio' parameter must be > 0!");
+    m_pixel_aspect_ratio = pixel_aspect_ratio;
 
     if (m_near_clip <= 0.f)
         Throw("The 'near_clip' parameter must be greater than zero!");

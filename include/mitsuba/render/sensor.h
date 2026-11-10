@@ -191,13 +191,17 @@ public:
     /// Return the distance to the focal plane
     Float focus_distance() const { return m_focus_distance; }
 
+    /// Return the pixel aspect ratio
+    Float pixel_aspect_ratio() const { return m_pixel_aspect_ratio; }
+
     /// Return the projection matrix of this sensor (camera space to sample
     /// space transformation)
     virtual ProjectiveTransform4f projection_transform() const = 0;
 
     void traverse(TraversalCallback *cb) override {
-        cb->put("near_clip",      m_near_clip,      ParamFlags::NonDifferentiable);
-        cb->put("far_clip",       m_far_clip,       ParamFlags::NonDifferentiable);
+        cb->put("near_clip",          m_near_clip,          ParamFlags::NonDifferentiable);
+        cb->put("far_clip",           m_far_clip,           ParamFlags::NonDifferentiable);
+        cb->put("pixel_aspect_ratio", m_pixel_aspect_ratio, ParamFlags::NonDifferentiable);
         Base::traverse(cb);
     }
 
@@ -217,8 +221,9 @@ protected:
     ScalarFloat m_near_clip;
     ScalarFloat m_far_clip;
     Float m_focus_distance;
+    Float m_pixel_aspect_ratio;
 
-    MI_TRAVERSE_CB(Base, m_focus_distance)
+    MI_TRAVERSE_CB(Base, m_focus_distance, m_pixel_aspect_ratio)
 };
 
 // ========================================================================
@@ -234,7 +239,8 @@ perspective_projection(const Vector<int, 2> &film_size,
                        const Vector<int, 2> &crop_size,
                        const Vector<int, 2> &crop_offset,
                        Float fov_x,
-                       Float near_clip, Float far_clip) {
+                       Float near_clip, Float far_clip,
+                       Float pixel_aspect_ratio = 1.f) {
 
     using Vector2f = Vector<Float, 2>;
     using Vector3f = Vector<Float, 3>;
@@ -244,7 +250,7 @@ perspective_projection(const Vector<int, 2> &film_size,
              rel_size    = Vector2f(crop_size) / film_size_f,
              rel_offset  = Vector2f(crop_offset) / film_size_f;
 
-    Float aspect = film_size_f.x() / film_size_f.y();
+    Float aspect = (film_size_f.x() / film_size_f.y()) * pixel_aspect_ratio;
 
     /**
      * These do the following (in reverse order):
@@ -272,7 +278,8 @@ template <typename Float> AffineTransform<Point<Float, 4>>
 orthographic_projection(const Vector<int, 2> &film_size,
                         const Vector<int, 2> &crop_size,
                         const Vector<int, 2> &crop_offset,
-                        Float near_clip, Float far_clip) {
+                        Float near_clip, Float far_clip,
+                        Float pixel_aspect_ratio = 1.f) {
 
     using Vector2f = Vector<Float, 2>;
     using Vector3f = Vector<Float, 3>;
@@ -282,7 +289,7 @@ orthographic_projection(const Vector<int, 2> &film_size,
              rel_size    = Vector2f(crop_size) / film_size_f,
              rel_offset  = Vector2f(crop_offset) / film_size_f;
 
-    Float aspect = film_size_f.x() / film_size_f.y();
+    Float aspect = (film_size_f.x() / film_size_f.y()) * pixel_aspect_ratio;
 
     /**
      * These do the following (in reverse order):
