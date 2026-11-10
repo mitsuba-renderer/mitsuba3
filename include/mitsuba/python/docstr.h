@@ -8454,7 +8454,11 @@ static const char *__doc_mitsuba_ProjectiveCamera_m_focus_distance = R"doc()doc"
 
 static const char *__doc_mitsuba_ProjectiveCamera_m_near_clip = R"doc()doc";
 
+static const char *__doc_mitsuba_ProjectiveCamera_m_pixel_aspect_ratio = R"doc()doc";
+
 static const char *__doc_mitsuba_ProjectiveCamera_near_clip = R"doc(Return the near clip plane distance)doc";
+
+static const char *__doc_mitsuba_ProjectiveCamera_pixel_aspect_ratio = R"doc(Return the pixel aspect ratio)doc";
 
 static const char *__doc_mitsuba_ProjectiveCamera_projection_transform =
 R"doc(Return the projection matrix of this sensor (camera space to sample

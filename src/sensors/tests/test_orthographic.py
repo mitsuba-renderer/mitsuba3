@@ -140,3 +140,28 @@ def test05_ray_cone_animated(variants_all_backends_once):
     assert dr.allclose(ray_mid.cone.spread, 0)
     assert dr.allclose(ray1.cone.spread, 0)
 
+
+def test06_pixel_aspect_ratio(variants_vec_backends_once):
+    camera_square = mi.load_dict({
+        'type': 'orthographic',
+        'pixel_aspect_ratio': 1.0,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 100},
+    })
+    camera_nonsquare = mi.load_dict({
+        'type': 'orthographic',
+        'pixel_aspect_ratio': 2.0,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 100},
+    })
+
+    params = mi.traverse(camera_nonsquare)
+    assert 'pixel_aspect_ratio' in params
+    assert dr.allclose(params['pixel_aspect_ratio'], 2.0)
+
+    ray_sq, _ = camera_square.sample_ray(0, 0.5, [0.25, 0.75], [0.5, 0.5])
+    ray_nsq, _ = camera_nonsquare.sample_ray(0, 0.5, [0.25, 0.75], [0.5, 0.5])
+
+    # X origin should be identical; Y origin should be halved when fy / fx = 2.0.
+    assert dr.allclose(ray_nsq.o.x, ray_sq.o.x, atol=1e-6)
+    assert dr.allclose(ray_nsq.o.y, ray_sq.o.y / 2.0, atol=1e-6)
+
+

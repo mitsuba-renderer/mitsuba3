@@ -330,3 +330,79 @@ def test11_animation_xml(variant_scalar_rgb):
     ray, _ = sensor.sample_ray(0.5, 0, [0.5, 0.5], 0)
     assert dr.allclose(ray.o, mi.Point3f(0, 0, 0.5), atol=0.01)
 
+
+def test12_pixel_aspect_ratio(variants_vec_rgb):
+    """Non-square pixel_aspect_ratio scales vertical FOV."""
+    sensor = mi.load_dict({
+        'type': 'perspective',
+        'fov': 90.0,
+        'fov_axis': 'x',
+        'pixel_aspect_ratio': 2.0,
+        'near_clip': 0.5,
+        'far_clip': 100.0,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 100},
+    })
+    params = mi.traverse(sensor)
+    assert 'pixel_aspect_ratio' in params
+    assert dr.allclose(params['pixel_aspect_ratio'], 2.0)
+    assert dr.allclose(sensor.pixel_aspect_ratio(), 2.0)
+
+    # At x=0 or x=1, y=0.5, horizontal tangent is +/- tan(45 deg) = +/- 1.0
+    ray_x, _ = sensor.sample_ray(0.0, 0.5, [0.0, 0.5], [0.5, 0.5])
+    assert dr.allclose(ray_x.d.x / ray_x.d.z, 1.0, atol=1e-5)
+
+    # At x=0.5, y=0.0, vertical tangent is +tan(45 deg) / 2.0 = 0.5
+    ray_y, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.0], [0.5, 0.5])
+    assert dr.allclose(ray_y.d.y / ray_y.d.z, 0.5, atol=1e-5)
+
+    # Roundtrip sample_ray -> sample_direction and projection_transform
+    pos = mi.Point2f([0.2, 0.5, 0.8], [0.1, 0.5, 0.9])
+    ray, _ = sensor.sample_ray(0.0, 0.5, pos, [0.5, 0.5])
+    it = dr.zeros(mi.Interaction3f)
+    it.p = ray(3.0)
+    ds, _ = sensor.sample_direction(it, [0.5, 0.5])
+    assert dr.allclose(ds.uv, pos * mi.ScalarVector2f(100, 100), atol=1e-4)
+
+    proj = sensor.projection_transform() @ it.p
+    assert dr.allclose(mi.Point2f(proj.x, proj.y), pos, atol=1e-4)
+
+    # On-axis ray cone uses geometric mean of horizontal (0.02) and vertical (0.01) pixel sizes
+    ray_axis, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.5], [0.5, 0.5])
+    assert dr.allclose(ray_axis.cone.spread, (0.02 * 0.01) ** 0.5, rtol=1e-5)
+
+    # Importance weight scales with 1 / image_rect_area (doubles when fy / fx = 2.0 vs 1.0)
+    sensor_sq = mi.load_dict({
+        'type': 'perspective', 'fov': 90.0, 'fov_axis': 'x', 'pixel_aspect_ratio': 1.0,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 100},
+    })
+    it_axis = dr.zeros(mi.Interaction3f)
+    it_axis.p = mi.Point3f(0.0, 0.0, 2.0)
+    _, weight_nsq = sensor.sample_direction(it_axis, [0.5, 0.5])
+    _, weight_sq = sensor_sq.sample_direction(it_axis, [0.5, 0.5])
+    assert dr.allclose(weight_nsq, weight_sq * 2.0, rtol=1e-5)
+
+    # Updating pixel_aspect_ratio via mi.traverse recomputes camera transforms
+    params['pixel_aspect_ratio'] = 1.0
+    params.update()
+    ray_updated, _ = sensor.sample_ray(0.0, 0.5, [0.5, 0.0], [0.5, 0.5])
+    assert dr.allclose(ray_updated.d.y / ray_updated.d.z, 1.0, atol=1e-5)
+
+    # parse_fov() uses effective aspect when fov_axis != 'x' (aspect = 2.0 > 1 -> 'smaller' maps to 'y')
+    sensor_y = mi.load_dict({
+        'type': 'perspective', 'fov': 90.0, 'fov_axis': 'smaller', 'pixel_aspect_ratio': 2.0,
+        'film': {'type': 'hdrfilm', 'width': 100, 'height': 100},
+    })
+    ray_top, _ = sensor_y.sample_ray(0.0, 0.5, [0.5, 0.0], [0.5, 0.5])
+    ray_left, _ = sensor_y.sample_ray(0.0, 0.5, [0.0, 0.5], [0.5, 0.5])
+    assert dr.allclose(ray_top.d.y / ray_top.d.z, 1.0, atol=1e-5)
+    assert dr.allclose(ray_left.d.x / ray_left.d.z, 2.0, atol=1e-5)
+
+    with pytest.raises(
+        RuntimeError, match="The 'pixel_aspect_ratio' parameter must be > 0!"
+    ):
+        mi.load_dict({
+            'type': 'perspective',
+            'pixel_aspect_ratio': 0.0,
+        })
+
+

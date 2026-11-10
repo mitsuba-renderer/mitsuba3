@@ -14,7 +14,7 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
 --------------------------------------------------------
 
 .. pluginparameters::
- :extra-rows: 9
+ :extra-rows: 10
 
  * - to_world
    - |transform| or |animation|
@@ -73,6 +73,12 @@ Perspective camera with a thin lens (:monosp:`thinlens`)
    - |spectrum|
    - Sensor Response Function that defines the :ref:`spectral sensitivity <explanation_srf_sensor>`
      of the sensor (Default: :monosp:`none`)
+
+ * - pixel_aspect_ratio
+   - |float|
+   - Specifies the ratio of vertical to horizontal focal length (fy / fx).
+     (Default: :monosp:`1.0`)
+   - |exposed|
 
  * - x_fov
    - |float|
@@ -151,7 +157,8 @@ class ThinLensCamera final : public ProjectiveCamera<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(ProjectiveCamera, m_needs_sample_3, m_film, m_sampler,
                     m_resolution, m_shutter_open, m_shutter_open_time,
-                    m_near_clip, m_far_clip, m_focus_distance, m_cone_scale,
+                    m_near_clip, m_far_clip, m_focus_distance,
+                    m_pixel_aspect_ratio, m_cone_scale,
                     sample_wavelengths, world_transform,
                     traverse_world_transform, world_transform_string,
                     check_to_world, position_bounds)
@@ -159,7 +166,9 @@ public:
 
     ThinLensCamera(const Properties &props) : Base(props) {
         ScalarVector2i size = m_film->size();
-        m_x_fov = (ScalarFloat) parse_fov(props, size.x() / (double) size.y());
+        double aspect =
+            (size.x() / (double) size.y()) * (double) dr::slice(m_pixel_aspect_ratio);
+        m_x_fov = (ScalarFloat) parse_fov(props, aspect);
 
         m_aperture_radius = props.get<ScalarFloat>("aperture_radius");
 
@@ -202,7 +211,8 @@ public:
     void update_camera_transforms() {
         m_sample_to_camera = perspective_projection(
             m_film->size(), m_film->crop_size(), m_film->crop_offset(),
-            m_x_fov, Float(m_near_clip), Float(m_far_clip)).inverse();
+            m_x_fov, Float(m_near_clip), Float(m_far_clip),
+            m_pixel_aspect_ratio).inverse();
 
         // Precompute some data for importance(). Please
         // look at that function for further details.
@@ -214,8 +224,9 @@ public:
         m_image_rect.expand(Point2f(pmax.x(), pmax.y()) / pmax.z());
         m_normalization = 1.f / m_image_rect.volume();
 
-        // Angle subtended by a pixel on the optical axis (see sample_ray())
-        m_pixel_spread = m_image_rect.extents().x() / m_resolution.x() * m_cone_scale;
+        // Angle subtended by a pixel on the optical axis (geometric mean for non-square pixels)
+        Vector2f pixel_size = m_image_rect.extents() / Vector2f(m_resolution);
+        m_pixel_spread = dr::sqrt(pixel_size.x() * pixel_size.y()) * m_cone_scale;
 
         // Principal point offset expressed in crop window coordinates
         m_scaled_principal_point_offset =
@@ -223,8 +234,9 @@ public:
             Vector2f(ScalarVector2f(m_film->size()) /
                      ScalarVector2f(m_film->crop_size()));
 
-        dr::make_opaque(m_sample_to_camera, m_x_fov, m_image_rect,
-                        m_normalization, m_pixel_spread, m_principal_point_offset,
+        dr::make_opaque(m_sample_to_camera, m_x_fov, m_pixel_aspect_ratio,
+                        m_image_rect, m_normalization, m_pixel_spread,
+                        m_principal_point_offset,
                         m_scaled_principal_point_offset);
     }
 
@@ -342,6 +354,7 @@ public:
         std::ostringstream oss;
         oss << "ThinLensCamera[" << std::endl
             << "  x_fov = " << m_x_fov << "," << std::endl
+            << "  pixel_aspect_ratio = " << m_pixel_aspect_ratio << "," << std::endl
             << "  near_clip = " << m_near_clip << "," << std::endl
             << "  far_clip = " << m_far_clip << "," << std::endl
             << "  focus_distance = " << m_focus_distance << "," << std::endl
