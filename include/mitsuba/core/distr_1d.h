@@ -220,14 +220,19 @@ private:
         if (m_pmf.empty())
             Throw("DiscreteDistribution: empty distribution!");
 #if !defined(NDEBUG)
-        if (!dr::all(m_pmf >= 0.f))
-            Throw("DiscreteDistribution: entries must be non-negative!");
-        if (!dr::any(m_pmf > 0.f))
-            Throw("DiscreteDistribution: no probability mass found!");
+        bool check_pmf = true;
+        if constexpr (dr::is_jit_v<Float>)
+            check_pmf = !jit_flag(JitFlag::FreezingScope);
+        if (check_pmf) {
+            if (!dr::all(m_pmf >= 0.f))
+                Throw("DiscreteDistribution: entries must be non-negative!");
+            if (!dr::any(m_pmf > 0.f))
+                Throw("DiscreteDistribution: no probability mass found!");
+        }
 #endif
 
         m_cdf = dr::prefix_sum(m_pmf, false);
-        m_valid = Vector2u(0, (uint32_t) m_pmf.size() - 1);
+        m_valid = Vector2u(0, m_pmf.opaque_size_() - 1);
         m_sum = dr::gather<Float>(m_cdf, m_valid.y());
         m_normalization = dr::rcp(m_sum);
         dr::make_opaque(m_valid, m_sum, m_normalization);

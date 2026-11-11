@@ -451,7 +451,7 @@ public:
      *     (unnormalized) weights associated to each index.
      */
     virtual std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
-    precompute_silhouette(const ScalarPoint3f &viewpoint) const;
+    precompute_silhouette(const Point3f &viewpoint) const;
 
     /**
      * Samples a boundary segment on the shape's silhouette using

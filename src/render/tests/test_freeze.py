@@ -1166,7 +1166,7 @@ def test13_sampler(variants_vec_rgb, tmp_path, sampler, auto_opaque):
 @pytest.mark.parametrize(
     "integrator",
     [
-        # Projective integrators are not yet supported
+        # Octree guiding for indirect silhouettes is not yet supported
         "direct_projective",
         "prb_projective",
     ],
@@ -1174,13 +1174,13 @@ def test13_sampler(variants_vec_rgb, tmp_path, sampler, auto_opaque):
 @pytest.mark.parametrize("auto_opaque", [False, True])
 def test14_unsupported_integrators(variants_vec_rgb, integrator, auto_opaque):
     """
-    Tests that using projective integrators in backward mode triggers an exception.
+    Tests that using projective integrators with octree guiding in backward mode triggers an exception.
     """
 
     if mi.is_polarized:
         pytest.skip('Test must be adapted to polarized rendering.')
 
-    @dr.freeze
+    @dr.freeze(auto_opaque=auto_opaque)
     def frozen(scene, integrator):
         params = mi.traverse(scene)
 
@@ -1198,9 +1198,226 @@ def test14_unsupported_integrators(variants_vec_rgb, integrator, auto_opaque):
     })
 
     params = mi.traverse(scene)
-    dr.enable_grad(params["red.reflectance.value"])
+    dr.enable_grad(params["red-wall.to_world"])
     params.update()
 
     with pytest.raises(RuntimeError):
         frozen(scene, integrator)
+
+
+@pytest.mark.parametrize("integrator_name", ["direct_projective", "prb_projective"])
+@pytest.mark.parametrize("guiding", ["none", "grid"])
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test15_projective_integrators(
+    variants_all_ad_rgb, integrator_name, guiding, auto_opaque
+):
+    """
+    Tests freezing and replaying projective integrators in backward mode with
+    uniform and grid guiding across varying mesh silhouette counts.
+    """
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    scene_dict = mi.cornell_box()
+    del scene_dict["large-box"]
+    del scene_dict["small-box"]
+    scene_dict["sensor"]["film"]["width"] = 8
+    scene_dict["sensor"]["film"]["height"] = 8
+    scene_dict["light"]["to_world"] = (
+        scene_dict["light"]["to_world"] @ mi.ScalarTransform4f().scale(3.0)
+    )
+    scene_dict["bunny"] = {
+        "type": "ply",
+        "filename": find_resource("resources/data/common/meshes/bunny.ply"),
+        "to_world": mi.ScalarTransform4f().translate([0.0, -0.2, 0.0]).scale(5.0),
+        "bsdf": {
+            "type": "diffuse",
+            "reflectance": {"type": "rgb", "value": (0.3, 0.3, 0.75)},
+        },
+    }
+    scene = mi.load_dict(scene_dict)
+
+    def make_integrator():
+        integ = mi.load_dict({
+            "type": integrator_name,
+            "guiding": guiding,
+            "sppc": 2,
+            "sppp": 4,
+            "sppi": 4,
+        })
+        integ.guiding_grid_reso = [8, 8, 8]
+        integ.proj_seed_spp = 0
+        return integ
+
+    integrator_frz = make_integrator()
+    integrator_ref = make_integrator()
+
+    params = mi.traverse(scene)
+    initial_positions = mi.Point3f(
+        dr.detach(params["bunny.positions"]), flip_axes=True
+    )
+
+    def eval_grad(scene, integrator):
+        params = mi.traverse(scene)
+        params.keep("bunny.positions")
+        img = mi.render(
+            scene, params=params, integrator=integrator, seed=1, seed_grad=2
+        )
+        loss = dr.mean(dr.square(img))
+        dr.backward(loss)
+        return img
+
+    frozen = dr.freeze(eval_grad, auto_opaque=auto_opaque)
+
+    angles = [0.0, 25.0, -20.0]
+    for angle in angles:
+        trafo = mi.Transform4f().rotate([0, 1, 0], angle)
+        rotated = mi.TensorXf(trafo @ initial_positions, flip_axes=True)
+
+        pos_frz = mi.TensorXf(rotated)
+        dr.enable_grad(pos_frz)
+        params["bunny.positions"] = pos_frz
+        params.update()
+        img_frz = frozen(scene, integrator_frz)
+        grad_frz = mi.TensorXf(dr.grad(pos_frz))
+
+        pos_ref = mi.TensorXf(rotated)
+        dr.enable_grad(pos_ref)
+        params["bunny.positions"] = pos_ref
+        params.update()
+        img_ref = eval_grad(scene, integrator_ref)
+        grad_ref = mi.TensorXf(dr.grad(pos_ref))
+
+        assert dr.allclose(img_ref, img_frz, atol=1e-4, rtol=1e-4)
+        assert dr.allclose(grad_ref, grad_frz, atol=1e-3, rtol=1e-3)
+        assert dr.any(grad_ref != 0)
+
+    assert frozen.n_cached_recordings == 1
+    if dr.backend_v(mi.Float) == dr.JitBackend.CUDA:
+        # Lazy initialization of Mesh::m_dedge / m_sil_dedge_pmf on the first
+        # call triggers one InputChanged re-recording; subsequent calls replay.
+        assert frozen.n_recordings <= 2
+    else:
+        # On LLVM, scatter_reduce + dr.compress cannot infer output width
+        # during dry run and falls back to re-tracing each call.
+        assert frozen.n_recordings <= 1 + len(angles)
+
+
+@pytest.mark.parametrize("integrator_name", ["direct_projective", "prb_projective"])
+@pytest.mark.parametrize("auto_opaque", [False, True])
+def test16_projective_moving_sensor(
+    variants_all_ad_rgb, integrator_name, auto_opaque
+):
+    """
+    Tests that updating sensor.to_world across calls to a frozen projective
+    integrator updates primary silhouette precomputation rather than baking a
+    constant viewpoint.
+    """
+    if mi.is_polarized:
+        pytest.skip('Test must be adapted to polarized rendering.')
+
+    scene_dict = mi.cornell_box()
+    del scene_dict["large-box"]
+    del scene_dict["small-box"]
+    scene_dict["sensor"]["film"]["width"] = 8
+    scene_dict["sensor"]["film"]["height"] = 8
+    scene_dict["light"]["to_world"] = (
+        scene_dict["light"]["to_world"] @ mi.ScalarTransform4f().scale(3.0)
+    )
+    scene_dict["bunny"] = {
+        "type": "ply",
+        "filename": find_resource("resources/data/common/meshes/bunny.ply"),
+        "to_world": mi.ScalarTransform4f().translate([0.0, -0.2, 0.0]).scale(5.0),
+        "bsdf": {
+            "type": "diffuse",
+            "reflectance": {"type": "rgb", "value": (0.3, 0.3, 0.75)},
+        },
+    }
+    scene_dict["pillar"] = {
+        "type": "cylinder",
+        "p0": [-0.55, -1.0, -0.2],
+        "p1": [-0.55, 0.2, -0.2],
+        "radius": 0.15,
+        "bsdf": {
+            "type": "diffuse",
+            "reflectance": {"type": "rgb", "value": (0.7, 0.4, 0.2)},
+        },
+    }
+    scene = mi.load_dict(scene_dict)
+
+    def make_integrator():
+        integ = mi.load_dict({
+            "type": integrator_name,
+            "guiding": "grid",
+            "sppc": 2,
+            "sppp": 8,
+            "sppi": 2,
+        })
+        integ.guiding_grid_reso = [8, 8, 8]
+        integ.proj_seed_spp = 0
+        return integ
+
+    integrator_frz = make_integrator()
+    integrator_ref = make_integrator()
+
+    params = mi.traverse(scene)
+    base_positions = mi.TensorXf(dr.detach(params["bunny.positions"]))
+    base_pillar = mi.Transform4f(dr.detach(params["pillar.to_world"]))
+
+    def eval_grad(scene, integrator):
+        params = mi.traverse(scene)
+        params.keep(["bunny.positions", "pillar.to_world"])
+        img = mi.render(
+            scene, params=params, integrator=integrator, seed=1, seed_grad=2
+        )
+        loss = dr.mean(dr.square(img))
+        dr.backward(loss)
+        return img
+
+    frozen = dr.freeze(eval_grad, auto_opaque=auto_opaque)
+
+    origins = [
+        [0.0, 0.0, 3.8],
+        [1.2, 0.4, 3.5],
+        [-1.1, -0.3, 3.6],
+    ]
+    for origin in origins:
+        sensor_trafo = mi.Transform4f().look_at(
+            origin=origin, target=[0.0, -0.1, 0.0], up=[0.0, 1.0, 0.0]
+        )
+
+        pos_frz = mi.TensorXf(base_positions)
+        pil_frz = mi.Transform4f(base_pillar)
+        dr.enable_grad(pos_frz, pil_frz)
+        params["sensor.to_world"] = mi.Transform4f(sensor_trafo)
+        params["bunny.positions"] = pos_frz
+        params["pillar.to_world"] = pil_frz
+        params.update()
+        img_frz = frozen(scene, integrator_frz)
+        grad_pos_frz = mi.TensorXf(dr.grad(pos_frz))
+        grad_pil_frz = mi.Matrix4f(dr.grad(pil_frz).matrix)
+
+        pos_ref = mi.TensorXf(base_positions)
+        pil_ref = mi.Transform4f(base_pillar)
+        dr.enable_grad(pos_ref, pil_ref)
+        params["sensor.to_world"] = mi.Transform4f(sensor_trafo)
+        params["bunny.positions"] = pos_ref
+        params["pillar.to_world"] = pil_ref
+        params.update()
+        img_ref = eval_grad(scene, integrator_ref)
+        grad_pos_ref = mi.TensorXf(dr.grad(pos_ref))
+        grad_pil_ref = mi.Matrix4f(dr.grad(pil_ref).matrix)
+
+        assert dr.allclose(img_ref, img_frz, atol=1e-4, rtol=1e-4)
+        assert dr.allclose(grad_pos_ref, grad_pos_frz, atol=1e-3, rtol=1e-3)
+        assert dr.allclose(grad_pil_ref, grad_pil_frz, atol=1e-3, rtol=1e-3)
+        assert dr.any(grad_pos_ref != 0, axis=None)
+        assert dr.any(grad_pil_ref != 0, axis=None)
+
+    assert frozen.n_cached_recordings == 1
+    if dr.backend_v(mi.Float) == dr.JitBackend.CUDA:
+        assert frozen.n_recordings <= 2
+    else:
+        assert frozen.n_recordings <= 1 + len(origins)
+
 

@@ -188,7 +188,7 @@ MI_VARIANT
 std::tuple<DynamicBuffer<typename CoreAliases<Float>::UInt32>,
            DynamicBuffer<Float>>
 Shape<Float, Spectrum>::precompute_silhouette(
-    const ScalarPoint3f & /*viewpoint*/) const {
+    const Point3f & /*viewpoint*/) const {
     NotImplementedError("precompute_silhouette");
 }
 

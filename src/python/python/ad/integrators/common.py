@@ -928,10 +928,6 @@ class PSIntegrator(ADIntegrator):
            continuous derivatives it should be manually added to the
            gradient obtained by traversing the result of this method.
         """
-        if dr.flag(dr.JitFlag.FreezingScope):
-            raise RuntimeError(
-                "Projective Integrators are not yet supported inside of frozen functions."
-            )
         if isinstance(sensor, int):
             sensor = scene.sensors()[sensor]
 
@@ -952,7 +948,8 @@ class PSIntegrator(ADIntegrator):
 
         # This isn't serious, so let's just warn once
         if has_silhouettes and not film.sample_border() and self.sample_border_warning:
-            self.sample_border_warning = False
+            if not dr.flag(dr.JitFlag.FreezingScope):
+                self.sample_border_warning = False
             mi.Log(mi.LogLevel.Warn,
                 "PSIntegrator detected the potential for image-space "
                 "motion due to differentiable shape parameters. To correctly "
@@ -967,6 +964,9 @@ class PSIntegrator(ADIntegrator):
 
             sampler, spp = self.prepare(sensor, 0xffffffff ^ seed, sppp, aovs)
             result_img += self.render_primarily_visible_silhouette(scene, sensor, sampler, spp)
+            self.proj_detail.primary_indices = []
+            self.proj_detail.primary_distributions = []
+            self.proj_detail.primary_shape_distribution = None
 
         # Indirect discontinuous derivative
         if sppi > 0 and has_silhouettes:
@@ -975,6 +975,7 @@ class PSIntegrator(ADIntegrator):
 
             sampler, spp = self.prepare(sensor, 0xaa00aa00 ^ seed, sppi, aovs)
             result_img += self.render_indirect_silhouette(scene, sensor, sampler, spp)
+            self.proj_detail.guiding_distr = None
 
         ## Continuous derivative (only if radiative backpropagation is not used)
         if sppc > 0 and (not self.radiative_backprop):

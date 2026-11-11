@@ -707,8 +707,12 @@ void Mesh<Float, Spectrum>::refresh(const ScalarBoundingBox3f *bbox,
         build_pmf();
 
     // The silhouette density depends on the vertex positions, which may have
-    // just moved. The adjacency is purely combinatorial and survives.
+    // just moved. Rebuild it eagerly if already in use so frozen layouts stay
+    // consistent across parameter updates; the adjacency survives.
+    bool needs_sil_pmf = !m_sil_dedge_pmf.empty();
     m_sil_dedge_pmf = DiscreteDistribution<Float>();
+    if (needs_sil_pmf)
+        sil_dedge_pmf();
 
 #if defined(MI_ENABLE_LLVM) && !defined(MI_ENABLE_EMBREE)
     m_packed_vertices_ptr = m_packed_vertices.data();
@@ -2035,7 +2039,7 @@ Mesh<Float, Spectrum>::primitive_silhouette_projection(const Point3f &viewpoint,
 
 MI_VARIANT
 auto Mesh<Float, Spectrum>::precompute_silhouette(
-    const ScalarPoint3f &viewpoint) const
+    const Point3f &viewpoint) const
     -> std::tuple<IndexBuffer, DynamicBuffer<Float>> {
     if (m_face_count == 0)
         return { IndexBuffer(), DynamicBuffer<Float>() };
@@ -2113,14 +2117,20 @@ auto Mesh<Float, Spectrum>::precompute_silhouette(
 
         return std::make_tuple(out_indices, out_weights);
     } else {
+        if (dr::width(viewpoint) != 1)
+            Throw("Mesh::precompute_silhouette(): expected a single viewpoint "
+                  "(got width %zu)!", dr::width(viewpoint));
+
+        // Silhouette sampling weights build a proposal PMF and must not track gradients.
+        Point3f vp = dr::detach(viewpoint);
         UInt32 e = dr::arange<UInt32>(m_face_count * 3);
         Vector3u vi = dedge_indices(e);
         Point3f p0 = vertex_position(vi[0]),
                 p1 = vertex_position(vi[1]);
 
         Normal3f n = face_normal(DirectedEdge::face(e));
-        Vector3f to_p0 = dr::normalize(p0 - viewpoint);
-        Vector3f to_p1 = dr::normalize(p1 - viewpoint);
+        Vector3f to_p0 = dr::normalize(p0 - vp);
+        Vector3f to_p1 = dr::normalize(p1 - vp);
 
         // The arclength weight is not perfect for perspective
         // cameras. But it is a close approximation.

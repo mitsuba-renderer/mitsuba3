@@ -87,7 +87,7 @@ class GridDistr(BaseGuidingDistr):
             clamp_mask = mass < thres
             mass[clamp_mask] = 0
 
-            if self.debug_logs:
+            if self.debug_logs and not dr.flag(dr.JitFlag.FreezingScope):
                 percentage = 100. * dr.slice(dr.count(clamp_mask)) / dr.width(mass)
                 mi.Log(mi.LogLevel.Debug,
                        f"GridDistr: mass clamped with threshold {thres} (total "
