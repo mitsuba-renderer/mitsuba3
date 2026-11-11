@@ -500,16 +500,15 @@ public:
     }
 
     std::tuple<DynamicBuffer<UInt32>, DynamicBuffer<Float>>
-    precompute_silhouette(const ScalarPoint3f &/*viewpoint*/) const override {
+    precompute_silhouette(const Point3f &/*viewpoint*/) const override {
         // Sample the perimeter silhouette (top and bottom circles) and the
-        // smooth silhouette (cylinder) with equal probability.
-        ScalarFloat weight = 0.5f;
-        std::vector<uint32_t> type = { +DiscontinuityFlags::PerimeterType,
-                                       +DiscontinuityFlags::InteriorType };
-        std::vector<ScalarFloat> weight_arr(2, weight);
-
-        DynamicBuffer<UInt32> indices = dr::load<UInt32>(type.data(), type.size());
-        DynamicBuffer<Float> weights = dr::load<Float>(weight_arr.data(), weight_arr.size());
+        // smooth silhouette (cylinder) with equal probability. Avoid host
+        // dr::load (jit_var_mem_copy from_host), which cannot be recorded in @dr.freeze.
+        DynamicBuffer<UInt32> indices = dr::select(
+            dr::arange<DynamicBuffer<UInt32>>(2) == 0u,
+            (uint32_t) DiscontinuityFlags::PerimeterType,
+            (uint32_t) DiscontinuityFlags::InteriorType);
+        DynamicBuffer<Float> weights = dr::full<DynamicBuffer<Float>>(0.5f, 2);
 
         return {indices, weights};
     }

@@ -997,7 +997,7 @@ public:
                                                        Mask active = true) const override;
 
     std::tuple<IndexBuffer, DynamicBuffer<Float>>
-    precompute_silhouette(const ScalarPoint3f &viewpoint) const override;
+    precompute_silhouette(const Point3f &viewpoint) const override;
 
     SilhouetteSample3f sample_precomputed_silhouette(const Point3f &viewpoint,
                                                      Index sample1,
