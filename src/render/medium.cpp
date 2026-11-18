@@ -147,6 +147,7 @@ Medium<Float, Spectrum>::sample_real_interaction(const Ray3f &ray, Float sample,
                                                       const UInt32 &channel,
                                                       Mask active) const {
     TrackingRecord rec = track<false>(ray, sample, channel, false, active);
+    rec.sample.transmittance = rec.transmittance;
     return { rec.sample, rec.throughput };
 }
 

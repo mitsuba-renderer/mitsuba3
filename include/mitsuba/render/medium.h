@@ -18,7 +18,10 @@ template <typename Float, typename Spectrum> struct MediumSample3 {
     /// Sampling densities of all channels relative to the hero channel
     UnpolarizedSpectrum pdf_ratio;
 
-    DRJIT_STRUCT(MediumSample3, mei, pdf_ratio)
+    /// Transmittance estimate, the throughput without the event probabilities
+    UnpolarizedSpectrum transmittance;
+
+    DRJIT_STRUCT(MediumSample3, mei, pdf_ratio, transmittance)
 };
 
 template <typename Float, typename Spectrum>

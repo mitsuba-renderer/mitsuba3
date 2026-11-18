@@ -21,9 +21,11 @@ MI_PY_EXPORT(MediumSample) {
         .def_rw("mei", &MediumSample3f::mei, D(MediumSample3, mei))
         .def_rw("pdf_ratio", &MediumSample3f::pdf_ratio,
                 D(MediumSample3, pdf_ratio))
+        .def_rw("transmittance", &MediumSample3f::transmittance,
+                D(MediumSample3, transmittance))
         .def_repr(MediumSample3f);
 
-    MI_PY_DRJIT_STRUCT(ms, MediumSample3f, mei, pdf_ratio);
+    MI_PY_DRJIT_STRUCT(ms, MediumSample3f, mei, pdf_ratio, transmittance);
 }
 
 /// Trampoline for derived types implemented in Python

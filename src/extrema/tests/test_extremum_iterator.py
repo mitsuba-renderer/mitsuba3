@@ -124,7 +124,7 @@ def _track_test(medium, ray, seed, tracking):
     sample = _tracking_sample(seed)
     if tracking == "delta":
         ms, weight = medium.sample_real_interaction(ray, sample, 0)
-        return ms.mei.t, weight, None, ms.pdf_ratio
+        return ms.mei.t, weight, ms.transmittance, ms.pdf_ratio
     if tracking == "ratio":
         tr, throughput, pdf_ratio = medium.sample_transmittance_pdf(ray, sample, 0)
         return None, throughput, tr, pdf_ratio

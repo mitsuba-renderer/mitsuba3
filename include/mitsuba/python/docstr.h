@@ -6056,6 +6056,8 @@ static const char *__doc_mitsuba_MediumSample3_operator_assign_2 = R"doc()doc";
 
 static const char *__doc_mitsuba_MediumSample3_pdf_ratio = R"doc(Sampling densities of all channels relative to the hero channel)doc";
 
+static const char *__doc_mitsuba_MediumSample3_transmittance = R"doc(Transmittance estimate, the throughput without the event probabilities)doc";
+
 static const char *__doc_mitsuba_Medium_Medium = R"doc()doc";
 
 static const char *__doc_mitsuba_Medium_Medium_2 = R"doc()doc";
