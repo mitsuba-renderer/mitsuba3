@@ -14,7 +14,7 @@ MI_PY_EXPORT(VolumeGrid) {
     using CpuNdArray = nb::ndarray<ScalarFloat, nb::c_contig, nb::device::cpu>;
 
     auto init_cpu_ndarray = [](VolumeGrid* t, 
-        CpuNdArray obj, bool compute_max = true) {
+        CpuNdArray obj, bool compute_max = true, bool compute_min = true) {
         if (obj.ndim() != 3 && obj.ndim() != 4)
             throw nb::type_error("Expected an array of size 3 or 4");
 
@@ -31,18 +31,44 @@ MI_PY_EXPORT(VolumeGrid) {
 
         ScalarFloat max = 0.f;
         std::vector<ScalarFloat> max_per_channel(channel_count, -dr::Infinity<ScalarFloat>);
-        if (compute_max) {
+
+        ScalarFloat min = dr::Infinity<ScalarFloat>;
+        std::vector<ScalarFloat> min_per_channel(channel_count, dr::Infinity<ScalarFloat>);
+
+        if (compute_max || compute_min) {
+            ScalarFloat max_ = 0.f;
+            std::vector<ScalarFloat> max_per_channel_(channel_count, -dr::Infinity<ScalarFloat>);
+            ScalarFloat min_ = dr::Infinity<ScalarFloat>;
+            std::vector<ScalarFloat> min_per_channel_(channel_count, dr::Infinity<ScalarFloat>);
+
             size_t ch_index = 0;
             for (size_t i = 0; i < dr::prod(size) * channel_count; ++i) {
-                max = dr::maximum(max, volumegrid->data()[i]);
+                max_ = dr::maximum(max_, volumegrid->data()[i]);
+                min_ = dr::minimum(min_, volumegrid->data()[i]);
+
                 ch_index = i % channel_count;
-                max_per_channel[ch_index] = dr::maximum(
-                    max_per_channel[ch_index], volumegrid->data()[i]);
+                max_per_channel_[ch_index] = dr::maximum(
+                    max_per_channel_[ch_index], volumegrid->data()[i]);
+                min_per_channel_[ch_index] = dr::minimum(
+                    min_per_channel_[ch_index], volumegrid->data()[i]);
+            }
+
+            if (compute_max) {
+                max = max_;
+                max_per_channel = max_per_channel_;
+            }
+
+            if (compute_min) {
+                min = min_;
+                min_per_channel = min_per_channel_;
             }
         }
 
         volumegrid->set_max(max);
         volumegrid->set_max_per_channel(max_per_channel.data());
+
+        volumegrid->set_min(min);
+        volumegrid->set_min_per_channel(min_per_channel.data());
     };
 
     auto volume_grid = MI_PY_CLASS(VolumeGrid, Object)
@@ -51,9 +77,9 @@ MI_PY_EXPORT(VolumeGrid) {
         .def(nb::init<Stream *>(), "stream"_a,
             nb::call_guard<nb::gil_scoped_release>())
         .def("__init__", init_cpu_ndarray
-            , "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a CPU-visible ndarray")
+            , "array"_a, "compute_max"_a = true, "compute_min"_a = true, "Initialize a VolumeGrid from a CPU-visible ndarray")
         .def("__init__",
-            [&init_cpu_ndarray](VolumeGrid* t, TensorXf& obj, bool compute_max = true) {
+            [&init_cpu_ndarray](VolumeGrid* t, TensorXf& obj, bool compute_max = true, bool compute_min = true) {
 
             DynamicBuffer<ScalarFloat> cpu_array;
 
@@ -68,8 +94,8 @@ MI_PY_EXPORT(VolumeGrid) {
 
             init_cpu_ndarray(t,
                 CpuNdArray(cpu_array.data(), obj.ndim(), &obj.shape()[0], nb::handle()),
-                compute_max);
-         }, "array"_a, "compute_max"_a = true, "Initialize a VolumeGrid from a drjit tensor")
+                compute_max, compute_min);
+         }, "array"_a, "compute_max"_a = true, "compute_min"_a = true, "Initialize a VolumeGrid from a drjit tensor")
         .def_method(VolumeGrid, size)
         .def_method(VolumeGrid, channel_count)
         .def_method(VolumeGrid, max)
@@ -86,6 +112,20 @@ MI_PY_EXPORT(VolumeGrid) {
                 volgrid->set_max_per_channel(max_values.data());
             },
             D(VolumeGrid, set_max_per_channel))
+        .def_method(VolumeGrid, min)
+        .def("min_per_channel",
+            [] (const VolumeGrid *volgrid) {
+                std::vector<ScalarFloat> min_values(volgrid->channel_count());
+                volgrid->min_per_channel(min_values.data());
+                return min_values;
+            },
+            D(VolumeGrid, min_per_channel))
+        .def_method(VolumeGrid, set_min)
+        .def("set_min_per_channel",
+            [] (VolumeGrid *volgrid, std::vector<ScalarFloat> &min_values) {
+                volgrid->set_min_per_channel(min_values.data());
+            },
+            D(VolumeGrid, set_min_per_channel))
         .def_method(VolumeGrid, bytes_per_voxel)
         .def_method(VolumeGrid, buffer_size)
         .def("write", nb::overload_cast<Stream *>(&VolumeGrid::write, nb::const_),

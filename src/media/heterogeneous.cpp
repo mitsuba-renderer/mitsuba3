@@ -8,6 +8,7 @@
 #include <mitsuba/render/sampler.h>
 #include <mitsuba/render/scene.h>
 #include <mitsuba/render/volume.h>
+#include <mitsuba/render/extremum.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -149,8 +150,8 @@ template <typename Float, typename Spectrum>
 class HeterogeneousMedium final : public Medium<Float, Spectrum> {
 public:
     MI_IMPORT_BASE(Medium, m_is_homogeneous, m_has_spectral_extinction,
-                    m_phase_function)
-    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume)
+                    m_phase_function, m_extremum)
+    MI_IMPORT_TYPES(Scene, Sampler, Texture, Volume, Extremum)
 
     HeterogeneousMedium(const Properties &props) : Base(props) {
         m_is_homogeneous = false;
@@ -161,6 +162,23 @@ public:
         m_has_spectral_extinction = props.get<bool>("has_spectral_extinction", true);
 
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+
+        for (auto &prop : props.objects()) {
+            if (auto *extremum = prop.try_get<Extremum>()) {
+                if (m_extremum)
+                    Throw("Only a single extremum structure can be specified per medium");
+                m_extremum = extremum;
+            }
+        }
+
+        if (!m_extremum) {
+            // Create a default global extremum structure.
+            m_extremum =
+                PluginManager::instance()->create_object<Extremum>(Properties("globalextremum"));
+        }
+
+        m_extremum->update_extremum(
+            m_sigmat->bbox(), m_sigmat.get(), m_scale);
     }
 
     void traverse(TraversalCallback *cb) override {
@@ -170,8 +188,15 @@ public:
         Base::traverse(cb);
     }
 
-    void parameters_changed(const std::vector<std::string> &/*keys*/ = {}) override {
+    void parameters_changed(const std::vector<std::string> &keys = {}) override {
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
+
+        if (keys.empty() || string::contains(keys, "sigma_t"))
+            m_extremum->update_extremum(
+                m_sigmat->bbox(), m_sigmat.get(), std::nullopt);
+
+        if (keys.empty() || string::contains(keys, "scale"))
+            m_extremum->set_scale(m_scale);
     }
 
     UnpolarizedSpectrum
@@ -203,9 +228,10 @@ public:
     std::string to_string() const override {
         std::ostringstream oss;
         oss << "HeterogeneousMedium[" << std::endl
-            << "  albedo  = " << string::indent(m_albedo) << std::endl
-            << "  sigma_t = " << string::indent(m_sigmat) << std::endl
-            << "  scale   = " << string::indent(m_scale) << std::endl
+            << "  albedo  = " << string::indent(m_albedo) <<  "," << std::endl
+            << "  sigma_t = " << string::indent(m_sigmat) << "," << std::endl
+            << "  scale   = " << string::indent(m_scale) << "," << std::endl
+            << "  extremum = "<< string::indent(m_extremum) << std::endl
             << "]";
         return oss.str();
     }

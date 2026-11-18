@@ -160,6 +160,7 @@ static std::pair<TagType, ObjectType> interpret_tag(std::string_view str) {
             break;
         case 'e':
             if (str == "emitter") return {TagType::Object, ObjectType::Emitter};
+            if (str == "extremum") return {TagType::Object, ObjectType::Extremum};
             break;
         case 'f':
             if (str == "float") return {TagType::Float, ObjectType::Unknown};
@@ -1463,9 +1464,10 @@ void transform_merge_equivalent(const ParserConfig &/*config*/, ParserState &sta
         for (size_t i = 0; i < state.size(); ++i) {
             size_t repr = canonical[i];
 
-            // Skip merging for emitters and shapes
+            // Skip merging for emitters, shapes, and extremum structures
             if (state[repr].type == ObjectType::Emitter ||
-                state[repr].type == ObjectType::Shape)
+                state[repr].type == ObjectType::Shape ||
+                state[repr].type == ObjectType::Extremum)
                 continue;
 
             // Try to find an equivalent node

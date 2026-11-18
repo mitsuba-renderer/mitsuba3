@@ -121,6 +121,10 @@ public:
         return dr::slice(dr::max(m_value));
     }
 
+    ScalarFloat min() const override {
+        return dr::slice(dr::min(m_value));
+    }
+
     std::string to_string() const override {
         return tfm::format("UniformSpectrum[value=%f]", m_value);
     }

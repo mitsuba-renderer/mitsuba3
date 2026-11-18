@@ -194,6 +194,16 @@ public:
      */
     virtual ScalarFloat max() const;
 
+    /**
+     * Return the minimum value of the spectrum
+     *
+     * Not every implementation necessarily provides this function. The default
+     * implementation returns zero.
+     *
+     * Even if the operation is provided, it may only return an approximation.
+     */
+    virtual ScalarFloat min() const;
+
     // ======================================================================
 
     /// Does this texture evaluation depend on the UV coordinates
@@ -241,6 +251,7 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Texture)
     DRJIT_CALL_METHOD(eval_3)
 
     DRJIT_CALL_GETTER(max)
+    DRJIT_CALL_GETTER(min)
     DRJIT_CALL_GETTER(is_spatially_varying)
     DRJIT_CALL_GETTER(filtered)
 DRJIT_CALL_END()

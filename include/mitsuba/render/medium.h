@@ -8,10 +8,26 @@
 
 NAMESPACE_BEGIN(mitsuba)
 
+/// Data structure holding the result of real interaction sampling.
+template <typename Float, typename Spectrum> struct MediumSample3 {
+    MI_IMPORT_TYPES()
+
+    /// Real collision, \c mei.t is infinite if none occurred
+    MediumInteraction3f mei;
+
+    /// Sampling densities of all channels relative to the hero channel
+    UnpolarizedSpectrum pdf_ratio;
+
+    /// Transmittance estimate, the throughput without the event probabilities
+    UnpolarizedSpectrum transmittance;
+
+    DRJIT_STRUCT(MediumSample3, mei, pdf_ratio, transmittance)
+};
+
 template <typename Float, typename Spectrum>
 class MI_EXPORT_LIB Medium : public JitObject<Medium<Float, Spectrum>> {
 public:
-    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture);
+    MI_IMPORT_TYPES(PhaseFunction, Sampler, Scene, Texture, Extremum);
 
     /// Destructor
     ~Medium();
@@ -77,6 +93,62 @@ public:
                            const SurfaceInteraction3f &si,
                            Mask active) const;
 
+    /**
+     * \brief Sample a real collision along \c ray, over its part inside the
+     * medium's bounding box and <tt>[0, ray.maxt]</tt>.
+     *
+     * The default implementation uses delta tracking. Free flights are
+     * sampled at the hero channel's majorant, given by the medium's extremum
+     * structure. At a tentative collision, the event type (null or real) is
+     * sampled using the medium's coefficients. Tracking stops at the first
+     * real collision. A ray that misses that range returns no collision.
+     *
+     * \param sample
+     *      Uniform sample in <tt>[0, 1)</tt> that draws the first free flight
+     *      and seeds the generator of the later free flights and of the
+     *      collision choices.
+     * \param channel
+     *      Hero channel, along which free flights are sampled.
+     *
+     * \return A pair (sample, weight): the collision and path throughput weight.
+     */
+    virtual std::pair<MediumSample3f, UnpolarizedSpectrum>
+    sample_real_interaction(const Ray3f &ray, Float sample,
+                            const UInt32 &channel, Mask active = true) const;
+
+    /**
+     * \brief Estimate the transmittance along \c ray.
+     *
+     * The default implementation uses (residual) ratio tracking: as
+     * \ref sample_real_interaction, except that every collision is null and
+     * the traversal runs to the end of the range. The property \c use_rrt
+     * specifies whether the minorant is used as control extinction tracking,
+     * the minorants are a control extinction, accounted for analytically,
+     * and free flights are sampled at the residual majorants.
+     *
+     * Traversal stops as soon as the transmittance estimate reaches zero.
+     * If the medium's \c rr_threshold is positive, estimates falling below
+     * it undergo Russian roulette.
+     */
+    virtual UnpolarizedSpectrum
+    sample_transmittance(const Ray3f &ray, Float sample, const UInt32 &channel,
+                         Mask active = true) const;
+
+    /**
+     * \brief Estimate the transmittance, path throughput, and pdf ratio
+     * along \c ray.
+     *
+     * As \ref sample_transmittance, but also returns the path throughput
+     * weight and the sampling densities of all channels relative to the hero
+     * channel. Cannot use residual ratio tracking.
+     *
+     * \return A tuple (transmittance, throughput, pdf_ratio).
+     */
+    virtual
+    std::tuple<UnpolarizedSpectrum, UnpolarizedSpectrum, UnpolarizedSpectrum>
+    sample_transmittance_pdf(const Ray3f &ray, Float sample,
+                             const UInt32 &channel, Mask active = true) const;
+
     /// Return the phase function of this medium
     MI_INLINE const PhaseFunction *phase_function() const {
         return m_phase_function.get();
@@ -93,6 +165,9 @@ public:
         return m_has_spectral_extinction;
     }
 
+    /// Return the extremum structure of this medium
+    MI_INLINE const Extremum *extremum() const { return m_extremum.get(); }
+
     void traverse(TraversalCallback *callback) override;
 
     /// Return a human-readable representation of the Medium
@@ -104,13 +179,30 @@ protected:
     Medium();
     Medium(const Properties &props);
 
+    /// Loop state of \ref track, defined in medium.cpp
+    struct TrackingRecord;
+
+    /**
+     * \brief Tracking loop shared by \ref sample_real_interaction,
+     * \ref sample_transmittance and \ref sample_transmittance_pdf:
+     * \c Ratio makes every collision null.
+     */
+    template <bool Ratio>
+    TrackingRecord track(const Ray3f &ray, Float sample, const UInt32 &channel,
+                         Mask rrt, Mask active) const;
+
 protected:
     ref<PhaseFunction> m_phase_function;
     bool m_sample_emitters;
     bool m_is_homogeneous;
     bool m_has_spectral_extinction;
 
-    MI_DECLARE_TRAVERSE_CB(m_phase_function)
+    ref<Extremum> m_extremum;
+    bool m_use_rrt;
+    /// Ratio tracking Russian roulette threshold, disabled if not positive.
+    ScalarFloat m_rr_threshold = 0.f;
+
+    MI_DECLARE_TRAVERSE_CB(m_phase_function, m_extremum)
 };
 
 MI_EXTERN_CLASS(Medium)
@@ -130,6 +222,9 @@ DRJIT_CALL_TEMPLATE_BEGIN(mitsuba::Medium)
     DRJIT_CALL_METHOD(sample_interaction)
     DRJIT_CALL_METHOD(transmittance_eval_pdf)
     DRJIT_CALL_METHOD(get_scattering_coefficients)
+    DRJIT_CALL_METHOD(sample_real_interaction)
+    DRJIT_CALL_METHOD(sample_transmittance)
+    DRJIT_CALL_METHOD(sample_transmittance_pdf)
 DRJIT_CALL_END()
 
 // -----------------------------------------------------------------------

@@ -82,6 +82,29 @@ public:
             m_max_per_channel[i] = max[i];
     }
 
+    /// Return the precomputed minimum over the volume grid
+    ScalarFloat min() const { return m_min; }
+
+    /**
+     * \brief Return the precomputed minimum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    void min_per_channel(ScalarFloat *out) const;
+
+    /// Set the precomputed minimum over the volume grid
+    void set_min(ScalarFloat min) { m_min = min; }
+
+    /**
+     * \brief Set the precomputed minimum over the volume grid per channel
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    void set_min_per_channel(ScalarFloat *min) {
+        for (size_t i=0; i<m_channel_count; ++i)
+            m_min_per_channel[i] = min[i];
+    }
+
     /// Return the number of bytes of storage used per voxel
     size_t bytes_per_voxel() const { return sizeof(ScalarFloat) * channel_count(); }
 
@@ -120,6 +143,8 @@ protected:
     ScalarBoundingBox3f m_bbox;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+    ScalarFloat m_min;
+    std::vector<ScalarFloat> m_min_per_channel;
 
     MI_TRAVERSE_CB(Object)
 };

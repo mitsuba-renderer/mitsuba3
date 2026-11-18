@@ -6,6 +6,7 @@
 #include <mitsuba/render/interaction.h>
 #include <mitsuba/render/shape.h>
 #include <mitsuba/render/texture.h>
+#include <mitsuba/render/volume_utils.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
@@ -60,6 +61,58 @@ public:
      */
     virtual void max_per_channel(ScalarFloat *out) const;
 
+    /// Returns the minimum value of the volume over all dimensions.
+    virtual ScalarFloat min() const;
+
+    /**
+     * \brief In the case of a multi-channel volume, this function returns
+     * the minimum value for each channel.
+     *
+     * Pointer allocation/deallocation must be performed by the caller.
+     */
+    virtual void min_per_channel(ScalarFloat *out) const;
+
+    /**
+     * \brief Compute local extrema over a spatial region
+     *
+     * Returns the maximum value (majorant) and minimum value (minorant)
+     * over the specified bounding box region.
+     * Only fully implemented for grid-based volumes.
+     *
+     * \param bbox  Bounding box defining the query region in local space
+     * \return (minorant, majorant) pair
+     */
+    virtual std::pair<Float, Float>
+    extremum(BoundingBox3f bbox, Mask local = true) const;
+
+    /**
+     * \brief Compute local majorant (maximum) over a spatial region
+     *
+     * Convenience method that returns only the majorant.
+     * The default implementation calls `extremum()` and returns
+     * the second element.
+     */
+    virtual Float majorant(const BoundingBox3f& bbox, Mask local = true) const {
+        return extremum(bbox, local).second;
+    }
+
+    /**
+     * \brief Compute local minorant (minimum) over a spatial region
+     *
+     * Convenience method that returns only the minorant.
+     * The default implementation calls `extremum()` and returns
+     * the first element.
+     */
+    virtual Float minorant(const BoundingBox3f& bbox, Mask local = true) const {
+        return extremum(bbox, local).first;
+    }
+
+    virtual VolumeParametrization<ScalarFloat> parametrization() const {
+        VolumeParametrization<ScalarFloat> param;
+        param.to_world = m_to_local.inverse();
+        return param;
+    }
+
     /// Returns the bounding box of the volume
     ScalarBoundingBox3f bbox() const { return m_bbox; }
 
@@ -92,6 +145,22 @@ public:
 
     MI_DECLARE_PLUGIN_BASE_CLASS(Volume)
 
+    /**
+     * \brief A Scoped Guard that pins the reference count of the volume.
+     *
+     * Use for bulk operations in scalar mode.
+     */
+    struct PinGuard {
+        const Volume *volume;
+        explicit PinGuard(const Volume* v) : volume(v) { volume->pin_ref_count(); }
+        ~PinGuard() { volume->unpin_ref_count(); }
+
+        PinGuard(const PinGuard&) = delete;
+        PinGuard& operator=(const PinGuard&) = delete;
+    };
+
+    virtual PinGuard pin() const { return PinGuard(this); };
+
 protected:
     Volume(const Properties &props);
 
@@ -107,6 +176,11 @@ protected:
         m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 0.f));
         m_bbox.expand(to_world * ScalarPoint3f(1.f, 1.f, 1.f));
     }
+
+    /// Pin the reference count of the data that constitutes the volume e.g. Texture/
+    virtual void pin_ref_count() const {};
+    /// Unpin the reference count.
+    virtual void unpin_ref_count() const {};
 
 protected:
     /// Used to bring points in world coordinates to local coordinates.

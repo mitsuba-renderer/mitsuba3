@@ -48,6 +48,10 @@ public:
         NB_OVERRIDE_PURE(max);
     }
 
+    ScalarFloat min() const override {
+        NB_OVERRIDE(min);
+    }
+
     ScalarVector3i resolution() const override {
         NB_OVERRIDE(resolution);
     }
@@ -83,6 +87,14 @@ MI_PY_EXPORT(Volume) {
                 return max_values;
             },
             D(Volume, max_per_channel))
+        .def_method(Volume, min)
+        .def("min_per_channel",
+            [] (const Volume *volume) {
+                std::vector<ScalarFloat> min_values(volume->channel_count());
+                volume->min_per_channel(min_values.data());
+                return min_values;
+            },
+            D(Volume, min_per_channel))
         .def_method(Volume, eval, "it"_a, "active"_a = true)
         .def_method(Volume, eval_1, "it"_a, "active"_a = true)
         .def_method(Volume, eval_3, "it"_a, "active"_a = true)

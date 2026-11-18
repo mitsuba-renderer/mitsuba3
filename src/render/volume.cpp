@@ -57,6 +57,21 @@ Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
     NotImplementedError("max_per_channel");
 }
 
+MI_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
+Volume<Float, Spectrum>::min() const { return 0.f; }
+
+MI_VARIANT void
+Volume<Float, Spectrum>::min_per_channel(ScalarFloat * /*out*/) const {
+    NotImplementedError("min_per_channel");
+}
+
+MI_VARIANT std::pair<Float, Float>
+Volume<Float, Spectrum>::extremum(BoundingBox3f /*bbox*/, Mask /*local*/) const {
+    // Default implementation: fall back to global max/min
+    // Derived classes should override for better spatial queries
+    return { 0.f, max() };
+}
+
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarVector3i
 Volume<Float, Spectrum>::resolution() const {
     return ScalarVector3i(1, 1, 1);

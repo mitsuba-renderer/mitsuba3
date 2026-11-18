@@ -35,6 +35,7 @@ template <typename Float, typename Spectrum> class ShapeKDTree;
 template <typename Float, typename Spectrum> class Texture;
 template <typename Float, typename Spectrum> class Volume;
 template <typename Float, typename Spectrum> class VolumeGrid;
+template <typename Float, typename Spectrum> class Extremum;
 template <typename Float, typename Spectrum> class MeshAttribute;
 
 template <typename Float, typename Spectrum> struct DirectionSample;
@@ -45,6 +46,9 @@ template <typename Float, typename Spectrum> struct SilhouetteSample;
 template <typename Float, typename Spectrum> struct PhaseFunctionContext;
 template <typename Float, typename Spectrum> struct Interaction;
 template <typename Float, typename Spectrum> struct MediumInteraction;
+template <typename Float, typename Spectrum> struct MediumSample3;
+template <typename Float, typename Spectrum> struct ExtremumSegment;
+template <typename Float, typename Spectrum> struct ExtremumState;
 template <typename Float, typename Spectrum> struct SurfaceInteraction;
 template <typename Float, typename Shape>    struct PreliminaryIntersection;
 
@@ -110,6 +114,9 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFSample3f              = BSDFSample3<Float, Spectrum>;
     using BSDFFeatures3f            = BSDFFeatures<Float, Spectrum>;
     using SilhouetteSample3f        = SilhouetteSample<Float, Spectrum>;
+    using MediumSample3f            = MediumSample3<Float, Spectrum>;
+    using ExtremumSegment           = mitsuba::ExtremumSegment<Float, Spectrum>;
+    using ExtremumState             = mitsuba::ExtremumState<Float, Spectrum>;
     using PhaseFunctionContext      = mitsuba::PhaseFunctionContext<Float, Spectrum>;
     using Interaction3f             = Interaction<Float, Spectrum>;
     using MediumInteraction3f       = MediumInteraction<Float, Spectrum>;
@@ -142,6 +149,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ReconstructionFilter   = mitsuba::ReconstructionFilter<Float, Spectrum>;
     using Texture                = mitsuba::Texture<Float, Spectrum>;
     using Volume                 = mitsuba::Volume<Float, Spectrum>;
+    using Extremum               = mitsuba::Extremum<Float, Spectrum>;
     using VolumeGrid             = mitsuba::VolumeGrid<Float, Spectrum>;
 
     using MeshAttribute          = mitsuba::MeshAttribute<Float, Spectrum>;
@@ -204,6 +212,9 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using BSDFSample3f              = typename RenderAliases::BSDFSample3f;                        \
     using BSDFFeatures3f            = typename RenderAliases::BSDFFeatures3f;                      \
     using SilhouetteSample3f        = typename RenderAliases::SilhouetteSample3f;                  \
+    using MediumSample3f            = typename RenderAliases::MediumSample3f;                      \
+    using ExtremumSegment           = typename RenderAliases::ExtremumSegment;                     \
+    using ExtremumState             = typename RenderAliases::ExtremumState;                       \
     DRJIT_MAP(MI_IMPORT_TYPES_MACRO, __VA_ARGS__)
 
 #define MI_IMPORT_OBJECT_TYPES()                                                                   \
@@ -231,6 +242,7 @@ template <typename Float_, typename Spectrum_> struct RenderAliases {
     using ReconstructionFilter   = typename RenderAliases::ReconstructionFilter;                   \
     using Texture                = typename RenderAliases::Texture;                                \
     using Volume                 = typename RenderAliases::Volume;                                 \
+    using Extremum               = typename RenderAliases::Extremum;                               \
     using ObjectPtr              = typename RenderAliases::ObjectPtr;                              \
     using BSDFPtr                = typename RenderAliases::BSDFPtr;                                \
     using MediumPtr              = typename RenderAliases::MediumPtr;                              \

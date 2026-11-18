@@ -72,7 +72,10 @@ enum class ObjectType : uint32_t {
     PhaseFunction,
 
     /// A rendering algorithm aka. `Integrator`
-    Integrator
+    Integrator,
+
+    /// A medium acceleration structure.
+    Extremum
 };
 
 /**
@@ -269,6 +272,7 @@ inline constexpr const char* object_type_name(ObjectType ot) {
         case ObjectType::Integrator: return "Integrator";
         case ObjectType::PhaseFunction: return "Phase";
         case ObjectType::ReconstructionFilter: return "ReconstructionFilter";
+        case ObjectType::Extremum: return "Extremum";
         default:
             break;
     }

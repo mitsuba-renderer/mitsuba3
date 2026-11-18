@@ -9,6 +9,7 @@ set(RENDER_PY_V_SRC
   ${CMAKE_CURRENT_SOURCE_DIR}/interaction_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/integrator_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/medium_v.cpp
+  ${CMAKE_CURRENT_SOURCE_DIR}/extremum_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/mueller_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/microfacet_v.cpp
   ${CMAKE_CURRENT_SOURCE_DIR}/microflake_v.cpp

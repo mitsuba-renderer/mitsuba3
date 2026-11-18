@@ -14,11 +14,12 @@ def test01_numpy_conversion(variants_all_scalar, np_rng):
     assert dr.allclose(a.shape[3], grid.channel_count())
 
     # Don't ask for computation of the maximum value
-    grid = mi.VolumeGrid(a, False)
+    grid = mi.VolumeGrid(a, False, False)
     assert dr.allclose(a, np.array(grid), atol=1e-3, rtol=1e-5)
     assert dr.allclose(grid.max(), 0.0)
     assert dr.allclose([a.shape[2], a.shape[1], a.shape[0]], grid.size())
     assert dr.allclose(a.shape[3], grid.channel_count())
+    assert dr.isinf(grid.min())
 
 
 def test02_read_write(variants_all_scalar, tmpdir, np_rng):
@@ -46,3 +47,20 @@ def test03_max_per_channel(variants_all_scalar, tmpdir, np_rng):
     grid = mi.VolumeGrid(tmp_file)
     mi_max_per_channel = grid.max_per_channel()
     assert dr.allclose(np_max_per_channel, mi_max_per_channel)
+
+
+def test04_min_per_channel(variants_all_scalar, tmpdir, np_rng):
+    tmp_file = os.path.join(str(tmpdir), "out.vol")
+    data = np_rng.random((4, 8, 16, 3))
+    grid = mi.VolumeGrid(data)
+    grid.write(tmp_file)
+    np_min_per_channel = np.array([np.min(data[:,:,:,0]),
+                                   np.min(data[:,:,:,1]),
+                                   np.min(data[:,:,:,2])])
+    # Check direct construction compute the minimum values
+    mi_min_per_channel = grid.min_per_channel()
+    assert dr.allclose(np_min_per_channel, mi_min_per_channel)
+    # Check disk construction compute the minimum values
+    grid = mi.VolumeGrid(tmp_file)
+    mi_min_per_channel = grid.min_per_channel()
+    assert dr.allclose(np_min_per_channel, mi_min_per_channel)

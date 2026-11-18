@@ -242,6 +242,7 @@ public:
                     std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
                 ScalarFloat *scaled_data_ptr = scaled_data.get();
                 ScalarFloat max = 0.0;
+                ScalarFloat min = dr::Infinity<ScalarFloat>;
                 for (ScalarUInt32 i = 0; i < size; ++i) {
                     ScalarColor3f rgb = dr::load<ScalarColor3f>(ptr);
                     // TODO: Make this scaling optional if the RGB values are
@@ -251,12 +252,14 @@ public:
                         rgb / dr::maximum((ScalarFloat) 1e-8, scale);
                     ScalarVector3f coeff = SRGBModel<Float, Spectrum>::fetch(rgb_norm);
                     max = dr::maximum(max, scale);
+                    min = dr::minimum(min, scale);
                     dr::store(scaled_data_ptr,
                               dr::concat(coeff, dr::Array<ScalarFloat, 1>(scale)));
                     ptr += 3;
                     scaled_data_ptr += 4;
                 }
                 m_max = (float) max;
+                m_min = (float) min;
 
                 m_texture = Texture3f(
                     TensorXf(scaled_data.get(), { (size_t) res.z(),
@@ -273,6 +276,11 @@ public:
                 m_max = volume_grid->max();
                 m_max_per_channel.resize(volume_grid->channel_count());
                 volume_grid->max_per_channel(m_max_per_channel.data());
+
+                m_min = volume_grid->min();
+                m_min_per_channel.resize(volume_grid->channel_count());
+                volume_grid->min_per_channel(m_min_per_channel.data());
+
                 m_channel_count = channel_count;
             } else if (tensor) {
                 m_texture = Texture3f(
@@ -282,6 +290,7 @@ public:
                                                 channel_count }),
                     m_accel, filter_mode, wrap_mode);
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+                m_min = (float) dr::min_nested(dr::detach(m_texture.value()));
                 m_channel_count = channel_count;
             }
         }
@@ -296,6 +305,10 @@ public:
         if (props.has_property("max_value")) {
             m_fixed_max = true;
             m_max = props.get<ScalarFloat>("max_value");
+        }
+        if (props.has_property("min_value")) {
+            m_fixed_min = true;
+            m_min = props.get<ScalarFloat>("min_value");
         }
     }
 
@@ -316,6 +329,9 @@ public:
 
             if (!m_fixed_max)
                 m_max = (float) dr::max_nested(dr::detach(m_texture.value()));
+
+            if (!m_fixed_min)
+                m_min = (float) dr::min_nested(dr::detach(m_texture.value()));
         }
     }
 
@@ -427,6 +443,133 @@ public:
             out[i] = m_max_per_channel[i];
     }
 
+    ScalarFloat min() const override { return m_min; }
+
+    void min_per_channel(ScalarFloat *out) const override {
+        for (size_t i=0; i<m_min_per_channel.size(); ++i)
+            out[i] = m_min_per_channel[i];
+    }
+
+    std::pair<Float, Float>
+    extremum(BoundingBox3f bbox, Mask local) const override {
+
+        if (m_texture.shape()[3] != 1)
+            NotImplementedError("extremum() only supported for single-channel volumes");
+
+        if (dr::any(!local))
+            NotImplementedError("Grid only supports local bounds")
+
+        bbox.clip(BoundingBox3f(Point3f(0.f), Point3f(1.f)));
+
+        // early exit in scalar mode
+        if (dr::any_or<false>(!bbox.valid()))
+            return { 0.f, 0.f };
+
+        Mask active = bbox.valid();
+        const Vector3i res = resolution();
+
+        // Convert to voxel indices with proper padding for interpolation
+        int32_t padding =
+            (m_texture.filter_mode() == dr::FilterMode::Linear) ? 1 : 0;
+
+        Vector3i voxel_min =
+            dr::maximum(dr::floor(bbox.min * Vector3f(res)) - Vector3i(padding),
+                        Vector3i(0));
+        Vector3i voxel_max = dr::minimum(
+            dr::floor(bbox.max * Vector3f(res)) + Vector3i(padding), res - 1);
+
+        UInt32 n       = dr::prod((voxel_max - voxel_min) + 1);
+        Vector3i range = (voxel_max - voxel_min) + 1;
+
+        // Scan voxels in bounds and find min/max
+        Float max_val = -dr::Infinity<Float>;
+        Float min_val = dr::Infinity<Float>;
+
+        if constexpr ( !dr::is_jit_v<Float>){
+            // If possible use pinned data to avoid ref count issues.
+            const ScalarFloat *data = m_pinned_data
+                                    ? m_pinned_data
+                                    : m_texture.tensor().data();
+
+            for (int32_t z = voxel_min.z(); z <= voxel_max.z(); ++z) {
+                for (int32_t y = voxel_min.y(); y <= voxel_max.y(); ++y) {
+                    for (int32_t x = voxel_min.x(); x <= voxel_max.x(); ++x) {
+                        size_t idx = ( x
+                                    + y * res.x()
+                                    + z * res.x() * res.y() );
+                        ScalarFloat val = data[idx];
+                        max_val = dr::maximum(max_val, val);
+                        min_val = dr::minimum(min_val, val);
+                    }
+                }
+            }
+
+        } else {
+            struct LoopState {
+                UInt32 x;
+                UInt32 y;
+                UInt32 z;
+                Float min_val;
+                Float max_val;
+                Mask active;
+
+                DRJIT_STRUCT(LoopState, x, y, z, min_val, max_val, active)
+            } ls = {
+                UInt32(0), UInt32(0), UInt32(0),
+                min_val,
+                max_val,
+                active
+            };
+
+            auto array = m_texture.tensor().array();
+            dr::tie(ls) = dr::while_loop(
+                dr::make_tuple(ls),
+                [](const LoopState &ls) { return ls.active; },
+                [array, res, n, voxel_min, range](LoopState &ls) {
+                    Float &min_val = ls.min_val;
+                    Float &max_val = ls.max_val;
+                    Mask &active   = ls.active;
+
+                    // volume wide indices
+                    UInt32 x = voxel_min.x() + ls.x;
+                    UInt32 y = voxel_min.y() + ls.y;
+                    UInt32 z = voxel_min.z() + ls.z;
+
+                    // serial index
+                    UInt32 tex_idx = x + y * res.x() + z * res.x() * res.y();
+
+                    Float val = dr::gather<Float>(array, tex_idx, active);
+                    dr::masked(max_val, active) = dr::maximum(max_val, val);
+                    dr::masked(min_val, active) = dr::minimum(min_val, val);
+
+                    // This approach avoids modulo and division which are
+                    // detrimental to performance.
+                    ls.x += 1;
+
+                    Mask carry_x = ls.x >= range.x();
+                    ls.x         = dr::select(carry_x, UInt32(0), ls.x);
+                    ls.y += dr::select(carry_x, UInt32(1), UInt32(0));
+
+                    Mask carry_y = carry_x && (ls.y >= range.y());
+                    ls.y         = dr::select(carry_y, UInt32(0), ls.y);
+                    ls.z += dr::select(carry_y, UInt32(1), UInt32(0));
+
+                    ls.active &= ls.z < range.z();
+                });
+            max_val = ls.max_val;
+            min_val = ls.min_val;
+        }
+
+        return { min_val, max_val };
+    }
+
+    VolumeParametrization<ScalarFloat> parametrization() const override {
+        VolumeParametrization<ScalarFloat> param;
+        param.to_world = m_to_local.inverse();
+        param.wrap_mode = m_texture.wrap_mode();
+        return param;
+    }
+
     ScalarVector3i resolution() const override {
         const size_t *shape = m_texture.shape();
         return { (int) shape[2], (int) shape[1], (int) shape[0] };
@@ -439,6 +582,7 @@ public:
             << "  bbox = " << string::indent(m_bbox) << "," << std::endl
             << "  dimensions = " << resolution() << "," << std::endl
             << "  max = " << m_max << "," << std::endl
+            << "  min = " << m_min << "," << std::endl
             << "  channels = " << m_texture.channel_count() << std::endl
             << "]";
         return oss.str();
@@ -589,6 +733,14 @@ protected:
             out[i] = result.entry(i);
     }
 
+    void pin_ref_count() const override {
+        m_pinned_data = m_texture.tensor().data();
+    }
+
+    void unpin_ref_count() const override {
+        m_pinned_data = nullptr;
+    }
+
 protected:
     Texture3f m_texture;
     bool m_accel;
@@ -596,6 +748,11 @@ protected:
     bool m_fixed_max = false;
     ScalarFloat m_max;
     std::vector<ScalarFloat> m_max_per_channel;
+    bool m_fixed_min = false;
+    ScalarFloat m_min;
+    std::vector<ScalarFloat> m_min_per_channel;
+
+    mutable const ScalarFloat* m_pinned_data = nullptr;
 
     MI_TRAVERSE_CB(Base, m_texture)
 };
