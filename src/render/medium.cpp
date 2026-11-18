@@ -308,10 +308,11 @@ Medium<Float, Spectrum>::track(const Ray3f &ray, Float sample,
 
         Float dt = t_next - ls.t;
         // Accumulate residual excess optical thickness over the sampled channel
-        dr::masked(ls.flight_ot, active) += dt * (residual - residual_c);
+        dr::masked(ls.flight_ot, active && residual != residual_c) +=
+            dt * (residual - residual_c);
         // Accumulate the control optical thickness
         if constexpr (Ratio)
-            dr::masked(ls.control_ot, active) += dt * control;
+            dr::masked(ls.control_ot, active && control != 0.f) += dt * control;
 
         Float p_c     = index_spectrum<Float, Spectrum>(p, channel);
         Float inv_p   = dr::select(p_c > 0.f, dr::rcp(p_c), 0.f);

@@ -72,7 +72,7 @@ public:
     }
 
     ScalarFloat min() const override {
-        NB_OVERRIDE_PURE(min);
+        NB_OVERRIDE(min);
     }
 
     ScalarVector2i resolution() const override {

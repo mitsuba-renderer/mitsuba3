@@ -191,11 +191,11 @@ public:
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
         m_max_density = dr::opaque<Float>(m_scale * m_sigmat->max());
 
-        if (string::contains(keys, "sigma_t"))
+        if (keys.empty() || string::contains(keys, "sigma_t"))
             m_extremum->update_extremum(
                 m_sigmat->bbox(), m_sigmat.get(), std::nullopt);
 
-        if (string::contains(keys, "scale"))
+        if (keys.empty() || string::contains(keys, "scale"))
             m_extremum->set_scale(m_scale);
     }
 

@@ -160,12 +160,12 @@ public:
     }
 
     void parameters_changed(const std::vector<std::string> &keys = {}) override {
-        if (string::contains(keys, "sigma_t")) {
+        if (keys.empty() || string::contains(keys, "sigma_t")) {
             ScalarBoundingBox3f extr_bbox(-dr::Infinity<ScalarFloat>, dr::Infinity<ScalarFloat>);
             m_extremum->update_extremum(extr_bbox, m_sigmat.get(), std::nullopt);
         }
 
-        if (string::contains(keys, "scale"))
+        if (keys.empty() || string::contains(keys, "scale"))
             m_extremum->set_scale(m_scale);
     }
 

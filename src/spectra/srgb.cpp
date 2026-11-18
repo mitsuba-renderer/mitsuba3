@@ -124,7 +124,7 @@ public:
 
     ScalarFloat max() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::max_nested(srgb_model_mean(m_coeff));
+            return dr::max_nested(srgb_model_bounds(m_coeff).second);
         else if constexpr (is_monochromatic_v<Spectrum>)
             return dr::max_nested(luminance(m_color));
         else
@@ -133,7 +133,7 @@ public:
 
     ScalarFloat min() const override {
         if constexpr (is_spectral_v<Spectrum>)
-            return dr::min_nested(srgb_model_mean(m_coeff));
+            return dr::min_nested(srgb_model_bounds(m_coeff).first);
         else if constexpr (is_monochromatic_v<Spectrum>)
             return dr::min_nested(luminance(m_color));
         else

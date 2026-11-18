@@ -198,7 +198,7 @@ public:
      * Return the minimum value of the spectrum
      *
      * Not every implementation necessarily provides this function. The default
-     * implementation throws an exception.
+     * implementation returns zero.
      *
      * Even if the operation is provided, it may only return an approximation.
      */

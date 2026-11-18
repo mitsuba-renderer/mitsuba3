@@ -58,7 +58,7 @@ Volume<Float, Spectrum>::max_per_channel(ScalarFloat * /*out*/) const {
 }
 
 MI_VARIANT typename Volume<Float, Spectrum>::ScalarFloat
-Volume<Float, Spectrum>::min() const { NotImplementedError("min"); }
+Volume<Float, Spectrum>::min() const { return 0.f; }
 
 MI_VARIANT void
 Volume<Float, Spectrum>::min_per_channel(ScalarFloat * /*out*/) const {

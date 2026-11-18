@@ -34,6 +34,33 @@ MI_INLINE dr::value_t<Array3f> srgb_model_mean(const Array3f &coeff) {
     return dr::mean(result);
 }
 
+/// Minimum and maximum of the spectral model over ``[MI_CIE_MIN, MI_CIE_MAX]``
+template <typename Array3f>
+MI_INLINE std::pair<dr::value_t<Array3f>, dr::value_t<Array3f>>
+srgb_model_bounds(const Array3f &coeff) {
+    using Float = dr::value_t<Array3f>;
+
+    auto quadratic = [&](const Float &lambda) {
+        return dr::fmadd(dr::fmadd(coeff.x(), lambda, coeff.y()), lambda, coeff.z());
+    };
+    auto sigmoid = [&](const Float &v) {
+        return dr::select(dr::isinf(coeff.z()), dr::fmadd(dr::sign(coeff.z()), .5f, .5f),
+                          dr::maximum(0.f, dr::fmadd(.5f * v, dr::rsqrt(dr::fmadd(v, v, 1.f)), .5f)));
+    };
+
+    // The sigmoid is monotonic: extrema are those of the quadratic, found at
+    // the range endpoints or at its vertex
+    Float lambda_v = -coeff.y() / (2.f * coeff.x());
+    lambda_v = dr::select(dr::isfinite(lambda_v),
+                          dr::clip(lambda_v, (float) MI_CIE_MIN, (float) MI_CIE_MAX),
+                          (float) MI_CIE_MIN);
+
+    Float a = quadratic(Float(MI_CIE_MIN)), b = quadratic(Float(MI_CIE_MAX)),
+          c = quadratic(lambda_v);
+    return { sigmoid(dr::minimum(dr::minimum(a, b), c)),
+             sigmoid(dr::maximum(dr::maximum(a, b), c)) };
+}
+
 /**
  * \brief Spectral upsampling model for sRGB colors
  *

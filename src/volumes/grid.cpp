@@ -242,7 +242,7 @@ public:
                     std::unique_ptr<ScalarFloat[]>(new ScalarFloat[size * 4]);
                 ScalarFloat *scaled_data_ptr = scaled_data.get();
                 ScalarFloat max = 0.0;
-                ScalarFloat min = 0.0;
+                ScalarFloat min = dr::Infinity<ScalarFloat>;
                 for (ScalarUInt32 i = 0; i < size; ++i) {
                     ScalarColor3f rgb = dr::load<ScalarColor3f>(ptr);
                     // TODO: Make this scaling optional if the RGB values are
