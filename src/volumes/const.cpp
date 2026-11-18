@@ -82,6 +82,7 @@ public:
     }
 
     ScalarFloat max() const override { return m_value->max(); }
+    ScalarFloat min() const override { return m_value->min(); }
 
     std::string to_string() const override {
         std::ostringstream oss;

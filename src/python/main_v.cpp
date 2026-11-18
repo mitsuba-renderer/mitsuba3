@@ -14,6 +14,7 @@
 #include <mitsuba/render/srgb.h>
 #include <mitsuba/render/texture.h>
 #include <mitsuba/render/volume.h>
+#include <mitsuba/render/extremum.h>
 
 #include <mitsuba/python/python.h>
 
@@ -52,6 +53,7 @@ static nb::object caster(Object *o) {
 
     PY_TRY_CAST(PhaseFunction);
     PY_TRY_CAST(Medium);
+    PY_TRY_CAST(Extremum);
 
     return nb::object();
 }
@@ -116,6 +118,10 @@ MI_PY_DECLARE(srgb);
 MI_PY_DECLARE(Texture);
 MI_PY_DECLARE(Volume);
 MI_PY_DECLARE(VolumeGrid);
+MI_PY_DECLARE(ExtremumSegment);
+MI_PY_DECLARE(ExtremumState);
+MI_PY_DECLARE(MediumSample);
+MI_PY_DECLARE(Extremum);
 
 using Caster = nb::object(*)(mitsuba::Object *);
 Caster cast_object = nullptr;
@@ -240,6 +246,10 @@ NB_MODULE(MI_VARIANT_NAME, m) {
     MI_PY_IMPORT(Texture);
     MI_PY_IMPORT(Volume);
     MI_PY_IMPORT(VolumeGrid);
+    MI_PY_IMPORT(ExtremumSegment);
+    MI_PY_IMPORT(ExtremumState);
+    MI_PY_IMPORT(MediumSample);
+    MI_PY_IMPORT(Extremum);
 
     // Callback function cleanup static variant-specific data structures, this
     // should be called when the interpreter is exiting

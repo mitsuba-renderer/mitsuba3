@@ -105,5 +105,10 @@ Texture<Float, Spectrum>::max() const {
     NotImplementedError("max");
 }
 
+MI_VARIANT typename Texture<Float, Spectrum>::ScalarFloat
+Texture<Float, Spectrum>::min() const {
+    NotImplementedError("min");
+}
+
 MI_INSTANTIATE_CLASS(Texture)
 NAMESPACE_END(mitsuba)

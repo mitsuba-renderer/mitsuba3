@@ -2,6 +2,7 @@
 #include <mitsuba/render/medium.h>
 #include <mitsuba/render/phase.h>
 #include <mitsuba/render/scene.h>
+#include <mitsuba/render/extremum.h>
 #include <mitsuba/python/python.h>
 #include <nanobind/trampoline.h>
 #include <nanobind/stl/string.h>
@@ -10,6 +11,20 @@
 #include <nanobind/stl/tuple.h>
 #include <nanobind/stl/vector.h>
 #include <drjit/python.h>
+
+MI_PY_EXPORT(MediumSample) {
+    MI_PY_IMPORT_TYPES()
+
+    auto ms = nb::class_<MediumSample3f>(m, "MediumSample3f", D(MediumSample3))
+        .def(nb::init<>())
+        .def(nb::init<const MediumSample3f &>(), "ms"_a, "Copy constructor")
+        .def_rw("mei", &MediumSample3f::mei, D(MediumSample3, mei))
+        .def_rw("pdf_ratio", &MediumSample3f::pdf_ratio,
+                D(MediumSample3, pdf_ratio))
+        .def_repr(MediumSample3f);
+
+    MI_PY_DRJIT_STRUCT(ms, MediumSample3f, mei, pdf_ratio);
+}
 
 /// Trampoline for derived types implemented in Python
 MI_VARIANT class PyMedium : public Medium<Float, Spectrum> {
@@ -92,6 +107,27 @@ template <typename Ptr, typename Cls> void bind_medium_generic(Cls &cls) {
                 return ptr->get_scattering_coefficients(mi, active); },
             "mi"_a, "active"_a=true,
             D(Medium, get_scattering_coefficients));
+    cls.def("sample_real_interaction",
+            [](Ptr ptr, const Ray3f &ray, Float sample,
+               const UInt32 &channel, Mask active) {
+                return ptr->sample_real_interaction(ray, sample, channel, active);
+            },
+            "ray"_a, "sample"_a, "channel"_a, "active"_a = true,
+            D(Medium, sample_real_interaction));
+    cls.def("sample_transmittance",
+            [](Ptr ptr, const Ray3f &ray, Float sample,
+               const UInt32 &channel, Mask active) {
+                return ptr->sample_transmittance(ray, sample, channel, active);
+            },
+            "ray"_a, "sample"_a, "channel"_a, "active"_a = true,
+            D(Medium, sample_transmittance));
+    cls.def("sample_transmittance_pdf",
+            [](Ptr ptr, const Ray3f &ray, Float sample,
+               const UInt32 &channel, Mask active) {
+                return ptr->sample_transmittance_pdf(ray, sample, channel, active);
+            },
+            "ray"_a, "sample"_a, "channel"_a, "active"_a = true,
+            D(Medium, sample_transmittance_pdf));
 }
 
 MI_PY_EXPORT(Medium) {
@@ -104,6 +140,7 @@ MI_PY_EXPORT(Medium) {
         .def_field(PyMedium, m_sample_emitters, D(Medium, m_sample_emitters))
         .def_field(PyMedium, m_is_homogeneous, D(Medium, m_is_homogeneous))
         .def_field(PyMedium, m_has_spectral_extinction, D(Medium, m_has_spectral_extinction))
+        .def("extremum", &Medium::extremum, D(Medium, extremum))
         .def("__repr__", &Medium::to_string, D(Medium, to_string));
 
     drjit::bind_traverse(medium);

@@ -71,6 +71,10 @@ public:
         NB_OVERRIDE(max);
     }
 
+    ScalarFloat min() const override {
+        NB_OVERRIDE_PURE(min);
+    }
+
     ScalarVector2i resolution() const override {
         NB_OVERRIDE(resolution);
     }
@@ -155,6 +159,9 @@ template <typename Ptr, typename Cls> void bind_texture_generic(Cls &cls) {
         .def("max",
              [](Ptr texture) { return texture->max(); },
              D(Texture, max))
+        .def("min",
+             [](Ptr texture) { return texture->min(); },
+             D(Texture, min))
         .def("is_spatially_varying",
              [](Ptr texture) { return texture->is_spatially_varying(); },
              D(Texture, is_spatially_varying))
