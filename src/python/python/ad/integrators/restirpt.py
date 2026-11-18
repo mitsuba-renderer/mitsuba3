@@ -1477,21 +1477,21 @@ class RestirPTIntegrator(ADIntegrator):
 
         # y_{k-1}: the end of the replayed prefix
         src_si: mi.SurfaceInteraction3f = prefix.si
-        rc = active & (z.k > 0) & src_si.is_valid()
+        reconnect = active & (z.k > 0) & src_si.is_valid()
         src_bsdf: mi.BSDF = src_si.bsdf()
 
         # ------------------------- x_k --------------------------
         d = z.rc_pos - src_si.p
         dist = dr.norm(d)
         d = dr.select(rc_infinite, z.rc_dir, d / dr.maximum(dist, 1e-20))
-        rc &= rc_infinite | (dist > 0)
+        reconnect &= rc_infinite | (dist > 0)
         rc_si: mi.SurfaceInteraction3f = scene.compute_surface_interaction(
             mi.Ray3f(mi.Point3f(src_si.p), d),
             z.shifted_hit(dist),
             ray_flags=mi.RayFlags.Default,
-            active=rc & ~rc_emitter,
+            active=reconnect & ~rc_emitter,
         )
-        rc &= rc_emitter | rc_si.is_valid()
+        reconnect &= rc_emitter | rc_si.is_valid()
         rc_n = dr.select(rc_emitter, mi.Normal3f(z.rc_dir), mi.Normal3f(rc_si.n))
         rc_bsdf: mi.BSDF = rc_si.bsdf()
 
@@ -1507,30 +1507,30 @@ class RestirPTIntegrator(ADIntegrator):
         # Null surfaces transmit, as they did for the path's emitter samples
         tr = mi.Spectrum(1.0)
         if dr.hint(scene.has_null_shapes(), mode="scalar"):
-            tr = scene.ray_test_tr(vis_ray, active=rc)
-            rc &= dr.any(mi.unpolarized_spectrum(tr) != 0)
+            tr = scene.ray_test_tr(vis_ray, active=reconnect)
+            reconnect &= dr.any(mi.unpolarized_spectrum(tr) != 0)
         else:
-            rc &= ~scene.ray_test(vis_ray, rc)
+            reconnect &= ~scene.ray_test(vis_ray, reconnect)
 
-        src_f, src_pdf = src_bsdf.eval_pdf(bsdf_ctx, src_si, src_si.to_local(d), rc)
-        rc &= (src_pdf > 0) & (dr.max(src_f) > 0)
+        src_f, src_pdf = src_bsdf.eval_pdf(bsdf_ctx, src_si, src_si.to_local(d), reconnect)
+        reconnect &= (src_pdf > 0) & (dr.max(src_f) > 0)
 
         # ------------------ Reconnection criteria ------------------
 
         # y_{k-1} must not qualify as reconnection vertex itself
         src_qualifies = prefix.rc_src & self.rc_dst_criterion(
-            src_bsdf, src_pdf, prefix.jacobian_prev, threshold, rc
+            src_bsdf, src_pdf, prefix.jacobian_prev, threshold, reconnect
         )
-        rc &= ~src_qualifies
+        reconnect &= ~src_qualifies
 
         # x_k must still qualify, seen from y_{k-1}. Infinite emitters have no
         # area measure; their footprint is unbounded.
         jacobian_rc = solid_angle_to_area(rc_n, d, dist)
         jacobian_src = solid_angle_to_area(src_si.n, d, dist)
         rc_f, rc_pdf = rc_bsdf.eval_pdf(
-            bsdf_ctx, rc_si, rc_si.to_local(z.rc_dir), rc & ~rc_emitter
+            bsdf_ctx, rc_si, rc_si.to_local(z.rc_dir), reconnect & ~rc_emitter
         )
-        src_ok = rc & self.rc_src_criterion(
+        src_ok = reconnect & self.rc_src_criterion(
             mi.Bool(False),
             src_pdf,
             dr.select(rc_infinite, 0.0, jacobian_rc),
@@ -1541,34 +1541,34 @@ class RestirPTIntegrator(ADIntegrator):
             rc_pdf,
             dr.select(rc_infinite, 0.0, jacobian_src),
             threshold,
-            rc,
+            reconnect,
         )
 
         if rc_emitter:
             if z.nee:
-                rc &= ~prefix.rc_src
+                reconnect &= ~prefix.rc_src
             else:
-                rc &= src_ok
+                reconnect &= src_ok
         elif emitter_next & z.nee:
-            rc &= src_ok
+            reconnect &= src_ok
         else:
-            rc &= src_ok & dst_ok & (rc_pdf > 0)
+            reconnect &= src_ok & dst_ok & (rc_pdf > 0)
 
-        if rc:
-            ds = z.emitter_sample(src_si, d, dist, rc & rc_emitter)
+        if reconnect:
+            ds = z.emitter_sample(src_si, d, dist, reconnect & rc_emitter)
 
             # Infinite emitters (but delta lights) as the path evaluated them
             # on escaping; eval_direction() looks up ds.uv, which an escaped
             # hit lacks
             escaped = rc_infinite & ~z.delta
-            Le = scene.eval_emitter_direction(src_si, ds, rc & rc_emitter & ~escaped)
+            Le = scene.eval_emitter_direction(src_si, ds, reconnect & rc_emitter & ~escaped)
             si_inf: mi.SurfaceInteraction3f = dr.zeros(mi.SurfaceInteraction3f)
             si_inf.wi = -d
             si_inf.t = dr.inf
             si_inf.time = src_si.time
             si_inf.wavelengths = src_si.wavelengths
-            Le[escaped] = z.emitter.eval(si_inf, rc & escaped)
-            em_pdf = scene.pdf_emitter_direction(src_si, ds, rc & rc_emitter & ~z.delta)
+            Le[escaped] = z.emitter.eval(si_inf, reconnect & escaped)
+            em_pdf = scene.pdf_emitter_direction(src_si, ds, reconnect & rc_emitter & ~z.delta)
             em_pdf = dr.select(z.delta, z.emitter_pdf * ds.pdf, em_pdf)
 
             # Rebuild the path from y_{k-1} to x_{k+1}, collecting the
@@ -1599,7 +1599,7 @@ class RestirPTIntegrator(ADIntegrator):
 
             F *= z.L_rc
             J = dr.select(z.density > 0, density / z.density, 0.0)
-            valid = rc & dr.all(dr.isfinite(F)) & dr.isfinite(J) & (J > 0)
+            valid = reconnect & dr.all(dr.isfinite(F)) & dr.isfinite(J) & (J > 0)
             F = dr.select(valid, F, mi.Color3f(0))
             density = dr.select(valid, density, mi.Float(0.0))
         elif active & (z.k == 0):
