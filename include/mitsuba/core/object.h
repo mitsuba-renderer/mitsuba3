@@ -1,8 +1,8 @@
 #pragma once
 
-#define NB_INTRUSIVE_EXPORT MI_EXPORT
-
 #include <mitsuba/mitsuba.h>
+// Include first: nanobind's intrusive counter is implemented in drjit-extra
+#include <drjit/traversable_base.h>
 #include <nanobind/intrusive/ref.h>
 #include <typeinfo>
 #include <string>
@@ -10,7 +10,6 @@
 #include <stdexcept>
 #include <cstdlib>
 #include <cstring>
-#include <drjit/traversable_base.h>
 
 NAMESPACE_BEGIN(mitsuba)
 
