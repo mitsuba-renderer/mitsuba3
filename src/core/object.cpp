@@ -1,7 +1,6 @@
 #include <mitsuba/core/object.h>
 #include <mitsuba/core/properties.h>
 #include <sstream>
-#include <nanobind/intrusive/counter.inl>
 
 NAMESPACE_BEGIN(mitsuba)
 

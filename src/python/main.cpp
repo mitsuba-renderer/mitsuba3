@@ -84,21 +84,8 @@ NB_MODULE(mitsuba_ext, m) {
     m.attr("MI_ENABLE_EMBREE") = false;
 #endif
 
-    // Initialize reference counting hooks for mitsuba::Object
-    nb::intrusive_init(
-        [](PyObject *o) noexcept {
-            nb::gil_scoped_acquire guard;
-            Py_INCREF(o);
-        },
-        [](PyObject *o) noexcept {
-            if (!nb::is_alive())
-                return;
-
-            nb::gil_scoped_acquire guard;
-            if (guard.is_valid())
-                Py_DECREF(o);
-        }
-    );
+    // Reference counting hooks for mitsuba::Object (a drjit::TraversableBase)
+    // are installed by Dr.Jit, which provides the intrusive counter.
 
     m.def("set_log_level", [](mitsuba::LogLevel level) {
         Logger *logger = mitsuba::logger();
