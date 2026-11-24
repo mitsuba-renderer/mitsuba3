@@ -252,7 +252,8 @@ public:
             Point2f sample_2 = ls.sampler->next_2d();
 
             auto [bsdf_val, bsdf_pdf, bsdf_sample, bsdf_weight]
-                = bsdf->eval_pdf_sample(bsdf_ctx, si, wo, sample_1, sample_2);
+                = bsdf->eval_pdf_sample(bsdf_ctx, si, wo, sample_1, sample_2,
+                                        active_next);
 
             // --------------- Emitter sampling contribution ----------------
 
@@ -289,7 +290,8 @@ public:
 
                 // Recompute 'wo' to propagate derivatives to cosine term
                 Vector3f wo_2 = si.to_local(ls.ray.d);
-                auto [bsdf_val_2, bsdf_pdf_2] = bsdf->eval_pdf(bsdf_ctx, si, wo_2);
+                auto [bsdf_val_2, bsdf_pdf_2] =
+                    bsdf->eval_pdf(bsdf_ctx, si, wo_2, active_next && scattered);
                 bsdf_weight[bsdf_pdf_2 > 0.f && scattered] =
                     bsdf_val_2 / dr::detach(bsdf_pdf_2);
             }
