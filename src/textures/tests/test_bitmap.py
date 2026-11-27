@@ -534,11 +534,17 @@ def test16_laplacian_mip_basis(variants_all_ad_rgb):
 
     dr.enable_grad(params['pyramid.0'])
     params.update()
-    assert not dr.grad_enabled(params['data'])
+    assert dr.grad_enabled(params['data'])
     si = dr.zeros(mi.SurfaceInteraction3f)
     si.uv = [0.25, 0.25]
     dr.backward(tex.eval_3(si))
     assert dr.any(dr.grad(params['pyramid.0']).array > 0)
+
+    dr.set_grad(params['pyramid.0'], 0.0)
+    params.set_dirty('pyramid.0')
+    params.update()
+    dr.backward(dr.sum(params['data']))
+    assert dr.all(dr.grad(params['pyramid.0']) == 1.0)
 
     params['data'] = dr.full(mi.TensorXf, 0.25, shape=(4, 4, 3))
     params.update()

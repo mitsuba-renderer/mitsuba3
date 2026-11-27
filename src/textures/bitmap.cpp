@@ -824,9 +824,6 @@ public:
             else
                 m_texture.update_inplace();
 
-            if (m_texture.mip_basis() == dr::MipBasis::Laplacian)
-                dr::disable_grad(data());
-
             rebuild_internals(data(), m_distr2d != nullptr, true);
         }
 
