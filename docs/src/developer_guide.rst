@@ -61,7 +61,7 @@ parts.
 
 - Comments inside a function body use ``//``.
 
-A concrete exmaple:
+A concrete example:
 
 .. code-block:: cpp
 
